@@ -1,0 +1,120 @@
+name: Security Scans
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  pip-audit:
+    name: pip-audit (PyPA Advisory)
+    runs-on: ubuntu-latest
+    env:
+      PRIMARY_PYTHON_VERSION: "3.13"
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: ${{ env.PRIMARY_PYTHON_VERSION }}
+      - name: Export locked requirements
+        run: |
+          uv export --format requirements.txt --all-groups --locked \
+            --no-hashes --no-editable --no-emit-project -o requirements.txt
+      - name: Run pip-audit (PyPA Advisory)
+        run: uv run --with pip-audit pip-audit -r requirements.txt --vulnerability-service pypi
+
+  licenses:
+    name: License Check (pip-licenses)
+    runs-on: ubuntu-latest
+    env:
+      PRIMARY_PYTHON_VERSION: "3.13"
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: ${{ env.PRIMARY_PYTHON_VERSION }}
+      - name: Install dependencies for license check
+        run: uv sync --frozen --all-groups --no-build --no-install-project
+      - name: Run pip-licenses
+        run: uv run pip-licenses --format=json --output-file licenses.json
+      - name: Upload license report
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: license-report
+          path: |
+            licenses.json
+
+  trivy:
+    name: Trivy Security Scan
+    runs-on: ubuntu-latest
+    env:
+      # uv.lock scanning excludes dev dependencies by default; keep the former
+      # requirements.txt (--all-groups) coverage for SARIF and SBOM outputs.
+      TRIVY_INCLUDE_DEV_DEPS: "true"
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Run Trivy vulnerability scanner in fs mode (SARIF)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          scanners: 'vuln,secret'
+          exit-code: '0'
+      - name: Generate Trivy SBOM (CycloneDX)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'cyclonedx'
+          output: 'trivy-sbom.cdx.json'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          scanners: 'vuln,secret'
+          exit-code: '0'
+      - name: Generate Trivy SBOM (SPDX)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'spdx-json'
+          output: 'trivy-sbom.spdx.json'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          scanners: 'vuln,secret'
+          exit-code: '0'
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+      - name: Upload Trivy SBOM artifacts
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: trivy-sbom
+          path: |
+            trivy-sbom.cdx.json
+            trivy-sbom.spdx.json
