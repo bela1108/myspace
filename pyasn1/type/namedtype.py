@@ -427,6 +427,54 @@ class NamedTypes(object):
         except KeyError:
             raise error.PyAsn1Error('Type position out of range')
 
+    def getStrictComponentPosition(self, tagSet, idx):
+        """Resolve the field position of *tagSet* for a strict decoder.
+
+        Unlike :meth:`getPositionNearType`, OPTIONAL/DEFAULT ambiguity is
+        reported as an error instead of silently picking a slot, so a
+        single wire component whose tag could belong to a skippable field
+        cannot be misassigned before the half-built object exists. Two
+        mandatory fields sharing a tag remain distinguishable by their
+        ordered position and resolve to the first candidate.
+
+        Raises
+        ------
+        ~pyasn1.error.PyAsn1Error
+            If *idx* is out of range, *tagSet* matches no field, or the
+            matching fields include an OPTIONAL/DEFAULT collision.
+        """
+        try:
+            candidates = self.__ambiguousTypes[idx]
+
+        except (KeyError, IndexError):
+            raise error.PyAsn1Error(
+                'Component tag %s is not allowed at position %s' % (
+                    tagSet, idx))
+
+        positions = [
+            position
+            for position, namedType in enumerate(candidates.namedTypes)
+            if tagSet in namedType.asn1Object.tagMap
+        ]
+
+        if not positions:
+            raise error.PyAsn1Error(
+                'Component tag %s is not allowed at position %s' % (
+                    tagSet, idx))
+
+        if len(positions) > 1 and any(
+                candidates.namedTypes[position].isOptional
+                or candidates.namedTypes[position].isDefaulted
+                for position in positions):
+            raise error.PyAsn1Error(
+                'Ambiguous component tag %s at position %s matches '
+                'multiple fields %s' % (
+                    tagSet, idx,
+                    [candidates.namedTypes[position].name
+                     for position in positions]))
+
+        return idx + positions[0]
+
     def __computeMinTagSet(self):
         minTagSet = None
         for namedType in self.__namedTypes:

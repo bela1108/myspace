@@ -2773,6 +2773,63 @@ class SequenceAndSetBase(base.ConstructedAsn1Type):
     def setDefaultComponents(self):
         return self
 
+    def fillDefaultedComponents(self):
+        """Populate every still-absent DEFAULT component with its default.
+
+        Strict codecs (DER/CER) call this after a successful decode so that
+        a SEQUENCE/SET omitting a DEFAULT field exposes the same component
+        values as the schema's default, rather than :obj:`noValue`. OPTIONAL
+        components and components already decoded from the substrate are left
+        untouched.
+
+        Returns
+        -------
+        self
+        """
+        componentType = self.componentType
+
+        if not componentType:
+            return self
+
+        if self._componentValues is noValue:
+            componentValues = []
+
+        else:
+            componentValues = self._componentValues
+
+        for idx, namedType in enumerate(componentType.namedTypes):
+            if not namedType.isDefaulted:
+                continue
+
+            try:
+                componentValue = componentValues[idx]
+
+            except IndexError:
+                componentValue = noValue
+                componentValues = componentValues + [noValue] * (
+                    idx + 1 - len(componentValues))
+
+            if componentValue is noValue or not componentValue.isValue:
+                # Keep the schema default object untouched: the BER/DER
+                # encoder skips a DEFAULT component by equality with it, so
+                # materializing nested values here would change the encoded
+                # bytes and break signature round-trips.
+                componentValues[idx] = namedType.asn1Object
+
+        self._componentValues = componentValues
+
+        # Containers decoded from the substrate still need their own absent
+        # DEFAULT components filled. Schema defaults stay as stored above.
+        for idx, componentValue in enumerate(componentValues):
+            if (componentValue is not noValue
+                    and isinstance(componentValue, base.ConstructedAsn1Type)
+                    and hasattr(componentValue, 'fillDefaultedComponents')
+                    and componentValue is not
+                    componentType.getTypeByPosition(idx)):
+                componentValue.fillDefaultedComponents()
+
+        return self
+
     def getComponentType(self):
         if self._componentTypeLen:
             return self.componentType

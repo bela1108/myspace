@@ -669,11 +669,50 @@ class ConstructedPayloadDecoderBase(AbstractConstructedPayloadDecoder):
     protoRecordComponent = None
     protoSequenceComponent = None
 
+    #: Strict dialects (DER/CER) override these to reject input that BER is
+    #: permitted to accept, instead of silently normalizing it.
+    strictComponents = False
+
     def _getComponentTagMap(self, asn1Object, idx):
         raise NotImplementedError
 
     def _getComponentPositionByType(self, asn1Object, tagSet, idx):
         raise NotImplementedError
+
+    def _validateComponentTag(self, namedTypes, tagSet, idx):
+        """Map a wire component tag to its field position.
+
+        BER resolves tags through the ambiguity tables that tolerate
+        same-tagged fields; strict dialects override this so that an
+        ambiguous or unknown tag is reported before the half-populated
+        container object is touched.
+        """
+        return namedTypes.getPositionNearType(tagSet, idx)
+
+    def _validateExplicitDefault(self, namedTypes, component, idx):
+        """Check an explicitly encoded component against its DEFAULT field.
+
+        BER keeps explicit DEFAULT values as given; DER rejects an explicit
+        encoding that equals the schema default because the re-encoded
+        object would then differ from the original signed bytes.
+        """
+
+    def _validateDecodedComponent(self, namedTypes, component, idx,
+                                  seenIndices):
+        """Validate a decoded component before it is stored on the object.
+
+        BER accepts whatever its ambiguity tables resolve. Strict dialects
+        override this to reject duplicate tags, so the check still fires on
+        the resumable streaming path where an up-front raw-bytes pass cannot
+        be guaranteed to have the whole payload available.
+        """
+
+    def _fillDefaultedComponents(self, asn1Object):
+        """Populate DEFAULT fields absent from the substrate.
+
+        BER preserves absence (``noValue``) for backward compatibility;
+        strict dialects fill the schema defaults once decoding succeeds.
+        """
 
     def _decodeComponentsSchemaless(
             self, substrate, tagSet=None, decodeFun=None,
@@ -821,10 +860,20 @@ class ConstructedPayloadDecoderBase(AbstractConstructedPayloadDecoder):
 
                 if not isDeterministic and namedTypes:
                     if isSetType:
-                        idx = namedTypes.getPositionByType(component.effectiveTagSet)
+                        if self.strictComponents:
+                            idx = self._validateComponentTag(
+                                namedTypes, component.effectiveTagSet, idx)
+                        else:
+                            idx = namedTypes.getPositionByType(
+                                component.effectiveTagSet)
 
                     elif namedTypes[idx].isOptional or namedTypes[idx].isDefaulted:
-                        idx = namedTypes.getPositionNearType(component.effectiveTagSet, idx)
+                        idx = self._validateComponentTag(
+                            namedTypes, component.effectiveTagSet, idx)
+
+                self._validateExplicitDefault(namedTypes, component, idx)
+                self._validateDecodedComponent(
+                    namedTypes, component, idx, seenIndices)
 
                 asn1Object.setComponentByPosition(
                     idx, component,
@@ -926,6 +975,8 @@ class ConstructedPayloadDecoderBase(AbstractConstructedPayloadDecoder):
                 if inconsistency:
                     raise error.PyAsn1Error(
                         f"ASN.1 object {asn1Object.__class__.__name__} is inconsistent")
+
+            self._fillDefaultedComponents(asn1Object)
 
         else:
             componentType = asn1Object.componentType
@@ -1040,10 +1091,20 @@ class ConstructedPayloadDecoderBase(AbstractConstructedPayloadDecoder):
 
                 if not isDeterministic and namedTypes:
                     if isSetType:
-                        idx = namedTypes.getPositionByType(component.effectiveTagSet)
+                        if self.strictComponents:
+                            idx = self._validateComponentTag(
+                                namedTypes, component.effectiveTagSet, idx)
+                        else:
+                            idx = namedTypes.getPositionByType(
+                                component.effectiveTagSet)
 
                     elif namedTypes[idx].isOptional or namedTypes[idx].isDefaulted:
-                        idx = namedTypes.getPositionNearType(component.effectiveTagSet, idx)
+                        idx = self._validateComponentTag(
+                            namedTypes, component.effectiveTagSet, idx)
+
+                self._validateExplicitDefault(namedTypes, component, idx)
+                self._validateDecodedComponent(
+                    namedTypes, component, idx, seenIndices)
 
                 asn1Object.setComponentByPosition(
                     idx, component,
@@ -1152,6 +1213,8 @@ class ConstructedPayloadDecoderBase(AbstractConstructedPayloadDecoder):
                     if inconsistency:
                         raise error.PyAsn1Error(
                             f"ASN.1 object {asn1Object.__class__.__name__} is inconsistent")
+
+                self._fillDefaultedComponents(asn1Object)
 
         else:
             componentType = asn1Object.componentType

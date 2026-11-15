@@ -1012,6 +1012,37 @@ subclasses, `BitStringPayloadDecoder` and `OctetStringPayloadDecoder`, setting
 attribute shuts indefinite framing off entirely is covered in [Two framing
 modes](#two-framing-modes).
 
+The DER decoder also installs its own `SequencePayloadDecoder` and
+`SetPayloadDecoder` in `der/decoder.py` `TYPE_MAP` (not just `TAG_MAP`), so
+the strictness fires on the schema-driven path where the inherited
+`TYPE_MAP` is consulted first. Both share `_StrictComponentsMixin`, which
+adds four rules BER deliberately lacks. First, a SEQUENCE/SET component
+explicitly encoded with a value equal to its schema DEFAULT is rejected by
+`_StrictComponentsMixin._validateExplicitDefault`: BER keeps the bytes, but
+a re-encoding omits the DEFAULT, so a verifier comparing the original TLV
+against the re-encoded object would reach two different verdicts. Second,
+absent DEFAULT components are filled from the schema after a successful
+decode through `SequenceAndSetBase.fillDefaultedComponents` (`univ.py`),
+while BER leaves them as `noValue`; the fill never clones a schema default
+in place, because the BER/DER encoder skips a DEFAULT component by
+equality with that exact object and cloning it would change the encoded
+bytes. Third, duplicate tags, OPTIONAL/DEFAULT candidate ambiguity and
+trailing components are rejected while the payload is still raw bytes, in
+`_StrictComponentsMixin._validateStrictComponents`, before the
+half-populated container exists; the tag-to-field resolution it uses is
+`NamedTypes.getStrictComponentPosition` (`namedtype.py`), which only treats
+a tag as ambiguous when the colliding fields include an OPTIONAL or
+DEFAULT, leaving two ordered mandatory same-tag fields resolvable by
+position. Fourth, every error message names the component position and
+tag but never the field value. The raw-bytes pass needs the whole payload,
+so a resumable non-blocking stream skips it and the BER component loop
+enforces the same duplicate-tag check incrementally through
+`ConstructedPayloadDecoderBase._validateDecodedComponent`
+(`ber/decoder.py`), whose BER base implementation is a no-op. BER and CER
+keep their historical lenient behavior through the no-op hooks
+`_validateExplicitDefault`, `_validateDecodedComponent` and
+`_fillDefaultedComponents` on `ConstructedPayloadDecoderBase`.
+
 ### Configuration surfaces
 
 The encoder is configured at construction: `Encoder.__init__(tagMap, typeMap,
@@ -1723,6 +1754,44 @@ chain sustains converts a clean `PyAsn1Error` back into `RecursionError`
 `tests/codec/ber/test_decoder.py` pins the distinction). Reverting the OID
 accumulator to tuple concatenation reintroduces CVE-2026-59885 with no test
 failure: the fix changed complexity, not results.
+
+### DER strict SEQUENCE/SET decoding
+
+A signature verifier that decodes a certificate SEQUENCE and re-encodes the
+recovered object before comparing it against the original TLV needs BER
+normalization rules to stop at the DER boundary. The DER
+`SequencePayloadDecoder`/`SetPayloadDecoder` in `der/decoder.py` (mixed from
+`_StrictComponentsMixin`, registered in the DER `TYPE_MAP` so the
+schema-driven path is covered) enforce four guarantees that BER and CER
+intentionally lack:
+
+- an explicitly encoded component whose value equals its schema DEFAULT is
+  rejected (`_StrictComponentsMixin._validateExplicitDefault`), because the
+  encoder omits DEFAULT bytes and the re-encoded TLV would otherwise differ
+  from the signed bytes;
+- absent DEFAULT components are filled from the schema by
+  `SequenceAndSetBase.fillDefaultedComponents` (`univ.py`) once decoding
+  succeeds, while BER preserves `noValue`; the schema default object is
+  stored by identity, never cloned, so the encoder DEFAULT-equality skip
+  still fires and the bytes stay stable;
+- duplicate tags, OPTIONAL/DEFAULT candidate ambiguity, unknown tags and
+  trailing components fail the raw-bytes pre-pass
+  (`_StrictComponentsMixin._validateStrictComponents`) before any component
+  object is constructed, using
+  `NamedTypes.getStrictComponentPosition` (`namedtype.py`), which reserves
+  ambiguity for OPTIONAL/DEFAULT collisions and still resolves two ordered
+  mandatory same-tag fields positionally;
+- error messages report the component position and tag, never the value.
+
+The pre-pass needs the complete payload. On a resumable non-blocking stream
+it is skipped, and the BER component loop applies the same duplicate-tag
+rejection incrementally through the
+`ConstructedPayloadDecoderBase._validateDecodedComponent` hook
+(`ber/decoder.py`), whose BER base implementation is a no-op. The three BER
+hooks (`_validateExplicitDefault`, `_validateDecodedComponent`,
+`_fillDefaultedComponents`) are no-ops on the base class, so BER stays
+lenient and historical data keeps decoding; CER inherits the BER behavior.
+The regression set is `tests/codec/der/test_defaults.py`.
 
 ### Encoder guards
 

@@ -1,6 +1,15 @@
 Revision 0.7.0, released XX-XX-2026
 ---------------------------------------
 
+- Hardened the DER decoder against signature-verification confusion on
+  SEQUENCE/SET components. An explicitly encoded component whose value
+  equals its schema DEFAULT is now rejected, duplicate component tags,
+  OPTIONAL/DEFAULT candidate ambiguity, unknown tags and trailing
+  components are reported before a half-populated object is built, and
+  absent DEFAULT components are filled from the schema after a successful
+  decode. Error messages carry the component position and tag, never the
+  value. BER and CER keep their historical lenient behavior, so legacy
+  data still decodes
 - Fixed OverflowError from BER/CER/DER length values that fit in the
   supported 8-octet length field but exceed the platform maximum readable
   size. Such oversized definite lengths are now rejected with PyAsn1Error.
