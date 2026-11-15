@@ -4,6 +4,14 @@ Changelog
 Unreleased
 ----------
 
+* New module ``pyrad.eap`` with ``EAPSessionTracker``: validates the
+  EAP-Message fragments of a request against the Length of the EAP
+  header (empty, missing, overflowing, retransmitted or interleaved
+  fragments raise ``EAPFragmentError``, which carries only the fragment
+  index and length) and binds State attributes to their NAS session, so
+  an unknown or foreign State is rejected deterministically with
+  ``EAPStateError`` before anything reaches the authentication state
+  machine. See ``tests/test_eap_fragments.py`` for examples.
 * pyrad no longer depends on netaddr; it was only used by the tests and
   is now in the ``test`` dependency group. ipv6prefix values given as
   ``netaddr.IPNetwork`` are still accepted. Code that imports netaddr
