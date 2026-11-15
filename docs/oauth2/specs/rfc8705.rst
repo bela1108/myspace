@@ -1,0 +1,96 @@
+.. _specs/rfc8705:
+
+RFC 8705: OAuth 2.0 Mutual-TLS Certificate-Bound Access Tokens
+==============================================================
+
+.. module:: authlib.oauth2.rfc8705
+
+This section contains the resource server implementation of :rfc:`8705`.
+When the authorization server binds an access token to a client certificate,
+it puts the certificate thumbprint in the ``cnf`` claim:
+
+.. code-block:: json
+
+    {"cnf": {"x5t#S256": "abcdef..."}}
+
+Per :rfc:`8705#section-3`, ``x5t#S256`` is the base64url-encoded SHA-256
+hash of the DER encoding of the X.509 certificate. The resource server
+recomputes the thumbprint from the TLS peer certificate and rejects the
+request when it does not match the token. A token replayed from another
+device therefore cannot call the protected resource.
+
+Only the certificate obtained from the (re-)terminated TLS session is
+acceptable. A fingerprint forwarded in an HTTP header by an upstream gateway
+is just a request header and can be spoofed, so it is never read.
+
+Strong binding and compatibility mode
+-------------------------------------
+
+:class:`~authlib.oauth2.rfc8705.CertificateBoundJWTBearerTokenValidator`
+extends the :rfc:`9068` JWT validator. With the default strong binding, a
+token without a usable ``cnf`` claim, or a request without the matching
+certificate, is rejected with ``invalid_token`` and there is no fallback to
+an unbound validation:
+
+.. code-block:: python
+
+    from authlib.oauth2.rfc8705 import CertificateBoundJWTBearerTokenValidator
+
+    class MyValidator(CertificateBoundJWTBearerTokenValidator):
+        def get_jwks(self): ...
+
+        def get_tls_peer_cert_chain(self, request):
+            # Read the DER peer certificate chain from the TLS session,
+            # never from a request header.
+            flask_request = request._request
+            return flask_request.environ.get("myapp.tls_peer_cert_chain")
+
+    require_oauth = ResourceProtector()
+    require_oauth.register_token_validator(
+        MyValidator(
+            issuer="https://as.example.org",
+            resource_server="https://api.example.org",
+        )
+    )
+
+During migration, pass ``enforce_certificate_binding=False`` to keep
+accepting legacy tokens that carry no ``cnf`` claim. A token that *is*
+bound is still strictly matched against the presented certificate, so a
+bound token can never be used without its certificate. Once strong binding
+is selected it must not be weakened per request.
+
+Rejection reasons
+-----------------
+
+Every rejection is logged at ``WARNING`` level on the
+``authlib.oauth2.rfc8705.validator`` logger with a machine-readable
+``reason``, and produces an ``invalid_token`` response:
+
+- ``missing_cnf``: strong binding is enabled and the token has no ``cnf``.
+- ``invalid_cnf`` / ``missing_x5t_s256``: the claim is malformed.
+- ``invalid_thumbprint`` / ``invalid_thumbprint_length``: the thumbprint
+  is not a base64url-encoded SHA-256 digest.
+- ``missing_client_certificate``: no TLS client certificate was presented.
+- ``invalid_certificate_chain``: the peer chain does not contain exactly
+  one leaf certificate.
+- ``empty_client_certificate``: the presented certificate is empty.
+- ``certificate_mismatch``: the presented certificate does not match the
+  token binding, including a token replayed from another device.
+
+API Reference
+-------------
+
+.. autoclass:: CertificateBoundJWTBearerTokenValidator
+    :member-order: bysource
+    :members:
+
+.. autoclass:: CertificateBoundTokenMixin
+    :member-order: bysource
+    :members:
+
+.. autoclass:: CertificateBindingError
+    :members:
+
+.. autofunction:: calculate_x5t_s256
+
+.. autofunction:: normalize_x5t_s256

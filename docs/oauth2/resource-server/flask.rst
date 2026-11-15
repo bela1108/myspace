@@ -189,6 +189,42 @@ Because each issuer has its own validator instance, nothing is shared between
 requests. Fetch and cache each issuer's JWKS as described in
 :class:`~authlib.oauth2.rfc9068.JWTBearerTokenValidator`.
 
+Certificate-bound access tokens (mTLS)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When the authorization server issues :rfc:`8705` certificate-bound access
+tokens, the ``cnf`` claim carries the ``x5t#S256`` thumbprint of the client
+certificate. Use
+:class:`~authlib.oauth2.rfc8705.CertificateBoundJWTBearerTokenValidator` and
+return the DER certificate chain from the TLS session, never from a header
+forwarded by the gateway:
+
+.. code-block:: python
+
+    from authlib.oauth2.rfc8705 import CertificateBoundJWTBearerTokenValidator
+
+    class MyMTLSValidator(CertificateBoundJWTBearerTokenValidator):
+        def get_jwks(self):
+            return app.config['AUTHORIZATION_SERVER_JWKS']
+
+        def get_tls_peer_cert_chain(self, request):
+            # Set by the WSGI server from the re-terminated TLS session.
+            return request._request.environ.get('myapp.tls_peer_cert_chain')
+
+    require_oauth.register_token_validator(
+        MyMTLSValidator(
+            issuer='https://auth.example.org',
+            resource_server='https://api.example.org',
+        )
+    )
+
+Strong binding is the default: a token without ``cnf``, a missing
+certificate, or a thumbprint mismatch returns ``invalid_token`` with no
+fallback, so replaying the same token from another device fails. Pass
+``enforce_certificate_binding=False`` while migrating to still accept legacy
+unbound tokens; bound tokens keep requiring their certificate. See
+:ref:`specs/rfc8705`.
+
 .. _flask_oauth2_multiple_scopes:
 
 Multiple Scopes
