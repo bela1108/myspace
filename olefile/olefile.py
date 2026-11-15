@@ -91,6 +91,7 @@ __version__ = '0.47'
 __author__  = "Philippe Lagadec"
 
 __all__ = ['isOleFile', 'OleFileIO', 'OleMetadata', 'enable_logging',
+           'OleFileError', 'NotOleFileError',
            'MAGIC', 'STGTY_EMPTY',
            'STGTY_STREAM', 'STGTY_STORAGE', 'STGTY_ROOT', 'STGTY_PROPERTY',
            'STGTY_LOCKBYTES', 'MINIMAL_OLEFILE_SIZE',
@@ -599,7 +600,8 @@ class OleStream(io.BytesIO):
     # the fat chain, and load new sectors on demand instead of
     # loading it all in one go.
 
-    def __init__(self, fp, sect, size, offset, sectorsize, fat, filesize, olefileio):
+    def __init__(self, fp, sect, size, offset, sectorsize, fat, filesize, olefileio,
+                 chain=None):
         """
         Constructor for OleStream class.
 
@@ -611,12 +613,24 @@ class OleStream(io.BytesIO):
         :param fat: array/list of sector indexes (FAT or MiniFAT)
         :param filesize: size of OLE file (for debugging)
         :param olefileio: OleFileIO object containing this stream
+        :param chain: optional pre-validated list of sector indexes. When set,
+            these sectors are read in order instead of following ``fat``.
         :returns: a BytesIO instance containing the OLE stream
         """
         log.debug('OleStream.__init__:')
         log.debug('  sect=%d (%X), size=%d, offset=%d, sectorsize=%d, len(fat)=%d, fp=%s'
             %(sect,sect,size,offset,sectorsize,len(fat), repr(fp)))
         self.ole = olefileio
+        # When a full chain is supplied, keep it for callers that need to
+        # inspect what was actually allocated (rather than just the declared
+        # size).
+        self.chain = None if chain is None else list(chain)
+        # Bytes beyond the declared size when the allocation chain is longer
+        # than the declared size.  For valid streams this stays empty.
+        self.tail = b''
+        self.unused_data = b''
+        self.raw_data = b''
+        self.actual_size = 0
         # this check is necessary, otherwise when attempting to open a stream
         # from a closed OleFileIO, a stream of size zero is returned without
         # raising an exception. (see issue #81)
@@ -633,7 +647,11 @@ class OleStream(io.BytesIO):
             # and we keep a record that size was unknown:
             unknown_size = True
             log.debug('  stream with UNKNOWN SIZE')
-        nb_sectors = (size + (sectorsize-1)) // sectorsize
+        declared_nb_sectors = (size + (sectorsize-1)) // sectorsize
+        if self.chain is not None:
+            nb_sectors = len(self.chain)
+        else:
+            nb_sectors = declared_nb_sectors
         log.debug('nb_sectors = %d' % nb_sectors)
         # This number should (at least) be less than the total number of
         # sectors in the given FAT:
@@ -651,6 +669,8 @@ class OleStream(io.BytesIO):
         # loop to avoid DoS attacks:
         for i in range(nb_sectors):
             log.debug('Reading stream sector[%d] = %Xh' % (i, sect))
+            if self.chain is not None:
+                sect = self.chain[i]
             # Sector index may be ENDOFCHAIN, but only if size was unknown
             if sect == ENDOFCHAIN:
                 if unknown_size:
@@ -693,21 +713,32 @@ class OleStream(io.BytesIO):
                 log.debug('seek+len(read)=%d' % (offset+sectorsize*sect+len(sector_data)))
                 self.ole._raise_defect(DEFECT_INCORRECT, 'incomplete OLE sector')
             data.append(sector_data)
-            # jump to next sector in the FAT:
-            try:
-                sect = fat[sect] & 0xFFFFFFFF  # JYTHON-WORKAROUND
-            except IndexError:
-                # [PL] if pointer is out of the FAT an exception is raised
-                self.ole._raise_defect(DEFECT_INCORRECT, 'incorrect OLE FAT, sector index out of range')
-                # stop reading here if the exception is ignored:
-                break
+            # jump to next sector in the FAT, unless a pre-validated chain was
+            # supplied:
+            if self.chain is None:
+                try:
+                    sect = fat[sect] & 0xFFFFFFFF  # JYTHON-WORKAROUND
+                except IndexError:
+                    # [PL] if pointer is out of the FAT an exception is raised
+                    self.ole._raise_defect(DEFECT_INCORRECT, 'incorrect OLE FAT, sector index out of range')
+                    # stop reading here if the exception is ignored:
+                    break
         # [PL] Last sector should be a "end of chain" marker:
         # if sect != ENDOFCHAIN:
         #     raise IOError('incorrect last sector index in OLE stream')
         data = b"".join(data)
+        self.raw_data = data
+        self.actual_size = len(data)
         # Data is truncated to the actual stream size:
         if len(data) >= size:
             log.debug('Read data of length %d, truncated to stream size %d' % (len(data), size))
+            # Keep the part of the real chain that lies beyond the declared
+            # size when the allocation itself is longer than the declared
+            # size. This is the tail an attacker may have tried to hide.
+            # Padding inside a valid final sector is not an allocation tail.
+            if self.chain is not None and nb_sectors > declared_nb_sectors:
+                self.tail = data[size:]
+                self.unused_data = self.tail
             data = data[:size]
             # actual stream size is stored for future use:
             self.size = size
@@ -852,6 +883,8 @@ class OleDirectoryEntry:
                 self.is_minifat = False
             ole_file._check_duplicate_stream(self.isectStart, self.is_minifat)
         self.sect_chain = None
+        # Set when a mini stream's allocated chain is longer than its size.
+        self.has_tail = False
 
     def build_sect_chain(self, ole_file):
         """
@@ -1102,6 +1135,9 @@ class OleFileIO:
         self.mini_stream_cutoff_size = None
         self.minifat = None
         self.minifatsect = None
+        self._minifat_validated = False
+        self._minifat_chains = {}
+        self._ministream_chain = None
         # TODO: duplicates?
         self.minisectorcutoff = None
         self.minisectorsize = None
@@ -1653,6 +1689,8 @@ class OleFileIO:
         """
         Load the MiniFAT table.
         """
+        if self._minifat_validated:
+            return
         # MiniFAT is stored in a standard  sub-stream, pointed to by a header
         # field.
         # NOTE: there are two sizes to take into account for this stream:
@@ -1672,7 +1710,8 @@ class OleFileIO:
             # This is not really a problem, but may indicate a wrong implementation:
             self._raise_defect(DEFECT_INCORRECT, 'OLE MiniStream is larger than MiniFAT')
         # In any case, first read stream_size:
-        s = self._open(self.minifatsect, stream_size, force_FAT=True).read()
+        s = self._read_fat_chain_data(
+            self.minifatsect, self.num_mini_fat_sectors, 'MiniFAT')
         # [PL] Old code replaced by an array:
         #self.minifat = [i32(s, i) for i in range(0, len(s), 4)]
         self.minifat = self.sect2array(s)
@@ -1680,10 +1719,189 @@ class OleFileIO:
         log.debug('MiniFAT shrunk from %d to %d sectors' % (len(self.minifat), nb_minisectors))
         self.minifat = self.minifat[:nb_minisectors]
         log.debug('loadminifat(): len=%d' % len(self.minifat))
+        # The root storage's MiniStream lives in the ordinary FAT. Validate
+        # that its allocation chain is bounded, loop-free and contiguous
+        # before any mini sector can be mapped through it.
+        self._validate_ministream_chain()
+        # Validate every small-stream chain before exposing any MiniFAT data.
+        self._validate_minifat()
+        self._minifat_validated = True
         # Display the FAT contents only if the logging level is debug:
         if log.isEnabledFor(logging.DEBUG):
             log.debug('\nMiniFAT:')
             self.dumpfat(self.minifat)
+
+    def _read_fat_chain_data(self, start, nb_sectors, label):
+        """
+        Read a sequence of ordinary FAT sectors, validating the chain first.
+
+        This is deliberately used only for format metadata (the MiniFAT
+        stream).  User streams keep the historical OleStream behaviour.
+        """
+        if nb_sectors == 0:
+            return b''
+        fat_len = len(self.fat)
+        if start < 0 or start >= fat_len or start in (FATSECT, DIFSECT, ENDOFCHAIN, FREESECT):
+            self._raise_defect(DEFECT_FATAL, 'invalid %s start sector' % label)
+            return b''
+        chain = []
+        seen = set()
+        sect = start
+        while len(chain) < nb_sectors:
+            if sect == ENDOFCHAIN:
+                self._raise_defect(DEFECT_FATAL, '%s chain is shorter than declared size' % label)
+                return b''
+            if sect in seen:
+                self._raise_defect(DEFECT_FATAL, 'loop in %s FAT chain' % label)
+                return b''
+            if sect < 0 or sect >= fat_len:
+                self._raise_defect(DEFECT_FATAL, '%s FAT sector index out of range' % label)
+                return b''
+            chain.append(sect)
+            seen.add(sect)
+            next_sect = self.fat[sect] & 0xFFFFFFFF
+            if next_sect == FREESECT:
+                self._raise_defect(DEFECT_FATAL, '%s FAT chain contains FREESECT' % label)
+                return b''
+            sect = next_sect
+        if sect != ENDOFCHAIN:
+            self._raise_defect(
+                DEFECT_INCORRECT,
+                '%s FAT chain is longer than declared size; tail preserved' % label)
+        return b''.join(self.getsect(sector) for sector in chain)
+
+    def _validate_ministream_chain(self):
+        """
+        Validate the FAT chain that backs the root storage's ministream.
+
+        Mini sector numbers are offsets into this stream, so the stream must
+        be fully mapped before the MiniFAT can be trusted.  The chain must be
+        loop-free, stay inside the FAT and consist of consecutive sectors.
+        """
+        root = self.root
+        if root is None:
+            return
+        size = root.size
+        self._ministream_chain = []
+        if size == 0:
+            return
+        expected = (size + self.sector_size - 1) // self.sector_size
+        start = root.isectStart
+        fat_len = len(self.fat)
+        if start < 0 or start >= fat_len or start in (FATSECT, DIFSECT, ENDOFCHAIN, FREESECT):
+            self._raise_defect(DEFECT_FATAL, 'invalid root ministream start sector')
+            return
+        chain = []
+        seen = set()
+        sect = start
+        tail_marked = False
+        while sect != ENDOFCHAIN:
+            if len(chain) >= expected and not tail_marked:
+                tail_marked = True
+                self._raise_defect(
+                    DEFECT_INCORRECT,
+                    'root ministream declared size is smaller than its FAT chain; tail preserved')
+            if sect in seen:
+                self._raise_defect(DEFECT_FATAL, 'loop in root ministream FAT chain')
+                return
+            if sect < 0 or sect >= fat_len:
+                self._raise_defect(DEFECT_FATAL, 'root ministream FAT sector index out of range')
+                return
+            if chain and sect != chain[-1] + 1:
+                self._raise_defect(DEFECT_FATAL, 'root ministream FAT chain is not contiguous')
+                return
+            seen.add(sect)
+            chain.append(sect)
+            next_sect = self.fat[sect] & 0xFFFFFFFF
+            if next_sect == FREESECT:
+                self._raise_defect(DEFECT_FATAL, 'root ministream FAT chain contains FREESECT')
+                return
+            sect = next_sect
+            if len(chain) > fat_len:
+                self._raise_defect(DEFECT_FATAL, 'root ministream FAT chain exceeds FAT length')
+                return
+        if len(chain) < expected:
+            self._raise_defect(DEFECT_FATAL, 'root ministream FAT chain is shorter than declared size')
+        self._ministream_chain = chain
+
+    def _build_minifat_chain(self, start, owners, entry=None):
+        """
+        Follow and validate a mini sector chain.
+
+        ``owners`` maps each mini sector to its directory entry; it is shared
+        between all small streams so overlapping chains are detected.
+        """
+        max_mini = len(self.minifat)
+        chain = []
+        seen = set()
+        sect = start
+        while sect != ENDOFCHAIN:
+            if sect in seen:
+                self._raise_defect(DEFECT_FATAL, 'loop in MiniFAT chain')
+                break
+            if sect < 0 or sect >= max_mini:
+                self._raise_defect(
+                    DEFECT_FATAL,
+                    'MiniFAT chain references a sector outside the root ministream')
+                break
+            if len(chain) >= max_mini:
+                self._raise_defect(DEFECT_FATAL, 'MiniFAT chain exceeds MiniFAT length')
+                break
+            if sect in owners:
+                self._raise_defect(DEFECT_FATAL, 'overlapping MiniFAT chains')
+                break
+            owners[sect] = entry
+            seen.add(sect)
+            chain.append(sect)
+            next_sect = self.minifat[sect] & 0xFFFFFFFF
+            if next_sect == FREESECT:
+                self._raise_defect(DEFECT_FATAL, 'MiniFAT chain contains FREESECT')
+                break
+            sect = next_sect
+        return chain
+
+    def _validate_minifat(self):
+        """
+        Validate every MiniFAT slot and every small stream chain.
+
+        A MiniFAT slot may only point at a mini sector inside the root
+        ministream.  Chains must terminate, must not loop and must not share
+        sectors with another stream.
+        """
+        max_mini = len(self.minifat)
+        for index, value in enumerate(self.minifat):
+            value &= 0xFFFFFFFF
+            if value in (ENDOFCHAIN, FREESECT):
+                continue
+            if value < 0 or value >= max_mini:
+                self._raise_defect(
+                    DEFECT_FATAL,
+                    'MiniFAT entry %d references a sector outside the root ministream' % index)
+                return
+
+        owners = {}
+        self._minifat_chains = {}
+        for entry in self.direntries or []:
+            if entry is None or entry.entry_type != STGTY_STREAM:
+                continue
+            if entry.size == 0 or entry.size >= self.minisectorcutoff:
+                continue
+            start = entry.isectStart
+            if start == ENDOFCHAIN:
+                chain = []
+                self._raise_defect(DEFECT_INCORRECT, 'MiniFAT stream has no sectors')
+            else:
+                chain = self._build_minifat_chain(start, owners, entry)
+            expected = (entry.size + self.mini_sector_size - 1) // self.mini_sector_size
+            if len(chain) < expected:
+                self._raise_defect(DEFECT_INCORRECT, 'MiniFAT chain is shorter than declared size')
+            elif len(chain) > expected:
+                entry.has_tail = True
+                self._raise_defect(
+                    DEFECT_INCORRECT,
+                    'MiniFAT chain is longer than declared size; tail preserved')
+            entry.sect_chain = chain
+            self._minifat_chains[start] = chain
 
     def getsect(self, sect):
         """
@@ -1864,10 +2082,31 @@ class OleFileIO:
                     (self.root.isectStart, size_ministream))
                 self.ministream = self._open(self.root.isectStart,
                     size_ministream, force_FAT=True)
+            else:
+                # Make sure the tables were validated even if the root
+                # ministream was opened earlier.
+                self.loadminifat()
+            # Use the complete, pre-validated chain rather than the declared
+            # size.  This prevents a short size from hiding an overlapping or
+            # otherwise forged tail.
+            if size == 0:
+                chain = []
+            else:
+                chain = self._minifat_chains.get(start)
+            if chain is None:
+                if start == ENDOFCHAIN:
+                    chain = []
+                else:
+                    chain = self._build_minifat_chain(start, {})
+                expected = (size + self.minisectorsize - 1) // self.minisectorsize
+                if len(chain) > expected:
+                    self._raise_defect(
+                        DEFECT_INCORRECT,
+                        'MiniFAT chain is longer than declared size; tail preserved')
             return OleStream(fp=self.ministream, sect=start, size=size,
                              offset=0, sectorsize=self.minisectorsize,
                              fat=self.minifat, filesize=self.ministream.size,
-                             olefileio=self)
+                             olefileio=self, chain=chain)
         else:
             # standard stream
             return OleStream(fp=self.fp, sect=start, size=size,
