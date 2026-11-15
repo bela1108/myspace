@@ -60,6 +60,71 @@ class IPAddressMismatch(Mismatch):
     """
 
 
+@attr.s(frozen=True, slots=True)
+class IdentityConflict:
+    """
+    A conflict discovered while selecting a service principal.
+
+    A conflict only carries the SAN *type* (namespace) and the
+    *normalized name* of the offending identity.  It never references the
+    certificate itself, so audit logs cannot leak the full certificate.
+    """
+
+    #: The SAN type / namespace, e.g. ``"DNS"`` or ``"URI"``.
+    san_type: str = attr.ib()
+    #: The normalized identity name (lower-cased ASCII / canonical IP).
+    name: str = attr.ib()
+
+
+class MixedNamespaceConflict(IdentityConflict):
+    """
+    A principal of a SAN type that is mixed with another SAN type within
+    the same policy.
+    """
+
+
+class MultiplePrincipalsConflict(IdentityConflict):
+    """
+    More than one principal matched within a single SAN namespace while
+    the policy requires a unique principal.
+    """
+
+
+class WildcardConflict(IdentityConflict):
+    """
+    A matchable identity contains a wildcard and therefore cannot denote a
+    unique principal.
+    """
+
+
+class IPLiteralConflict(IdentityConflict):
+    """
+    An IP-address literal is masquerading as a DNS host name.
+    """
+
+
+class MissingPrincipalConflict(IdentityConflict):
+    """
+    An obligatory namespace carries no identity at all.
+    """
+
+
+@attr.s(auto_exc=True, slots=True)
+class IdentityPolicyError(Exception):
+    """
+    Service principal selection failed because of enumerable identity
+    conflicts.
+
+    Every conflict is reported; nothing is selected according to SAN
+    traversal order.
+    """
+
+    conflicts: Sequence[IdentityConflict] = attr.ib()
+
+    def __str__(self) -> str:
+        return self.__repr__()
+
+
 @attr.s(auto_exc=True)
 class VerificationError(Exception):
     """

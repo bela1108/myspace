@@ -8,6 +8,7 @@ import ipaddress
 import re
 
 from collections.abc import Sequence
+from enum import Enum
 from typing import Protocol, runtime_checkable
 
 import attr
@@ -15,11 +16,18 @@ import attr
 from .exceptions import (
     CertificateError,
     DNSMismatch,
+    IdentityConflict,
+    IdentityPolicyError,
+    IPLiteralConflict,
     IPAddressMismatch,
     Mismatch,
+    MissingPrincipalConflict,
+    MixedNamespaceConflict,
+    MultiplePrincipalsConflict,
     SRVMismatch,
     URIMismatch,
     VerificationError,
+    WildcardConflict,
 )
 
 
@@ -467,3 +475,290 @@ def _validate_pattern(cert_pattern: bytes) -> None:
 _TRANS_TO_LOWER = bytes.maketrans(
     b"ABCDEFGHIJKLMNOPQRSTUVWXYZ", b"abcdefghijklmnopqrstuvwxyz"
 )
+
+
+# --- Namespaced identity policies --------------------------------------
+
+_SAN_TYPE_NAMES: dict[type[CertificatePattern], str] = {
+    DNSPattern: "DNS",
+    URIPattern: "URI",
+    IPAddressPattern: "IPAddress",
+    SRVPattern: "SRV",
+}
+
+
+@attr.s(frozen=True, slots=True)
+class RawSAN:
+    """
+    A SAN entry kept in its raw, unparsed form together with the SAN
+    type (namespace) it was stored under in the certificate.
+
+    Raw entries let the policy layer inspect values that the regular
+    pattern constructors reject outright -- notably IP-address literals
+    smuggled into a ``dNSName`` slot -- so they can be reported as
+    enumerable conflicts instead of aborting parsing.
+    """
+
+    san_type: str = attr.ib()
+    value: bytes = attr.ib()
+
+    @san_type.validator
+    def _check_san_type(
+        self, attribute: attr.Attribute, value: str
+    ) -> None:
+        if value not in _SAN_TYPE_NAMES.values():
+            msg = f"Unknown SAN type {value!r}."
+            raise ValueError(msg)
+
+    @property
+    def normalized_name(self) -> str:
+        """
+        The lower-cased ASCII name carried by the raw entry.
+        """
+        return self.value.strip().translate(_TRANS_TO_LOWER).decode(
+            "ascii"
+        )
+
+
+class PrincipalRule(Enum):
+    """
+    How a SAN namespace decides which identity is the service principal.
+    """
+
+    #: Fail if more than one distinct principal is present.
+    REQUIRE_UNIQUE = "require-unique"
+    #: Accept every distinct principal within the namespace.
+    ALLOW_MULTIPLE = "allow-multiple"
+
+
+@attr.s(frozen=True, slots=True)
+class NamespacePolicy:
+    """
+    Selection rules for one SAN namespace, i.e. one SAN type.
+
+    Args:
+        san_type: The only SAN type accepted in this namespace.
+        principal_rule: Whether a single unique principal is required.
+        optional: If `True`, an absent identity is allowed instead of
+            raising a MissingPrincipalConflict.
+    """
+
+    san_type: str = attr.ib()
+    principal_rule: PrincipalRule = attr.ib(
+        default=PrincipalRule.REQUIRE_UNIQUE
+    )
+    optional: bool = attr.ib(default=False)
+
+    def __attrs_post_init__(self) -> None:
+        if self.san_type not in _SAN_TYPE_NAMES.values():
+            msg = f"Unknown SAN type {self.san_type!r}."
+            raise ValueError(msg)
+
+
+@attr.s(frozen=True, slots=True)
+class IdentityPolicy:
+    """
+    A namespace-aware identity policy.
+
+    Each namespace policy names the SAN types a caller accepts together
+    with the uniqueness rule applied within that namespace.
+    """
+
+    namespaces: tuple[NamespacePolicy, ...] = attr.ib(converter=tuple)
+
+    @namespaces.validator
+    def _check_namespaces(
+        self,
+        attribute: attr.Attribute,
+        value: tuple[NamespacePolicy, ...],
+    ) -> None:
+        seen: set[str] = set()
+        for namespace in value:
+            if namespace.san_type in seen:
+                msg = (
+                    "Duplicate namespace policy for "
+                    f"{namespace.san_type!r}."
+                )
+                raise ValueError(msg)
+            seen.add(namespace.san_type)
+
+
+@attr.s(frozen=True, slots=True)
+class PrincipalIdentity:
+    """
+    A principal selected within one SAN namespace.
+
+    Only the SAN type and the normalized name are retained; the
+    certificate pattern itself is never referenced.
+    """
+
+    san_type: str = attr.ib()
+    name: str = attr.ib()
+
+
+@attr.s(frozen=True, slots=True)
+class IdentityDecision:
+    """
+    The per-namespace result of applying an IdentityPolicy.
+    """
+
+    principals: tuple[PrincipalIdentity, ...] = attr.ib(converter=tuple)
+
+    def for_namespace(self, san_type: str) -> PrincipalIdentity:
+        """
+        Return the principal selected for *san_type*.
+        """
+        for principal in self.principals:
+            if principal.san_type == san_type:
+                return principal
+
+        msg = f"No principal selected for namespace {san_type!r}."
+        raise KeyError(msg)
+
+
+def _san_type_of(pattern: CertificatePattern) -> str:
+    return _SAN_TYPE_NAMES[type(pattern)]
+
+
+def _normalized_name(pattern: CertificatePattern) -> str:
+    """
+    Return the canonical, lower-cased ASCII name carried by *pattern*.
+    """
+    if isinstance(pattern, DNSPattern):
+        return pattern.pattern.decode("ascii")
+    if isinstance(pattern, IPAddressPattern):
+        return str(pattern.pattern)
+    if isinstance(pattern, URIPattern):
+        return (
+            pattern.protocol_pattern.decode("ascii")
+            + ":"
+            + pattern.dns_pattern.pattern.decode("ascii")
+        )
+
+    return (
+        b"_"
+        + pattern.name_pattern
+        + b"."
+        + pattern.dns_pattern.pattern
+    ).decode("ascii")
+
+
+IdentityPolicyInput = CertificatePattern | RawSAN
+
+
+def verify_identity_policy(
+    policy: IdentityPolicy,
+    cert_patterns: Sequence[IdentityPolicyInput],
+) -> IdentityDecision:
+    """
+    Apply *policy* to *cert_patterns* and select the service principal of
+    every SAN namespace.
+
+    Conflicts are enumerated and raised together; selection never depends
+    on the order of the certificate's SAN entries.
+
+    Args:
+        policy: The namespace policy supplied by the caller.
+        cert_patterns: Patterns (or raw SAN entries) extracted from the
+            peer certificate.
+
+    Returns:
+        An IdentityDecision holding one PrincipalIdentity per present
+        namespace.
+
+    Raises:
+        IdentityPolicyError: If a namespace contains a conflict or an
+            obligatory namespace is absent.  The error only carries SAN
+            types and normalized names, never the full certificate.
+    """
+    if not policy.namespaces:
+        msg = "Identity policy must declare at least one namespace."
+        raise ValueError(msg)
+
+    allowed = {namespace.san_type for namespace in policy.namespaces}
+
+    candidates: dict[str, set[str]] = {
+        namespace.san_type: set() for namespace in policy.namespaces
+    }
+    for pattern in cert_patterns:
+        san_type = (
+            pattern.san_type
+            if isinstance(pattern, RawSAN)
+            else _san_type_of(pattern)
+        )
+        if san_type in allowed:
+            name = (
+                pattern.normalized_name
+                if isinstance(pattern, RawSAN)
+                else _normalized_name(pattern)
+            )
+            candidates[san_type].add(name)
+
+    present = [
+        namespace.san_type
+        for namespace in policy.namespaces
+        if candidates[namespace.san_type]
+    ]
+    mixed_namespaces = len(present) > 1
+
+    conflicts: list[IdentityConflict] = []
+    for namespace in policy.namespaces:
+        names = candidates[namespace.san_type]
+
+        if not names:
+            if not namespace.optional:
+                conflicts.append(
+                    MissingPrincipalConflict(
+                        san_type=namespace.san_type, name=""
+                    )
+                )
+            continue
+
+        ordered = sorted(names)
+
+        if mixed_namespaces:
+            conflicts.extend(
+                MixedNamespaceConflict(namespace.san_type, name)
+                for name in ordered
+            )
+
+        if namespace.san_type == "DNS":
+            conflicts.extend(
+                IPLiteralConflict(namespace.san_type, name)
+                for name in ordered
+                if _is_ip_address(name)
+            )
+
+        conflicts.extend(
+            WildcardConflict(namespace.san_type, name)
+            for name in ordered
+            if "*" in name
+        )
+
+        if (
+            namespace.principal_rule is PrincipalRule.REQUIRE_UNIQUE
+            and len(names) > 1
+        ):
+            conflicts.extend(
+                MultiplePrincipalsConflict(namespace.san_type, name)
+                for name in ordered
+            )
+
+    if conflicts:
+        conflicts.sort(
+            key=lambda conflict: (
+                conflict.san_type,
+                type(conflict).__name__,
+                conflict.name,
+            )
+        )
+        raise IdentityPolicyError(conflicts=conflicts)
+
+    principals: list[PrincipalIdentity] = []
+    for namespace in policy.namespaces:
+        principals.extend(
+            PrincipalIdentity(san_type=namespace.san_type, name=name)
+            for name in sorted(candidates[namespace.san_type])
+        )
+
+    return IdentityDecision(principals=principals)
