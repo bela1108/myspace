@@ -376,6 +376,103 @@ class RegistryKey(object):
     	return self._nkrecord.subkey_number()
 
 
+class DeletedKey(object):
+    """
+    A high level, read-only view of a key recovered from an unallocated
+    or released registry cell.
+
+    Unlike RegistryKey, a DeletedKey never follows pointers out of its own
+    cell, so its values and subkeys are intentionally not exposed: the
+    secondary references stored in a released cell may have been reused or
+    overwritten and must not be trusted.
+    """
+    def __init__(self, candidate):
+        self._candidate = candidate
+
+    def __str__(self):
+        return "Deleted Key %s (%s) at 0x%x" % \
+            (self.name(), self.cell_state(), self.source_offset())
+
+    def __repr__(self):
+        return 'DeletedKey(name="{0}", source_offset="0x{1:x}", state="{2}")'.format(
+            self.name(), self.source_offset(), self.cell_state())
+
+    def candidate(self):
+        """
+        Return the underlying RegistryParse.DeletedKeyCandidate namedtuple.
+        """
+        return self._candidate
+
+    def name(self):
+        """
+        Get the recovered key name as a string.
+        """
+        return self._candidate.name
+
+    def timestamp(self):
+        """
+        Get the recovered last-written timestamp as a Python datetime.
+        """
+        return self._candidate.timestamp
+
+    def source_offset(self):
+        """
+        Get the absolute file offset of the source HBIN cell.
+        """
+        return self._candidate.source_cell_offset
+
+    def data_offset(self):
+        """
+        Get the absolute file offset of the recovered NK record.
+        """
+        return self._candidate.source_data_offset
+
+    def cell_size(self):
+        """
+        Get the unsigned size of the source cell.
+        """
+        return self._candidate.cell_size
+
+    def cell_state(self):
+        """
+        Get the allocation state of the source cell, one of
+        RegistryParse.DELETED_CELL_STATE_FREE or DELETED_CELL_STATE_SLACK.
+        """
+        return self._candidate.cell_state
+
+    def cell_type(self):
+        """
+        Get the recovered cell type signature (currently always the string "nk").
+        """
+        return self._candidate.cell_type
+
+    def parent_offset(self):
+        """
+        Get the absolute file offset of the parent key candidate, or None
+        if the parent reference is out of bounds or otherwise unresolved.
+        """
+        return self._candidate.parent_offset
+
+    def parent_state(self):
+        """
+        Get whether the parent key candidate is live, deleted, or unresolved.
+        """
+        return self._candidate.parent_state
+
+    def parent_name(self):
+        """
+        Get the name of a resolvable live parent key, or None when the
+        parent is deleted, unresolved, or out of bounds.
+        """
+        return self._candidate.parent_name
+
+    def has_ascii_name(self):
+        """
+        Is the recovered key name stored in the ASCII charset?
+        """
+        return self._candidate.has_ascii_name
+
+
 class Registry(object):
     """
     A class for parsing and reading from a Windows Registry file.
@@ -450,6 +547,16 @@ class Registry(object):
         # are there any other keys at this
         # level? is this the name of the hive?
         return RegistryKey(self._regf.first_key()).find_key(path)
+
+    def recover_deleted_keys(self):
+        """
+        Read-only recovery of keys left in released cells or cell slack.
+        Returns a stable list of DeletedKey objects ordered by source cell
+        offset and last-written time. Normal key browsing and transaction
+        log recovery are unaffected; nothing in the hive is modified.
+        """
+        candidates = RegistryParse.DeletedKeyRecovery(self._regf).recover()
+        return [DeletedKey(candidate) for candidate in candidates]
 
 def print_all(key):
     if len(key.subkeys()) == 0:

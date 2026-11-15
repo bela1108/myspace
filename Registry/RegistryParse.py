@@ -1970,3 +1970,333 @@ class DirtyPage(RegistryBlock):
         Return the dirty page.
         """
         return self._buf[self._offset : self._offset + self._size]
+
+# Signature of a named key (NK) cell, the only record type recovered here.
+DELETED_CELL_KEY_SIGNATURE = b"nk"
+
+# Cell type reported for recovered named key (NK) records.
+DELETED_CELL_TYPE_KEY = "nk"
+
+# An NK record has a 0x4C byte fixed header followed by the key name.
+MIN_NK_CELL_SIZE = 0x50
+
+# Cell offsets and sizes are 8 byte aligned; signature scans step by 4 bytes.
+CELL_SIZE_ALIGNMENT = 0x8
+CELL_SIGNATURE_ALIGNMENT = 0x4
+
+# Where the first cell starts inside an HBIN (after its 0x20 byte header).
+HBIN_FIRST_CELL_REL_OFFSET = 0x20
+
+# Allocation state of the source cell that hosts a recovered record.
+DELETED_CELL_STATE_FREE = "free"
+DELETED_CELL_STATE_SLACK = "slack"
+
+# State of the parent key candidate referenced by a recovered NK record.
+DELETED_PARENT_LIVE = "live"
+DELETED_PARENT_DELETED = "deleted"
+DELETED_PARENT_UNRESOLVED = "unresolved"
+
+
+DeletedKeyCandidate = namedtuple("DeletedKeyCandidate", [
+    "source_cell_offset",
+    "source_data_offset",
+    "cell_size",
+    "cell_state",
+    "cell_type",
+    "name",
+    "timestamp",
+    "has_ascii_name",
+    "parent_relative_offset",
+    "parent_offset",
+    "parent_state",
+    "parent_name",
+])
+
+
+class DeletedKeyRecovery(object):
+    """
+    Read-only recovery of named key (NK) records left in unallocated
+    registry space (released HBIN cells and cell-chain slack).
+
+    The scanner never follows pointers stored inside a released cell to
+    build values or subkeys: only the inline NK fields (name, last-written
+    timestamp, and the parent relative offset) are interpreted, and the
+    parent offset is validated against the hive bin layout rather than
+    dereferenced through the freed cell. Every candidate keeps the absolute
+    offset of its source cell so conflicting or duplicate interpretations
+    remain attributable to raw file locations.
+    """
+    def __init__(self, regf):
+        """
+        Constructor.
+        Arguments:
+        - `regf`: A parsed REGFBlock describing the primary hive to scan,
+              or the raw hive byte string, which is parsed as a REGFBlock.
+        """
+        if not isinstance(regf, REGFBlock):
+            regf = REGFBlock(regf, 0, False)
+        self._regf = regf
+        self._buf = regf._buf
+        self._first_hbin_offset = regf.first_hbin_offset()
+        self._hbin_ranges = []
+        self._live_nk_cells = {}
+        self._candidates = None
+
+    def recover(self):
+        """
+        Scan every HBIN for recoverable key records.
+        Returns a deterministically ordered list of DeletedKeyCandidate
+        named tuples, sorted by source cell offset and last-written time.
+        Repeated calls yield identical results and never mutate the buffer.
+        """
+        self._index_hbins()
+        self._index_live_keys()
+
+        candidates = []
+        seen_cell_offsets = set()
+        for cell_state, region_start, region_end in self._unallocated_regions():
+            for data_offset in range(region_start + 0x4, region_end - 0x2,
+                                    CELL_SIGNATURE_ALIGNMENT):
+                candidate = self._parse_candidate(data_offset,
+                                                  cell_state,
+                                                  region_end)
+                if candidate is None:
+                    continue
+                # The same physical cell is only reported once, even if more
+                # than one signature-like pattern matches inside it.
+                if candidate.source_cell_offset in seen_cell_offsets:
+                    continue
+                seen_cell_offsets.add(candidate.source_cell_offset)
+                candidates.append(candidate)
+
+        candidates.sort(key=lambda c: (c.source_cell_offset,
+                                       c.timestamp,
+                                       c.name))
+        self._resolve_parents(candidates)
+        self._candidates = candidates
+        return list(candidates)
+
+    def deleted_key_candidates(self):
+        """
+        Convenience accessor that runs the scan on first use and returns
+        a copy of the stable candidate list.
+        """
+        if self._candidates is None:
+            self.recover()
+        return list(self._candidates)
+
+    def _index_hbins(self):
+        for hbin in self._regf.hbins():
+            self._hbin_ranges.append((hbin.offset(), hbin._offset_next_hbin))
+
+    def _index_live_keys(self):
+        """
+        Record the cell offsets of NKRecords reachable from the root key.
+        The live tree walk is best effort: a damaged subkey list must not
+        prevent unallocated-space recovery from running.
+        """
+        try:
+            queue = [self._regf.first_key()]
+        except (ParseException, RegistryStructureDoesNotExist, struct.error):
+            return
+
+        while queue:
+            nk = queue.pop()
+            cell_offset = nk.offset()  # NK data (signature) offset
+            self._live_nk_cells[cell_offset] = nk
+            try:
+                if nk.subkey_number() == 0:
+                    continue
+                for child in nk.subkey_list().keys():
+                    queue.append(child)
+            except (ParseException, RegistryStructureDoesNotExist,
+                    struct.error, IndexError):
+                continue
+
+    def _unallocated_regions(self):
+        """
+        Walk each HBIN cell chain. Released cells are reported as free
+        regions, and the released cell owns its whole footprint, so records
+        carved inside it stay attributed to that free cell. Space the chain
+        cannot account for (a broken size or a truncated chain) is reported
+        as slack. Regions never overlap allocated cells.
+        """
+        regions = []
+        for hbin_start, hbin_end in self._hbin_ranges:
+            cell_offset = hbin_start + HBIN_FIRST_CELL_REL_OFFSET
+            while cell_offset + 0x4 <= hbin_end:
+                signed_size = struct.unpack_from(str("<i"),
+                                                 self._buf,
+                                                 cell_offset)[0]
+                if signed_size == 0:
+                    regions.append((DELETED_CELL_STATE_SLACK,
+                                    cell_offset, hbin_end))
+                    break
+
+                cell_size = abs(signed_size)
+                cell_end = cell_offset + cell_size
+                if cell_size < 0x4 or cell_end > hbin_end or \
+                        cell_size % CELL_SIZE_ALIGNMENT != 0:
+                    regions.append((DELETED_CELL_STATE_SLACK,
+                                    cell_offset, hbin_end))
+                    break
+
+                if signed_size > 0:
+                    regions.append((DELETED_CELL_STATE_FREE,
+                                    cell_offset, cell_end))
+
+                cell_offset = cell_end
+
+        return regions
+
+    def _hbin_range_for_offset(self, offset):
+        for hbin_start, hbin_end in self._hbin_ranges:
+            if hbin_start <= offset < hbin_end:
+                return (hbin_start, hbin_end)
+        return None
+
+    def _parse_candidate(self, data_offset, cell_state, region_end):
+        """
+        Validate a potential NK record whose signature starts at
+        `data_offset`. The owning HBIN cell begins four bytes earlier, at
+        its size dword. Validation covers the signature, cell size, relative
+        offset plausibility, and hive bin boundaries; pointers inside the
+        released cell are never followed.
+        """
+        if self._buf[data_offset:data_offset + 0x2] != \
+                DELETED_CELL_KEY_SIGNATURE:
+            return None
+
+        cell_offset = data_offset - 0x4
+        if cell_offset % CELL_SIZE_ALIGNMENT != 0:
+            return None
+
+        if data_offset in self._live_nk_cells:
+            return None
+
+        hbin_range = self._hbin_range_for_offset(cell_offset)
+        if hbin_range is None:
+            return None
+
+        signed_size = struct.unpack_from(str("<i"),
+                                         self._buf,
+                                         cell_offset)[0]
+        flags = struct.unpack_from(str("<H"), self._buf, data_offset + 0x2)[0]
+        name_length = struct.unpack_from(str("<H"),
+                                         self._buf,
+                                         data_offset + 0x48)[0]
+        # Minimum footprint that still contains the fixed NK header and name.
+        needed_size = (0x4 + 0x4C + name_length +
+                       (CELL_SIZE_ALIGNMENT - 1)) & ~(CELL_SIZE_ALIGNMENT - 1)
+        needed_size = max(needed_size, MIN_NK_CELL_SIZE)
+
+        cell_size = abs(signed_size)
+        cell_end = cell_offset + cell_size
+        size_is_valid = (
+            signed_size != 0
+            and cell_size >= needed_size
+            and cell_size % CELL_SIZE_ALIGNMENT == 0
+            and cell_end <= region_end
+            and cell_end <= hbin_range[1]
+        )
+        if not size_is_valid:
+            # Slack records commonly lose their size dword when the cell
+            # chain is rebuilt. Derive the footprint from the inline header
+            # instead, then validate it against the region and HBIN bounds.
+            cell_size = needed_size
+            cell_end = cell_offset + cell_size
+            if cell_end > region_end or cell_end > hbin_range[1]:
+                return None
+
+        name = self._read_candidate_name(data_offset, cell_size, flags)
+        if name is None:
+            return None
+
+        try:
+            timestamp = parse_windows_timestamp(
+                struct.unpack_from(str("<Q"),
+                                   self._buf,
+                                   data_offset + 0x4)[0])
+        except (OverflowError, ValueError, OSError, struct.error):
+            return None
+        if timestamp.year < 1601 or timestamp.year > 9999:
+            return None
+
+        parent_relative = struct.unpack_from(str("<I"),
+                                             self._buf,
+                                             data_offset + 0x10)[0]
+        parent_offset = self._first_hbin_offset + parent_relative
+        if self._hbin_range_for_offset(parent_offset) is None:
+            parent_offset = None
+
+        return DeletedKeyCandidate(
+            source_cell_offset=cell_offset,
+            source_data_offset=data_offset,
+            cell_size=cell_size,
+            cell_state=cell_state,
+            cell_type=DELETED_CELL_TYPE_KEY,
+            name=name,
+            timestamp=timestamp,
+            has_ascii_name=(flags & 0x20) > 0,
+            parent_relative_offset=parent_relative,
+            parent_offset=parent_offset,
+            parent_state=DELETED_PARENT_UNRESOLVED,
+            parent_name=None,
+        )
+
+    def _read_candidate_name(self, data_offset, cell_size, flags):
+        header_end = data_offset + 0x4C
+        if header_end >= data_offset + cell_size:
+            return None
+
+        name_length = struct.unpack_from(str("<H"),
+                                         self._buf,
+                                         data_offset + 0x48)[0]
+        if name_length == 0 or header_end + name_length > data_offset + cell_size:
+            return None
+
+        raw_name = self._buf[header_end:header_end + name_length]
+        try:
+            if flags & 0x20:
+                name = raw_name.decode("windows-1252")
+            else:
+                if name_length % 2 != 0:
+                    return None
+                name = raw_name.decode("utf-16le")
+        except UnicodeDecodeError:
+            return None
+
+        if not name or "\x00" in name:
+            return None
+        if any(ord(character) < 0x20 and character != "\t"
+               for character in name):
+            return None
+        return name
+
+    def _resolve_parents(self, candidates):
+        # Parent references point at NK data (signature) offsets, so index
+        # the recovered records by their source data offsets.
+        deleted_offsets = dict((candidate.source_data_offset, candidate)
+                               for candidate in candidates)
+
+        for index, candidate in enumerate(candidates):
+            parent_offset = candidate.parent_offset
+            if parent_offset is None:
+                continue
+
+            if parent_offset in self._live_nk_cells:
+                parent_nk = self._live_nk_cells[parent_offset]
+                try:
+                    parent_name = parent_nk.name()
+                except (ParseException, struct.error, UnicodeDecodeError):
+                    parent_name = None
+                candidates[index] = candidate._replace(
+                    parent_state=DELETED_PARENT_LIVE,
+                    parent_name=parent_name)
+            elif parent_offset in deleted_offsets:
+                candidates[index] = candidate._replace(
+                    parent_state=DELETED_PARENT_DELETED,
+                    parent_name=deleted_offsets[parent_offset].name)
+            elif self._buf[parent_offset + 0x4:parent_offset + 0x6] != \
+                    DELETED_CELL_KEY_SIGNATURE:
+                candidates[index] = candidate._replace(parent_offset=None)
