@@ -98,12 +98,19 @@ __all__ = ['isOleFile', 'OleFileIO', 'OleMetadata', 'enable_logging',
            'DEFECT_FATAL', 'DEFAULT_PATH_ENCODING',
            'MAXREGSECT', 'DIFSECT', 'FATSECT', 'ENDOFCHAIN', 'FREESECT',
            'MAXREGSID', 'NOSTREAM', 'UNKNOWN_SIZE', 'WORD_CLSID',
-           'OleFileIONotClosed'
+           'OleFileIONotClosed', 'OleFileError', 'NotOleFileError',
+           'PATH_SEPARATOR', 'MAX_OLE_PATH_LENGTH',
+           'PATH_CONFLICT_TYPE_COLLISION', 'PATH_CONFLICT_CANONICAL_COLLISION',
+           'PATH_CONFLICT_DUPLICATE_NAME', 'PATH_CONFLICT_EMPTY_COMPONENT',
+           'PATH_CONFLICT_PATH_TOO_LONG', 'PATH_CONFLICT_REASONS',
+           'OlePathError', 'InvalidPathError', 'AmbiguousPathError',
+           'PathConflict', 'canonical_name', 'split_path'
 ]
 
 import io
 import sys
 import struct, array, os.path, datetime, logging, warnings, traceback
+import unicodedata
 
 #=== COMPATIBILITY WORKAROUNDS ================================================
 
@@ -267,6 +274,39 @@ DEFECT_FATAL =     40    # an error which cannot be ignored, parsing is
 # (this is used in isOleFile and OleFileIO.open)
 MINIMAL_OLEFILE_SIZE = 1536
 
+# Separator used to build canonical paths inside the OLE directory tree:
+# (the backslash is the native MS-CFB separator, while olefile uses "/" in
+# public APIs)
+PATH_SEPARATOR = '/'
+
+# Maximum length of a canonical OLE path, in characters. MS-CFB directory
+# entries are limited to 31 characters per component, and Windows limits full
+# structured-storage paths to 260 characters:
+MAX_OLE_PATH_LENGTH = 260
+
+# Reasons recorded in the path-conflict diagnostics:
+# two entries of different types (storage vs stream) share one canonical name
+# in the same parent storage:
+PATH_CONFLICT_TYPE_COLLISION = 'type_collision'
+# two or more entries have distinct display names but the same canonical name
+# (different case, Unicode normalization or other homoglyphs):
+PATH_CONFLICT_CANONICAL_COLLISION = 'canonical_collision'
+# two entries with the exact same display name are stored in the same parent:
+PATH_CONFLICT_DUPLICATE_NAME = 'duplicate_name'
+# an entry name is empty, or a queried path contains an empty component:
+PATH_CONFLICT_EMPTY_COMPONENT = 'empty_component'
+# a canonical path exceeds MAX_OLE_PATH_LENGTH:
+PATH_CONFLICT_PATH_TOO_LONG = 'path_too_long'
+
+#: tuple of all known path-conflict reasons, for validation and iteration:
+PATH_CONFLICT_REASONS = (
+    PATH_CONFLICT_TYPE_COLLISION,
+    PATH_CONFLICT_CANONICAL_COLLISION,
+    PATH_CONFLICT_DUPLICATE_NAME,
+    PATH_CONFLICT_EMPTY_COMPONENT,
+    PATH_CONFLICT_PATH_TOO_LONG,
+)
+
 #=== FUNCTIONS ===============================================================
 
 def isOleFile (filename=None, data=None):
@@ -402,6 +442,113 @@ class NotOleFileError(OleFileError):
     Error raised when the opened file is not an OLE file.
     """
     pass
+
+
+class OlePathError(OleFileError):
+    """
+    Base error for invalid or ambiguous canonical OLE paths.
+    """
+    pass
+
+
+class InvalidPathError(OlePathError):
+    """
+    Error raised when a queried path contains an empty component or is longer
+    than MAX_OLE_PATH_LENGTH.
+    """
+    pass
+
+
+class AmbiguousPathError(OlePathError):
+    """
+    Error raised when a queried path matches several directory entries (a
+    canonical-name collision), so that no single entry can be selected.
+
+    The matching entries and their traceable identities are available in the
+    ``entries`` attribute.
+    """
+    def __init__(self, message, entries=None):
+        OleFileError.__init__(self, message)
+        #: list of OleDirectoryEntry objects matching the ambiguous path:
+        self.entries = list(entries) if entries else []
+
+
+class PathConflict(object):
+    """
+    Diagnostic describing one path-identity problem detected in an OLE file.
+
+    :ivar str reason: one of the PATH_CONFLICT_* constants
+    :ivar tuple canonical_path: canonical path tuple of the affected location
+    :ivar list entries: OleDirectoryEntry objects involved in the conflict
+    :ivar str message: human-readable description
+    """
+    def __init__(self, reason, canonical_path, entries, message):
+        self.reason = reason
+        self.canonical_path = tuple(canonical_path)
+        self.entries = list(entries) if entries else []
+        self.message = message
+
+    def __repr__(self):
+        return 'PathConflict(%r, %r, %d entry/entries)' % (
+            self.reason, PATH_SEPARATOR.join(self.canonical_path),
+            len(self.entries))
+
+    def __eq__(self, other):
+        if not isinstance(other, PathConflict):
+            return NotImplemented
+        return (self.reason == other.reason
+                and self.canonical_path == other.canonical_path
+                and [entry.sid for entry in self.entries]
+                    == [entry.sid for entry in other.entries])
+
+    def __ne__(self, other):
+        result = self.__eq__(other)
+        if result is NotImplemented:
+            return result
+        return not result
+
+
+def canonical_name(name):
+    """
+    Return the stable canonical identity of one OLE directory component.
+
+    The original display name is always preserved on the directory entry:
+    this function only produces the identity used for lookups and collision
+    detection. It applies Unicode NFC normalization first, then the OLE
+    case-folding strategy (case-insensitive, matching the MS-CFB red-black
+    tree ordering).
+
+    :param name: raw directory-entry name (unicode or bytes on Python 2.x)
+    :return: canonical unicode name
+    :rtype: str
+    """
+    # Python 2.x may pass byte strings encoded with path_encoding:
+    if isinstance(name, bytes):
+        try:
+            name = name.decode('utf-8')
+        except Exception:
+            name = name.decode('latin-1', 'replace')
+    name = unicodedata.normalize('NFC', name)
+    if hasattr(name, 'casefold'):
+        return name.casefold()
+    # Python 2.x fallback:
+    return name.lower()
+
+
+def split_path(filename):
+    """
+    Normalize a public path argument into a tuple of raw component names,
+    following the olefile "/" separator rule.
+
+    :param filename: either a "/"-separated string or a list/tuple of names
+    :return: tuple of component name strings
+    """
+    if isinstance(filename, basestring):
+        components = filename.split(PATH_SEPARATOR)
+    else:
+        components = list(filename)
+    return tuple(components)
+
 
 class OleMetadata:
     """
@@ -775,6 +922,11 @@ class OleDirectoryEntry:
         # name in lowercase: used to quickly find an entry, and to detect
         # duplicates
         self.kids_dict = {}
+        # kids_canonical maps each canonical child name to the full list of
+        # matching entries: unlike kids_dict it keeps every entry so that
+        # canonical-name collisions can be diagnosed instead of silently
+        # dropping all but one of them.
+        self.kids_canonical = {}
         # flag used to detect if the entry is referenced more than once in
         # directory:
         self.used = False
@@ -816,6 +968,14 @@ class OleDirectoryEntry:
         # [MS-CFB] 2.6.1: "The following characters are illegal and MUST NOT be part of the name: '/', '\', ':', '!'."
         # name is converted from UTF-16LE to the path encoding specified in the OleFileIO:
         self.name = ole_file._decode_utf16_str(self.name_utf16)
+        # Stable canonical identity of this component: Unicode NFC plus the
+        # case-folding strategy. The display name above is always preserved.
+        self.canonical_name = canonical_name(self.name)
+        # Canonical/display paths and identity are filled in by
+        # OleFileIO._build_path_indexes once the whole storage tree is loaded:
+        self.canonical_path = None
+        self.display_path = None
+        self.identity = None
 
         log.debug('DirEntry SID=%d: %s' % (self.sid, repr(self.name)))
         log.debug(' - type: %d' % self.entry_type)
@@ -935,15 +1095,23 @@ class OleDirectoryEntry:
             # (cf. Wikipedia for details)
             # First walk through left side of the tree:
             self.append_kids(child.sid_left)
-            # Check if its name is not already used (case-insensitive):
+            # Check if its canonical name is not already used. A collision
+            # remains a defect for strict callers, but the entry is still
+            # kept: the structured diagnostics and ambiguity-safe lookups in
+            # OleFileIO need every colliding entry instead of only the last.
             name_lower = child.name.lower()
-            if name_lower in self.kids_dict:
+            canonical = child.canonical_name
+            if canonical in self.kids_canonical:
+                # any case/normalization/homoglyph collision is a defect for
+                # strict callers; the entry is still kept so relaxed callers
+                # can diagnose it and lookups can refuse to pick one blindly.
                 self.olefile._raise_defect(DEFECT_INCORRECT,
                     "Duplicate filename in OLE storage")
             # Then the child_sid OleDirectoryEntry object is appended to the
             # kids list and dictionary:
             self.kids.append(child)
             self.kids_dict[name_lower] = child
+            self.kids_canonical.setdefault(canonical, []).append(child)
             # Finally walk through right side of the tree:
             self.append_kids(child.sid_right)
             # Afterwards build kid's own tree if it's also a storage:
@@ -1078,6 +1246,9 @@ class OleFileIO:
         #: list of defects/issues not raised as exceptions:
         #: tuples of (exception type, message)
         self.parsing_issues = []
+        #: structured diagnostics for canonical-path conflicts:
+        #: list of PathConflict objects (see get_path_conflicts)
+        self.path_conflicts = []
         self.write_mode = write_mode
         self.path_encoding = path_encoding
         # initialize all attributes to default values:
@@ -1807,6 +1978,8 @@ class OleFileIO:
         #     self._load_direntry(i)
         # read and build all storage trees, starting from the root:
         self.root.build_storage_tree()
+        # assign canonical/display paths and collect path-conflict diagnostics:
+        self._build_path_indexes()
 
     def _load_direntry (self, sid):
         """
@@ -1832,6 +2005,142 @@ class OleFileIO:
         entry = self.directory_fp.read(128)
         self.direntries[sid] = OleDirectoryEntry(entry, sid, self)
         return self.direntries[sid]
+
+    def _record_path_conflict(self, reason, canonical_path, entries, message):
+        """
+        Record one structured path-identity diagnostic.
+
+        :param reason: one of the PATH_CONFLICT_* constants
+        :param canonical_path: tuple of canonical component names
+        :param entries: list of OleDirectoryEntry objects involved
+        :param message: human-readable description
+        """
+        conflict = PathConflict(reason, canonical_path, entries, message)
+        self.path_conflicts.append(conflict)
+        log.warning('Path conflict (%s): %s' % (reason, message))
+
+    def _build_path_indexes(self):
+        """
+        Walk the loaded storage tree to give every entry a stable canonical
+        identity (canonical path and slash-joined identity string), while
+        preserving its original display path, and to collect path-conflict
+        diagnostics: same-name storage/stream entries, canonical-name
+        collisions (different case or Unicode homoglyphs), empty components
+        and overlong paths.
+        """
+        self.path_conflicts = []
+        self._assign_entry_paths(self.root, (), ())
+
+    def _assign_entry_paths(self, node, canonical_prefix, display_prefix):
+        """
+        Recursive helper of _build_path_indexes: assign paths to one node and
+        its children, then diagnose conflicts among the children.
+
+        :param node: OleDirectoryEntry to process
+        :param canonical_prefix: canonical path tuple of the parent storage
+        :param display_prefix: display path tuple of the parent storage
+        """
+        # The root entry is not part of public paths (matching listdir):
+        if node.entry_type != STGTY_ROOT:
+            canonical_path = canonical_prefix + (node.canonical_name,)
+            display_path = display_prefix + (node.name,)
+            node.canonical_path = canonical_path
+            node.display_path = display_path
+            node.identity = PATH_SEPARATOR.join(canonical_path)
+            if node.canonical_name == '':
+                self._record_path_conflict(
+                    PATH_CONFLICT_EMPTY_COMPONENT, canonical_path, [node],
+                    'directory entry with an empty name: %r' % (display_path,))
+            if len(node.identity) > MAX_OLE_PATH_LENGTH:
+                self._record_path_conflict(
+                    PATH_CONFLICT_PATH_TOO_LONG, canonical_path, [node],
+                    'canonical path is %d characters long, exceeding %d: %r'
+                    % (len(node.identity), MAX_OLE_PATH_LENGTH, node.identity))
+        else:
+            canonical_path = canonical_prefix
+            display_path = display_prefix
+        if node.entry_type in (STGTY_STORAGE, STGTY_ROOT):
+            self._diagnose_child_conflicts(node, canonical_path)
+            for child in node.kids:
+                self._assign_entry_paths(child, canonical_path, display_path)
+
+    def _diagnose_child_conflicts(self, storage, parent_canonical_path):
+        """
+        Detect and record conflicts between the direct children of a storage.
+        """
+        for canonical, entries in storage.kids_canonical.items():
+            if len(entries) < 2:
+                continue
+            canonical_path = parent_canonical_path + (canonical,)
+            display_names = [entry.name for entry in entries]
+            entry_types = set(entry.entry_type for entry in entries)
+            if len(entry_types) > 1:
+                # storage and stream sharing the same name in one directory:
+                self._record_path_conflict(
+                    PATH_CONFLICT_TYPE_COLLISION, canonical_path, entries,
+                    'storage and stream share the canonical name %r '
+                    '(display names: %r)' % (canonical, display_names))
+            if len(set(display_names)) < len(display_names):
+                self._record_path_conflict(
+                    PATH_CONFLICT_DUPLICATE_NAME, canonical_path, entries,
+                    'duplicate display name %r in the same storage'
+                    % display_names)
+            else:
+                self._record_path_conflict(
+                    PATH_CONFLICT_CANONICAL_COLLISION, canonical_path, entries,
+                    'distinct display names %r collapse to canonical name %r'
+                    % (display_names, canonical))
+
+    def get_path_conflicts(self, reason=None):
+        """
+        Return the structured path-conflict diagnostics collected while
+        loading the directory.
+
+        :param reason: optional PATH_CONFLICT_* constant to filter the result
+        :returns: list of PathConflict objects
+        """
+        if reason is None:
+            return list(self.path_conflicts)
+        return [conflict for conflict in self.path_conflicts
+                if conflict.reason == reason]
+
+    def resolve_path(self, filename):
+        """
+        Resolve a public path to the matching directory entries, using
+        canonical component names (Unicode NFC plus case folding).
+
+        :param filename: "/"-separated string or list/tuple of components
+        :returns: list of matching OleDirectoryEntry objects (more than one
+            only for ambiguous canonical collisions)
+        :raises InvalidPathError: if a component is empty or the path is too long
+        :raises IOError: if no entry matches the path
+        :raises AmbiguousPathError: if several entries match at any level
+        """
+        components = split_path(filename)
+        if any(component == '' for component in components):
+            raise InvalidPathError(
+                'path contains an empty component: %r' % (filename,))
+        canonical_components = tuple(
+            canonical_name(component) for component in components)
+        identity = PATH_SEPARATOR.join(canonical_components)
+        if len(identity) > MAX_OLE_PATH_LENGTH:
+            raise InvalidPathError(
+                'canonical path is %d characters long, exceeding %d: %r'
+                % (len(identity), MAX_OLE_PATH_LENGTH, identity))
+        node = self.root
+        for canonical in canonical_components:
+            matches = node.kids_canonical.get(canonical)
+            if not matches:
+                raise IOError('file not found')
+            if len(matches) > 1:
+                raise AmbiguousPathError(
+                    'ambiguous path %r: %d entries match the canonical name %r'
+                    ' (display names: %r)'
+                    % (identity, len(matches), canonical,
+                       [entry.name for entry in matches]),
+                    entries=matches)
+            node = matches[0]
+        return [node]
 
     def dumpdirectory(self):
         """
@@ -1919,8 +2228,10 @@ class OleFileIO:
 
     def _find(self, filename):
         """
-        Returns directory entry of given filename. (openstream helper)
-        Note: this method is case-insensitive.
+        Returns directory entry SID of given filename. (openstream helper)
+        Lookups use canonical component names (Unicode NFC plus case
+        folding), so the query remains case-insensitive while homoglyphs keep
+        distinct, traceable identities.
 
         :param filename: path of stream in storage tree (except root entry), either:
 
@@ -1931,22 +2242,13 @@ class OleFileIO:
 
         :returns: sid of requested filename
         :exception IOError: if file not found
+        :exception InvalidPathError: if the path contains an empty component
+            or is too long
+        :exception AmbiguousPathError: if several entries match the path, in
+            which case no entry is picked arbitrarily
         """
-
-        # if filename is a string instead of a list, split it on slashes to
-        # convert to a list:
-        if isinstance(filename, basestring):
-            filename = filename.split('/')
-        # walk across storage tree, following given path:
-        node = self.root
-        for name in filename:
-            for kid in node.kids:
-                if kid.name.lower() == name.lower():
-                    break
-            else:
-                raise IOError("file not found")
-            node = kid
-        return node.sid
+        entries = self.resolve_path(filename)
+        return entries[0].sid
 
     def openstream(self, filename):
         """
@@ -1962,6 +2264,11 @@ class OleFileIO:
 
         :returns: file object (read-only)
         :exception IOError: if filename not found, or if this is not a stream.
+        :exception InvalidPathError: if the path contains an empty component
+            or is too long.
+        :exception AmbiguousPathError: if several entries match the path: in
+            that case no entry is picked arbitrarily, the caller must resolve
+            the collision (see OleFileIO.path_conflicts).
         """
         sid = self._find(filename)
         entry = self.direntries[sid]
@@ -2059,11 +2366,16 @@ class OleFileIO:
             - STGTY_STREAM: a stream
             - STGTY_STORAGE: a storage
             - STGTY_ROOT: the root entry
+
+        :raises InvalidPathError / AmbiguousPathError: for invalid or
+            ambiguous paths, which must not be silently reported as missing.
         """
         try:
             sid = self._find(filename)
             entry = self.direntries[sid]
             return entry.entry_type
+        except OlePathError:
+            raise
         except Exception:
             return False
 
@@ -2119,10 +2431,17 @@ class OleFileIO:
 
         :param filename: path of stream in storage tree. (see openstream for syntax)
         :returns: True if object exist, else False.
+        :raises InvalidPathError: if the path contains an empty component or
+            is too long.
+        :raises AmbiguousPathError: if several entries match the path, instead
+            of silently reporting one of them as existing.
         """
         try:
-            sid = self._find(filename)
+            self._find(filename)
             return True
+        except OlePathError:
+            # invalid or ambiguous paths are real diagnostics, not "missing":
+            raise
         except Exception:
             return False
 
