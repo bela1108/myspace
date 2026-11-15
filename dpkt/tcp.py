@@ -62,6 +62,8 @@ class TCP(dpkt.Packet):
         sum   - checksum
         urp   - urgent pointer
         opts  - TCP options buffer; call parse_opts() to parse
+        parsed_opts - parsed TCP options; see parse_opts()
+        headers_truncated - True if the options were malformed or truncated
     """
 
     __hdr__ = (
@@ -86,6 +88,8 @@ class TCP(dpkt.Packet):
         'sum': hex,  # display checksum in hex
     }
     opts = b''
+    _parsed_opts = None
+    _headers_truncated = False
 
     def __len__(self):
         return self.__hdr_len__ + len(self.opts) + len(self.data)
@@ -98,8 +102,43 @@ class TCP(dpkt.Packet):
         ol = ((self._off_flags >> 12) << 2) - self.__hdr_len__
         if ol < 0:
             raise dpkt.UnpackError('invalid header length')
-        self.opts = buf[self.__hdr_len__:self.__hdr_len__ + ol]
-        self.data = buf[self.__hdr_len__ + ol:]
+        hdr_len = self.__hdr_len__
+        options_end = hdr_len + ol
+        options_truncated = options_end > len(buf)
+        self.opts = buf[hdr_len:options_end]
+        self.data = b'' if options_truncated else buf[options_end:]
+
+        self._parsed_opts = parse_opts(self.opts)
+        self._headers_truncated = bool(
+            options_truncated or self._parsed_opts.truncated)
+
+    @property
+    def parsed_opts(self):
+        """Return parsed TCP options as a TCPOptions sequence."""
+        if self._parsed_opts is None:
+            self._parsed_opts = parse_opts(self.opts)
+        return self._parsed_opts
+
+    @property
+    def headers_truncated(self):
+        """True if the TCP options were truncated or malformed."""
+        if self._parsed_opts is None:
+            self._parsed_opts = parse_opts(self.opts)
+            self._headers_truncated = self._parsed_opts.truncated
+        return self._headers_truncated
+
+    @property
+    def opts_truncated(self):
+        """Backwards-friendly alias for headers_truncated."""
+        return self.headers_truncated
+
+    def parse_opts(self, buf=None, dedupe=True):
+        """Parse self.opts, or buf when supplied, using a bounded cursor."""
+        parsed = parse_opts(self.opts if buf is None else buf, dedupe=dedupe)
+        if buf is None:
+            self._parsed_opts = parsed
+            self._headers_truncated = parsed.truncated
+        return parsed
 
 
 # Options (opt_type) - http://www.iana.org/assignments/tcp-parameters
@@ -132,25 +171,111 @@ TCP_OPT_TCPCOMP = 26  # TCP compression filter
 TCP_OPT_MAX = 27
 
 
-def parse_opts(buf):
-    """Parse TCP option buffer into a list of (option, data) tuples."""
+class TCPOptions(list):
+    """Parsed TCP options with bounded-parser status.
+
+    The sequence keeps valid options in wire order.  ``first_by_kind`` gives
+    first-valid-value semantics for options which must not be overwritten by
+    later duplicates, notably SACK and timestamp.
+    """
+
+    def __init__(self, options=(), truncated=False, raw_options=None):
+        list.__init__(self, options)
+        self.truncated = bool(truncated)
+        self.headers_truncated = self.truncated
+        self.raw_options = list(options if raw_options is None else raw_options)
+
+    @property
+    def first_by_kind(self):
+        """Map option kind to its first valid value."""
+        first = {}
+        for kind, data in self:
+            if kind in first or not _option_value_is_valid(kind, data):
+                continue
+            first[kind] = data
+        return first
+
+    @property
+    def options_by_kind(self):
+        """Alias for first_by_kind."""
+        return self.first_by_kind
+
+    def get(self, kind, default=None):
+        """Return the first valid value for kind, or default."""
+        return self.first_by_kind.get(kind, default)
+
+
+def _option_value_is_valid(kind, data):
+    """Validate option values whose encodings have a fixed shape."""
+    if kind == TCP_OPT_SACK:
+        return len(data) >= 8 and len(data) % 8 == 0
+    if kind == TCP_OPT_TIMESTAMP:
+        return len(data) == 8
+    return True
+
+
+def parse_opts(buf, dedupe=True):
+    """Parse a bounded TCP option buffer.
+
+    Returns a TCPOptions sequence.  Each option is validated against the
+    remaining bytes before its kind and length are consumed.  EOL terminates
+    parsing and all following bytes must be zero padding.  NOP occupies one
+    byte, unknown kinds are skipped by their declared length, and later SACK
+    or timestamp duplicates do not replace the first valid value.
+
+    On failure, options parsed before the malformed item are retained and
+    ``truncated``/``headers_truncated`` are set.
+    """
     opts = []
-    while buf:
-        o = compat_ord(buf[0])
-        if o > TCP_OPT_NOP:
-            try:
-                # advance buffer at least 2 bytes = 1 type + 1 length
-                l_ = max(2, compat_ord(buf[1]))
-                d, buf = buf[2:l_], buf[l_:]
-            except (IndexError, ValueError):
-                # print 'bad option', repr(str(buf))
-                opts.append(None)  # XXX
-                break
-        else:
-            # options 0 and 1 are not followed by length byte
-            d, buf = b'', buf[1:]
-        opts.append((o, d))
-    return opts
+    raw_options = []
+    seen_singletons = set()
+    truncated = False
+    pos = 0
+    end = len(buf)
+
+    while pos < end:
+        remaining = end - pos
+        kind = compat_ord(buf[pos])
+
+        if kind == TCP_OPT_EOL:
+            raw_options.append((kind, b''))
+            opts.append((kind, b''))
+            if any(compat_ord(b) != 0 for b in buf[pos + 1:]):
+                truncated = True
+            break
+
+        if kind == TCP_OPT_NOP:
+            raw_options.append((kind, b''))
+            opts.append((kind, b''))
+            pos += 1
+            continue
+
+        if remaining < 2:
+            truncated = True
+            break
+
+        opt_len = compat_ord(buf[pos + 1])
+        if opt_len < 2 or opt_len > remaining:
+            truncated = True
+            break
+
+        data = buf[pos + 2:pos + opt_len]
+        option = (kind, data)
+        raw_options.append(option)
+
+        if kind in (TCP_OPT_SACK, TCP_OPT_TIMESTAMP):
+            if not _option_value_is_valid(kind, data):
+                pos += opt_len
+                continue
+            if dedupe and kind in seen_singletons:
+                pos += opt_len
+                continue
+            seen_singletons.add(kind)
+        opts.append(option)
+        pos += opt_len
+
+    return TCPOptions(opts, truncated=truncated,
+                      raw_options=raw_options)
 
 
 def test_parse_opts():
@@ -175,15 +300,23 @@ def test_parse_opts():
     # test a zero-length option
     buf = b'\x02\x00\x01'
     opts = parse_opts(buf)
-    assert opts == [
-        (TCP_OPT_MSS, b''),
-        (TCP_OPT_NOP, b'')
-    ]
+    assert opts == []
+    assert opts.truncated
 
     # test a one-byte malformed option
     buf = b'\xff'
     opts = parse_opts(buf)
-    assert opts == [None]
+    assert opts == []
+    assert opts.truncated
+
+    # EOL ends parsing; the remaining bytes must be zero padding
+    opts = parse_opts(b'\x00' + b'\x00' * 20)
+    assert opts == [(TCP_OPT_EOL, b'')]
+    assert not opts.truncated
+
+    opts = parse_opts(b'\x00\xff')
+    assert opts == [(TCP_OPT_EOL, b'')]
+    assert opts.truncated
 
 
 def test_offset():
