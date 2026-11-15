@@ -94,6 +94,11 @@ MAX_SYMBOL_NAME_LENGTH = 0x200
 # Limit maximum number of sections before processing of sections will stop
 MAX_SECTIONS = 0x800
 
+# Limit the number of TLS callbacks that will be read from an array. TLS
+# callback arrays are normally tiny; a large number almost always indicates
+# corrupt or malicious data.
+MAX_TLS_CALLBACKS = 0x100
+
 # The global maximum number of resource entries to parse per file
 MAX_RESOURCE_ENTRIES = 0x8000
 
@@ -1777,11 +1782,57 @@ class RelocationData(DataContainer):
         self.__dict__[name] = val
 
 
+class TlsCallbackData(DataContainer):
+    """Holds a validated TLS callback address.
+
+    va:         address as stored in the callback array
+    rva:        image-relative address (va - ImageBase)
+    section:    section containing the callback address
+    section_name: name of the containing section, as returned by the section
+                header (bytes)
+    readable:   whether the containing section is readable
+    executable: whether the containing section is executable
+    """
+
+    @property
+    def address(self):
+        """Return the callback's virtual address."""
+        return self.va
+
+    @property
+    def callback_rva(self):
+        """Return the callback's image-relative address."""
+        return self.rva
+
+
 class TlsData(DataContainer):
     """Holds TLS information.
 
     struct:     IMAGE_TLS_DIRECTORY structure
+    callbacks:  list of validated TlsCallbackData entries
+    raw_callbacks: raw bytes consumed from the callback array, including the
+                terminating null pointer when it was present
     """
+
+    @property
+    def callback_array(self):
+        """Return the raw bytes read from the callback array."""
+        return self.raw_callbacks
+
+    @property
+    def callback_array_data(self):
+        """Return the raw bytes read from the callback array."""
+        return self.raw_callbacks
+
+    @property
+    def callbacks_raw(self):
+        """Return the raw bytes read from the callback array."""
+        return self.raw_callbacks
+
+    @property
+    def raw_callback_array(self):
+        """Return the raw bytes read from the callback array."""
+        return self.raw_callbacks
 
 
 class BoundImportDescData(DataContainer):
@@ -2385,6 +2436,11 @@ class PE:
     for repeated addresses in an import table (15 by default). increase it
     when parsing legitimate tables with many entries sharing an address.
 
+    TLS callbacks are exposed through ``DIRECTORY_ENTRY_TLS.callbacks`` and
+    ``get_tls_callbacks()``. Set 'parse_tls_callbacks' to False to defer
+    reading the array, and use 'max_tls_callbacks' to change the safety
+    limit used while reading it.
+
     Basic headers information will be available in the attributes:
 
     DOS_HEADER
@@ -2935,10 +2991,14 @@ class PE:
         *, # args after this are keyword-only
         max_offset=0x10000000,
         max_repeated_import_addresses=15,
+        parse_tls_callbacks=True,
+        max_tls_callbacks=MAX_TLS_CALLBACKS,
     ):
         self.max_symbol_exports = max_symbol_exports
         self.max_repeated_symbol = max_repeated_symbol
         self.max_repeated_import_addresses = max_repeated_import_addresses
+        self.parse_tls_callbacks = parse_tls_callbacks
+        self.max_tls_callbacks = max_tls_callbacks
 
         self._get_section_by_rva_last_used = None
 
@@ -4038,8 +4098,207 @@ class PE:
 
         return bound_imports
 
-    def parse_directory_tls(self, rva, size):
-        """Parse the thread local storage (TLS) table."""
+    def _get_file_mapping_for_rva(self, rva):
+        """Return a section and file offset for a file-backed RVA.
+
+        ``get_offset_from_rva`` deliberately falls back to treating an
+        unmapped RVA as a file offset. That behaviour is useful for odd PEs,
+        but it is unsafe when deciding whether an address is a usable code
+        pointer. This helper only accepts RVAs that are within both a
+        section's virtual range and its raw data.
+        """
+
+        section = self.get_section_by_rva(rva)
+        if section is None:
+            return None
+
+        if section.PointerToRawData is None or section.SizeOfRawData is None:
+            return None
+
+        virtual_address = section.get_VirtualAddress_adj()
+        virtual_size = section.Misc_VirtualSize
+        if not virtual_size:
+            virtual_size = section.SizeOfRawData
+        next_virtual_address = getattr(
+            section, "next_section_virtual_address", None
+        )
+        if (
+            next_virtual_address is not None
+            and section.VirtualAddress
+            < next_virtual_address
+            < virtual_address + virtual_size
+        ):
+            virtual_size = next_virtual_address - virtual_address
+        if not virtual_size or not (
+            virtual_address <= rva < virtual_address + virtual_size
+        ):
+            return None
+
+        raw_start = section.get_PointerToRawData_adj()
+        raw_end = min(
+            len(self.__data__),
+            section.PointerToRawData + section.SizeOfRawData,
+        )
+        offset = section.get_offset_from_rva(rva)
+        if offset < raw_start or offset >= raw_end:
+            return None
+
+        return section, offset, raw_start, raw_end, virtual_address, virtual_size
+
+    def _parse_tls_callback_array(self, tls_struct, max_callbacks=None):
+        """Read and validate the callback array referenced by a TLS directory.
+
+        Returns a tuple ``(callbacks, raw_data, info)``. Entries are read only
+        from the section containing ``AddressOfCallBacks``, stop at the first
+        null pointer, and are limited by ``max_callbacks``. Every non-null
+        pointer must map to file-backed bytes in a section before it is
+        exposed as a callback.
+        """
+
+        if max_callbacks is None:
+            max_callbacks = self.max_tls_callbacks
+        try:
+            max_callbacks = max(0, int(max_callbacks))
+        except (TypeError, ValueError):
+            max_callbacks = MAX_TLS_CALLBACKS
+
+        info = {
+            "address": None,
+            "rva": None,
+            "offset": None,
+            "section": None,
+            "terminated": False,
+            "truncated": False,
+            "limit_reached": False,
+        }
+        callbacks = []
+        raw_data = bytearray()
+
+        callback_va = getattr(tls_struct, "AddressOfCallBacks", 0)
+        info["address"] = callback_va
+        if not callback_va:
+            return callbacks, bytes(raw_data), info
+
+        image_base = self.OPTIONAL_HEADER.ImageBase
+        if callback_va < image_base:
+            self.__warnings.append(
+                "Invalid TLS callback array VA (below ImageBase): "
+                f"{callback_va:#x}"
+            )
+            return callbacks, bytes(raw_data), info
+
+        callback_rva = callback_va - image_base
+        info["rva"] = callback_rva
+        mapping = self._get_file_mapping_for_rva(callback_rva)
+        if mapping is None:
+            self.__warnings.append(
+                "TLS callback array does not map to file-backed section data: "
+                f"RVA {callback_rva:#x}"
+            )
+            return callbacks, bytes(raw_data), info
+
+        section, offset, _raw_start, raw_end, virtual_address, virtual_size = (
+            mapping
+        )
+        info["offset"] = offset
+        info["section"] = section
+
+        pointer_size = (
+            8 if self.PE_TYPE == OPTIONAL_HEADER_MAGIC_PE_PLUS else 4
+        )
+        pointer_format = "<Q" if pointer_size == 8 else "<I"
+        virtual_end = offset + (virtual_address + virtual_size - callback_rva)
+        read_end = min(raw_end, virtual_end)
+        seen_rvas = set()
+        entries_read = 0
+
+        while entries_read < max_callbacks:
+            if offset + pointer_size > read_end:
+                info["truncated"] = True
+                break
+
+            entry_data = self.__data__[offset : offset + pointer_size]
+            raw_data.extend(entry_data)
+            callback_address = struct.unpack(pointer_format, entry_data)[0]
+            offset += pointer_size
+
+            if callback_address == 0:
+                info["terminated"] = True
+                break
+
+            entries_read += 1
+            if callback_address < image_base:
+                self.__warnings.append(
+                    "Ignoring TLS callback VA below ImageBase: "
+                    f"{callback_address:#x}"
+                )
+                continue
+
+            callback_target_rva = callback_address - image_base
+            if callback_target_rva in seen_rvas:
+                self.__warnings.append(
+                    "Ignoring repeated TLS callback address: "
+                    f"{callback_address:#x}"
+                )
+                continue
+            seen_rvas.add(callback_target_rva)
+
+            target_mapping = self._get_file_mapping_for_rva(callback_target_rva)
+            if target_mapping is None:
+                self.__warnings.append(
+                    "Ignoring TLS callback that does not map to a section: "
+                    f"{callback_address:#x}"
+                )
+                continue
+
+            target_section = target_mapping[0]
+            section_name = target_section.get_name()
+            callback = TlsCallbackData(
+                va=callback_address,
+                rva=callback_target_rva,
+                section=target_section,
+                section_name=section_name,
+                name=section_name,
+                readable=bool(
+                    getattr(target_section, "IMAGE_SCN_MEM_READ", False)
+                ),
+                executable=bool(
+                    getattr(target_section, "IMAGE_SCN_MEM_EXECUTE", False)
+                ),
+                writable=bool(
+                    getattr(target_section, "IMAGE_SCN_MEM_WRITE", False)
+                ),
+            )
+            callback.is_readable = callback.readable
+            callback.is_executable = callback.executable
+            callbacks.append(callback)
+
+        if (
+            not info["terminated"]
+            and offset + pointer_size <= read_end
+            and entries_read >= max_callbacks
+        ):
+            info["limit_reached"] = True
+            info["truncated"] = True
+            self.__warnings.append(
+                f"TLS callback array limited to {max_callbacks} entries"
+            )
+        elif not info["terminated"] and offset + pointer_size > read_end:
+            info["truncated"] = True
+            self.__warnings.append(
+                "TLS callback array is not null terminated within its section"
+            )
+
+        return callbacks, bytes(raw_data), info
+
+    def parse_directory_tls(self, rva, size, parse_callbacks=None):
+        """Parse the thread local storage (TLS) table.
+
+        The callback array is an optional view. It is populated by default
+        when ``parse_tls_callbacks`` is enabled, and can be requested later
+        with :meth:`get_tls_callbacks`. A malformed TLS directory or callback
+        array only produces warnings; it never prevents the PE from opening.
+        """
 
         # By default let's pretend the format is a 32-bit PE. It may help
         # produce some output for files where the Magic in the Optional Header
@@ -4049,13 +4308,21 @@ class PE:
         if self.PE_TYPE == OPTIONAL_HEADER_MAGIC_PE_PLUS:
             format = self.__IMAGE_TLS_DIRECTORY64_format__
 
+        tls_struct_size = Structure(format).sizeof()
+        directory_size_valid = size is None or size >= tls_struct_size
+        if not directory_size_valid:
+            self.__warnings.append(
+                "Invalid TLS directory size: "
+                f"{size:#x} (minimum {tls_struct_size:#x}) at RVA {rva:#x}"
+            )
+
         try:
             tls_struct = self.__unpack_data__(
                 format,
-                self.get_data(rva, Structure(format).sizeof()),
+                self.get_data(rva, tls_struct_size),
                 file_offset=self.get_offset_from_rva(rva),
             )
-        except PEFormatError:
+        except Exception:
             self.__warnings.append(
                 f"Invalid TLS information. Can't read data at RVA: {rva:#x}"
             )
@@ -4064,7 +4331,98 @@ class PE:
         if not tls_struct:
             return None
 
-        return TlsData(struct=tls_struct)
+        if parse_callbacks is None:
+            parse_callbacks = self.parse_tls_callbacks
+
+        tls_data = TlsData(
+            struct=tls_struct,
+            callbacks=[],
+            raw_callbacks=b"",
+            callback_array_va=None,
+            callback_array_rva=None,
+            callback_array_offset=None,
+            callback_array_section=None,
+            callbacks_parsed=False,
+            callbacks_terminated=False,
+            callbacks_truncated=False,
+            callbacks_limit_reached=False,
+            tls_directory_size=size,
+            tls_directory_size_valid=directory_size_valid,
+        )
+
+        if parse_callbacks and directory_size_valid:
+            try:
+                callbacks, raw_data, info = self._parse_tls_callback_array(
+                    tls_struct
+                )
+            except Exception as exc:
+                self.__warnings.append(
+                    f"Failed to parse TLS callback array: {exc}"
+                )
+            else:
+                tls_data.callbacks = callbacks
+                tls_data.raw_callbacks = raw_data
+                tls_data.callback_array_va = info["address"]
+                tls_data.callback_array_rva = info["rva"]
+                tls_data.callback_array_offset = info["offset"]
+                tls_data.callback_array_section = info["section"]
+                tls_data.callbacks_parsed = True
+                tls_data.callbacks_terminated = info["terminated"]
+                tls_data.callbacks_truncated = info["truncated"]
+                tls_data.callbacks_limit_reached = info["limit_reached"]
+
+        return tls_data
+
+    def get_tls_callbacks(self, max_callbacks=None):
+        """Return the validated TLS callbacks for this image.
+
+        If the TLS directory was not parsed yet (for example after a
+        ``fast_load``), this method parses it on demand. Passing
+        ``max_callbacks`` re-reads the callback array with the requested
+        limit; otherwise the value used while opening the PE is kept.
+        """
+
+        if not hasattr(self, "DIRECTORY_ENTRY_TLS"):
+            try:
+                self.parse_data_directories(
+                    directories=[DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_TLS"]]
+                )
+            except Exception:
+                return []
+
+        tls_data = getattr(self, "DIRECTORY_ENTRY_TLS", None)
+        if tls_data is None or not getattr(tls_data, "struct", None):
+            return []
+
+        if getattr(tls_data, "callbacks_parsed", False) and max_callbacks is None:
+            return tls_data.callbacks
+
+        if not getattr(tls_data, "tls_directory_size_valid", True):
+            return []
+
+        try:
+            callbacks, raw_data, info = self._parse_tls_callback_array(
+                tls_data.struct, max_callbacks=max_callbacks
+            )
+        except Exception:
+            return []
+
+        tls_data.callbacks = callbacks
+        tls_data.raw_callbacks = raw_data
+        tls_data.callback_array_va = info["address"]
+        tls_data.callback_array_rva = info["rva"]
+        tls_data.callback_array_offset = info["offset"]
+        tls_data.callback_array_section = info["section"]
+        tls_data.callbacks_parsed = True
+        tls_data.callbacks_terminated = info["terminated"]
+        tls_data.callbacks_truncated = info["truncated"]
+        tls_data.callbacks_limit_reached = info["limit_reached"]
+        return callbacks
+
+    @property
+    def tls_callbacks(self):
+        """Return the validated TLS callback list."""
+        return self.get_tls_callbacks()
 
     def parse_directory_load_config(self, rva, size):
         """Parse the load configuration table."""
