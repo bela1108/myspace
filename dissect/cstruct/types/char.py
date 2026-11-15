@@ -3,12 +3,19 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, BinaryIO
 
 from dissect.cstruct.exception import ArraySizeError
-from dissect.cstruct.types.base import EOF, BaseArray, BaseType, _is_seekable, _read_null_terminated
+from dissect.cstruct.types.base import (
+    EOF,
+    BaseArray,
+    BaseType,
+    StringReadError,
+    _read_bounded_null_terminated,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self
 
     from dissect.cstruct.cstruct import Endianness
+    from dissect.cstruct.types.base import BoundedString
 
 
 class CharArray(bytes, BaseArray):
@@ -69,21 +76,63 @@ class Char(bytes, BaseType):
 
     @classmethod
     def _read_0(cls, stream: BinaryIO, *, context: dict[str, Any] | None = None, endian: Endianness) -> Self:
-        if _is_seekable(stream):
-            return type.__call__(cls, _read_null_terminated(stream, 1))
+        return cls._read_0_bounded(stream, None, context=context, endian=endian)
 
-        buf = []
-        while True:
-            byte = stream.read(1)
-            if byte == b"":
-                raise EOFError("Read 0 bytes, but expected 1")
+    @classmethod
+    def _read_0_bounded(
+        cls,
+        stream: BinaryIO,
+        max_length: int | None,
+        *,
+        context: dict[str, Any] | None = None,
+        endian: Endianness,
+    ) -> Self:
+        """Read a null-terminated byte string, optionally restricted to ``max_length`` bytes.
 
-            if byte == b"\x00":
-                break
+        With a bound, reading never consumes bytes past the field's parent buffer. A field that reaches the
+        bound without a terminator raises a :class:`StringReadError` carrying the raw field bytes.
+        """
+        result = _read_bounded_null_terminated(stream, 1, max_length)
+        cls._raise_if_invalid(result)
+        return type.__call__(cls, result.raw)
 
-            buf.append(byte)
+    @classmethod
+    def read_string(
+        cls,
+        buffer: bytes | bytearray | memoryview | BinaryIO,
+        max_length: int | None = None,
+        *,
+        endian: Endianness | None = None,
+    ) -> Self:
+        """Read a (bounded) null-terminated byte string from a parent buffer or stream.
 
-        return type.__call__(cls, b"".join(buf))
+        Args:
+            buffer: The parent buffer (or stream) that owns the string. Only its bytes are ever read.
+            max_length: Maximum amount of bytes that belong to the string. ``None`` reads to a terminator
+                or the end of the buffer.
+            endian: Optional endianness override.
+        """
+        from io import BytesIO
+
+        from dissect.cstruct.util import normalize_endianness
+
+        if not hasattr(buffer, "read"):
+            buffer = BytesIO(bytes(buffer))
+
+        if max_length is None:
+            endian = normalize_endianness(endian) if endian is not None else cls.__cs__.endian
+            return cls._read_0(buffer, endian=endian)
+
+        if max_length < 0:
+            raise ValueError("max_length must be non-negative")
+
+        endian = normalize_endianness(endian) if endian is not None else cls.__cs__.endian
+        return cls._read_0_bounded(buffer, max_length, endian=endian)
+
+    @staticmethod
+    def _raise_if_invalid(result: BoundedString) -> None:
+        if not result.terminated:
+            raise StringReadError(result.raw, "unterminated")
 
     @classmethod
     def _write(cls, stream: BinaryIO, data: bytes | int | str, *, endian: Endianness) -> int:

@@ -3,11 +3,12 @@ from __future__ import annotations
 import contextlib
 import functools
 import warnings
+from dataclasses import dataclass
 from io import SEEK_CUR, BytesIO
 from types import MethodType
 from typing import TYPE_CHECKING, Any, BinaryIO, ClassVar, TypeVar
 
-from dissect.cstruct.exception import ArraySizeError
+from dissect.cstruct.exception import ArraySizeError, Error
 from dissect.cstruct.expression import Expression
 from dissect.cstruct.util import classproperty, normalize_endianness
 
@@ -22,6 +23,24 @@ if TYPE_CHECKING:
 EOF = -0xE0F  # Negative counts are illegal anyway, so abuse that for our EOF sentinel
 
 _IMMUTABLE_TYPES = (int, float, bytes, str)
+
+
+class StringReadError(Error):
+    """Raised when a bounded string cannot be read as a complete value inside its parent buffer.
+
+    Unlike an :class:`EOFError`, data was available: the field simply reached its maximum length without a
+    terminator, or ended on a truncated character. Decoding problems (e.g. an illegal encoding) keep being
+    raised as a :class:`UnicodeDecodeError`.
+
+    Attributes:
+        raw: The raw bytes read inside the field's bounds, never including bytes of a neighbouring entry.
+        reason: A machine readable cause, e.g. ``"unterminated"`` or ``"truncated"``.
+    """
+
+    def __init__(self, raw: bytes, reason: str) -> None:
+        self.raw = bytes(raw)
+        self.reason = reason
+        super().__init__(f"{reason}: {self.raw!r}")
 
 
 class MetaType(type):
@@ -460,15 +479,57 @@ def _is_seekable(stream: BinaryIO) -> bool:
         return False
 
 
-def _read_null_terminated(stream: BinaryIO, width: int) -> bytes:
-    """Read data up to a null terminator of the given width from a seekable stream, in chunks.
+@dataclass(frozen=True, slots=True)
+class BoundedString:
+    """Result of a bounded null-terminated read.
 
-    Leaves the stream just after the terminator.
+    Attributes:
+        raw: The raw bytes before the terminator, never exceeding the field's bounds.
+        terminated: Whether a null terminator was found within the bounds.
+        truncated: Whether the data ended on a partial item (e.g. half a ``wchar``).
+    """
+
+    raw: bytes
+    terminated: bool
+    truncated: bool
+
+
+def _read_null_terminated(stream: BinaryIO, width: int) -> bytes:
+    """Read data up to a null terminator of the given width, preserving the historical behaviour."""
+    return _read_bounded_null_terminated(stream, width, None).raw
+
+
+def _read_bounded_null_terminated(stream: BinaryIO, width: int, max_length: int | None) -> BoundedString:
+    """Read a null-terminated string without ever reading past the owning field's bounds.
+
+    Args:
+        stream: The stream to read from.
+        width: The width in bytes of a single item (``1`` for ``char``, ``2`` for ``wchar``).
+        max_length: The maximum amount of bytes that belong to this field. ``None`` is unbounded and reads
+            until a terminator or the end of the stream, matching the historical behaviour.
+
+    Returns:
+        A :class:`BoundedString` with the raw bytes before the terminator and status flags. The stream is
+        left just after the terminator when found, otherwise at the end of the bounded/available data.
     """
     terminator = b"\x00" * width
+    if _is_seekable(stream):
+        return _read_bounded_null_terminated_seekable(stream, width, max_length, terminator)
+    return _read_bounded_null_terminated_stream(stream, width, max_length, terminator)
+
+
+def _read_bounded_null_terminated_seekable(
+    stream: BinaryIO, width: int, max_length: int | None, terminator: bytes
+) -> BoundedString:
     buf = []
+    remaining = max_length
+
     while True:
-        chunk = stream.read(128 * width)
+        chunk_size = 128 * width
+        if remaining is not None:
+            chunk_size = min(chunk_size, remaining)
+
+        chunk = stream.read(chunk_size)
         if not isinstance(chunk, (bytes, bytearray)):
             # E.g. a memoryview, which doesn't support find()
             chunk = bytes(chunk)
@@ -481,13 +542,77 @@ def _read_null_terminated(stream: BinaryIO, width: int) -> bytes:
         if idx != -1:
             buf.append(chunk[:idx])
             stream.seek(idx + width - len(chunk), SEEK_CUR)
-            return b"".join(buf)
+            return BoundedString(b"".join(buf), terminated=True, truncated=False)
 
-        if not chunk or len(chunk) % width:
-            # The end of the stream, possibly with a partial item
-            raise EOFError(f"Read {len(chunk) % width} bytes, but expected {width}")
+        if not chunk:
+            if remaining is not None:
+                # The stream ended before (or exactly at) the bound. Keep only the bytes that belong to
+                # the field and leave the stream at its end (which is inside the bound).
+                raw = b"".join(buf)
+                if remaining < 0:
+                    # A previous short read overshot the bound: rewind to the exact field end.
+                    raw = raw[:remaining]
+                    stream.seek(remaining, SEEK_CUR)
+                return BoundedString(raw, terminated=False, truncated=len(raw) % width != 0)
+            # The end of the stream without a terminator: preserve the historical EOFError
+            partial = sum(len(part) for part in buf) % width
+            raise EOFError(f"Read {partial} bytes, but expected {width}")
 
+        # No terminator in this chunk: account for its bytes before checking the bounds
         buf.append(chunk)
+        if remaining is not None:
+            remaining -= len(chunk)
+            if remaining <= 0:
+                # The bound is reached (possibly in a short final chunk). Rewind any overshoot so the
+                # stream stops exactly at the field end, never inside the neighbouring entry.
+                overshoot = -remaining
+                if overshoot:
+                    stream.seek(-overshoot, SEEK_CUR)
+                    buf[-1] = chunk[: len(chunk) - overshoot]
+                truncated = len(b"".join(buf)) % width != 0
+                return BoundedString(b"".join(buf), terminated=False, truncated=truncated)
+
+        if len(chunk) % width:
+            if remaining is None:
+                # Unbounded read that ends on a partial item: preserve the historical EOFError
+                partial = sum(len(part) for part in buf) % width
+                raise EOFError(f"Read {partial} bytes, but expected {width}")
+            # A partial item at the end of the bounded data
+            return BoundedString(b"".join(buf), terminated=False, truncated=True)
+
+
+def _read_bounded_null_terminated_stream(
+    stream: BinaryIO, width: int, max_length: int | None, terminator: bytes
+) -> BoundedString:
+    buf = []
+    remaining = max_length
+
+    while remaining is None or remaining > 0:
+        read_size = width if remaining is None else min(width, remaining)
+        item = stream.read(read_size)
+
+        if remaining is not None:
+            remaining -= len(item)
+
+        if item == b"":
+            if remaining is not None:
+                return BoundedString(b"".join(buf), terminated=False, truncated=False)
+            raise EOFError(f"Read 0 bytes, but expected {width}")
+
+        if len(item) < width:
+            if remaining is None:
+                # Unbounded read that ends on a partial item: preserve the historical EOFError
+                raise EOFError(f"Read {len(item)} bytes, but expected {width}")
+            # A partial item: a truncated character at the end of the bounded data
+            buf.append(item)
+            return BoundedString(b"".join(buf), terminated=False, truncated=True)
+
+        if item == terminator:
+            return BoundedString(b"".join(buf), terminated=True, truncated=False)
+
+        buf.append(item)
+
+    return BoundedString(b"".join(buf), terminated=False, truncated=False)
 
 
 def _is_eof(stream: BinaryIO) -> bool:
