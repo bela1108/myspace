@@ -63,6 +63,19 @@ DNS_CHAOS = 3
 DNS_HESIOD = 4
 DNS_ANY = 255
 
+# Parsing budgets for untrusted messages.
+DNS_MAX_NAME_LEN = 255  # RFC 1035: a domain name is at most 255 octets
+DNS_MAX_POINTER_HOPS = 16  # compression pointer hops followed per name
+DNS_MAX_SECTION_RECORDS = 256  # records parsed per qd/an/ns/ar section
+
+
+class DNSLabelError(dpkt.UnpackError):
+    """Malformed or non-minimal label encoding.
+
+    Unlike compression pointer violations, a message that fails this way
+    after some records were already parsed keeps its safe prefix.
+    """
+
 
 def pack_name(name, off, label_ptrs):
     name = codecs.encode(name, 'utf-8')
@@ -91,32 +104,42 @@ def pack_name(name, off, label_ptrs):
 def unpack_name(buf, off):
     name = []
     saved_off = 0
-    start_off = off
     name_length = 0
+    hops = 0
     while True:
         if off >= len(buf):
-            raise dpkt.NeedData()
+            raise dpkt.NeedData('truncated name at offset %d' % off)
         n = compat_ord(buf[off])
         if n == 0:
             off += 1
             break
         elif (n & 0xc0) == 0xc0:
+            if off + 2 > len(buf):
+                raise dpkt.NeedData('truncated compression pointer at offset %d' % off)
             ptr = struct.unpack('>H', buf[off:off + 2])[0] & 0x3fff
-            if ptr >= start_off:
-                raise dpkt.UnpackError('Invalid label compression pointer')
+            # Pointers may only refer back to earlier offsets; a pointer at
+            # or beyond the current read position can never resolve.
+            if ptr >= off:
+                raise dpkt.UnpackError(
+                    'Invalid label compression pointer at offset %d (target %d)' % (off, ptr))
+            hops += 1
+            if hops > DNS_MAX_POINTER_HOPS:
+                raise dpkt.UnpackError(
+                    'Too many label compression pointers at offset %d' % off)
             off += 2
             if not saved_off:
                 saved_off = off
-            start_off = off = ptr
+            off = ptr
         elif (n & 0xc0) == 0x00:
             off += 1
             name.append(buf[off:off + n])
             name_length += n + 1
-            if name_length > 255:
-                raise dpkt.UnpackError('name longer than 255 bytes')
+            if name_length > DNS_MAX_NAME_LEN:
+                raise DNSLabelError(
+                    'name longer than %d bytes at offset %d' % (DNS_MAX_NAME_LEN, off))
             off += n
         else:
-            raise dpkt.UnpackError('Invalid label length %02x' % n)
+            raise DNSLabelError('Invalid label length %02x at offset %d' % (n, off))
     if not saved_off:
         saved_off = off
     return codecs.decode(b'.'.join(name), 'utf-8'), saved_off
@@ -347,6 +370,8 @@ class DNS(dpkt.Packet):
         """Return DNS question and new offset."""
         q = self.Q()
         q.name, off = unpack_name(buf, off)
+        if off + 4 > len(buf):
+            raise dpkt.NeedData('truncated question at offset %d' % off)
         q.type, q.cls = struct.unpack('>HH', buf[off:off + 4])
         off += 4
         return q, off
@@ -361,8 +386,12 @@ class DNS(dpkt.Packet):
         """Return DNS RR and new offset."""
         rr = self.RR()
         rr.name, off = unpack_name(buf, off)
+        if off + 10 > len(buf):
+            raise dpkt.NeedData('truncated RR header at offset %d' % off)
         rr.type, rr.cls, rr.ttl, rdlen = struct.unpack('>HHIH', buf[off:off + 10])
         off += 10
+        if off + rdlen > len(buf):
+            raise dpkt.NeedData('truncated RR rdata at offset %d' % off)
         rr.rdata = buf[off:off + rdlen]
         rr.rlen = rdlen
         rr.unpack_rdata(buf, off)
@@ -372,18 +401,29 @@ class DNS(dpkt.Packet):
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         off = self.__hdr_len__
-        cnt = self.qd  # FIXME: This relies on this being properly set somewhere else
-        self.qd = []
-        for _ in range(cnt):
-            q, off = self.unpack_q(buf, off)
-            self.qd.append(q)
-        for x in ('an', 'ns', 'ar'):
-            cnt = getattr(self, x, 0)
-            setattr(self, x, [])
-            for _ in range(cnt):
-                rr, off = self.unpack_rr(buf, off)
-                getattr(self, x).append(rr)
         self.data = b''
+        counts = [self.qd] + [getattr(self, x, 0) for x in ('an', 'ns', 'ar')]
+        self.qd = []
+        self.an = []
+        self.ns = []
+        self.ar = []
+        parsed = 0
+        try:
+            for _ in range(min(counts[0], DNS_MAX_SECTION_RECORDS)):
+                q, off = self.unpack_q(buf, off)
+                self.qd.append(q)
+                parsed += 1
+            for i, x in enumerate(('an', 'ns', 'ar'), 1):
+                for _ in range(min(counts[i], DNS_MAX_SECTION_RECORDS)):
+                    rr, off = self.unpack_rr(buf, off)
+                    getattr(self, x).append(rr)
+                    parsed += 1
+        except (dpkt.NeedData, DNSLabelError, struct.error):
+            if not parsed:
+                raise
+            # Truncated or non-minimal tail: keep the parsed safe prefix and
+            # expose the remaining bytes at their original offset in buf.
+            self.data = buf[off:]
 
     def __len__(self):
         # XXX - cop out
