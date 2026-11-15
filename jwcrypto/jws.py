@@ -7,7 +7,7 @@ from jwcrypto.common import base64url_decode, base64url_encode
 from jwcrypto.common import check_crit, merge_headers, validate_headers
 from jwcrypto.common import json_decode, json_encode
 from jwcrypto.jwa import JWA
-from jwcrypto.jwk import JWK, JWKSet
+from jwcrypto.jwk import InvalidJWKValue, JWK, JWKSet
 
 JWSHeaderRegistry = {
     'alg': JWSEHeaderParameter('Algorithm', False, True, None),
@@ -282,11 +282,19 @@ class JWS:
         elif isinstance(key, JWKSet):
             keys = key
             if 'kid' in chk_hdrs:
-                kid_keys = key.get_keys(chk_hdrs['kid'])
-                if not kid_keys:
+                try:
+                    kid_key = key.get_key(chk_hdrs['kid'], use='sig',
+                                          operation='verify')
+                except InvalidJWKValue as e:
+                    raise JWKeyNotFound(
+                        'Multiple keys match kid {}, specify a thumbprint'
+                        .format(chk_hdrs['kid'])) from e
+                if kid_key is None:
                     raise JWKeyNotFound('Key ID {} not in key set'.format(
                                         chk_hdrs['kid']))
-                keys = kid_keys
+                keys = {kid_key}
+            else:
+                keys = key.get_keys(use='sig', operation='verify')
 
             for k in keys:
                 try:

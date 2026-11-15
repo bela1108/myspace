@@ -1,5 +1,6 @@
 # Copyright (C) 2015  JWCrypto Project Contributors - see LICENSE file
 
+import base64
 import os
 from binascii import hexlify, unhexlify
 from collections import namedtuple
@@ -8,7 +9,9 @@ from enum import Enum
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import dsa
 from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 from typing_extensions import deprecated
@@ -133,6 +136,84 @@ _AKP_ALG_TABLE = {
     'ML-DSA-65': _AKPAlg(MLDSA65PublicKey, MLDSA65PrivateKey),
     'ML-DSA-87': _AKPAlg(MLDSA87PublicKey, MLDSA87PrivateKey),
 }
+
+# Bound the work performed while importing untrusted certificate chains.
+MAX_X5C_CHAIN_LENGTH = 10
+MAX_X5C_CERTIFICATE_SIZE = 16 * 1024
+
+
+def _decode_x5c_certificate(value):
+    """Decode one base64 DER certificate from an ``x5c`` array."""
+    if not isinstance(value, str):
+        raise InvalidJWKValue('"x5c" entries must be base64 strings')
+
+    encoded = ''.join(value.split())
+    if not encoded:
+        raise InvalidJWKValue('"x5c" entries must not be empty')
+
+    # Check the encoded size first so oversized input is rejected before
+    # allocating the decoded buffer.
+    max_encoded = ((MAX_X5C_CERTIFICATE_SIZE + 2) // 3) * 4 + 4
+    if len(encoded) > max_encoded:
+        raise InvalidJWKValue('"x5c" certificate exceeds the size limit')
+
+    try:
+        der = base64.b64decode(encoded.encode('ascii'), validate=True)
+    except Exception as e:  # pylint: disable=broad-except
+        raise InvalidJWKValue(
+            '"x5c" entries must be base64 encoded') from e
+
+    if not der or len(der) > MAX_X5C_CERTIFICATE_SIZE:
+        raise InvalidJWKValue('"x5c" certificate exceeds the size limit')
+
+    try:
+        return x509.load_der_x509_certificate(der, default_backend())
+    except Exception as e:  # pylint: disable=broad-except
+        raise InvalidJWKValue(
+            '"x5c" entries must contain parseable DER certificates') from e
+
+
+def _verify_x5c_certificate_link(child, issuer):
+    """Verify that ``issuer`` directly issued ``child``."""
+    try:
+        child_name = child.issuer.public_bytes()
+        issuer_name = issuer.subject.public_bytes()
+    except Exception as e:  # pylint: disable=broad-except
+        raise InvalidJWKValue('Invalid "x5c" certificate names') from e
+
+    if child_name != issuer_name:
+        raise InvalidJWKValue(
+            '"x5c" certificate issuer does not match issuer subject')
+
+    verify_issued = getattr(child, 'verify_directly_issued_by', None)
+    if verify_issued is not None:
+        try:
+            verify_issued(issuer)
+            return
+        except Exception as e:  # pylint: disable=broad-except
+            raise InvalidJWKValue(
+                '"x5c" certificate signature chain is invalid') from e
+
+    # Compatibility with older cryptography releases that lack
+    # verify_directly_issued_by().
+    issuer_key = issuer.public_key()
+    try:
+        hash_alg = child.signature_hash_algorithm
+        tbs = child.tbs_certificate_bytes
+        params = getattr(child, 'signature_algorithm_parameters', None)
+        if isinstance(issuer_key, rsa.RSAPublicKey):
+            if params is None:
+                params = padding.PKCS1v15()
+            issuer_key.verify(child.signature, tbs, params, hash_alg)
+        elif isinstance(issuer_key, ec.EllipticCurvePublicKey):
+            issuer_key.verify(child.signature, tbs, ec.ECDSA(hash_alg))
+        elif isinstance(issuer_key, dsa.DSAPublicKey):
+            issuer_key.verify(child.signature, tbs, hash_alg)
+        else:
+            issuer_key.verify(child.signature, tbs)
+    except Exception as e:  # pylint: disable=broad-except
+        raise InvalidJWKValue(
+            '"x5c" certificate signature chain is invalid') from e
 
 
 # RFC 7518 - 7.4 , RFC 8037 - 5
@@ -735,6 +816,7 @@ class JWK(dict):
         # must set 'kty' as first item
         self.__setitem__('kty', newkey['kty'])
         self.update(newkey)
+        self._validate_x5c()
 
     @classmethod
     def from_json(cls, key):
@@ -912,6 +994,114 @@ class JWK(dict):
             if operation not in ops:
                 raise InvalidJWKOperation(operation, ops)
         # TODO: check alg ?
+
+    def _validate_x5c(self):
+        """Validate the certificate chain and bind it to this key."""
+        chain = self.get('x5c')
+        if chain is None:
+            return
+
+        if not isinstance(chain, (list, tuple)):
+            raise InvalidJWKValue('"x5c" must be an array of certificates')
+        if not chain:
+            raise InvalidJWKValue(
+                '"x5c" must contain at least one certificate')
+        if len(chain) > MAX_X5C_CHAIN_LENGTH:
+            raise InvalidJWKValue('"x5c" certificate chain is too long')
+
+        certs = [_decode_x5c_certificate(cert) for cert in chain]
+        for child, issuer in zip(certs, certs[1:]):
+            _verify_x5c_certificate_link(child, issuer)
+
+        self._check_x5c_public_key(certs[0])
+        return certs
+
+    def _check_x5c_public_key(self, certificate):
+        """Ensure the leaf certificate SPKI matches the JWK public key."""
+        kty = self.get('kty')
+        try:
+            cert_key = certificate.public_key()
+        except Exception as e:  # pylint: disable=broad-except
+            raise InvalidJWKValue(
+                'Unable to read "x5c" leaf public key') from e
+
+        if kty == 'RSA':
+            if not isinstance(cert_key, rsa.RSAPublicKey):
+                raise InvalidJWKValue(
+                    '"x5c" leaf certificate key type does not match "RSA"')
+            numbers = cert_key.public_numbers()
+            if numbers.n != self._decode_int(self.get('n')) or \
+                    numbers.e != self._decode_int(self.get('e')):
+                raise InvalidJWKValue(
+                    '"x5c" leaf certificate key does not match JWK')
+        elif kty == 'EC':
+            if not isinstance(cert_key, ec.EllipticCurvePublicKey):
+                raise InvalidJWKValue(
+                    '"x5c" leaf certificate key type does not match "EC"')
+            crv = self.get('crv')
+            if crv == 'P-256K':
+                crv = 'secp256k1'
+            if JWKpycaCurveMap.get(cert_key.curve.name) != crv:
+                raise InvalidJWKValue(
+                    '"x5c" leaf certificate curve does not match JWK')
+            numbers = cert_key.public_numbers()
+            if numbers.x != self._decode_int(self.get('x')) or \
+                    numbers.y != self._decode_int(self.get('y')):
+                raise InvalidJWKValue(
+                    '"x5c" leaf certificate key does not match JWK')
+        elif kty == 'OKP':
+            crv = self.get('crv')
+            try:
+                expected_key = _OKP_CURVES_TABLE[crv].pubkey
+            except KeyError as e:
+                raise InvalidJWKValue(
+                    '"x5c" leaf certificate curve is not supported') from e
+            if not isinstance(cert_key, expected_key):
+                raise InvalidJWKValue(
+                    '"x5c" leaf certificate key type does not match "OKP"')
+            raw = cert_key.public_bytes(
+                serialization.Encoding.Raw,
+                serialization.PublicFormat.Raw)
+            if raw != base64url_decode(self.get('x')):
+                raise InvalidJWKValue(
+                    '"x5c" leaf certificate key does not match JWK')
+        else:
+            raise InvalidJWKValue(
+                '"x5c" is not valid for key type "%s"' % kty)
+
+    def is_usable_for(self, use=None, operation=None):
+        """Whether this key may be used for a JOSE purpose.
+
+        Unconstrained keys are usable.  An invalid certificate binding or
+        a ``use``/``key_ops`` conflict excludes the key.
+        """
+        required_use = use
+        if required_use is None and operation is not None:
+            required_use = JWKOpAndUsePairs.get(operation)
+
+        declared_use = self.get('use')
+        if declared_use is not None and required_use is not None:
+            if declared_use != required_use:
+                return False
+
+        ops = self.get('key_ops')
+        if ops is not None:
+            if not isinstance(ops, (list, tuple)):
+                ops = [ops]
+            if operation is not None and operation not in ops:
+                return False
+            if required_use is not None:
+                for op in ops:
+                    if JWKOpAndUsePairs.get(op) != required_use:
+                        return False
+
+        if 'x5c' in self:
+            try:
+                self._validate_x5c()
+            except InvalidJWKValue:
+                return False
+
+        return True
 
     def _decode_int(self, n):
         return int(hexlify(base64url_decode(n)), 16)
@@ -1508,6 +1698,12 @@ class JWKSet(dict):
                             self['keys'].add(JWK(**jwk))
                         except InvalidJWKType:
                             pass
+                        except InvalidJWKValue:
+                            # A single key with an invalid certificate
+                            # binding must not make the rest of a tenant's
+                            # rotation key set unusable.
+                            if not (isinstance(jwk, dict) and 'x5c' in jwk):
+                                raise
                 else:
                     self[k] = v
         except Exception as e:  # pylint: disable=broad-except
@@ -1526,30 +1722,56 @@ class JWKSet(dict):
         obj.import_keyset(keyset)
         return obj
 
-    def get_key(self, kid):
+    def get_key(self, kid=None, thumbprint=None, use=None, operation=None):
         """Gets a key from the set.
         :param kid: the 'kid' key identifier.
+        :param thumbprint: an optional RFC 7638 JWK thumbprint used to
+                           disambiguate multiple keys with the same kid.
+        :param use: an optional key use constraint (for example 'sig').
+        :param operation: an optional key operation constraint (for example
+                          'verify').
 
         :return: A JWK from the set
         :rtype: JWK
         """
-        keys = self.get_keys(kid)
+        keys = self.get_keys(kid, thumbprint=thumbprint, use=use,
+                             operation=operation)
         if len(keys) > 1:
             raise InvalidJWKValue(
-                'Duplicate keys found with requested kid: 1 expected')
+                'Multiple keys match the request; specify a thumbprint')
         try:
             return tuple(keys)[0]
         except IndexError:
             return None
 
-    def get_keys(self, kid):
-        """Gets keys from the set with matching kid.
+    def get_keys(self, kid=None, thumbprint=None, use=None, operation=None):
+        """Gets keys from the set matching the requested selectors.
         :param kid: the 'kid' key identifier.
+        :param thumbprint: an optional RFC 7638 JWK thumbprint.
+        :param use: an optional key use constraint (for example 'sig').
+        :param operation: an optional key operation constraint (for example
+                          'verify').
 
         :return: a List of keys
         :rtype: `list`
         """
-        return {key for key in self['keys'] if key.get('kid') == kid}
+        keys = self['keys']
+        if kid is not None:
+            keys = {key for key in keys if key.get('kid') == kid}
+        if thumbprint is not None:
+            if isinstance(thumbprint, bytes):
+                thumbprint = thumbprint.decode('ascii')
+            keys = {key for key in keys
+                    if key.thumbprint() == thumbprint}
+        if use is not None or operation is not None:
+            keys = {key for key in keys
+                    if key.is_usable_for(use=use, operation=operation)}
+        else:
+            # Never return a key whose x5c no longer matches its public key,
+            # even if it was mutated after import.
+            keys = {key for key in keys
+                    if 'x5c' not in key or key.is_usable_for()}
+        return set(keys)
 
     def __repr__(self):
         repr_dict = {}
