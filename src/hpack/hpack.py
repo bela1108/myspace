@@ -4,9 +4,11 @@ Implements the HPACK header compression algorithm as detailed by RFC 7541.
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
+from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 
-from .exceptions import HPACKDecodingError, InvalidTableSizeError, OversizedHeaderListError
+from .exceptions import HPACKDecodingError, HPACKError, InvalidTableSizeError, OversizedHeaderListError
 from .huffman import HuffmanEncoder
 from .huffman_constants import REQUEST_CODES, REQUEST_CODES_LENGTH
 from .huffman_table import decode_huffman
@@ -32,6 +34,52 @@ _PREFIX_BIT_MAX_NUMBERS = [(2 ** i) - 1 for i in range(9)]
 # We default the maximum header list we're willing to accept to 64kB. That's a
 # lot of headers, but if applications want to raise it they can do.
 DEFAULT_MAX_HEADER_LIST_SIZE = 2 ** 16
+
+
+class _BlockTruncatedError(HPACKDecodingError):
+    """
+    Internal signal raised when a header block runs out of bytes while a
+    representation is only partially decoded. During a partial :meth:`Decoder.feed`
+    this is an expected condition, not a protocol violation.
+    """
+
+
+class FeedStatus(StrEnum):
+    """
+    Result of a single :meth:`Decoder.feed` call.
+
+    .. versionadded:: 4.4.0
+    """
+
+    #: More data is required before the header block can be decoded.
+    INCOMPLETE = "incomplete"
+    #: The complete header block was decoded and its effects were committed.
+    COMPLETE = "complete"
+    #: A complete, zero-byte header block was received.
+    EMPTY = "empty"
+    #: The buffered data contains an invalid HPACK representation.
+    ERROR = "error"
+    #: The block ended in the middle of a representation.
+    TRUNCATED = "truncated"
+    #: The decoder was not ready for this call: a previous block is still open,
+    #: or a previous terminal result has not been reset.
+    DUPLICATE = "duplicate"
+
+
+@dataclass(frozen=True, slots=True)
+class FeedResult:
+    """
+    The outcome of a :meth:`Decoder.feed` call.
+
+    ``headers`` is populated once the block is complete; ``error`` carries the
+    exception that caused a terminal failure, otherwise it is ``None``.
+
+    .. versionadded:: 4.4.0
+    """
+
+    status: FeedStatus
+    headers: tuple[HeaderTuple, ...] = ()
+    error: HPACKError | None = None
 
 
 def _unicode_if_needed(header: HeaderWeaklyTyped, raw: bool) -> HeaderTuple:
@@ -465,6 +513,17 @@ class Decoder:
         #: to confirm that it fits in this size.
         self.max_allowed_table_size = self.header_table.maxsize
 
+        # Streaming state used by :meth:`feed`. Everything below describes a
+        # single in-flight header block and is isolated from the committed
+        # ``header_table`` until a block is successfully completed.
+        self._feed_buffer = bytearray()
+        self._feed_raw = False
+        self._feed_active = False
+        self._feed_terminal: FeedStatus | None = None
+        self._feed_error: HPACKError | None = None
+        self._feed_headers: tuple[HeaderTuple, ...] = ()
+        self._feed_scratch: HeaderTable | None = None
+
     @property
     def header_table_size(self) -> int:
         """
@@ -493,7 +552,153 @@ class Decoder:
         """
         log.debug("Decoding %s", data)
 
-        data_mem = memoryview(data)
+        # Parse against a scratch copy of the dynamic table. Nothing is
+        # visible to callers until the whole block has been validated.
+        scratch = self._scratch_table()
+        headers = self._parse_header_block(memoryview(data), scratch)
+        self._commit_table(scratch)
+
+        try:
+            return [_unicode_if_needed(h, raw) for h in headers]
+        except UnicodeDecodeError as err:
+            msg = "Unable to decode headers as UTF-8"
+            raise HPACKDecodingError(msg) from err
+
+    def feed(self, data: bytes = b"", *, final: bool = False, raw: bool = False) -> FeedResult:
+        """
+        Feeds a fragment of an HPACK header block into the decoder.
+
+        A header block may be spread across any number of calls. All parsing
+        happens against a private copy of the dynamic table: the committed
+        :attr:`header_table` is only updated once ``final`` is set on a call
+        and every byte buffered so far forms a valid, complete header block.
+        A failed block therefore never leaves partial dynamic table entries
+        behind, and the next block decodes against the same table state.
+
+        :param data: A bytestring fragment of the HPACK-encoded header block.
+        :param final: Whether this fragment completes the header block. This
+                      maps onto the HTTP/2 ``END_HEADERS`` flag.
+        :param raw: (optional) Whether the returned headers should be raw
+                    byte strings instead of decoded Unicode strings.
+        :returns: A :class:`FeedResult` describing the call. Its
+                  :class:`FeedStatus` distinguishes blocks that still need
+                  data from completed blocks, empty blocks, malformed
+                  blocks, truncated blocks and out-of-order calls.
+        """
+        if self._feed_terminal is not None:
+            return FeedResult(FeedStatus.DUPLICATE)
+
+        if not self._feed_active:
+            self._feed_active = True
+            self._feed_raw = raw
+            self._feed_scratch = self._scratch_table()
+
+        scratch = self._feed_scratch
+        if scratch is None:
+            msg = "feed called without an active header block"
+            raise RuntimeError(msg)
+
+        if data:
+            self._feed_buffer.extend(data)
+
+        if not final:
+            return self._feed_partial(scratch)
+        return self._feed_final(scratch)
+
+    def _feed_partial(self, scratch: HeaderTable) -> FeedResult:
+        """Validates everything buffered so far without committing it."""
+        try:
+            self._parse_header_block(memoryview(self._feed_buffer), scratch)
+        except _BlockTruncatedError:
+            return FeedResult(FeedStatus.INCOMPLETE)
+        except HPACKDecodingError as err:
+            return self._fail_feed(FeedStatus.ERROR, err)
+
+        # All currently buffered bytes decode cleanly, but the peer may still
+        # append more representations before ending the block.
+        return FeedResult(FeedStatus.INCOMPLETE)
+
+    def _feed_final(self, scratch: HeaderTable) -> FeedResult:
+        """
+        Validates the complete buffered block and, on success, commits its
+        dynamic table updates and decoded headers atomically.
+        """
+        if not self._feed_buffer:
+            self._feed_terminal = FeedStatus.EMPTY
+            return FeedResult(FeedStatus.EMPTY)
+
+        try:
+            raw_headers = self._parse_header_block(
+                memoryview(self._feed_buffer),
+                scratch,
+            )
+        except _BlockTruncatedError as err:
+            return self._fail_feed(FeedStatus.TRUNCATED, err)
+        except HPACKDecodingError as err:
+            return self._fail_feed(FeedStatus.ERROR, err)
+
+        self._commit_table(scratch)
+
+        try:
+            headers = tuple(_unicode_if_needed(h, self._feed_raw) for h in raw_headers)
+        except UnicodeDecodeError as err:
+            decoded_error = HPACKDecodingError("Unable to decode headers as UTF-8")
+            decoded_error.__cause__ = err
+            return self._fail_feed(FeedStatus.ERROR, decoded_error)
+
+        self._feed_headers = headers
+        self._feed_terminal = FeedStatus.COMPLETE
+        self._feed_active = False
+        return FeedResult(FeedStatus.COMPLETE, headers)
+
+    def reset_feed(self) -> None:
+        """
+        Discards the in-flight header block without touching the committed
+        dynamic table. Use this to start a new block after a terminal
+        :meth:`feed` result, or to abandon a partially delivered one.
+        """
+        self._feed_buffer = bytearray()
+        self._feed_active = False
+        self._feed_terminal = None
+        self._feed_error = None
+        self._feed_headers = ()
+        self._feed_scratch = None
+
+    def _fail_feed(self, status: FeedStatus, error: HPACKError) -> FeedResult:
+        """
+        Records a terminal failure. The scratch table is dropped so the
+        committed dynamic table stays untouched.
+        """
+        self._feed_terminal = status
+        self._feed_error = error
+        self._feed_active = False
+        self._feed_scratch = None
+        return FeedResult(status, (), error)
+
+    def _scratch_table(self) -> HeaderTable:
+        """
+        Builds an isolated copy of the committed dynamic table for parsing.
+        """
+        scratch = HeaderTable()
+        scratch.restore(self.header_table.snapshot())
+        return scratch
+
+    def _commit_table(self, scratch: HeaderTable) -> None:
+        """
+        Publishes the scratch table state onto the committed header table.
+        """
+        self.header_table.restore(scratch.snapshot())
+
+    def _parse_header_block(
+        self,
+        data: memoryview,
+        table: HeaderTable,
+    ) -> list[HeaderTuple]:
+        """
+        Parses a complete header block against the supplied table, which is
+        mutated in place by any indexed representations or table size changes.
+        Raises ``_BlockTruncatedError`` if the block simply runs out of bytes.
+        """
         headers: list[HeaderTuple] = []
         data_len = len(data)
         inflated_size = 0
@@ -515,12 +720,14 @@ class Decoder:
 
             if indexed:
                 header, consumed = self._decode_indexed(
-                    data_mem[current_index:],
+                    data[current_index:],
+                    table,
                 )
             elif literal_index:
                 # It's a literal header that does affect the header table.
                 header, consumed = self._decode_literal_index(
-                    data_mem[current_index:],
+                    data[current_index:],
+                    table,
                 )
             elif encoding_update:
                 # It's an update to the encoding context. These are forbidden
@@ -529,13 +736,15 @@ class Decoder:
                     msg = "Table size update not at the start of the block"
                     raise HPACKDecodingError(msg)
                 consumed = self._update_encoding_context(
-                    data_mem[current_index:],
+                    data[current_index:],
+                    table,
                 )
                 header = None
             else:
                 # It's a literal header that does not affect the header table.
                 header, consumed = self._decode_literal_no_index(
-                    data_mem[current_index:],
+                    data[current_index:],
+                    table,
                 )
 
             if header:
@@ -551,51 +760,76 @@ class Decoder:
         # Confirm that the table size is lower than the maximum. We do this
         # here to ensure that we catch when the max has been *shrunk* and the
         # remote peer hasn't actually done that.
-        self._assert_valid_table_size()
+        self._assert_valid_table_size(table)
 
-        try:
-            return [_unicode_if_needed(h, raw) for h in headers]
-        except UnicodeDecodeError as err:
-            msg = "Unable to decode headers as UTF-8"
-            raise HPACKDecodingError(msg) from err
+        return headers
 
-    def _assert_valid_table_size(self) -> None:
+    def _assert_valid_table_size(self, table: HeaderTable) -> None:
         """
         Check that the table size set by the encoder is lower than the maximum
         we expect to have.
         """
-        if self.header_table_size > self.max_allowed_table_size:
+        if table.maxsize > self.max_allowed_table_size:
             msg = "Encoder did not shrink table size to within the max"
             raise InvalidTableSizeError(msg)
 
-    def _update_encoding_context(self, data: bytes | memoryview) -> int:
+    def _update_encoding_context(self, data: bytes | memoryview, table: HeaderTable) -> int:
         """
         Handles a byte that updates the encoding context.
         """
         # We've been asked to resize the header table.
-        new_size, consumed = decode_integer(data, 5)
+        new_size, consumed = self._decode_integer(data, 5)
         if new_size > self.max_allowed_table_size:
             msg = "Encoder exceeded max allowable table size"
             raise InvalidTableSizeError(msg)
-        self.header_table_size = new_size
+        table.maxsize = new_size
         return consumed
 
-    def _decode_indexed(self, data: bytes | memoryview) -> tuple[HeaderTuple, int]:
+    def _decode_integer(self, data: bytes | memoryview, prefix_bits: int) -> tuple[int, int]:
+        """
+        Decodes an HPACK integer, translating a short buffer into the internal
+        truncation signal used by streaming feeds.
+        """
+        try:
+            return decode_integer(data, prefix_bits)
+        except HPACKDecodingError as err:
+            if isinstance(err.__cause__, IndexError):
+                raise _BlockTruncatedError(str(err)) from err
+            raise
+
+    def _decode_indexed(
+        self,
+        data: bytes | memoryview,
+        table: HeaderTable,
+    ) -> tuple[HeaderTuple, int]:
         """
         Decodes a header represented using the indexed representation.
         """
-        index, consumed = decode_integer(data, 7)
-        header = HeaderTuple(*self.header_table.get_by_index(index))
+        index, consumed = self._decode_integer(data, 7)
+        header = HeaderTuple(*table.get_by_index(index))
         log.debug("Decoded %s, consumed %d", header, consumed)
         return header, consumed
 
-    def _decode_literal_no_index(self, data: bytes | memoryview) -> tuple[HeaderTuple, int]:
-        return self._decode_literal(data, should_index=False)
+    def _decode_literal_no_index(
+        self,
+        data: bytes | memoryview,
+        table: HeaderTable,
+    ) -> tuple[HeaderTuple, int]:
+        return self._decode_literal(data, should_index=False, table=table)
 
-    def _decode_literal_index(self, data: bytes | memoryview) -> tuple[HeaderTuple, int]:
-        return self._decode_literal(data, should_index=True)
+    def _decode_literal_index(
+        self,
+        data: bytes | memoryview,
+        table: HeaderTable,
+    ) -> tuple[HeaderTuple, int]:
+        return self._decode_literal(data, should_index=True, table=table)
 
-    def _decode_literal(self, data: bytes | memoryview, should_index: bool) -> tuple[HeaderTuple, int]:
+    def _decode_literal(
+        self,
+        data: bytes | memoryview,
+        should_index: bool,
+        table: HeaderTable,
+    ) -> tuple[HeaderTuple, int]:
         """
         Decodes a header represented with a literal.
         """
@@ -620,8 +854,8 @@ class Decoder:
 
         if indexed_name:
             # Indexed header name.
-            index, consumed = decode_integer(data, name_len)
-            name = self.header_table.get_by_index(index)[0]
+            index, consumed = self._decode_integer(data, name_len)
+            name = table.get_by_index(index)[0]
 
             total_consumed = consumed
             length = 0
@@ -630,24 +864,24 @@ class Decoder:
             # move forward.
             data = data[1:]
 
-            length, consumed = decode_integer(data, 7)
-            name = data[consumed:consumed + length]
+            length, consumed = self._decode_integer(data, 7)
+            name = data[consumed : consumed + length]
             if len(name) != length:
                 msg = "Truncated header block"
-                raise HPACKDecodingError(msg)
+                raise _BlockTruncatedError(msg)
 
             if data[0] & 0x80:
                 name = decode_huffman(name)
             total_consumed = consumed + length + 1  # Since we moved forward 1.
 
-        data = data[consumed + length:]
+        data = data[consumed + length :]
 
         # The header value is definitely length-based.
-        length, consumed = decode_integer(data, 7)
-        value = data[consumed:consumed + length]
+        length, consumed = self._decode_integer(data, 7)
+        value = data[consumed : consumed + length]
         if len(value) != length:
             msg = "Truncated header block"
-            raise HPACKDecodingError(msg)
+            raise _BlockTruncatedError(msg)
 
         if data[0] & 0x80:
             value = decode_huffman(value)
@@ -665,7 +899,7 @@ class Decoder:
 
         # If we've been asked to index this, add it to the header table.
         if should_index:
-            self.header_table.add(name, value)
+            table.add(name, value)
 
         log.debug(
             "Decoded %s, total consumed %d bytes, indexed %s",

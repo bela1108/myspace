@@ -144,6 +144,28 @@ class HeaderTable:
             self.dynamic_entries
         )
 
+    def snapshot(self) -> tuple[int, int, bool, deque[tuple[bytes, bytes]]]:
+        """
+        Captures the complete dynamic table state so that a decoder can roll
+        back to it if a header block fails to decode.
+        """
+        return (
+            self._maxsize,
+            self._current_size,
+            self.resized,
+            deque(self.dynamic_entries),
+        )
+
+    def restore(self, snapshot: tuple[int, int, bool, deque[tuple[bytes, bytes]]]) -> None:
+        """
+        Restores dynamic table state previously captured by snapshot.
+        """
+        maxsize, current_size, resized, dynamic_entries = snapshot
+        self._maxsize = maxsize
+        self._current_size = current_size
+        self.resized = resized
+        self.dynamic_entries = deque(dynamic_entries)
+
     def add(self, name: bytes, value: bytes) -> None:
         """
         Adds a new entry to the table

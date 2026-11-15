@@ -10,7 +10,18 @@ dev
 
 **API Changes (Backward Compatible)**
 
+- Added ``Decoder.feed`` for transactional, fragment-based decoding of a
+  header block. Parsing runs against a private copy of the dynamic table
+  and is only committed once the complete block validates, so failed or
+  truncated blocks can no longer leave half-inserted entries that pollute
+  later blocks. The new ``FeedStatus``/``FeedResult`` API distinguishes
+  incomplete, complete, empty, malformed, truncated and duplicate calls,
+  and ``Decoder.reset_feed`` abandons an in-flight block.
+
 **Bugfixes**
+
+- ``Decoder.decode`` now also parses against a scratch table and leaves
+  the dynamic table untouched when a header block fails to decode.
 
 
 4.2.0 (2026-06-22)
