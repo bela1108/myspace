@@ -15,6 +15,7 @@ import itertools
 
 from pcapng import strictness as strictness
 from pcapng.constants import link_types
+from pcapng.exceptions import CorruptedFile
 from pcapng.structs import (
     IntField,
     ListField,
@@ -465,12 +466,21 @@ class SimplePacket(BasePacketBlock):
         if "raw" in kwargs:
             # Since we can't be sure of the packet length without the snap length,
             # we have to do a bit of work here
-            stream = io.BytesIO(kwargs["raw"])
+            raw = kwargs["raw"]
+            if len(raw) < 4:
+                # Not even enough room for the packet_len field; the
+                # packet data length would be negative.
+                raise CorruptedFile(
+                    "Simple Packet Block too short: {0} bytes, "
+                    "need at least 4 for the packet length".format(len(raw))
+                )
+            stream = io.BytesIO(raw)
             self._decoded = struct_decode(self.schema[:1], stream, kwargs["endianness"])
-            # Now we can get our ``captured_len`` property which is required
-            # to really know how much data we can load
-            rb = RawBytes(self.captured_len)
-            self._decoded["packet_data"] = rb.load(stream)
+            # Now we can derive the captured length from the interface snap
+            # length, which is required to really know how much data to load
+            captured_len = self._captured_len_for(self._decoded["packet_len"])
+            self._check_raw_bounds(raw, captured_len)
+            self._decoded["packet_data"] = raw[4 : 4 + captured_len]
         else:
             super(SimplePacket, self).__init__(section, **kwargs)
 
@@ -487,16 +497,54 @@ class SimplePacket(BasePacketBlock):
         return 0
 
     @property
+    def interface(self):
+        # The SPB has no Interface ID field: it always refers to the first
+        # interface of the section. If no Interface Description Block was
+        # seen, we must not pretend interface 0 exists.
+        try:
+            return self.section.interfaces[0]
+        except KeyError:
+            raise CorruptedFile(
+                "Simple Packet Block requires a preceding Interface "
+                "Description Block, but none was found"
+            )
+
+    @property
     def captured_len(self):
         """
         "...the SnapLen value MUST be used to determine the size of the Packet
         Data field length."
         """
+        return self._captured_len_for(self.packet_len)
+
+    def _captured_len_for(self, packet_len):
         snap_len = self.interface.snaplen
         if snap_len == 0:  # unlimited
-            return self.packet_len
+            return packet_len
         else:
-            return min(snap_len, self.packet_len)
+            return min(snap_len, packet_len)
+
+    def _check_raw_bounds(self, raw, captured_len):
+        """
+        Check the boundary relation between the block total length, the
+        captured packet data and its padding: the block must hold at least
+        ``captured_len`` bytes plus their 32-bit alignment padding, and the
+        padding bytes must be zero. Any further trailing bytes (as produced
+        by some old exporters) are ignored rather than mistaken for payload.
+        """
+        data_len = len(raw) - 4  # raw includes the packet_len field
+        padding = (4 - (captured_len % 4)) % 4
+        if data_len < captured_len + padding:
+            raise CorruptedFile(
+                "Simple Packet Block holds {0} bytes of packet data, but "
+                "{1} are required (captured length {2} plus {3} bytes of "
+                "padding)".format(
+                    data_len, captured_len + padding, captured_len, padding
+                )
+            )
+        pad_start = 4 + captured_len
+        if raw[pad_start : pad_start + padding] != b"\x00" * padding:
+            raise CorruptedFile("Simple Packet Block padding is not all zeroes")
 
     def _encode(self, outstream):
         fld_size = IntField(32, False)

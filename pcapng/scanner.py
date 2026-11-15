@@ -86,9 +86,20 @@ class FileScanner(object):
 
         if block_type in blocks.KNOWN_BLOCKS:
             # This is a known block -- instantiate it
-            return self.current_section.new_member(
-                blocks.KNOWN_BLOCKS[block_type], raw=data
-            )
+            block_class = blocks.KNOWN_BLOCKS[block_type]
+            if issubclass(block_class, blocks.SimplePacket) and (
+                not self.current_section.interfaces
+            ):
+                # A Simple Packet Block implicitly refers to the first
+                # interface of the section; without any Interface
+                # Description Block we cannot fabricate one. The block has
+                # already been consumed, so callers may catch this and
+                # resume scanning from the next block.
+                raise CorruptedFile(
+                    "Simple Packet Block found before any Interface "
+                    "Description Block"
+                )
+            return self.current_section.new_member(block_class, raw=data)
 
         if block_type in BLK_RESERVED_CORRUPTED:
             raise CorruptedFile(
