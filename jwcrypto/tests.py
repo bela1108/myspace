@@ -2091,12 +2091,14 @@ class TestJWT(unittest.TestCase):
             jwt.JWT(jwt=token, key=keyset, algs=jwe_algs_and_rsa1_5,
                     check_claims={'exp': 1300819380})
 
-        # add right key
+        # add right key, producing two keys with the same kid
         keyset.add(key)
 
-        # now decrypt with key
-        jwt.JWT(jwt=token, key=keyset, algs=jwe_algs_and_rsa1_5,
-                check_claims={'exp': 1300819380})
+        # duplicate kids are ambiguous: automatic decryption must fail
+        # fast instead of silently trying every candidate key.
+        with self.assertRaises(jwk.AmbiguousKeySelection):
+            jwt.JWT(jwt=token, key=keyset, algs=jwe_algs_and_rsa1_5,
+                    check_claims={'exp': 1300819380})
 
     def test_invalid_claim_type(self):
         key = jwk.JWK(**E_A2_key)

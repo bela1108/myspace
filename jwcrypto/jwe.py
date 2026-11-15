@@ -11,6 +11,7 @@ from jwcrypto.common import check_crit, merge_headers, validate_headers
 from jwcrypto.common import json_decode, json_encode
 from jwcrypto.jwa import JWA
 from jwcrypto.jwk import JWKSet
+from jwcrypto.jwk import AmbiguousKeySelection
 
 # Limit the amount of data we are willing to decompress by default.
 default_max_compressed_size = 256 * 1024
@@ -376,13 +377,9 @@ class JWE:
         aad = aad.encode('utf-8')
 
         if isinstance(key, JWKSet):
-            keys = key
-            if 'kid' in jh:
-                kid_keys = key.get_keys(jh['kid'])
-                if not kid_keys:
-                    raise JWKeyNotFound('Key ID {} not in key set'.format(
-                                        jh['kid']))
-                keys = kid_keys
+            # The gate raises on duplicate kids or quarantined-only matches
+            # instead of silently picking an arbitrary candidate key.
+            keys = key.get_verification_keys(jh.get('kid'))
 
             for k in keys:
                 try:
@@ -463,6 +460,8 @@ class JWE:
                     # Stop after the first successful recipient.
                     if self.plaintext is not None:
                         break
+                except AmbiguousKeySelection:
+                    raise
                 except Exception as e:  # pylint: disable=broad-except
                     if isinstance(e, JWKeyNotFound):
                         missingkey = True
@@ -470,6 +469,8 @@ class JWE:
         else:
             try:
                 self._decrypt(key, self.objects, max_plaintext=max_plaintext)
+            except AmbiguousKeySelection:
+                raise
             except Exception as e:  # pylint: disable=broad-except
                 if isinstance(e, JWKeyNotFound):
                     missingkey = True

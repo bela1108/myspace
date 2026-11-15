@@ -3,6 +3,8 @@
 import os
 from binascii import hexlify, unhexlify
 from collections import namedtuple
+from dataclasses import dataclass
+from typing import Any
 from enum import Enum
 
 from cryptography import x509
@@ -13,7 +15,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 
 from typing_extensions import deprecated
 
-from jwcrypto.common import JWException
+from jwcrypto.common import JWException, JWKeyNotFound
 from jwcrypto.common import base64url_decode, base64url_encode
 from jwcrypto.common import json_decode, json_encode
 
@@ -357,6 +359,35 @@ class InvalidJWKValue(JWException):
     This exception is raised when an invalid/unknown value is used in the
     context of an operation that requires specific values to be used based
     on the key type or other constraints.
+    """
+
+
+class JWKSetBudgetExceeded(JWException):
+    """JWK Set import budget exceeded.
+
+    Raised when an imported key set cannot be safely parsed because it
+    crosses a hard structural budget, such as the overall serialized
+    size or the number of key entries. Individual bad key entries are
+    never raised through this exception; they are recorded in the key
+    set quarantine instead.
+    """
+
+
+class AmbiguousKeySelection(JWException):
+    """Ambiguous key selection in a JWK Set.
+
+    Raised when automatic verification/decryption cannot deterministically
+    select a key, typically because several usable keys share the same
+    'kid' requested by the JOSE header.
+    """
+
+
+class QuarantinedKeyNotAvailable(JWKeyNotFound):
+    """Requested key is only available as a quarantined entry.
+
+    Raised when the key matching a requested 'kid' failed bounded
+    parsing and was isolated instead of being imported. The failure
+    details can be exported from the key set quarantine.
     """
 
 
@@ -840,7 +871,7 @@ class JWK(dict):
 
     @property
     def has_public(self):
-        """Whether this JWK has an asymmetric Public key value."""
+        """""Whether this JWK has an asymmetric Public key value."""""
         if self.is_symmetric:
             return False
         reg = JWKValuesRegistry[self.get('kty')]
@@ -851,7 +882,7 @@ class JWK(dict):
 
     @property
     def has_private(self):
-        """Whether this JWK has an asymmetric Private key value."""
+        """""Whether this JWK has an asymmetric Private key value."""""
         if self.is_symmetric:
             return False
         reg = JWKValuesRegistry[self.get('kty')]
@@ -862,13 +893,13 @@ class JWK(dict):
 
     @property
     def is_symmetric(self):
-        """Whether this JWK is a symmetric key."""
+        """""Whether this JWK is a symmetric key."""""
         return self.get('kty') == 'oct'
 
     @property
     @deprecated('')
     def key_type(self):
-        """The Key type"""
+        """""The Key type"""""
         return self.get('kty')
 
     @property
@@ -882,7 +913,7 @@ class JWK(dict):
     @property
     @deprecated('')
     def key_curve(self):
-        """The Curve Name."""
+        """""The Curve Name."""""
         if self.get('kty') not in ['EC', 'OKP']:
             raise InvalidJWKType('Not an EC or OKP key')
         return self.get('crv')
@@ -1423,18 +1454,109 @@ class _JWKkeys(set):
             raise TypeError('Only JWK objects are valid elements')
         set.add(self, elem)
 
+# Default parsing budgets for JWKSet imports. They bound the amount of
+# work and memory an untrusted keyset can force on the importer.
+DEFAULT_JWKSET_RAW_SIZE_LIMIT = 8 * 1024 * 1024       # 8 MiB of raw JSON
+DEFAULT_JWKSET_MAX_KEYS = 1000
+DEFAULT_JWKSET_MAX_TOTAL_DECODED_BYTES = 1024 * 1024  # 1 MiB
+DEFAULT_JWKSET_MAX_MEMBER_ENCODED_LENGTH = 16 * 1024  # ~12 KiB decoded
+DEFAULT_JWKSET_MAX_DUPLICATE_KID = 0
+DEFAULT_JWKSET_MAX_QUARANTINE = 1000
+
+@dataclass(frozen=True)
+class JWKSetBudget:
+    """Bounded parsing limits applied when importing a JWKSet.
+
+    All limits apply to a single import_keyset() call. Keys
+    accepted within the budget are always retained even if a
+    later entry exhausts a limit; the offending entries are
+    quarantined instead.
+
+    :param max_raw_size: Maximum accepted size in bytes of the
+    serialized keyset before JSON parsing.
+    :param max_keys: Maximum number of keys that may be accepted.
+    :param max_total_decoded_bytes: Maximum cumulative decoded
+    bytes from base64url key members of accepted entries.
+    :param max_member_encoded_length: Maximum on-the-wire length
+    of any single string member of a key entry.
+    :param max_duplicate_kid: Accepted entries allowed to share a
+    kid with a prior entry; 0 makes duplicates ambiguous.
+    :param max_quarantine: Max quarantined entries retained."""
+
+    max_raw_size: int = DEFAULT_JWKSET_RAW_SIZE_LIMIT
+    max_keys: int = DEFAULT_JWKSET_MAX_KEYS
+    max_total_decoded_bytes: int = DEFAULT_JWKSET_MAX_TOTAL_DECODED_BYTES
+    max_member_encoded_length: int = DEFAULT_JWKSET_MAX_MEMBER_ENCODED_LENGTH
+    max_duplicate_kid: int = DEFAULT_JWKSET_MAX_DUPLICATE_KID
+    max_quarantine: int = DEFAULT_JWKSET_MAX_QUARANTINE
+
+
+@dataclass
+class QuarantinedKey:
+    """A keyset entry that was rejected instead of being constructed.
+
+    :param index: Zero-based position in the keys array.
+    :param reason: Short machine-readable rejection reason.
+    :param detail: Human-readable diagnostic detail.
+    :param kid: The entry kid value, when available.
+    :param kty: The entry kty value, when available."""
+
+    index: int
+    reason: str
+    detail: str
+    kid: Any = None
+    kty: Any = None
+
+    def as_dict(self):
+        """Export the quarantine record as a plain dictionary."""
+        return {
+            'index': self.index,
+            'reason': self.reason,
+            'detail': self.detail,
+            'kid': self.kid,
+            'kty': self.kty,
+        }
+
+
+# Stable, machine-readable quarantine reasons
+QR_ENTRY_NOT_OBJECT = 'entry_not_object'
+QR_KTY_MISSING = 'kty_missing'
+QR_KTY_INVALID = 'kty_invalid'
+QR_MEMBER_TOO_LONG = 'member_too_long'
+QR_MEMBER_NOT_STRING = 'member_not_string'
+QR_INVALID_BASE64URL = 'invalid_base64url'
+QR_B64_BUDGET_EXCEEDED = 'decoded_byte_budget_exceeded'
+QR_KEY_COUNT_EXCEEDED = 'key_count_exceeded'
+QR_DUPLICATE_KID = 'duplicate_kid'
+QR_CONSTRUCTION_FAILED = 'construction_failed'
+
+
+def _b64url_decoded_size(encoded):
+    """Return decoded size of a base64url string without int parsing."""
+    pad = (-len(encoded)) % 4
+    return (len(encoded) + pad) * 3 // 4 - pad
+
 
 class JWKSet(dict):
     """A set of JWK objects.
 
-    Inherits from the standard 'dict' builtin type.
-    Creates a special key 'keys' that is of a type derived from 'set'
-    The 'keys' attribute accepts only :class:`jwcrypto.jwk.JWK` elements.
-    """
+    Inherits from the standard dict builtin type. Creates a special
+    key keys that is a set accepting only JWK elements.
+
+    Keysets imported through import_keyset() are parsed under a
+    JWKSetBudget: key count, decoded byte volume, member length and
+    duplicate kid usage are bounded, and entries that fail the
+    lightweight checks or exhaust a budget are recorded in a
+    quarantine list instead of aborting the whole import."""
 
     def __init__(self, *args, **kwargs):
         super(JWKSet, self).__init__()
         super(JWKSet, self).__setitem__('keys', _JWKkeys())
+        object.__setattr__(self, '_quarantine', [])
+        object.__setattr__(self, '_quarantine_suppressed', 0)
+        object.__setattr__(self, '_last_budget', None)
+        object.__setattr__(self, '_budget', JWKSetBudget())
+        object.__setattr__(self, '_total_decoded_bytes', 0)
         self.update(*args, **kwargs)
 
     def __iter__(self):
@@ -1466,19 +1588,11 @@ class JWKSet(dict):
         self['keys'].add(elem)
 
     def export(self, private_keys=True, as_dict=False):
-        """Exports a RFC 7517 key set.
-           Exports as json by default, or as dict if requested.
+        """Exports a RFC 7517 key set, as json by default or dict.
 
-        :param private_key(bool): Whether to export private keys.
-                                  Defaults to True.
-        :param as_dict(bool): Whether to return a dict instead of
-                              a JSON object
-
-        :return: A portable representation of the key set.
-            If as_dict is True then a dictionary is returned.
-            By default a json string
-        :rtype: `str` or `dict`
-        """
+        :param private_keys(bool): Whether to export private keys.
+        :param as_dict(bool): Return a dict instead of a json string.
+        :return: A portable representation of the key set."""
         exp_dict = {}
         for k, v in self.items():
             if k == 'keys':
@@ -1491,48 +1605,215 @@ class JWKSet(dict):
             return exp_dict
         return json_encode(exp_dict)
 
-    def import_keyset(self, keyset):
-        """Imports a RFC 7517 key set using the standard JSON format.
+    @property
+    def quarantine(self):
+        """The list of QuarantinedKey records from the last import."""
+        return list(self._quarantine)
 
-        :param keyset: The RFC 7517 representation of a JOSE key set.
-        """
+    @property
+    def quarantine_suppressed_count(self):
+        """Count of rejected entries dropped past the quarantine cap."""
+        return self._quarantine_suppressed
+
+    @property
+    def total_decoded_bytes(self):
+        """Cumulative decoded bytes counted for accepted entries."""
+        return self._total_decoded_bytes
+
+    @property
+    def last_budget(self):
+        """The JWKSetBudget used by the last import, if any."""
+        return self._last_budget
+
+    def quarantine_report(self):
+        """Export every quarantine record as a plain dictionary."""
+        return [record.as_dict() for record in self._quarantine]
+
+    def has_quarantine(self):
+        """Return True if any entry was quarantined or suppressed."""
+        return bool(self._quarantine) or self._quarantine_suppressed > 0
+
+    def _quarantine_entry(self, index, reason, detail, kid=None, kty=None):
+        record = QuarantinedKey(index=index, reason=reason, detail=detail,
+                                kid=kid, kty=kty)
+        if len(self._quarantine) < self._budget.max_quarantine:
+            self._quarantine.append(record)
+        else:
+            self._quarantine_suppressed += 1
+
+    def duplicate_kids(self):
+        """Return the set of kids carried by more than one accepted key."""
+        seen = set()
+        duplicates = set()
+        for key in self['keys']:
+            kid = key.get('kid')
+            if kid is None:
+                continue
+            if kid in seen:
+                duplicates.add(kid)
+            seen.add(kid)
+        return duplicates
+
+    def _precheck_entry(self, index, entry):
+        """Run lightweight, allocation-free validation on a raw entry.
+
+        Only field shapes, string lengths and base64url decodability
+        are checked here; no cryptographic object or large integer is
+        constructed. Returns a tuple (decoded_bytes, error) where
+        error is None when the entry passes the lightweight checks."""
+        if not isinstance(entry, dict):
+            raise InvalidJWKValue(
+                'keyset entry at index %d is not a JSON object' % (index,))
+        kty = entry.get('kty')
+        if kty is None:
+            return 0, (QR_KTY_MISSING, 'missing kty')
+        if not isinstance(kty, str) or kty not in JWKTypesRegistry:
+            return 0, (QR_KTY_INVALID,
+                        'unknown or invalid kty: %r' % (kty,))
+        decoded_bytes = 0
+        for name, value in entry.items():
+            if not isinstance(name, str):
+                continue
+            if isinstance(value, str):
+                if len(value) > self._budget.max_member_encoded_length:
+                    return 0, (QR_MEMBER_TOO_LONG,
+                                'member %r length %d exceeds limit %d'
+                                % (name, len(value),
+                                   self._budget.max_member_encoded_length))
+            param = JWKValuesRegistry[kty].get(name)
+            if param is None or param.type not in (ParmType.b64,
+                                                   ParmType.b64u):
+                continue
+            if not isinstance(value, str):
+                return 0, (QR_MEMBER_NOT_STRING,
+                            'member %r must be a string' % (name,))
+            try:
+                decoded = base64url_decode(value)
+            except Exception as e:  # pylint: disable=broad-except
+                return 0, (QR_INVALID_BASE64URL,
+                            'member %r is not base64url encoded: %s'
+                            % (name, e))
+            decoded_bytes += len(decoded)
+        return decoded_bytes, None
+
+    def import_keyset(self, keyset, budget=None):
+        """Imports a RFC 7517 key set under a bounded JWKSetBudget.
+
+        Lightweight field checks run before any JWK is constructed.
+        Entries that fail a check or exhaust a budget are recorded in
+        the quarantine with their array index and reason; keys already
+        accepted within the budget are never rolled back.
+
+        :param keyset: The RFC 7517 representation of a JOSE key set,
+        as a JSON string/bytes or a parsed dictionary.
+        :param budget: An optional JWKSetBudget. Defaults to the
+        library-wide conservative limits.
+        :raises InvalidJWKValue: if the keyset is structurally
+        invalid or is not an object with a keys array.
+        :raises JWKSetBudgetExceeded: if the serialized keyset is
+        larger than the configured raw size limit."""
+        if budget is None:
+            budget = JWKSetBudget()
+        if not isinstance(budget, JWKSetBudget):
+            raise TypeError('budget must be a JWKSetBudget instance')
+        self._budget = budget
+        object.__setattr__(self, '_last_budget', budget)
+        object.__setattr__(self, '_quarantine', [])
+        object.__setattr__(self, '_quarantine_suppressed', 0)
+        object.__setattr__(self, '_total_decoded_bytes', 0)
+
         try:
-            jwkset = json_decode(keyset)
-            if 'keys' not in jwkset:
-                raise ValueError("'keys' not in set")
+            if isinstance(keyset, (bytes, str)):
+                raw_size = len(keyset)
+                if raw_size > budget.max_raw_size:
+                    raise JWKSetBudgetExceeded(
+                        'keyset raw size %d exceeds limit %d'
+                        % (raw_size, budget.max_raw_size))
+                jwkset = json_decode(keyset)
+            elif isinstance(keyset, dict):
+                jwkset = keyset
+            else:
+                raise ValueError(
+                    'keyset must be a JSON string/bytes or dict')
+            if not isinstance(jwkset, dict) or 'keys' not in jwkset:
+                raise ValueError('keys not in set')
+            raw_keys = jwkset['keys']
+            if not isinstance(raw_keys, list):
+                raise ValueError('keys must be an array')
 
-            for k, v in jwkset.items():
-                if k == 'keys':
-                    for jwk in v:
-                        try:
-                            self['keys'].add(JWK(**jwk))
-                        except InvalidJWKType:
-                            pass
-                else:
-                    self[k] = v
+            kid_counts = {}
+            for index, entry in enumerate(raw_keys):
+                decoded_bytes, error = self._precheck_entry(index, entry)
+                if error is not None:
+                    reason, detail = error
+                    kid = entry.get('kid') if isinstance(entry, dict) else None
+                    kty = entry.get('kty') if isinstance(entry, dict) else None
+                    self._quarantine_entry(index, reason, detail, kid, kty)
+                    continue
+
+                kid = entry.get('kid')
+                if kid is not None:
+                    count = kid_counts.get(kid, 0)
+                    if count > budget.max_duplicate_kid:
+                        self._quarantine_entry(
+                            index, QR_DUPLICATE_KID,
+                            'duplicate kid %r (limit %d)'
+                            % (kid, budget.max_duplicate_kid),
+                            kid=kid, kty=entry.get('kty'))
+                        continue
+
+                if len(self['keys']) >= budget.max_keys:
+                    self._quarantine_entry(
+                        index, QR_KEY_COUNT_EXCEEDED,
+                        'key count limit %d reached'
+                        % (budget.max_keys,),
+                        kid=kid, kty=entry.get('kty'))
+                    continue
+                if (self._total_decoded_bytes + decoded_bytes
+                        > budget.max_total_decoded_bytes):
+                    self._quarantine_entry(
+                        index, QR_B64_BUDGET_EXCEEDED,
+                        'decoded byte budget %d exceeded'
+                        % (budget.max_total_decoded_bytes,),
+                        kid=kid, kty=entry.get('kty'))
+                    continue
+
+                try:
+                    key = JWK(**entry)
+                except Exception as e:  # pylint: disable=broad-except
+                    self._quarantine_entry(
+                        index, QR_CONSTRUCTION_FAILED, str(e),
+                        kid=kid, kty=entry.get('kty'))
+                    continue
+                self['keys'].add(key)
+                self._total_decoded_bytes += decoded_bytes
+                if kid is not None:
+                    kid_counts[kid] = kid_counts.get(kid, 0) + 1
+
+            for name, value in jwkset.items():
+                if name != 'keys':
+                    self[name] = value
+        except (InvalidJWKValue, JWKSetBudgetExceeded):
+            raise
         except Exception as e:  # pylint: disable=broad-except
             raise InvalidJWKValue from e
 
     @classmethod
-    def from_json(cls, keyset):
+    def from_json(cls, keyset, budget=None):
         """Creates a RFC 7517 key set from the standard JSON format.
 
         :param keyset: The RFC 7517 representation of a JOSE key set.
-
-        :return: A JWKSet object.
-        :rtype: JWKSet
-        """
+        :param budget: An optional JWKSetBudget.
+        :return: A JWKSet object."""
         obj = cls()
-        obj.import_keyset(keyset)
+        obj.import_keyset(keyset, budget=budget)
         return obj
 
     def get_key(self, kid):
-        """Gets a key from the set.
-        :param kid: the 'kid' key identifier.
+        """Gets a key from the set identified by kid.
 
-        :return: A JWK from the set
-        :rtype: JWK
-        """
+        :raises InvalidJWKValue: if more than one key matches.
+        :return: A JWK, or None when there is no match."""
         keys = self.get_keys(kid)
         if len(keys) > 1:
             raise InvalidJWKValue(
@@ -1543,13 +1824,47 @@ class JWKSet(dict):
             return None
 
     def get_keys(self, kid):
-        """Gets keys from the set with matching kid.
-        :param kid: the 'kid' key identifier.
+        """Gets accepted keys from the set with matching kid."""
+        return {key for key in self['keys']
+                if key.get('kid') == kid}
 
-        :return: a List of keys
-        :rtype: `list`
-        """
-        return {key for key in self['keys'] if key.get('kid') == kid}
+    def get_verification_keys(self, kid=None):
+        """Select usable keys for automatic verification/decryption.
+
+        Unlike get_keys(), this never resolves ambiguity silently:
+        duplicate kids among accepted keys raise AmbiguousKeySelection,
+        and a kid that only matches quarantined entries raises
+        QuarantinedKeyNotAvailable. When kid is None the whole set is
+        returned, but only after rejecting duplicate kids globally.
+
+        :raises AmbiguousKeySelection: on duplicate kids.
+        :raises QuarantinedKeyNotAvailable: if the kid only matches
+        quarantined entries.
+        :raises JWKeyNotFound: if the kid is not present at all."""
+        duplicates = self.duplicate_kids()
+        if kid is not None and kid in duplicates:
+            raise AmbiguousKeySelection(
+                'Multiple keys found with kid %r' % (kid,))
+        if kid is None and duplicates:
+            raise AmbiguousKeySelection(
+                'Key set contains duplicate kids: %r'
+                % (sorted(duplicates),))
+
+        if kid is None:
+            return set(self['keys'])
+
+        kid_keys = self.get_keys(kid)
+        if kid_keys:
+            return kid_keys
+
+        quarantined = [record for record in self._quarantine
+                       if record.kid == kid]
+        if quarantined:
+            raise QuarantinedKeyNotAvailable(
+                'kid %r only matches quarantined entries: %r'
+                % (kid, quarantined))
+        raise JWKeyNotFound(
+            'Key ID %r not found in key set' % (kid,))
 
     def __repr__(self):
         repr_dict = {}
@@ -1560,4 +1875,7 @@ class JWKSet(dict):
                     keys.append(repr(jwk))
                 v = keys
             repr_dict[k] = v
+        if self._quarantine:
+            repr_dict['quarantine'] = self.quarantine_report()
         return json_encode(repr_dict)
+

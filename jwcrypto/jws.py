@@ -7,7 +7,9 @@ from jwcrypto.common import base64url_decode, base64url_encode
 from jwcrypto.common import check_crit, merge_headers, validate_headers
 from jwcrypto.common import json_decode, json_encode
 from jwcrypto.jwa import JWA
+from jwcrypto.jwk import AmbiguousKeySelection
 from jwcrypto.jwk import JWK, JWKSet
+from jwcrypto.jwk import QuarantinedKeyNotAvailable
 
 JWSHeaderRegistry = {
     'alg': JWSEHeaderParameter('Algorithm', False, True, None),
@@ -280,13 +282,10 @@ class JWS:
             signer.verify(signature)
             self.verifylog.append("Success")
         elif isinstance(key, JWKSet):
-            keys = key
-            if 'kid' in chk_hdrs:
-                kid_keys = key.get_keys(chk_hdrs['kid'])
-                if not kid_keys:
-                    raise JWKeyNotFound('Key ID {} not in key set'.format(
-                                        chk_hdrs['kid']))
-                keys = kid_keys
+            # The gate refuses ambiguous (duplicate kid / quarantined
+            # entries) or unavailable key sets instead of silently picking
+            # an arbitrary key.
+            keys = key.get_verification_keys(chk_hdrs.get('kid'))
 
             for k in keys:
                 try:
@@ -347,6 +346,9 @@ class JWS:
                              obj.get('protected', None),
                              obj.get('header', None))
                 obj['valid'] = True
+            except (AmbiguousKeySelection,
+                    QuarantinedKeyNotAvailable):
+                raise
             except Exception as e:  # pylint: disable=broad-except
                 if isinstance(e, JWKeyNotFound):
                     missingkey = True
@@ -363,6 +365,9 @@ class JWS:
                                  o.get('header', None))
                     # Ok if at least one verifies
                     obj['valid'] = True
+                except (AmbiguousKeySelection,
+                        QuarantinedKeyNotAvailable):
+                    raise
                 except Exception as e:  # pylint: disable=broad-except
                     if isinstance(e, JWKeyNotFound):
                         missingkey = True
