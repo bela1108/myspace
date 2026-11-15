@@ -22,7 +22,12 @@ from ._events import (
     Request,
     Response,
 )
-from ._headers import get_comma_header, has_expect_100_continue, set_comma_header
+from ._headers import (
+    get_comma_header,
+    has_expect_100_continue,
+    set_comma_header,
+)
+from ._headers import validate_target_authority as _validate_target_authority
 from ._readers import READERS, ReadersType
 from ._receivebuffer import ReceiveBuffer
 from ._state import (
@@ -162,14 +167,26 @@ class Connection:
             exceeded, then :meth:`next_event` will raise
             :exc:`RemoteProtocolError`.
 
+        validate_target_authority (bool):
+            If true, then incoming requests with an absolute-form target are
+            checked for consistency with the ``Host`` header before the
+            :class:`Request` event is returned from :meth:`next_event`, and
+            rejected with :exc:`RemoteProtocolError` if they disagree (or if
+            the target contains a userinfo, fragment, empty host, backslash,
+            or invalid percent-encoding). This is useful for servers that
+            route on the absolute-form target, to keep routing and logging
+            from being desynchronized. Off by default.
+
     """
 
     def __init__(
         self,
         our_role: Type[Sentinel],
         max_incomplete_event_size: int = DEFAULT_MAX_INCOMPLETE_EVENT_SIZE,
+        validate_target_authority: bool = False,
     ) -> None:
         self._max_incomplete_event_size = max_incomplete_event_size
+        self._validate_target_authority = validate_target_authority
         # State and role tracking
         if our_role not in (CLIENT, SERVER):
             raise ValueError(f"expected CLIENT or SERVER, not {our_role!r}")
@@ -421,6 +438,10 @@ class Connection:
             return PAUSED
         assert self._reader is not None
         event = self._reader(self._receive_buffer)
+        if self._validate_target_authority and isinstance(event, Request):
+            # Raises LocalProtocolError (converted to RemoteProtocolError by
+            # next_event) before the event can reach the application.
+            _validate_target_authority(event.target, event.headers)
         if event is None:
             if not self._receive_buffer and self._receive_buffer_closed:
                 # In some unusual cases (basically just HTTP/1.0 bodies), EOF

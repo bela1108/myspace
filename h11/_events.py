@@ -12,6 +12,7 @@ from typing import List, Tuple, Union
 
 from ._abnf import method, request_target
 from ._headers import Headers, normalize_and_validate
+from ._headers import validate_target_authority as _validate_target_authority
 from ._util import bytesify, LocalProtocolError, validate
 
 # Everything in __all__ gets re-exported as part of the h11 public API.
@@ -70,6 +71,12 @@ class Request(Event):
        ``b"1.1"``. See :ref:`the HTTP version normalization rules
        <http_version-format>` for details.
 
+    If ``validate_target_authority`` is true, then an absolute-form target
+    is checked for consistency with the ``Host`` header (and rejected if it
+    contains a userinfo, fragment, empty host, backslash, or invalid
+    percent-encoding). This is off by default; see
+    :func:`h11._headers.validate_target_authority` for details.
+
     """
 
     __slots__ = ("method", "headers", "target", "http_version")
@@ -87,6 +94,7 @@ class Request(Event):
         target: Union[bytes, str],
         http_version: Union[bytes, str] = b"1.1",
         _parsed: bool = False,
+        validate_target_authority: bool = False,
     ) -> None:
         super().__init__()
         if isinstance(headers, Headers):
@@ -120,6 +128,9 @@ class Request(Event):
 
         validate(method_re, self.method, "Illegal method characters")
         validate(request_target_re, self.target, "Illegal target characters")
+
+        if validate_target_authority:
+            _validate_target_authority(self.target, self.headers)
 
     # This is an unhashable type.
     __hash__ = None  # type: ignore

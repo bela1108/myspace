@@ -1,5 +1,15 @@
 import re
-from typing import AnyStr, cast, List, overload, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import (
+    AnyStr,
+    cast,
+    List,
+    Optional,
+    overload,
+    Sequence,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 from ._abnf import field_name, field_value
 from ._util import bytesify, LocalProtocolError, validate
@@ -280,3 +290,132 @@ def has_expect_100_continue(request: "Request") -> bool:
         return False
     expect = get_comma_header(request.headers, b"expect")
     return b"100-continue" in expect
+
+
+# Opt-in target authority validation
+# ----------------------------------
+#
+# When a request target is in absolute-form (e.g. a request routed through a
+# proxy or edge server), both the target URI and the Host header claim to
+# identify the request's authority. If a server routes on one and logs on the
+# other, a desync between them can be used to smuggle requests past access
+# controls. validate_target_authority() checks that the two agree, and
+# rejects target authority components that are known to be parsed
+# inconsistently across implementations (userinfo, fragments, backslashes,
+# bad percent-encoding, empty hosts).
+#
+# Error messages deliberately never include the raw target or Host value, so
+# that an attacker-controlled request line can't be reflected into logs or
+# error pages.
+
+# absolute-form = scheme "://" authority ... (RFC 7230 section 5.3.2, by way
+# of RFC 3986). We only need the scheme and authority here.
+_absolute_form_re = re.compile(
+    rb"(?P<scheme>[A-Za-z][A-Za-z0-9+.-]*)://(?P<authority>[^/?#]*)"
+)
+
+# A "%" that isn't followed by two hex digits.
+_invalid_percent_re = re.compile(rb"%(?![0-9A-Fa-f][0-9A-Fa-f])")
+
+# Default ports used when one side of the comparison leaves the port
+# implicit.
+_scheme_default_ports = {
+    b"http": 80,
+    b"https": 443,
+    b"ws": 80,
+    b"wss": 443,
+}
+
+
+def _parse_authority(authority: bytes, what: str) -> Tuple[bytes, Optional[int]]:
+    # Splits an authority component (or Host header value) into (host, port),
+    # where port is None if not specified. Raises LocalProtocolError on
+    # malformed input; `what` identifies the source in the error message
+    # without echoing attacker-controlled data.
+    port_bytes: Optional[bytes]
+    if authority.startswith(b"["):
+        # IP-literal, e.g. "[::1]" or "[::1]:8080"
+        closing = authority.find(b"]")
+        if closing == -1:
+            raise LocalProtocolError("malformed authority in %s" % what)
+        host = authority[: closing + 1]
+        rest = authority[closing + 1 :]
+        if rest:
+            if not rest.startswith(b":"):
+                raise LocalProtocolError("malformed authority in %s" % what)
+            port_bytes = rest[1:]
+        else:
+            port_bytes = None
+    else:
+        if authority.count(b":") > 1:
+            # Bare IPv6 literals must use [...] brackets
+            raise LocalProtocolError("malformed authority in %s" % what)
+        if b":" in authority:
+            host, _, port_bytes = authority.partition(b":")
+        else:
+            host, port_bytes = authority, None
+    port: Optional[int] = None
+    if port_bytes:
+        if not port_bytes.isdigit():
+            raise LocalProtocolError("malformed authority in %s" % what)
+        port = int(port_bytes)
+    return host, port
+
+
+def validate_target_authority(target: bytes, headers: Headers) -> None:
+    """Check that an absolute-form request target agrees with the Host header.
+
+    This is an opt-in, strict validation intended for servers (e.g. edge
+    proxies) that route on the absolute-form target URI: it guarantees that
+    the request target and the Host header identify the same authority, so
+    that routing and logging can't be desynchronized.
+
+    For absolute-form targets, the target's scheme/host/port must be
+    consistent with the unique Host header, and the target must not contain
+    a userinfo subcomponent, a fragment, an empty host, backslashes, or
+    invalid percent-encoding in the authority component.
+
+    origin-form, asterisk-form, and authority-form (CONNECT) targets are not
+    affected and keep their existing semantics.
+
+    Raises LocalProtocolError on any violation. Error messages never echo
+    the raw target or Host value.
+    """
+    match = _absolute_form_re.match(target)
+    if match is None:
+        # Not absolute-form: origin-form, asterisk-form, and authority-form
+        # (CONNECT) targets keep their existing semantics.
+        return
+    if b"\\" in target:
+        raise LocalProtocolError("backslash in absolute-form request target")
+    if b"#" in target:
+        raise LocalProtocolError("fragment in absolute-form request target")
+    scheme = match.group("scheme").lower()
+    authority = match.group("authority")
+    if b"@" in authority:
+        raise LocalProtocolError("userinfo in absolute-form request target")
+    if _invalid_percent_re.search(authority):
+        raise LocalProtocolError(
+            "invalid percent-encoding in absolute-form request target"
+        )
+    target_host, target_port = _parse_authority(authority, "request target")
+    if not target_host:
+        raise LocalProtocolError("empty host in absolute-form request target")
+    hosts = [value for name, value in headers if name == b"host"]
+    if len(hosts) != 1:
+        raise LocalProtocolError(
+            "absolute-form request target requires a unique Host header"
+        )
+    host_header = hosts[0]
+    if b"@" in host_header or b"\\" in host_header:
+        raise LocalProtocolError("invalid Host header")
+    header_host, header_port = _parse_authority(host_header, "Host header")
+    default_port = _scheme_default_ports.get(scheme)
+    if target_port is None:
+        target_port = default_port
+    if header_port is None:
+        header_port = default_port
+    if target_host.lower() != header_host.lower() or target_port != header_port:
+        raise LocalProtocolError(
+            "absolute-form request target authority does not match Host header"
+        )
