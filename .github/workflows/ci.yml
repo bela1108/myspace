@@ -1,0 +1,145 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  FORCE_COLOR: "1"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    name: "Lint"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.x"
+      - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15"]
+        include:
+          # Oldest available patches catch regressions hidden by later patch releases.
+          # These builds are unavailable on Ubuntu 26.04.
+          - os: ubuntu-24.04
+            python: {key: "3.10-min", version: "3.10.4"}
+          - os: ubuntu-24.04
+            python: {key: "3.11-min", version: "3.11.0"}
+          - os: ubuntu-24.04
+            python: {key: "3.12-min", version: "3.12.0"}
+          - os: ubuntu-24.04
+            python: {key: "3.13-min", version: "3.13.0"}
+          - os: ubuntu-24.04
+            python: {key: "3.14-min", version: "3.14.0"}
+          # Match cryptography's pp73 Linux and pp80 macOS/Windows wheels.
+          - os: ubuntu-latest
+            python: "pypy3.11-v7.3.23"
+          - os: macos-latest
+            python: "pypy3.11-v8.0.0"
+          - os: windows-latest
+            python: "pypy3.11-v8.0.0"
+
+    runs-on: ${{ matrix.os }}
+    name: ${{ fromJSON('{"macos-latest":"macOS","windows-latest":"Windows","ubuntu-latest":"Ubuntu","ubuntu-24.04":"Ubuntu"}')[matrix.os] }} Python ${{ matrix.python.key || matrix.python }}  # zizmor: ignore[obfuscation]
+    continue-on-error: false
+    timeout-minutes: 10
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Python ${{ matrix.python.version || matrix.python }}
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python.version || matrix.python }}
+          allow-prereleases: true
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 1.x
+          cache: false
+
+      - name: Install mkcert on macOS
+        if: runner.os == 'macOS'
+        run: |
+          go install filippo.io/mkcert@v1.4.4
+          mkcert -install
+
+      - name: Install mkcert on Linux
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          go install filippo.io/mkcert@v1.4.4
+          sudo apt-get install libnss3-tools
+          mkcert -install
+
+      - name: Run tests
+        run: |
+          python -m pip install --upgrade --only-binary :all: 'pip>=26.2.1'
+          python -m pip install --only-binary :all: nox==2026.8.17
+          python -m nox -s test
+
+  integration-pip:
+    runs-on: ubuntu-latest
+    name: Integration pip
+    timeout-minutes: 10
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: truststore
+          persist-credentials: false
+
+      - name: Checkout pypa/pip
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: pypa/pip
+          path: pip
+          persist-credentials: false
+
+      - name: Setup Python 3.14
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.14"
+
+      - name: Patch tests to install local copy of truststore
+        working-directory: "${{ github.workspace }}/pip"
+        run: |
+          sed -i 's|script.pip("install", "truststore")|script.pip("install", "'"$GITHUB_WORKSPACE"'/truststore")|' tests/functional/test_truststore.py
+
+      - name: Run tests
+        working-directory: "${{ github.workspace }}/pip"
+        run: |
+          python -m pip install --upgrade --only-binary :all: 'pip>=26.2.1'
+          python -m pip install --only-binary :all: nox==2026.8.17
+          python -m nox -s test-3.14 -- \
+            -m integration \
+            tests/functional/test_truststore.py
+
+      - name: Run pip debug
+        working-directory: "${{ github.workspace }}/pip"
+        run: |
+          python -m pip install -e .
+          python -m pip debug
