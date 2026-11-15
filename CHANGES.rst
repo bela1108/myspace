@@ -4,6 +4,13 @@ Changelog
 Unreleased
 ----------
 
+* RFC 2868 Tunnel-Password (``encrypt=2``) values are validated when they
+  are decoded: the tag must be 0-31, the salt must have its high bit set
+  and is never reused for the same secret and authenticator, and the
+  length prefix and zero padding must be valid. Malformed values raise
+  :exc:`pyrad.packet.PacketError` instead of returning truncated or
+  padding-extended plaintext.
+
 * pyrad no longer depends on netaddr; it was only used by the tests and
   is now in the ``test`` dependency group. ipv6prefix values given as
   ``netaddr.IPNetwork`` are still accepted. Code that imports netaddr

@@ -137,6 +137,10 @@ class Packet(OrderedDict):
         self._request_code = None              # code of the request in reply packets
         self.message_authenticator = None
         self.raw_packet = None
+        # salts already used for each authenticator/secret vector, so that
+        # encrypt=2 attributes in one packet never reuse a salt (RFC 2868
+        # section 3.5)
+        self._salt_used = {}
 
         # keep a dictionary defined by a subclass
         self.dict = attributes.get('dict', getattr(self, 'dict', None))
@@ -402,8 +406,13 @@ class Packet(OrderedDict):
             return (value[0], b'\x00' + value[1:])
         if attr.encrypt == 2:
             if len(value) % 16 == 2:
+                # pyrad 2.5.4 and older sent Tunnel-Password without the
+                # mandatory tag; salt + a multiple of 16 octets
                 return (0, value)
-            return (value[0], value[1:])
+            tag = value[0]
+            if tag > 0x1F:
+                raise PacketError('Invalid tag in salt encrypted value')
+            return (tag, value[1:])
         if value[0] <= 0x1F:
             return (value[0], value[1:])
         return (0, value)
@@ -902,6 +911,39 @@ class Packet(OrderedDict):
             data = data[16:]
         return result
 
+    def _new_salt(self):
+        """Return an unused salt for the current authenticator.
+
+        RFC 2868 section 3.5 requires the high bit of the salt to be set
+        and the salt to be unique for every attribute encrypted with the
+        same secret and Request Authenticator.
+        """
+        vector = self._salt_vector()
+        if not hasattr(self, '_salt_used'):
+            self._salt_used = {}
+        used = self._salt_used.setdefault(vector, set())
+        if len(used) >= 0x8000:
+            raise ValueError('No unused salt left for this authenticator')
+
+        # Try random salts first, but fall back to scanning the whole salt
+        # space so that a repeated random value can never cause reuse.
+        for _ in range(16):
+            raw = struct.pack(
+                '!H', 0x8000 | (random_generator.randrange(0, 0x8000) & 0x7FFF))
+            if raw not in used:
+                break
+        else:
+            start = random_generator.randrange(0, 0x8000) & 0x7FFF
+            for offset in range(0x8000):
+                raw = struct.pack('!H', 0x8000 | ((start + offset) & 0x7FFF))
+                if raw not in used:
+                    break
+            else:  # pragma: no cover - len(used) check above covers this
+                raise ValueError('No unused salt left for this authenticator')
+
+        used.add(raw)
+        return raw
+
     def SaltCrypt(self, value):
         """Encrypt a value with the salt encryption of RFC 2868
         section 3.5 (attributes with encrypt=2).
@@ -919,10 +961,6 @@ class Packet(OrderedDict):
         if isinstance(value, str):
             value = value.encode('utf-8')
 
-        # create salt
-        random_value = 32768 + random_generator.randrange(0, 32767)
-        salt_raw = struct.pack('!H', random_value)
-
         # length prefixing
         if len(value) > 255:
             raise ValueError('Value is too long for salt encryption '
@@ -933,6 +971,9 @@ class Packet(OrderedDict):
         # zero padding
         if len(value) % 16 != 0:
             value += b'\x00' * (16 - (len(value) % 16))
+
+        # create a random, unused salt
+        salt_raw = self._new_salt()
 
         return salt_raw + self._salt_en_decrypt(value, salt_raw)
 
@@ -954,15 +995,22 @@ class Packet(OrderedDict):
 
         # extract salt
         salt = value[:2]
+        if not salt[0] & 0x80:
+            raise PacketError('Invalid salt in salt encrypted value')
 
         # decrypt
         value = self._salt_en_decrypt(value[2:], salt, encrypt=False)
 
-        # remove padding
+        # RFC 2868 section 3.5: the first octet is the length of the
+        # password and the remaining octets are zero padding.
         length = value[0]
-        value = value[1:length+1]
+        if length > len(value) - 1:
+            raise PacketError('Invalid length prefix in salt encrypted value')
+        padding = value[length+1:]
+        if padding.count(b'\x00') != len(padding):
+            raise PacketError('Invalid padding in salt encrypted value')
 
-        return value
+        return value[1:length+1]
 
 
 class AuthPacket(Packet):
