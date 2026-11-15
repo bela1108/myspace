@@ -97,6 +97,16 @@ MAX_SECTIONS = 0x800
 # The global maximum number of resource entries to parse per file
 MAX_RESOURCE_ENTRIES = 0x8000
 
+# The maximum number of RUNTIME_FUNCTION entries parsed from an exception
+# directory, regardless of the (potentially bogus) directory size
+MAX_EXCEPTION_ENTRIES = 0x100000
+
+# The maximum number of UNWIND_CODE opcodes decoded for a single UNWIND_INFO
+MAX_UNWIND_CODES = 0x1000
+
+# The maximum number of chained UNWIND_INFO links followed while looking for loops
+MAX_UNWIND_CHAIN_DEPTH = 0x100
+
 # The maximum depth of nested resource tables
 MAX_RESOURCE_DEPTH = 32
 
@@ -1830,6 +1840,18 @@ class ExceptionsDirEntryData(DataContainer):
     """
 
 
+class ExceptionDirEntryError(DataContainer):
+    """Holds the location and reason of a rejected exception directory entry.
+
+    directory_offset  offset of the RUNTIME_FUNCTION within the exception
+                      directory, in bytes
+    rva               RVA of the RUNTIME_FUNCTION within the image
+    file_offset       file offset of the RUNTIME_FUNCTION, when resolvable
+    error             human-readable reason why the entry was rejected
+    struct            partially unpacked RUNTIME_FUNCTION, when available
+    """
+
+
 class UnwindInfo(StructureWithBitfields):
     """Handles the complexities of UNWIND_INFO structure:
     * variable number of UWIND_CODEs
@@ -1875,6 +1897,9 @@ class UnwindInfo(StructureWithBitfields):
         )
 
         if len(data) < self._full_size:
+            # The fixed header was parsed but the full structure is not
+            # available yet; keep the stage open for the second call.
+            self._finished_unpacking = False
             return None
 
         if self.Version != 1 and self.Version != 2:
@@ -3836,6 +3861,14 @@ class PE:
 
         All the code related to handling exception directories is documented in
         https://auscitte.github.io/posts/Exception-Directory-pefile#implementation-details
+
+        Parsing happens in two stages. First the RUNTIME_FUNCTION table is
+        walked and every entry is validated (directory size, entry stride,
+        function address range and section mapping). Only afterwards is the
+        UNWIND_INFO of each accepted entry decoded with bounded opcode
+        iteration, rejecting chained unwind loops, out-of-bounds RVAs and
+        unknown opcodes. A malformed entry is recorded with its directory
+        offset and skipped without affecting the entries already parsed.
         """
 
         # "For x64 and Itanium platforms; the format is different for other platforms"
@@ -3847,21 +3880,90 @@ class PE:
 
         rf = Structure(self.__RUNTIME_FUNCTION_format__)
         rf_size = rf.sizeof()
-        rva2rt = {}
-        rt_funcs = []
-        rva2infos = {}
-        for _ in range(size // rf_size):
-            rf = self.__unpack_data__(
-                self.__RUNTIME_FUNCTION_format__,
-                self.get_data(rva, rf_size),
-                file_offset=self.get_offset_from_rva(rva),
+
+        def record_bad_entry(offset, reason):
+            error = ExceptionDirEntryError(
+                offset=offset,
+                rva=rva + offset,
+                reason=reason,
+            )
+            self.__warnings.append(
+                f"Invalid RUNTIME_FUNCTION at exception directory offset "
+                f"{offset:#x}: {reason}"
+            )
+            if not hasattr(self, "DIRECTORY_ENTRY_EXCEPTION_ERRORS"):
+                self.DIRECTORY_ENTRY_EXCEPTION_ERRORS = []
+            self.DIRECTORY_ENTRY_EXCEPTION_ERRORS.append(error)
+
+        # Stage 1: validate the table itself before touching any UNWIND_INFO.
+        if size <= 0:
+            return None
+
+        if size % rf_size != 0:
+            record_bad_entry(
+                size - (size % rf_size),
+                f"exception directory size {size:#x} is not a multiple of "
+                f"the RUNTIME_FUNCTION size ({rf_size} bytes); ignoring the "
+                "trailing bytes",
             )
 
+        entry_count = size // rf_size
+        if entry_count > MAX_EXCEPTION_ENTRIES:
+            record_bad_entry(
+                MAX_EXCEPTION_ENTRIES * rf_size,
+                f"exception directory holds {entry_count} entries which "
+                f"exceeds the limit of {MAX_EXCEPTION_ENTRIES}; ignoring the "
+                "remaining entries",
+            )
+            entry_count = MAX_EXCEPTION_ENTRIES
+
+        # The directory itself must be fully readable through section mappings.
+        try:
+            dir_offset = self.get_offset_from_rva(rva)
+            dir_data = self.get_data(rva, entry_count * rf_size)
+        except PEFormatError as excp:
+            record_bad_entry(0, f"exception directory cannot be read: {excp}")
+            return None
+        if len(dir_data) < entry_count * rf_size:
+            record_bad_entry(
+                len(dir_data) - (len(dir_data) % rf_size),
+                "exception directory is truncated",
+            )
+            entry_count = len(dir_data) // rf_size
+            if entry_count == 0:
+                return None
+
+        rva2rt = {}
+        rt_funcs = []
+        valid_structs = []
+        for index in range(entry_count):
+            entry_offset = index * rf_size
+            try:
+                rf = self.__unpack_data__(
+                    self.__RUNTIME_FUNCTION_format__,
+                    dir_data[entry_offset : entry_offset + rf_size],
+                    file_offset=dir_offset + entry_offset,
+                )
+            except PEFormatError as excp:
+                record_bad_entry(
+                    entry_offset, f"cannot read RUNTIME_FUNCTION: {excp}"
+                )
+                continue
             if rf is None:
-                break
+                record_bad_entry(entry_offset, "malformed RUNTIME_FUNCTION")
+                continue
 
+            reason = self.__validate_runtime_function__(rf)
+            if reason is not None:
+                record_bad_entry(entry_offset, reason)
+                continue
+
+            valid_structs.append(rf)
+
+        # Stage 2: bounded UNWIND_INFO decoding for the validated entries.
+        rva2infos = {}
+        for rf in valid_structs:
             ui = None
-
             if (rf.UnwindData & 0x1) == 0:
                 # according to "Improving Automated Analysis of Windows x64 Binaries",
                 # if the lowest bit is set, (UnwindData & ~0x1) should point to the
@@ -3872,25 +3974,17 @@ class PE:
                 ):  # unwind info data structures can be shared among functions
                     ui = rva2infos[rf.UnwindData]
                 else:
-                    ui = UnwindInfo(file_offset=self.get_offset_from_rva(rf.UnwindData))
+                    ui, reason = self.__decode_unwind_info__(rf.UnwindData)
+                    if reason is not None:
+                        record_bad_entry(
+                            (rf.get_file_offset() - dir_offset), reason
+                        )
+                        continue
                     rva2infos[rf.UnwindData] = ui
-
-                ws = ui.unpack_in_stages(self.get_data(rf.UnwindData, ui.sizeof()))
-                if ws is not None:
-                    self.__warnings.append(ws)
-                    break
-                ws = ui.unpack_in_stages(self.get_data(rf.UnwindData, ui.sizeof()))
-                if ws is not None:
-                    self.__warnings.append(ws)
-                    break
-
-                self.__structures__.append(ui)
 
             entry = ExceptionsDirEntryData(struct=rf, unwindinfo=ui)
             rt_funcs.append(entry)
-
             rva2rt[rf.BeginAddress] = entry
-            rva += rf_size
 
         # each chained function entry holds a reference to the function first in chain
         for rf in rt_funcs:
@@ -3920,6 +4014,166 @@ class PE:
                 continue
 
         return rt_funcs
+
+    def __validate_runtime_function__(self, rf):
+        """Validates a single RUNTIME_FUNCTION against section mappings.
+
+        Returns None when the entry is sound, otherwise a human-readable
+        reason describing the first problem encountered.
+        """
+
+        if rf.BeginAddress == 0 or rf.EndAddress == 0:
+            return "zero function address"
+
+        if rf.EndAddress <= rf.BeginAddress:
+            return (
+                f"invalid function range {rf.BeginAddress:#x}-"
+                f"{rf.EndAddress:#x}, EndAddress must be greater than "
+                "BeginAddress"
+            )
+
+        begin_section = self.get_section_by_rva(rf.BeginAddress)
+        if begin_section is None:
+            return (
+                f"BeginAddress {rf.BeginAddress:#x} does not fall within "
+                "any section"
+            )
+
+        if self.get_section_by_rva(rf.EndAddress - 1) is not begin_section:
+            return (
+                f"function range {rf.BeginAddress:#x}-{rf.EndAddress:#x} "
+                "crosses or leaves its containing section"
+            )
+
+        if rf.UnwindData == 0:
+            return "UnwindData RVA is zero"
+
+        unwind_rva = rf.UnwindData & ~0x3
+        if self.get_section_by_rva(unwind_rva) is None:
+            return (
+                f"UnwindData RVA {rf.UnwindData:#x} does not fall within "
+                "any section"
+            )
+
+        return None
+
+    def __decode_unwind_info__(self, unwind_rva):
+        """Decodes one UNWIND_INFO with bounded opcode iteration.
+
+        Returns (unwindinfo, None) on success and (None, reason) otherwise.
+        """
+
+        try:
+            file_offset = self.get_offset_from_rva(unwind_rva)
+            header = UnwindInfo(file_offset=file_offset)
+            fixed_header_size = 4
+            fixed_header = self.get_data(unwind_rva, fixed_header_size)
+        except PEFormatError as excp:
+            return None, f"UNWIND_INFO at RVA {unwind_rva:#x} cannot be read: {excp}"
+
+        if len(fixed_header) < fixed_header_size:
+            return None, f"UNWIND_INFO at RVA {unwind_rva:#x} is truncated"
+
+        count_of_codes = fixed_header[2]
+        if count_of_codes > MAX_UNWIND_CODES:
+            return (
+                None,
+                f"UNWIND_INFO at RVA {unwind_rva:#x} declares "
+                f"{count_of_codes} opcodes, exceeding the limit of "
+                f"{MAX_UNWIND_CODES}",
+            )
+
+        # First stage: establish the full structure size from the header.
+        warning = header.unpack_in_stages(fixed_header)
+        if warning is not None:
+            return None, warning
+
+        full_size = header.sizeof()
+        try:
+            full_data = self.get_data(unwind_rva, full_size)
+        except PEFormatError as excp:
+            return None, f"UNWIND_INFO at RVA {unwind_rva:#x} cannot be read: {excp}"
+        if len(full_data) < full_size:
+            return None, f"UNWIND_INFO at RVA {unwind_rva:#x} is truncated"
+
+        # Second stage: bounded decoding of the unwind opcodes.
+        warning = header.unpack_in_stages(full_data)
+        if warning is not None:
+            return None, warning
+
+        if len(header.UnwindCodes) > MAX_UNWIND_CODES:
+            return (
+                None,
+                f"UNWIND_INFO at RVA {unwind_rva:#x} decodes more than "
+                f"{MAX_UNWIND_CODES} opcodes",
+            )
+
+        if hasattr(header, "FunctionEntry"):
+            reason = self.__check_chained_unwind__(unwind_rva, header.FunctionEntry)
+            if reason is not None:
+                return None, reason
+
+        if (
+            hasattr(header, "ExceptionHandler")
+            and self.get_section_by_rva(header.ExceptionHandler) is None
+        ):
+            return (
+                None,
+                f"UNWIND_INFO ExceptionHandler RVA "
+                f"{header.ExceptionHandler:#x} does not fall within any "
+                "section",
+            )
+
+        self.__structures__.append(header)
+        return header, None
+
+    def __check_chained_unwind__(self, unwind_rva, function_entry):
+        """Walks chained UNWIND_INFO FunctionEntry links, rejecting loops and
+        out-of-bounds RVAs. Returns None when the chain is sound, otherwise a
+        human-readable reason.
+        """
+
+        visited = {unwind_rva}
+        current = function_entry & ~0x3
+        while current not in visited:
+            if self.get_section_by_rva(current) is None:
+                return (
+                    f"chained UNWIND_INFO FunctionEntry RVA "
+                    f"{function_entry:#x} does not fall within any section"
+                )
+
+            visited.add(current)
+            if len(visited) > MAX_UNWIND_CHAIN_DEPTH:
+                return (
+                    f"chained UNWIND_INFO starting at RVA {unwind_rva:#x} "
+                    f"exceeds the depth limit of {MAX_UNWIND_CHAIN_DEPTH}"
+                )
+
+            try:
+                fixed_header = self.get_data(current, 4)
+            except PEFormatError as excp:
+                return f"chained UNWIND_INFO at RVA {current:#x} cannot be read: {excp}"
+            if len(fixed_header) < 4:
+                return f"chained UNWIND_INFO at RVA {current:#x} is truncated"
+
+            flags = fixed_header[0] >> 3
+            if not (flags & UNWIND_INFO_FLAGS["UNW_FLAG_CHAININFO"]):
+                return None
+            count_of_codes = fixed_header[2]
+            full_size = 4 + ((count_of_codes + 1) & ~1) * 2 + 4
+            try:
+                link_data = self.get_data(current, full_size)
+            except PEFormatError as excp:
+                return f"chained UNWIND_INFO at RVA {current:#x} cannot be read: {excp}"
+            if len(link_data) < full_size:
+                return f"chained UNWIND_INFO at RVA {current:#x} is truncated"
+
+            current = struct.unpack("<I", link_data[full_size - 4 : full_size])[0] & ~0x3
+
+        return (
+            f"chained UNWIND_INFO at RVA {unwind_rva:#x} loops back to "
+            f"RVA {current:#x}"
+        )
 
     def parse_directory_bound_imports(self, rva, size):
         """Parse the bound import table."""
