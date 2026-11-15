@@ -138,6 +138,31 @@ requires_cryptography = {
     "EdDSA",
 }
 
+# Orders (n) of the curves supported by the ECDSA algorithms. ``cryptography``
+# does not expose the subgroup order, so keep the values needed for strict
+# compact-signature decoding here.
+_ECDSA_CURVE_ORDERS = {
+    "secp256r1": int(
+        "FFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551",
+        16,
+    ),
+    "secp384r1": int(
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+        "C7634D81F4372DDF581A0DB248B0A77AECEC196ACCC52973",
+        16,
+    ),
+    "secp521r1": int(
+        "01FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+        "FFFFFFFFFA51868783BF2F966B7FCC0148F709A5D03BB5C9B8899C47AEBB6FB7"
+        "1E91386409",
+        16,
+    ),
+    "secp256k1": int(
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141",
+        16,
+    ),
+}
+
 
 def get_default_algorithms() -> dict[str, Algorithm]:
     """
@@ -760,9 +785,34 @@ if has_crypto:
         def sign(self, msg: bytes, key: EllipticCurvePrivateKey) -> bytes:
             der_sig = key.sign(msg, ECDSA(self.hash_alg()))
 
-            return der_to_raw_signature(der_sig, key.curve)
+            raw_sig = der_to_raw_signature(der_sig, key.curve)
+            num_bytes = (key.curve.key_size + 7) // 8
+            r = int.from_bytes(raw_sig[:num_bytes], "big")
+            s = int.from_bytes(raw_sig[num_bytes:], "big")
+            order = _ECDSA_CURVE_ORDERS.get(key.curve.name)
+
+            if order is not None and s > order // 2:
+                s = order - s
+
+            return r.to_bytes(num_bytes, "big") + s.to_bytes(num_bytes, "big")
 
         def verify(self, msg: bytes, key: AllowedECKeys, sig: bytes) -> bool:
+            num_bytes = (key.curve.key_size + 7) // 8
+            order = _ECDSA_CURVE_ORDERS.get(key.curve.name)
+
+            # Only accept the compact JOSE encoding, with a fixed-width r and
+            # s. This rejects DER, trailing bytes, zero scalars, scalars outside
+            # the group order, and the malleable high-S form. All failures are
+            # intentionally reported as the same signature verification error.
+            if order is None or len(sig) != 2 * num_bytes:
+                return False
+
+            r = int.from_bytes(sig[:num_bytes], "big")
+            s = int.from_bytes(sig[num_bytes:], "big")
+
+            if not (0 < r < order and 0 < s <= order // 2):
+                return False
+
             try:
                 der_sig = raw_to_der_signature(sig, key.curve)
             except ValueError:

@@ -97,7 +97,7 @@ class TestAdvisory:
 
         # Making a good jwt token that should work by signing it with the private key
         # encoded_good = jwt.encode({"test": 1234}, ssh_priv_key_bytes, algorithm="ES256")
-        encoded_good = "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZXN0IjoxMjM0fQ.NX42mS8cNqYoL3FOW9ZcKw8Nfq2mb6GqJVADeMA1-kyHAclilYo_edhdM_5eav9tBRQTlL0XMeu_WFE_mz3OXg"
+        encoded_good = "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZXN0IjoxMjM0fQ.NX42mS8cNqYoL3FOW9ZcKw8Nfq2mb6GqJVADeMA1-kx4_jacanXAhyeizAGhlQCSt9LnGOoAbJk0YXmDYSVW8w"
 
         # Using HMAC with the ssh public key to trick the receiver to think that the public key is a HMAC secret
         # encoded_bad = jwt.encode({"test": 1234}, ssh_key_bytes, algorithm="HS256")

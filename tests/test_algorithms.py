@@ -1049,8 +1049,8 @@ class TestAlgorithmsRFC7520:
 
         signature = base64url_decode(
             b"AE_R_YZCChjn4791jSQCrdPZCNYqHXCTZH0-JZGYNlaAjP2kqaluUIIUnC9qvbu9P"
-            b"lon7KRTzoNEuT4Va2cmL1eJAQy3mtPBu_u_sDDyYjnAMDxXPn7XrT0lw-kvAD890j"
-            b"l8e2puQens_IEKBpHABlsbEPX6sFY8OcGDqoRuBomu9xQ2"
+            b"lon7KRTzoNEuT4Va2cmL1eJAPNIZSw-RARAT88NncY_z8OowYEoUsLaPBbQ_8DCLca"
+            b"DfucYRZnSMxVheTpBQpvulNpBBXN8T9rEBDcBsJTiQU_T"
         )
 
         algo = ECAlgorithm(ECAlgorithm.SHA512)
