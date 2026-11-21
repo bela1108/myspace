@@ -181,6 +181,48 @@ Circumstances that will result in strictness warnings include:
     * Writing EPB/SPB/PB/ISB before writing any IDBs
 
 
+Forensic two-tap pairing
+========================
+
+``pcapng.forensics`` provides a strictly read-only interface for
+comparing packets observed at two capture points (taps) that truncate
+frames differently and use different interfaces.  Pairing is never
+inferred from packet headers alone:
+
+    * the caller supplies the traffic ``Direction`` and a deliberately
+      limited ``time_tolerance`` (plus an optional constant clock
+      offset);
+    * two packets are only compatible when their payloads share a
+      common prefix that is fully present, byte-identically, on both
+      sides;
+    * a pair is confirmed only when the candidate is unique on each
+      side and any length difference is explained by truncation the
+      capture itself declares (``packet_len > captured_len``);
+    * many-to-one candidates, duplicate prefixes and payloads that
+      diverge past the common prefix are always returned as
+      *undecided* records carrying the supporting evidence.
+
+.. code-block:: python
+
+    from pcapng.forensics import Direction, pair_captures
+
+    report = pair_captures(
+        "tap_a.pcapng",
+        "tap_b.pcapng",
+        direction=Direction.A_TO_B,
+        time_tolerance=0.005,
+        clock_offset=0.002,
+        left_label="tap-A",
+        right_label="tap-B",
+    )
+    print(report.summary())
+
+A self-contained synthetic double-ended review (different link types,
+snap lengths, resolutions and clock offset) is available in
+``examples/forensic_pairing_review.py`` and is covered by
+``tests/test_forensic_pairing.py``.
+
+
 Creating a release
 ==================
 
