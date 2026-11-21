@@ -5,6 +5,12 @@ from collections import deque
 import lxml.html
 import lxml.html.clean
 
+from .resources import (
+    AUTOMATIC_RESOURCE_ATTRIBUTES,
+    ResourceReference,
+    collect_references,
+)
+
 
 __all__ = ("Sanitizer",)
 
@@ -157,6 +163,7 @@ DEFAULT_SETTINGS = {
     "add_nofollow": False,
     "autolink": False,
     "embedded_hosts": set(),
+    "resource_resolver": None,
     "sanitize_href": sanitize_href,
     "element_preprocessors": [
         # convert span elements into em/strong if a matching style rule
@@ -236,6 +243,11 @@ class Sanitizer:
                 'Always allow "rel" when allowing "target" as anchor attribute'
             )
 
+        if self.resource_resolver is not None and not callable(self.resource_resolver):
+            raise TypeError(
+                f'"resource_resolver" has to be callable, got {self.resource_resolver!r}'
+            )
+
     @staticmethod
     def is_mergeable(e1, e2):
         """
@@ -254,7 +266,7 @@ class Sanitizer:
             normalize_tail=not inside,
         )
 
-    def sanitize(self, html):  # noqa: C901 -- I know.
+    def sanitize(self, html):
         """
         Clean HTML code from ugly copy-pasted CSS and empty elements
 
@@ -262,7 +274,45 @@ class Sanitizer:
 
         Requires ``lxml`` and, for especially broken HTML, ``beautifulsoup4``.
         """
+        return self._sanitize(html)
 
+    def sanitize_with_manifest(self, html):
+        """
+        Clean HTML code and additionally return the manifest of resource
+        references found in the final tree.
+
+        Returns a tuple of the sanitized HTML and a list of
+        ``ResourceReference`` instances. Automatic references are annotated
+        with the ``resource_resolver``'s decision if a resolver is
+        configured, so that each remaining automatically fetched reference
+        can be traced back to its license.
+        """
+        references = []
+        return self._sanitize(html, references=references), references
+
+    def _enforce_resource_policy(self, doc):
+        for element in list(doc.iter()):
+            attributes = AUTOMATIC_RESOURCE_ATTRIBUTES.get(element.tag)
+            if not attributes:
+                continue
+            for attribute in attributes:
+                url = element.get(attribute)
+                if not url:
+                    continue
+                reference = ResourceReference(
+                    url=url, kind="automatic", tag=element.tag, attribute=attribute
+                )
+                if self.resource_resolver(url, reference) is not None:
+                    continue
+                # Not approved: Drop the automatically fetched element but
+                # keep any human-readable description (alt text) visible.
+                for child in list(element):
+                    element.remove(child)
+                element.text = element.get("alt") or ""
+                element.drop_tag()
+                break
+
+    def _sanitize(self, html, *, references=None):  # noqa: C901 -- I know.
         # normalize unicode
         if self.keep_typographic_whitespace:
             html = unicodedata.normalize("NFC", html)
@@ -273,7 +323,7 @@ class Sanitizer:
         try:
             doc = lxml.html.fromstring(html)
             lxml.html.tostring(doc, encoding="utf-8")
-        except Exception:  # noqa: BLE001 -- we could and maybe should be more specific
+        except Exception:
             from lxml.html import soupparser  # noqa: PLC0415
 
             doc = soupparser.fromstring(html)
@@ -432,6 +482,12 @@ class Sanitizer:
             forms=False,
             host_whitelist=self.embedded_hosts,
         )(doc)
+
+        if self.resource_resolver is not None:
+            self._enforce_resource_policy(doc)
+
+        if references is not None:
+            references.extend(collect_references(doc, resolver=self.resource_resolver))
 
         html = lxml.html.tostring(doc, encoding="unicode")
 

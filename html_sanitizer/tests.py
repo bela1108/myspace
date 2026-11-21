@@ -1,5 +1,6 @@
 from unittest import TestCase
 
+from .resources import AssetTable, ResourceDecision
 from .sanitizer import Sanitizer
 
 
@@ -830,3 +831,98 @@ git commit
             ],
             sanitizer=sanitizer,
         )
+
+    def test_resource_policy(self):
+        # Three fictional addresses, only two of them reviewed.
+        approved_banner = "https://assets.example.test/banner.png"
+        approved_photo = "https://media.example.test/team-photo.jpg"
+        unreviewed = "https://tracking.example.test/pixel.gif"
+
+        # A local, read-only asset table. No network access involved.
+        asset_table = AssetTable(
+            {
+                approved_banner: ResourceDecision(
+                    license="CC-BY-4.0",
+                    license_url="https://creativecommons.org/licenses/by/4.0/",
+                ),
+                approved_photo: "internal-approved",
+            }
+        )
+
+        sanitizer = Sanitizer(
+            {
+                "tags": {"p", "img", "a"},
+                "empty": {"img", "a"},
+                "separate": {"a", "p"},
+                "attributes": {"img": {"src", "alt"}, "a": {"href"}},
+                "resource_resolver": asset_table,
+            }
+        )
+
+        html, manifest = sanitizer.sanitize_with_manifest(
+            f'<p><img src="{approved_banner}" alt="Banner"></p>'
+            f'<p><img src="{approved_photo}" alt="Team"></p>'
+            # The same address is used as an image and as a link.
+            f'<p><img src="{unreviewed}" alt="Nicht freigegeben"></p>'
+            f'<p><a href="{unreviewed}">Original ansehen</a></p>'
+        )
+
+        # Approved images survive, the unreviewed image is replaced by its
+        # alt text, and the clickable link to the very same address is kept.
+        self.assertEqual(
+            html,
+            f'<p><img src="{approved_banner}" alt="Banner"></p>'
+            f'<p><img src="{approved_photo}" alt="Team"></p>'
+            "<p>Nicht freigegeben</p>"
+            f'<p><a href="{unreviewed}">Original ansehen</a></p>',
+        )
+
+        automatic = [r for r in manifest if r.kind == "automatic"]
+        interactive = [r for r in manifest if r.kind == "interactive"]
+
+        # Every automatically fetched reference in the final tree traces
+        # back to a license.
+        self.assertEqual(
+            {r.url: r.decision.license for r in automatic},
+            {approved_banner: "CC-BY-4.0", approved_photo: "internal-approved"},
+        )
+        self.assertEqual(
+            automatic[0].decision.license_url,
+            "https://creativecommons.org/licenses/by/4.0/",
+        )
+
+        # The same address gets a different judgment as a link: kept, and
+        # not required to be approved.
+        self.assertEqual(len(interactive), 1)
+        self.assertEqual(interactive[0].url, unreviewed)
+        self.assertIsNone(interactive[0].decision)
+
+    def test_resource_policy_without_resolver(self):
+        sanitizer = Sanitizer(
+            {
+                "tags": {"p", "img", "a"},
+                "empty": {"img", "a"},
+                "separate": {"a", "p"},
+                "attributes": {"img": {"src", "alt"}, "a": {"href"}},
+            }
+        )
+
+        # Without a resolver nothing is dropped, but the manifest is still
+        # generated from the final tree.
+        html, manifest = sanitizer.sanitize_with_manifest(
+            '<p><img src="https://assets.example.test/a.png" alt="A">'
+            '<a href="https://assets.example.test/b">B</a></p>'
+        )
+        self.assertEqual(
+            html,
+            '<p><img src="https://assets.example.test/a.png" alt="A">'
+            '<a href="https://assets.example.test/b">B</a></p>',
+        )
+        self.assertEqual(
+            [(r.kind, r.decision) for r in manifest],
+            [("automatic", None), ("interactive", None)],
+        )
+
+    def test_resource_policy_validation(self):
+        with self.assertRaises(TypeError):
+            Sanitizer({"resource_resolver": "not-callable"})

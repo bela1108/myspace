@@ -7,6 +7,16 @@ Next version
 
 - Dropped support for Python < 3.10.
 - Added Python 3.14 and 3.15 to the CI matrix.
+- Added optional resource constraints: A caller-provided, read-only
+  ``resource_resolver`` confirms automatically fetched references (``img``
+  etc.) against e.g. a local asset table, while interactive references
+  (``a href``) are kept as-is. Unapproved elements are replaced by their
+  ``alt`` text. ``Sanitizer.sanitize_with_manifest`` additionally returns
+  the manifest of resource references generated from the final tree, so
+  that each remaining automatic reference can be traced back to its
+  license. Added ``html_sanitizer.resources`` with ``ResourceDecision``,
+  ``ResourceReference``, ``collect_references`` and the read-only,
+  offline ``AssetTable`` resolver.
 
 2.7 (2026-10-25)
 ================

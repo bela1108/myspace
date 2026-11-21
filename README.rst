@@ -64,6 +64,7 @@ The default settings are::
         "add_nofollow": False,
         "autolink": False,
         "embedded_hosts": set(),
+        "resource_resolver": None,
         "sanitize_href": sanitize_href,
         "element_preprocessors": [
             # convert span elements into em/strong if a matching style rule
@@ -110,6 +111,10 @@ The keys' meaning is as follows:
   ``"tags": {..., "iframe"}``, ``"attributes": {"iframe": {"src", "width",
   "height", "allowfullscreen"}}``, ``"empty": {..., "iframe"}`` and
   ``"embedded_hosts": {"www.youtube.com", "www.youtube-nocookie.com"}``.
+- ``resource_resolver``: An optional callable confirming automatically
+  fetched resource references (``img``, ``iframe``, ``audio``, ``video``
+  etc.) against caller-managed data, e.g. a table of reviewed assets. See
+  the `resource constraints`_ section below.
 - ``sanitize_href``: A callable that gets anchor's ``href`` value and
   returns a sanitized version. The default implementation checks whether
   links start with a few allowed prefixes, and if not, returns a single
@@ -145,6 +150,53 @@ An example for an even more restricted configuration might be::
 The rationale for such a restricted set of allowed tags (e.g. no
 images) is documented in the `design decisions`_ section of
 django-content-editor_'s documentation.
+
+Resource constraints
+====================
+
+External references come in two flavors: *interactive* references such as
+``<a href>`` are only opened when the user clicks them, while *automatic*
+references such as ``<img src>`` are fetched as soon as the page is
+rendered. A system may therefore want to keep clickable links to external
+pages while restricting embedded media to reviewed assets only.
+
+When a ``resource_resolver`` is configured, each automatic reference in
+the final tree is confirmed by the resolver. Unapproved elements are
+dropped, but their human-readable description (the ``alt`` text) stays
+visible. The resolver is a read-only callable receiving the URL and a
+``ResourceReference`` (which includes the ``kind``, so the same address
+can be judged differently as a link and as an image); it never has to
+access the network. ``html_sanitizer.AssetTable`` is a ready-made
+resolver backed by a local, read-only asset table::
+
+    >>> from html_sanitizer import AssetTable, ResourceDecision, Sanitizer
+    >>> asset_table = AssetTable({
+    ...     "https://assets.example.test/banner.png": ResourceDecision(
+    ...         license="CC-BY-4.0",
+    ...         license_url="https://creativecommons.org/licenses/by/4.0/",
+    ...     ),
+    ... })
+    >>> sanitizer = Sanitizer({
+    ...     "tags": {"p", "img", "a"},
+    ...     "empty": {"img", "a"},
+    ...     "separate": {"a", "p"},
+    ...     "attributes": {"img": {"src", "alt"}, "a": {"href"}},
+    ...     "resource_resolver": asset_table,
+    ... })
+    >>> html, manifest = sanitizer.sanitize_with_manifest(
+    ...     '<p><img src="https://assets.example.test/banner.png" alt="B"></p>'
+    ...     '<p><img src="https://tracking.example.test/x.gif" alt="Nope"></p>'
+    ...     '<p><a href="https://tracking.example.test/x.gif">source</a></p>'
+    ... )
+    >>> html
+    '<p><img src="https://assets.example.test/banner.png" alt="B"></p><p>Nope</p><p><a href="https://tracking.example.test/x.gif">source</a></p>'
+    >>> [(r.kind, r.url, r.decision) for r in manifest]  # doctest: +SKIP
+    [('automatic', 'https://assets.example.test/banner.png', ResourceDecision(license='CC-BY-4.0', ...)), ('interactive', 'https://tracking.example.test/x.gif', None)]
+
+``sanitize_with_manifest`` returns the sanitized HTML along with the
+manifest of resource references generated from the final tree, so every
+remaining automatically fetched reference can be traced back to its
+license.
 
 Django
 ======
