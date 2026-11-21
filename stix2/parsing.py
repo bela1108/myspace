@@ -4,10 +4,11 @@ import copy
 
 from . import registry
 from .exceptions import ParseError
+from .parsing_context import get_active_context, use_context
 from .utils import _get_dict, detect_spec_version
 
 
-def parse(data, allow_custom=False, interoperability=False, version=None):
+def parse(data, allow_custom=False, interoperability=False, version=None, context=None):
     """Convert a string, dict or file-like object into a STIX object.
 
     Args:
@@ -19,6 +20,12 @@ def parse(data, allow_custom=False, interoperability=False, version=None):
             provided. Otherwise, the library will make the best effort based
             on checking the "spec_version" property. If none of the above are
             possible, it will use the default version specified by the library.
+        context (stix2.parsing_context.ParsingContext): If present, extension
+            references are resolved against the context's approved extension
+            definitions (which take precedence over the process-global
+            registry), and the input's references are cross-checked against
+            those definitions.  Unapproved references are preserved as raw
+            content and recorded on the context as conflicts.
 
     Returns:
         An instantiated Python STIX object.
@@ -37,12 +44,15 @@ def parse(data, allow_custom=False, interoperability=False, version=None):
     obj = _get_dict(data)
 
     # convert dict to full python-stix2 obj
-    obj = dict_to_stix2(obj, allow_custom, interoperability, version)
+    with use_context(context):
+        parsed = dict_to_stix2(obj, allow_custom, interoperability, version)
+        if context is not None:
+            context.finalize(obj)
 
-    return obj
+    return parsed
 
 
-def dict_to_stix2(stix_dict, allow_custom=False, interoperability=False, version=None):
+def dict_to_stix2(stix_dict, allow_custom=False, interoperability=False, version=None, context=None):
     """convert dictionary to full python-stix2 object
 
     Args:
@@ -57,6 +67,9 @@ def dict_to_stix2(stix_dict, allow_custom=False, interoperability=False, version
             provided. Otherwise, the library will make the best effort based
             on checking the "spec_version" property. If none of the above are
             possible, it will use the default version specified by the library.
+        context (stix2.parsing_context.ParsingContext): If present, extension
+            references are resolved against the context's approved extension
+            definitions.
 
     Returns:
         An instantiated Python STIX object
@@ -71,6 +84,14 @@ def dict_to_stix2(stix_dict, allow_custom=False, interoperability=False, version
         objects that I don't know about ahead of time)
 
     """
+    with use_context(context):
+        active_context = context or get_active_context()
+        if active_context is not None:
+            active_context.check_object(stix_dict)
+        return _dict_to_stix2(stix_dict, allow_custom, interoperability, version)
+
+
+def _dict_to_stix2(stix_dict, allow_custom=False, interoperability=False, version=None):
     if 'type' not in stix_dict:
         raise ParseError("Can't parse object with no 'type' property: %s" % str(stix_dict))
 
@@ -99,7 +120,7 @@ def dict_to_stix2(stix_dict, allow_custom=False, interoperability=False, version
     return obj_class(allow_custom=allow_custom, interoperability=interoperability, **stix_dict)
 
 
-def parse_observable(data, _valid_refs=None, allow_custom=False, interoperability=False, version=None):
+def parse_observable(data, _valid_refs=None, allow_custom=False, interoperability=False, version=None, context=None):
     """Deserialize a string or file-like object into a STIX Cyber Observable
     object.
 
@@ -112,36 +133,44 @@ def parse_observable(data, _valid_refs=None, allow_custom=False, interoperabilit
         version (str): If present, it forces the parser to use the version
             provided. Otherwise, the default version specified by the library
             will be used.
+        context (stix2.parsing_context.ParsingContext): If present, extension
+            references are resolved against the context's approved extension
+            definitions.
 
     Returns:
         An instantiated Python STIX Cyber Observable object.
 
     """
-    obj = _get_dict(data)
+    with use_context(context):
+        obj = _get_dict(data)
 
-    if 'type' not in obj:
-        raise ParseError("Can't parse observable with no 'type' property: %s" % str(obj))
+        active_context = context or get_active_context()
+        if active_context is not None:
+            active_context.check_object(obj)
 
-    # get deep copy since we are going modify the dict and might
-    # modify the original dict as _get_dict() does not return new
-    # dict when passed a dict
-    obj = copy.deepcopy(obj)
+        if 'type' not in obj:
+            raise ParseError("Can't parse observable with no 'type' property: %s" % str(obj))
 
-    obj['_valid_refs'] = _valid_refs or []
+        # get deep copy since we are going modify the dict and might
+        # modify the original dict as _get_dict() does not return new
+        # dict when passed a dict
+        obj = copy.deepcopy(obj)
 
-    if not version:
-        version = detect_spec_version(obj)
+        obj['_valid_refs'] = _valid_refs or []
 
-    obj_type = obj["type"]
-    obj_class = registry.class_for_type(obj_type, version, "observables")
-    if not obj_class:
-        if allow_custom:
-            # flag allows for unknown custom objects too, but will not
-            # be parsed into STIX observable object, just returned as is
-            return obj
-        raise ParseError(
-            "Can't parse unknown observable type '%s'! For custom observables, "
-            "use the CustomObservable decorator." % obj['type'],
-        )
+        if not version:
+            version = detect_spec_version(obj)
 
-    return obj_class(allow_custom=allow_custom, interoperability=interoperability, **obj)
+        obj_type = obj["type"]
+        obj_class = registry.class_for_type(obj_type, version, "observables")
+        if not obj_class:
+            if allow_custom:
+                # flag allows for unknown custom objects too, but will not
+                # be parsed into STIX observable object, just returned as is
+                return obj
+            raise ParseError(
+                "Can't parse unknown observable type '%s'! For custom observables, "
+                "use the CustomObservable decorator." % obj['type'],
+            )
+
+        return obj_class(allow_custom=allow_custom, interoperability=interoperability, **obj)

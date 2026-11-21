@@ -19,6 +19,7 @@ from .exceptions import (
 )
 from .markings import _MarkingsMixin
 from .markings.utils import validate
+from .parsing_context import get_active_context
 from .registry import class_for_type
 from .serialization import STIXJSONEncoder, fp_serialize, serialize
 from .utils import NOW, PREFIX_21_REGEX, get_timestamp
@@ -141,11 +142,18 @@ class _STIXBase(collections.abc.Mapping):
         registered_toplevel_extension_props = {}
         has_unregistered_toplevel_extension = False
         if extensions:
+            context = get_active_context()
             for ext_id, ext in extensions.items():
                 if ext.get("extension_type") == "toplevel-property-extension":
-                    registered_ext_class = class_for_type(
-                        ext_id, "2.1", "extensions",
-                    )
+                    registered_ext_class = None
+                    if context is not None:
+                        # Approved definitions from the active parsing
+                        # context take precedence over the global registry.
+                        registered_ext_class = context.class_for_extension(ext_id)
+                    if registered_ext_class is None:
+                        registered_ext_class = class_for_type(
+                            ext_id, "2.1", "extensions",
+                        )
                     if registered_ext_class:
                         registered_toplevel_extension_props.update(
                             registered_ext_class._toplevel_properties,

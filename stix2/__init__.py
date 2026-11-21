@@ -10,6 +10,7 @@
    exceptions
    markings
    parsing
+   parsing_context
    pattern_visitor
    patterns
    properties
@@ -40,6 +41,7 @@ from .markings import (
     set_markings,
 )
 from .parsing import parse, parse_observable
+from .parsing_context import ExtensionConflict, ParsingContext
 from .patterns import (
     AndBooleanExpression, AndObservationExpression, BasicObjectPathComponent,
     BinaryConstant, BooleanConstant, EqualityComparisonExpression,

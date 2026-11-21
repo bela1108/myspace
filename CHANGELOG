@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+Unreleased
+
+* Add injectable parsing contexts (stix2.parsing_context.ParsingContext) so
+  imports can resolve extension references against caller-approved extension
+  definitions instead of only the process-global registry.  Contexts record
+  which definitions were used (for re-parsing old objects), preserve the raw
+  bytes of objects with conflicting extension references for review, and
+  cross-check registered definitions against bundle references.
+
 3.0.1 2021-09-24
 
 * #513 Fixes check for reference properties to apply to all custom objects, not

@@ -14,6 +14,7 @@ import stix2.hashes
 from .base import _STIXBase
 from .exceptions import CustomContentError, DictionaryKeyError, STIXError
 from .parsing import parse, parse_observable
+from .parsing_context import get_active_context
 from .registry import class_for_type
 from .utils import (
     STIXTypeClass, _get_dict, get_class_hierarchy_names, get_type_from_id,
@@ -788,7 +789,14 @@ class ExtensionsProperty(DictionaryProperty):
 
         has_custom = False
         for key, subvalue in dictified.items():
-            cls = class_for_type(key, self.spec_version, "extensions")
+            context = get_active_context()
+            cls = None
+            if context is not None:
+                # An active parsing context's approved definitions take
+                # precedence over the process-global registry.
+                cls = context.class_for_extension(key)
+            if cls is None:
+                cls = class_for_type(key, self.spec_version, "extensions")
             if cls:
                 if isinstance(subvalue, dict):
                     ext = cls(allow_custom=allow_custom, interoperability=interoperability, **subvalue)
@@ -815,6 +823,13 @@ class ExtensionsProperty(DictionaryProperty):
                 dictified[key] = ext
 
             else:
+                if context is not None:
+                    # The context does not approve this extension.  Leave the
+                    # raw content in place for review; the context has
+                    # already recorded a conflict with the original bytes.
+                    dictified[key] = subvalue
+                    continue
+
                 # If an unregistered "extension-definition--" style extension,
                 # we don't know what's supposed to be in it, so we can't
                 # determine whether there's anything custom.  So, assume there
