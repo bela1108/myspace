@@ -399,7 +399,39 @@ def verify_metadata_signatures(metadata, keys_dict):
         metadata.verify_signature(verify_key)
 
 
-def verify_link_signature_thresholds(layout, steps_metadata):  # noqa: C901, PLR0912
+def _get_authorized_verification_key(
+    layout, step, main_keys_for_subkeys, link_keyid
+):
+    """Return the key to verify a link with, if the signer is authorized.
+
+    A signer is authorized for a step if its keyid is listed in the step's
+    ``pubkeys``, either directly as a main key, or as a subkey of an
+    authorized main key. Trust in a main key extends to its subkeys, but not
+    the other way around.
+
+    Returns the main key dict that can verify the link, or ``None`` if the
+    signer is not authorized for the step.
+    """
+    for authorized_keyid in step.pubkeys:
+        authorized_key = layout.keys.get(authorized_keyid)
+        main_key_for_subkey = main_keys_for_subkeys.get(authorized_keyid)
+
+        # The signing key is an authorized main key ...
+        if authorized_key and link_keyid == authorized_keyid:
+            return authorized_key
+
+        # ... or the signing key is an authorized subkey ...
+        if main_key_for_subkey and link_keyid == authorized_keyid:
+            return main_key_for_subkey
+
+        # ... or the signing key is a subkey of an authorized key
+        if authorized_key and link_keyid in authorized_key.get("subkeys", {}):
+            return authorized_key
+
+    return None
+
+
+def verify_link_signature_thresholds(layout, steps_metadata):
     """
     <Purpose>
       Verify that for each step of the layout there are at least `threshold`
@@ -468,33 +500,12 @@ def verify_link_signature_thresholds(layout, steps_metadata):  # noqa: C901, PLR
 
         # Do per step link threshold verification
         for link_keyid, link in steps_metadata.get(step.name, {}).items():
-            # Iterate over authorized keyids to find a key or subkey corresponding
-            # to the given link and check if the link's keyid is authorized.
-            # Subkeys of authorized main keys are authorized implicitly.
-            for authorized_keyid in step.pubkeys:
-                authorized_key = layout.keys.get(authorized_keyid)
-                main_key_for_subkey = main_keys_for_subkeys.get(
-                    authorized_keyid
-                )
-
-                # The signing key is authorized ...
-                if authorized_key and link_keyid == authorized_keyid:
-                    verification_key = authorized_key
-                    break
-
-                # ... or the signing key is an authorized subkey ...
-                if main_key_for_subkey and link_keyid == authorized_keyid:
-                    verification_key = main_key_for_subkey
-                    break
-
-                # ... or the signing key is a subkey of an authorized key
-                if authorized_key and link_keyid in authorized_key.get(
-                    "subkeys", {}
-                ):
-                    verification_key = authorized_key
-                    break
-
-            else:
+            # Check if the link's keyid is authorized. Subkeys of authorized
+            # main keys are authorized implicitly.
+            verification_key = _get_authorized_verification_key(
+                layout, step, main_keys_for_subkeys, link_keyid
+            )
+            if verification_key is None:
                 LOG.info(
                     "Skipping link. Keyid '%s' is not authorized to sign links"
                     " for step '%s'",
