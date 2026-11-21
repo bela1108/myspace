@@ -451,6 +451,7 @@ class ClrData(DataContainer):
     Flags: Optional[enums.ClrHeaderFlags]
 
     _resources: Optional[List[base.ClrResource]]
+    _resources_inventory: Optional[List[resource.ResourceInventoryEntry]]
 
     @property
     def resources(self) -> List[base.ClrResource]:
@@ -458,6 +459,22 @@ class ClrData(DataContainer):
             self._init_resources(getattr(self, "_pe"))
             assert self._resources is not None
         return self._resources
+
+    @property
+    def resources_inventory(self) -> List[resource.ResourceInventoryEntry]:
+        """Read-only inventory of every ManifestResource table row.
+
+        Unlike `resources`, which only contains embedded resources that
+        were read successfully, this inventory has exactly one entry per
+        ManifestResource row, including external file/assembly references,
+        unknown carriers, missing content, and zero-byte resources.
+        Entries for readable embedded resources reference the same object
+        found in `resources`.
+        """
+        if self._resources_inventory is None:
+            self._init_resources(getattr(self, "_pe"))
+            assert self._resources_inventory is not None
+        return self._resources_inventory
 
     # Structure description from:
     # http://www.ntcore.com/files/dotnetformat.htm
@@ -519,6 +536,7 @@ class ClrData(DataContainer):
         self.blobs = None
         self.mdtables = None
         self._resources = None
+        self._resources_inventory = None
         self.Flags = None
 
         # Set the flags according to the Flags member
@@ -561,48 +579,65 @@ class ClrData(DataContainer):
         parsing `ManifestResourceRow.Implementation` requires all tables to be loaded.
         """
         self._resources = []
+        self._resources_inventory = []
         # parse the resources
-        if self.struct.ResourcesRva > 0 and self.mdtables and self.mdtables.ManifestResource and self.mdtables.ManifestResource.num_rows > 0:
-            # for each row
-            for row in self.mdtables.ManifestResource.rows:
-                # TODO: handle external resources
-                if row.Implementation is None:
-                    # internal resource, embedded in this file
-                    rva = self.struct.ResourcesRva + row.Offset
+        if not (self.mdtables and self.mdtables.ManifestResource and self.mdtables.ManifestResource.num_rows > 0):
+            return
+        # for each row; row indices are 1-based, as encoded within .NET files
+        for row_index, row in enumerate(self.mdtables.ManifestResource.rows, start=1):
+            rsrc: Optional[base.ClrResource] = None
+            rdata: Optional[bytes] = None
+            error: Optional[str] = None
+            if row.Implementation is None:
+                # internal resource, embedded in this file
+                rva = self.struct.ResourcesRva + row.Offset
+                rsrc_rva = rva + 4
+                if self.struct.ResourcesRva == 0:
+                    error = "no resources directory for embedded resource"
+                    pe.add_warning("CLR resource parse error, {}".format(error))
+                else:
                     try:
                         buf = pe.get_data(rva, 4)
-                    except PEFormatError as e:
-                        # warn
-                        pe.add_warning("CLR resource parse error, expected more data at rva 0x{:02x}".format(rva))
-                        continue
+                    except PEFormatError:
+                        buf = None
                     if not buf or len(buf) < 4:
-                        # warn
-                        pe.add_warning("CLR resource parse error, expected at least 4 bytes at rva 0x{:02x}".format(rva))
-                        continue
-                    size = int.from_bytes(buf, byteorder="little")
-                    rsrc_rva = rva + 4
-                    try:
-                        rdata = pe.get_data(rsrc_rva, size)
-                    except PEFormatError as e:
-                        # warn
-                        pe.add_warning("CLR resource parse error, expected more data at rva 0x{:02x}".format(rsrc_rva))
-                        continue
-                    if not rdata or len(rdata) < size:
-                        pe.add_warning("CLR resource parse error, expected more data at rva 0x{:02x}".format(rsrc_rva))
-                        continue
-                    res = resource.InternalResource(row.Name, row.Flags.mrPublic, row.Flags.mrPrivate)
-                    res.rva = rsrc_rva
-                    res.size = size
-                    res.data = rdata
-                    self._resources.append(res)
-            for rsrc in self._resources:
-                try:
-                    rsrc.parse()
-                except errors.dnFormatError as e:
-                    if isinstance(rsrc, resource.InternalResource):
-                        pe.add_warning("CLR resource parse error for '{}' at 0x{:02x}: {}".format(rsrc.name, rsrc.rva, str(e)))
+                        error = "expected at least 4 bytes at rva 0x{:02x}".format(rva)
+                        pe.add_warning("CLR resource parse error, {}".format(error))
                     else:
-                        pe.add_warning("CLR resource parse error for '{}': {}".format(rsrc.name, str(e)))
+                        size = int.from_bytes(buf, byteorder="little")
+                        try:
+                            rdata = pe.get_data(rsrc_rva, size)
+                        except PEFormatError:
+                            rdata = None
+                        if rdata is None or len(rdata) < size:
+                            error = "expected more data at rva 0x{:02x}".format(rsrc_rva)
+                            pe.add_warning("CLR resource parse error, {}".format(error))
+                            rdata = None
+                        else:
+                            res = resource.InternalResource(row.Name, row.Flags.mrPublic, row.Flags.mrPrivate)
+                            res.rva = rsrc_rva
+                            res.size = size
+                            res.data = rdata
+                            res.row_index = row_index
+                            rsrc = res
+                            self._resources.append(res)
+            entry = resource.ResourceInventoryEntry.from_row(
+                row,
+                row_index,
+                resources_rva=self.struct.ResourcesRva,
+                resource=rsrc,
+                data=rdata,
+                error=error,
+            )
+            self._resources_inventory.append(entry)
+        for rsrc in self._resources:
+            try:
+                rsrc.parse()
+            except errors.dnFormatError as e:
+                if isinstance(rsrc, resource.InternalResource):
+                    pe.add_warning("CLR resource parse error for '{}' at 0x{:02x}: {}".format(rsrc.name, rsrc.rva, str(e)))
+                else:
+                    pe.add_warning("CLR resource parse error for '{}': {}".format(rsrc.name, str(e)))
 
 
 class ClrStreamFactory(object):

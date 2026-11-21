@@ -1,4 +1,5 @@
 import enum
+import hashlib
 import struct
 import datetime
 from typing import Any, Dict, List, Tuple, Union, Optional
@@ -272,13 +273,170 @@ class AssemblyResource(ExternalResource):
     metadata: mdtable.AssemblyRefRow
 
 
+class ResourceCarrier(enum.Enum):
+    """Where a ManifestResource row's content is implemented."""
+
+    EMBEDDED = "embedded"
+    FILE = "file"
+    ASSEMBLY = "assembly"
+    UNKNOWN = "unknown"
+
+
+class ResourceStatus(enum.Enum):
+    """Availability of a resource's content in the current file."""
+
+    OK = "ok"
+    EMPTY = "empty"
+    MISSING = "missing"
+    EXTERNAL = "external"
+
+
+class ResourceInventoryEntry(object):
+    """Read-only inventory record for one ManifestResource table row.
+
+    Every row of the ManifestResource table produces exactly one entry,
+    so rows that declare the same name remain distinct by ``row_index``.
+    For embedded resources that were read successfully, ``resource`` is
+    the same object that appears in ``dnPE.net.resources``.
+    """
+
+    row_index: int
+    name: Optional[str]
+    offset: int
+    rva: Optional[int]
+    public: bool
+    private: bool
+    visibility: str
+    carrier: ResourceCarrier
+    implementation: Optional[str]
+    status: ResourceStatus
+    size: Optional[int]
+    sha256: Optional[str]
+    resource: Optional[base.ClrResource]
+    error: Optional[str]
+
+    def __init__(
+        self,
+        row_index: int,
+        name: Optional[str],
+        offset: int,
+        public: bool,
+        private: bool,
+        carrier: ResourceCarrier,
+        implementation: Optional[str],
+        status: ResourceStatus,
+        rva: Optional[int] = None,
+        size: Optional[int] = None,
+        sha256: Optional[str] = None,
+        resource: Optional[base.ClrResource] = None,
+        error: Optional[str] = None,
+    ):
+        self.row_index = row_index
+        self.name = name
+        self.offset = offset
+        self.public = public
+        self.private = private
+        if public:
+            self.visibility = "public"
+        elif private:
+            self.visibility = "private"
+        else:
+            self.visibility = "unknown"
+        self.carrier = carrier
+        self.implementation = implementation
+        self.status = status
+        self.rva = rva
+        self.size = size
+        self.sha256 = sha256
+        self.resource = resource
+        self.error = error
+
+    @classmethod
+    def from_row(
+        cls,
+        row: "mdtable.ManifestResourceRow",
+        row_index: int,
+        resources_rva: int = 0,
+        resource: Optional[base.ClrResource] = None,
+        data: Optional[bytes] = None,
+        error: Optional[str] = None,
+    ) -> "ResourceInventoryEntry":
+        """Build an inventory entry for a ManifestResource table row.
+
+        ``row_index`` is the 1-based index of the row in the table.
+        ``resource`` and ``data`` describe the content read for an embedded
+        resource, if any; ``error`` records why the content is unavailable.
+        """
+        carrier, implementation = cls._classify(row)
+        rva: Optional[int] = None
+        size: Optional[int] = None
+        digest: Optional[str] = None
+        if carrier is ResourceCarrier.EMBEDDED:
+            if resources_rva > 0:
+                # data starts after the 4-byte size prefix
+                rva = resources_rva + row.Offset + 4
+            if data is not None:
+                size = len(data)
+                digest = hashlib.sha256(data).hexdigest()
+                status = ResourceStatus.EMPTY if size == 0 else ResourceStatus.OK
+            else:
+                status = ResourceStatus.MISSING
+        else:
+            status = ResourceStatus.EXTERNAL
+        return cls(
+            row_index=row_index,
+            name=row.Name,
+            offset=row.Offset,
+            public=bool(row.Flags.mrPublic),
+            private=bool(row.Flags.mrPrivate),
+            carrier=carrier,
+            implementation=implementation,
+            status=status,
+            rva=rva,
+            size=size,
+            sha256=digest,
+            resource=resource,
+            error=error,
+        )
+
+    @staticmethod
+    def _classify(row: "mdtable.ManifestResourceRow") -> Tuple[ResourceCarrier, Optional[str]]:
+        impl = row.Implementation
+        if impl is None:
+            return ResourceCarrier.EMBEDDED, None
+        table = getattr(impl, "table", None)
+        table_name = getattr(table, "name", None)
+        target = None
+        try:
+            target_row = impl.row
+        except Exception:
+            target_row = None
+        if target_row is not None:
+            target = getattr(target_row, "Name", None)
+        if table_name == "File":
+            return ResourceCarrier.FILE, target
+        if table_name == "AssemblyRef":
+            return ResourceCarrier.ASSEMBLY, target
+        return ResourceCarrier.UNKNOWN, None
+
+    def __repr__(self):
+        return (
+            "{cls}(row={self.row_index}, name={self.name!r}, "
+            "carrier={self.carrier.value}, status={self.status.value}, "
+            "size={self.size})".format(cls=type(self).__name__, self=self)
+        )
+
+
 class InternalResource(base.ClrResource):
     rva: int
     size: int
 
     def parse(self):
-        if not self.data:
+        if self.data is None:
             raise errors.rsrcFormatError("No data")
+        if not self.data:
+            # zero-byte resource, nothing to parse
+            return
         # attempt to parse as a ResourceSet
         rs = ResourceSet(self.data, self)
         if rs.valid():

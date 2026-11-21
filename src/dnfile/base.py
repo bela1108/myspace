@@ -1006,6 +1006,9 @@ class ClrResource(abc.ABC):
         self.public: bool = public
         self.private: bool = private
         self.data: Optional[bytes] = None
+        # 1-based index of the declaring ManifestResource table row, if any.
+        # Allows matching against ClrData.resources_inventory entries.
+        self.row_index: Optional[int] = None
 
     def set_data(self, data: bytes):
         self.data = data

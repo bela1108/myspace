@@ -95,6 +95,44 @@ These table and rows are parsed automatically and populate the
 dnPE.net.resources list.
 
 
+Resource Inventory
+------------------
+
+The dnPE.net.resources list only contains embedded resources whose content
+was read successfully.  For triage it is often necessary to see every
+declared resource, including external references and content that could
+not be read.  dnPE.net.resources_inventory is a read-only list with
+exactly one ResourceInventoryEntry per ManifestResource table row:
+
+.. code-block:: python
+
+    pe = dnfile.dnPE(FILEPATH)
+
+    if pe.net:
+        for entry in pe.net.resources_inventory:
+            print(entry.row_index, entry.name, entry.carrier.value, entry.status.value)
+
+Each entry records:
+
+* row_index:      1-based ManifestResource row index; the stable identity of
+  the entry, so rows declaring the same name stay distinct
+* name:           declared resource name
+* offset:         declared Offset field
+* rva:            RVA of the resource data, for embedded resources
+* visibility:     "public", "private", or "unknown" (also public/private flags)
+* carrier:        ResourceCarrier.EMBEDDED (implemented in this module),
+  FILE (linked raw file), ASSEMBLY (resource of another assembly), or
+  UNKNOWN (unrecognized or unresolvable Implementation)
+* implementation: name of the referenced File or AssemblyRef row, if any
+* status:         ResourceStatus.OK (content available), EMPTY (content is
+  really zero bytes), MISSING (declared embedded but unreadable), or
+  EXTERNAL (content lives outside this file)
+* size, sha256:   content summary, when content is available
+* resource:       the same ClrResource object found in dnPE.net.resources,
+  for embedded resources that were read; None otherwise
+* error:          why the content is unavailable, when status is MISSING
+
+
 Resource data types
 -------------------
 
