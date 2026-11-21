@@ -56,6 +56,9 @@ from .core import (
 from .crl import CertificateList
 from .keys import PublicKeyInfo
 from .ocsp import OCSPResponse
+from ._ordereddict import OrderedDict
+from .parser import parse
+from ._types import str_cls
 from .x509 import Attributes, Certificate, Extensions, GeneralName, GeneralNames, Name
 
 
@@ -613,6 +616,124 @@ class SignerInfo(Sequence):
         ('unsigned_attrs', CMSAttributes, {'implicit': 1, 'optional': True}),
     ]
 
+    def certificate_candidates(self, certificates):
+        """
+        Returns the certificates from a certificate set that match the
+        signer identifier of this SignerInfo.
+
+        This is useful when a caller needs the raw candidate material before
+        deciding which certificate to use for signature verification. The
+        returned records include the certificate and the identifier checks
+        that matched, but do not assert that the certificate is trusted.
+
+        :param certificates:
+            A CertificateSet, a list of CertificateChoices objects, or a list
+            of Certificate objects
+
+        :return:
+            A list of dicts, one per matching certificate
+        """
+
+        entries = _certificate_entries(certificates)
+        layer = {
+            'layer': 'certificate_set',
+            'layer_id': 'certificate_set',
+            'depth': 0,
+            'layer_path': [],
+        }
+
+        by_der = OrderedDict()
+        for entry in entries:
+            by_der.setdefault(entry['certificate_der'], []).append(entry)
+        for duplicate_entries in by_der.values():
+            occurrences = [_certificate_occurrence(entry) for entry in duplicate_entries]
+            for entry in duplicate_entries:
+                entry['duplicate_count'] = len(duplicate_entries)
+                entry['duplicate_occurrences'] = occurrences
+
+        matching_entries = [
+            entry
+            for entry in entries
+            if _signer_matches_certificate_entry(self, entry)
+        ]
+        distinct_certificates = set([
+            entry['certificate_der'] for entry in matching_entries
+        ])
+
+        matches = []
+        for entry in matching_entries:
+            status = _CANDIDATE_STATUS_OK
+            state = _CANDIDATE_STATE_MATCHED
+            if len(distinct_certificates) > 1:
+                status = _CANDIDATE_STATUS_CONFLICT
+                state = _CANDIDATE_STATE_CONFLICT
+            elif entry['duplicate_count'] > 1:
+                status = _CANDIDATE_STATUS_DUPLICATE
+                state = _CANDIDATE_STATE_DUPLICATE
+            matches.append(_candidate_record(
+                self,
+                None,
+                entry,
+                layer,
+                status,
+                state
+            ))
+        return matches
+
+    def matches_certificate(self, certificate):
+        """
+        Checks whether a certificate matches the signer identifier of this
+        SignerInfo.
+
+        :param certificate:
+            An x509.Certificate or CertificateChoices object
+
+        :return:
+            A boolean
+        """
+
+        entry = _certificate_entry(certificate, 0)
+        if entry is None:
+            return False
+        return _signer_matches_certificate_entry(self, entry)
+
+    def issuer_serial_matches(self, certificate):
+        """
+        Checks the issuer and serial number identifier of this SignerInfo
+        against a certificate.
+
+        :param certificate:
+            An x509.Certificate or CertificateChoices object
+
+        :return:
+            A boolean
+        """
+
+        entry = _certificate_entry(certificate, 0)
+        if entry is None:
+            return False
+        return _signer_matches_issuer_serial(self, entry)
+
+    def subject_key_identifier_matches(self, certificate):
+        """
+        Checks the subject key identifier identifier of this SignerInfo
+        against a certificate.
+
+        :param certificate:
+            An x509.Certificate or CertificateChoices object
+
+        :return:
+            A boolean
+        """
+
+        entry = _certificate_entry(certificate, 0)
+        if entry is None:
+            return False
+        return _signer_matches_subject_key_identifier(self, entry)
+
+    matches_subject_key_identifier = subject_key_identifier_matches
+    matches_issuer_serial = issuer_serial_matches
+
 
 class SignerInfos(SetOf):
     _child_spec = SignerInfo
@@ -645,6 +766,70 @@ class SignedData(Sequence):
     _spec_callbacks = {
         'encap_content_info': _encap_content_info_spec
     }
+
+    def signer_certificate_candidates(self):
+        """
+        Resolves the certificates in this SignedData against every SignerInfo,
+        including SignerInfo objects found in Microsoft nested signatures.
+
+        Outer and nested signer evidence is kept separate in the report, while
+        each signer and candidate record also has enough provenance to find
+        the exact layer and SignerInfo it came from.
+
+        :return:
+            A dict with the keys "outer", "nested", "signers", "layers",
+            "duplicates" and "conflicts"
+        """
+
+        return _build_certificate_candidate_report(self)
+
+    def certificate_candidate_report(self):
+        """
+        Alias for signer_certificate_candidates().
+
+        :return:
+            A dict containing the certificate candidate report
+        """
+
+        return self.signer_certificate_candidates()
+
+    def certificate_candidates(self):
+        """
+        Returns all candidate records for all signers, outer and nested.
+
+        :return:
+            A list of candidate dicts
+        """
+
+        report = self.signer_certificate_candidates()
+        return [
+            candidate
+            for signer in report['signers']
+            for candidate in signer['candidates']
+        ]
+
+    def get_signer_certificates(self):
+        """
+        Alias for signer_certificate_candidates().
+
+        :return:
+            A dict containing the certificate candidate report
+        """
+
+        return self.signer_certificate_candidates()
+
+    def get_certificate_candidates(self):
+        """
+        Alias for signer_certificate_candidates().
+
+        :return:
+            A dict containing the certificate candidate report
+        """
+
+        return self.signer_certificate_candidates()
+
+    signer_certificates = signer_certificate_candidates
+    resolve_signer_certificates = signer_certificate_candidates
 
 
 class OriginatorInfo(Sequence):
@@ -1006,3 +1191,619 @@ CMSAttribute._oid_specs = {
     'encrypt_key_pref': SMIMEEncryptionKeyPreferences,
     'smime_capabilities': SetOfSMIMECapabilites,
 }
+
+
+_CANDIDATE_STATUS_OK = 'ok'
+_CANDIDATE_STATUS_CONFLICT = 'certificate_conflict'
+_CANDIDATE_STATUS_DUPLICATE = 'duplicate_certificate'
+_CANDIDATE_STATUS_MISSING = 'missing_certificate'
+
+_CANDIDATE_STATE_MATCHED = 'matched'
+_CANDIDATE_STATE_CONFLICT = 'conflict'
+_CANDIDATE_STATE_DUPLICATE = 'duplicate'
+_CANDIDATE_STATE_MISSING = 'missing'
+
+
+class SignerCertificateReport(OrderedDict):
+    """
+    A report of signer certificate candidates, broken down by CMS layer.
+
+    The canonical keys are "outer", "nested", "signers", "layers",
+    "duplicates" and "conflicts". A number of descriptive aliases are also
+    accepted for convenience.
+    """
+
+    _aliases = {
+        'outer_signers': 'outer',
+        'nested_signers': 'nested',
+        'all_signers': 'signers',
+        'duplicate_certificates': 'duplicates',
+        'certificate_conflicts': 'conflicts',
+        'certificate_duplicates': 'duplicates',
+        'missing_certificate': 'missing',
+    }
+
+    def __getitem__(self, key):
+        key = self._aliases.get(key, key)
+        return super(SignerCertificateReport, self).__getitem__(key)
+
+    def get(self, key, default=None):
+        key = self._aliases.get(key, key)
+        return super(SignerCertificateReport, self).get(key, default)
+
+    def __contains__(self, key):
+        key = self._aliases.get(key, key)
+        return super(SignerCertificateReport, self).__contains__(key)
+
+    @property
+    def outer(self):
+        return self['outer']
+
+    @property
+    def nested(self):
+        return self['nested']
+
+    @property
+    def signers(self):
+        return self['signers']
+
+    @property
+    def duplicates(self):
+        return self['duplicates']
+
+    @property
+    def conflicts(self):
+        return self['conflicts']
+
+
+def _coerce_signed_data(value):
+    """
+    Accepts a SignedData, a ContentInfo wrapping SignedData, or a DER byte
+    string of either.
+    """
+
+    if isinstance(value, SignedData):
+        return value
+
+    if isinstance(value, ContentInfo):
+        if value['content_type'].native != 'signed_data':
+            raise TypeError('ContentInfo does not contain SignedData')
+        content = value['content']
+        if isinstance(content, SignedData):
+            return content
+        return SignedData.load(content.dump())
+
+    if isinstance(value, (bytes, bytearray)):
+        encoded = bytes(value)
+        try:
+            loaded = ContentInfo.load(encoded)
+            if loaded['content_type'].native == 'signed_data':
+                content = loaded['content']
+                if isinstance(content, SignedData):
+                    return content
+                return SignedData.load(content.dump())
+        except (ValueError, TypeError):
+            pass
+
+        try:
+            parsed = parse(encoded)
+            if parsed[0] == 2 and parsed[2] == 0:
+                return SignedData.load(parsed[4])
+        except (ValueError, TypeError):
+            pass
+
+        return SignedData.load(encoded)
+
+    if hasattr(value, 'chosen'):
+        chosen = value.chosen
+        if isinstance(chosen, SignedData):
+            return chosen
+
+    raise TypeError('value must be a SignedData, ContentInfo or DER byte string')
+
+
+def _as_certificate(value):
+    """
+    Returns an x509.Certificate from a Certificate or CertificateChoices, or
+    None when the choice is not an X.509 certificate.
+    """
+
+    if isinstance(value, Certificate):
+        return value
+
+    if isinstance(value, CertificateChoices):
+        if value.name != 'certificate':
+            return None
+        return value.chosen
+
+    if hasattr(value, 'name') and hasattr(value, 'chosen'):
+        if value.name != 'certificate':
+            return None
+        chosen = value.chosen
+        if isinstance(chosen, Certificate):
+            return chosen
+
+    return None
+
+
+def _is_certificate_collection(value):
+    return isinstance(value, (CertificateSet, list, tuple, set))
+
+
+def _certificate_entry(value, index):
+    """
+    Builds an internal certificate entry with the identifier material needed
+    for later matching and conflict detection.
+    """
+
+    certificate = _as_certificate(value)
+    if certificate is None:
+        return None
+
+    try:
+        certificate_der = certificate.dump()
+    except (ValueError, TypeError):
+        return None
+
+    try:
+        issuer_serial = certificate.issuer_serial
+    except (ValueError, TypeError):
+        issuer_serial = None
+
+    try:
+        subject_key_identifier = certificate.key_identifier
+    except (ValueError, TypeError):
+        subject_key_identifier = None
+
+    return {
+        'certificate': certificate,
+        'certificate_der': certificate_der,
+        'certificate_sha256': certificate.sha256,
+        'certificate_index': index,
+        'issuer_serial': issuer_serial,
+        'subject_key_identifier': subject_key_identifier,
+        'duplicate_count': 1,
+        'duplicate_occurrences': [],
+        'issuer_serial_conflict': False,
+        'subject_key_identifier_conflict': False,
+    }
+
+
+def _certificate_entries(certificates):
+    """
+    Normalizes a certificate collection into internal certificate entries.
+    """
+
+    if certificates is None:
+        return []
+
+    if isinstance(certificates, (Certificate, CertificateChoices)):
+        certificates = [certificates]
+
+    entries = []
+    for index, value in enumerate(certificates):
+        entry = _certificate_entry(value, index)
+        if entry is not None:
+            entries.append(entry)
+    return entries
+
+
+def _signer_matches_issuer_serial(signer_info, entry):
+    sid = signer_info['sid']
+    if sid.name != 'issuer_and_serial_number':
+        return False
+
+    try:
+        chosen = sid.chosen
+        certificate = entry['certificate']
+        return (
+            certificate.issuer == chosen['issuer'] and
+            certificate.serial_number == chosen['serial_number'].native
+        )
+    except (ValueError, TypeError, KeyError):
+        return False
+
+
+def _signer_matches_subject_key_identifier(signer_info, entry):
+    sid = signer_info['sid']
+    if sid.name != 'subject_key_identifier':
+        return False
+
+    try:
+        certificate_key_identifier = entry['certificate'].key_identifier
+        if certificate_key_identifier is None:
+            return False
+        return certificate_key_identifier == sid.chosen.native
+    except (ValueError, TypeError, KeyError):
+        return False
+
+
+def _signer_matches_certificate_entry(signer_info, entry):
+    return (
+        _signer_matches_issuer_serial(signer_info, entry) or
+        _signer_matches_subject_key_identifier(signer_info, entry)
+    )
+
+
+def _certificate_occurrence(entry):
+    return {
+        'layer': entry.get('layer'),
+        'layer_id': entry.get('layer_id'),
+        'depth': entry.get('depth'),
+        'layer_path': list(entry.get('layer_path', [])),
+        'certificate_index': entry['certificate_index'],
+        'certificate_sha256': entry['certificate_sha256'],
+    }
+
+
+def _mark_duplicate_certificates(layers):
+    by_der = OrderedDict()
+    for layer in layers:
+        for entry in layer['certificates']:
+            by_der.setdefault(entry['certificate_der'], []).append(entry)
+
+    duplicates = []
+    for entries in by_der.values():
+        if len(entries) < 2:
+            continue
+
+        occurrences = [_certificate_occurrence(entry) for entry in entries]
+        for entry in entries:
+            entry['duplicate_count'] = len(entries)
+            entry['duplicate_occurrences'] = occurrences
+            entry['duplicate_in_layer'] = (
+                len(set([occ['layer_id'] for occ in occurrences])) < len(occurrences)
+            )
+
+        duplicates.append({
+            'certificate_sha256': entries[0]['certificate_sha256'],
+            'count': len(entries),
+            'occurrences': occurrences,
+        })
+
+    return duplicates
+
+
+def _mark_certificate_conflicts(layers):
+    conflicts = []
+    by_issuer_serial = OrderedDict()
+    by_subject_key_identifier = OrderedDict()
+
+    for layer in layers:
+        for entry in layer['certificates']:
+            if entry['issuer_serial'] is not None:
+                by_issuer_serial.setdefault(entry['issuer_serial'], []).append(entry)
+            if entry['subject_key_identifier'] is not None:
+                by_subject_key_identifier.setdefault(
+                    entry['subject_key_identifier'],
+                    []
+                ).append(entry)
+
+    groups = [
+        ('issuer_and_serial_number', by_issuer_serial, 'issuer_serial'),
+        ('subject_key_identifier', by_subject_key_identifier, 'subject_key_identifier'),
+    ]
+
+    for identifier_type, by_identifier, entry_flag in groups:
+        for identifier, entries in by_identifier.items():
+            distinct_ders = set([entry['certificate_der'] for entry in entries])
+            if len(distinct_ders) < 2:
+                continue
+
+            for entry in entries:
+                entry[entry_flag + '_conflict'] = True
+
+            conflict = {
+                'identifier_type': identifier_type,
+                'occurrences': [_certificate_occurrence(entry) for entry in entries],
+                'certificate_count': len(entries),
+                'distinct_certificate_count': len(distinct_ders),
+            }
+            if identifier_type == 'issuer_and_serial_number':
+                first = entries[0]
+                conflict['issuer_serial'] = first['issuer_serial']
+            else:
+                conflict['subject_key_identifier'] = identifier
+            conflicts.append(conflict)
+
+    return conflicts
+
+
+def _candidate_record(signer_info, signer_index, entry, layer, status, state):
+    sid = signer_info['sid']
+    matches = []
+    if _signer_matches_issuer_serial(signer_info, entry):
+        matches.append('issuer_and_serial_number')
+    if _signer_matches_subject_key_identifier(signer_info, entry):
+        matches.append('subject_key_identifier')
+
+    return {
+        'layer': layer['layer'],
+        'layer_id': layer['layer_id'],
+        'depth': layer['depth'],
+        'layer_path': list(layer['layer_path']),
+        'signer_index': signer_index,
+        'signer_info_index': signer_index,
+        'signer_info': signer_info,
+        'sid_type': sid.name,
+        'sid': sid.native,
+        'match': sid.name,
+        'match_type': sid.name,
+        'matches': matches,
+        'issuer_and_serial_number_match': 'issuer_and_serial_number' in matches,
+        'subject_key_identifier_match': 'subject_key_identifier' in matches,
+        'issuer_serial_match': 'issuer_and_serial_number' in matches,
+        'certificate': entry['certificate'],
+        'certificate_index': entry['certificate_index'],
+        'certificate_sha256': entry['certificate_sha256'],
+        'certificate_der': entry['certificate_der'],
+        'duplicate': entry['duplicate_count'] > 1,
+        'duplicate_count': entry['duplicate_count'],
+        'duplicate_occurrences': entry['duplicate_occurrences'],
+        'conflict': (
+            entry['issuer_serial_conflict'] or
+            entry['subject_key_identifier_conflict']
+        ),
+        'status': status,
+        'state': state,
+    }
+
+
+def _signer_record(layer, signer_index, signer_info):
+    candidate_entries = [
+        entry
+        for entry in layer['certificates']
+        if _signer_matches_certificate_entry(signer_info, entry)
+    ]
+
+    distinct_certificates = set([
+        entry['certificate_der'] for entry in candidate_entries
+    ])
+    if len(candidate_entries) == 0:
+        status = _CANDIDATE_STATUS_MISSING
+        state = _CANDIDATE_STATE_MISSING
+    elif len(distinct_certificates) > 1:
+        status = _CANDIDATE_STATUS_CONFLICT
+        state = _CANDIDATE_STATE_CONFLICT
+    elif len(candidate_entries) > 1:
+        status = _CANDIDATE_STATUS_DUPLICATE
+        state = _CANDIDATE_STATE_DUPLICATE
+    else:
+        status = _CANDIDATE_STATUS_OK
+        state = _CANDIDATE_STATE_MATCHED
+
+    candidates = []
+    for entry in candidate_entries:
+        candidate_status = _CANDIDATE_STATUS_OK
+        candidate_state = _CANDIDATE_STATE_MATCHED
+        if len(distinct_certificates) > 1:
+            candidate_status = _CANDIDATE_STATUS_CONFLICT
+            candidate_state = _CANDIDATE_STATE_CONFLICT
+        elif entry['duplicate_count'] > 1:
+            candidate_status = _CANDIDATE_STATUS_DUPLICATE
+            candidate_state = _CANDIDATE_STATE_DUPLICATE
+
+        candidates.append(_candidate_record(
+            signer_info,
+            signer_index,
+            entry,
+            layer,
+            candidate_status,
+            candidate_state
+        ))
+
+    sid = signer_info['sid']
+    return {
+        'layer': layer['layer'],
+        'layer_id': layer['layer_id'],
+        'depth': layer['depth'],
+        'layer_path': list(layer['layer_path']),
+        'signer_index': signer_index,
+        'signer_info_index': signer_index,
+        'signer_info': signer_info,
+        'declaration': 'signer_infos[%d]' % signer_index,
+        'signer_id': '%s/signer_infos[%d]' % (layer['layer_id'], signer_index),
+        'sid_type': sid.name,
+        'sid': sid.native,
+        'status': status,
+        'state': state,
+        'missing_certificate': state == _CANDIDATE_STATE_MISSING,
+        'conflict': state == _CANDIDATE_STATE_CONFLICT,
+        'duplicate': state == _CANDIDATE_STATE_DUPLICATE,
+        'candidate_count': len(candidates),
+        'unique_candidate_count': len(distinct_certificates),
+        'candidates': candidates,
+        'certificates': [candidate['certificate'] for candidate in candidates],
+    }
+
+
+def _collect_layers(signed_data, layer, layer_id, depth, layer_path, parent=None):
+    certificates = []
+    certificate_set = signed_data['certificates']
+    if certificate_set is not None:
+        for index, value in enumerate(certificate_set):
+            entry = _certificate_entry(value, index)
+            if entry is None:
+                continue
+            entry['layer'] = layer
+            entry['layer_id'] = layer_id
+            entry['depth'] = depth
+            entry['layer_path'] = list(layer_path)
+            certificates.append(entry)
+
+    layer_record = {
+        'layer': layer,
+        'layer_id': layer_id,
+        'depth': depth,
+        'layer_path': list(layer_path),
+        'parent': parent,
+        'signed_data': signed_data,
+        'certificates': certificates,
+    }
+    layers = [layer_record]
+
+    for signer_index, signer_info in enumerate(signed_data['signer_infos']):
+        unsigned_attrs = signer_info['unsigned_attrs']
+        if unsigned_attrs is None:
+            continue
+
+        for attribute_index, attribute in enumerate(unsigned_attrs):
+            if attribute['type'].native != 'microsoft_nested_signature':
+                continue
+
+            for value_index, content_info in enumerate(attribute['values']):
+                try:
+                    if content_info['content_type'].native != 'signed_data':
+                        continue
+                    nested_signed_data = content_info['content']
+                except (ValueError, TypeError):
+                    continue
+
+                nested_path = list(layer_path) + [signer_index, value_index]
+                nested_id = '%s/signer_infos[%d]/unsigned_attrs[%d]/microsoft_nested_signature[%d]' % (
+                    layer_id,
+                    signer_index,
+                    attribute_index,
+                    value_index
+                )
+                nested_parent = {
+                    'layer_id': layer_id,
+                    'signer_index': signer_index,
+                    'attribute': 'microsoft_nested_signature',
+                    'attribute_index': attribute_index,
+                    'value_index': value_index,
+                }
+                layers.extend(_collect_layers(
+                    nested_signed_data,
+                    'nested',
+                    nested_id,
+                    depth + 1,
+                    nested_path,
+                    nested_parent
+                ))
+
+    return layers
+
+
+def _build_certificate_candidate_report(signed_data):
+    signed_data = _coerce_signed_data(signed_data)
+    layers = _collect_layers(signed_data, 'outer', 'outer', 0, [])
+    duplicates = _mark_duplicate_certificates(layers)
+    conflicts = _mark_certificate_conflicts(layers)
+
+    signer_records = []
+    for layer in layers:
+        layer['signers'] = []
+        for signer_index, signer_info in enumerate(layer['signed_data']['signer_infos']):
+            record = _signer_record(layer, signer_index, signer_info)
+            layer['signers'].append(record)
+            signer_records.append(record)
+
+    report = SignerCertificateReport()
+    report['outer'] = [
+        record for record in signer_records
+        if record['layer'] == 'outer'
+    ]
+    report['nested'] = [
+        record for record in signer_records
+        if record['layer'] == 'nested'
+    ]
+    report['signers'] = signer_records
+    report['layers'] = layers
+    report['duplicates'] = duplicates
+    report['conflicts'] = conflicts
+    report['missing'] = [
+        record for record in signer_records
+        if record['state'] == _CANDIDATE_STATE_MISSING
+    ]
+    report['missing_certificate'] = report['missing']
+    return report
+
+
+def signer_certificate_candidates(value):
+    """
+    Resolves certificate candidates for a SignedData, ContentInfo or DER byte
+    string.
+
+    :param value:
+        A SignedData, ContentInfo containing SignedData, or DER byte string of
+        either
+
+    :return:
+        A SignerCertificateReport with outer and nested signer evidence kept
+        in separate lists
+    """
+
+    return _build_certificate_candidate_report(value)
+
+
+def get_signer_certificate_candidates(value):
+    """
+    Alias for signer_certificate_candidates().
+    """
+
+    return signer_certificate_candidates(value)
+
+
+def get_signer_certificates(value):
+    """
+    Alias for signer_certificate_candidates().
+    """
+
+    return signer_certificate_candidates(value)
+
+
+def collect_signer_certificate_candidates(value):
+    """
+    Alias for signer_certificate_candidates().
+    """
+
+    return signer_certificate_candidates(value)
+
+
+def collect_signer_certificates(value):
+    """
+    Alias for signer_certificate_candidates().
+    """
+
+    return signer_certificate_candidates(value)
+
+
+def find_signer_certificate_candidates(value):
+    """
+    Alias for signer_certificate_candidates().
+    """
+
+    return signer_certificate_candidates(value)
+
+
+def find_signer_certificates(value):
+    """
+    Alias for signer_certificate_candidates().
+    """
+
+    return signer_certificate_candidates(value)
+
+
+def resolve_signer_certificates(value):
+    """
+    Alias for signer_certificate_candidates().
+    """
+
+    return signer_certificate_candidates(value)
+
+
+def certificate_candidate_report(value):
+    """
+    Alias for signer_certificate_candidates().
+    """
+
+    return signer_certificate_candidates(value)
+
+
+def get_certificate_candidates(value):
+    """
+    Alias for signer_certificate_candidates().
+    """
+
+    return signer_certificate_candidates(value)
