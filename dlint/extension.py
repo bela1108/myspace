@@ -43,9 +43,24 @@ class Flake8Extension(object):
             # since the option(s) have already been added.
             pass
 
+        try:
+            parser.add_option(
+                '--dlint-validation-api',
+                action='append',
+                dest='dlint_validation_api',
+                metavar='NAME',
+                default=[],
+                help=(
+                    'Declare a validation API for "async validation check" '
+                    'analysis. May be repeated or comma-separated.'
+                ),
+            )
+        except optparse.OptionConflictError:
+            pass
+
     @classmethod
     def parse_options(cls, options):
-        if options.print_dlint_linters:
+        if getattr(options, 'print_dlint_linters', False):
             code_prefix_len = 7
             linters = cls.get_linter_classes()
             output_lines = [
@@ -55,6 +70,12 @@ class Flake8Extension(object):
             print("\n".join(output_lines))
             EX_OK = 0
             sys.exit(EX_OK)
+
+        validation_apis = getattr(options, 'dlint_validation_api', None)
+        if validation_apis:
+            dlint.linters.BadAsyncValidationUseLinter.set_validation_apis(
+                validation_apis
+            )
 
         cls.options = options
 
