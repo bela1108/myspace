@@ -34,6 +34,34 @@ from securesystemslib.signer._gcp_signer import GCPSigner
 from securesystemslib.signer._gpg_signer import GPGKey, GPGSigner
 from securesystemslib.signer._hsm_signer import HSMSigner
 from securesystemslib.signer._key import KEY_FOR_TYPE_AND_SCHEME, Key, SSlibKey
+from securesystemslib.signer._policy import (
+    ArchiveAnchor,
+    Decision,
+    EvaluationView,
+    PolicyCheck,
+    PolicyDecision,
+    PolicyUse,
+    Receipt,
+    ReplayReport,
+    Revocation,
+    RevocationCheck,
+    RevocationNotice,
+    SignatureEvidence,
+    SignaturePolicy,
+    TimeClaim,
+    TimeInterval,
+    TimeWindow,
+    TrustedTime,
+    Use,
+    UseDecision,
+    UseDifference,
+    evaluate,
+    evaluate_signature_policy,
+    replay,
+    replay_receipts,
+    replay_views,
+    verify_and_evaluate,
+)
 from securesystemslib.signer._signature import Signature
 from securesystemslib.signer._signer import (
     SIGNER_FOR_URI_SCHEME,

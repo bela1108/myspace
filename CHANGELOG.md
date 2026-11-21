@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Added
+
+* Time-aware signature policy evaluation in `securesystemslib.policy`,
+  including archive/release decisions, half-open validity intervals, trusted
+  receipt views, and view-scoped revocation notices.
+
 ## 1.6.0
 
 ### Changed
