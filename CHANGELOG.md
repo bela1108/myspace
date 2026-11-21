@@ -8,6 +8,14 @@ All versions prior to 0.0.9 are untracked.
 
 ## [Unreleased]
 
+### Added
+
+* PEP 751 lockfiles can now be audited against an offline target environment
+  matrix with `--target-matrix FILE`. Each environment evaluates package
+  markers and wheel tags independently, reuses advisory queries only for the
+  same canonical distribution identity, and reports per-environment coverage
+  and missing evidence instead of flattening multiple platforms into one pass.
+
 ### Fixed
 
 * Editable requirements skipped with `--skip-editable` no longer require a hash

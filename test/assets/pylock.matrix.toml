@@ -1,0 +1,68 @@
+lock-version = '1.0'
+environments = ["sys_platform == 'win32'", "sys_platform == 'linux'", "sys_platform == 'darwin'"]
+requires-python = '==3.12.*'
+created-by = 'pip-audit matrix test fixture'
+
+[[packages]]
+name = 'attrs'
+version = '25.1.0'
+requires-python = '>=3.8'
+wheels = [
+    { name = 'attrs-25.1.0-py3-none-any.whl', url = 'https://files.pythonhosted.org/packages/attrs-25.1.0-py3-none-any.whl', hashes = { sha256 = 'c75a69e28a550a7e93789579c22aa26b0f5b83b75dc4e08fe092980051e1090a' } },
+]
+
+[[packages]]
+name = 'colorama'
+version = '0.4.6'
+marker = "sys_platform == 'win32'"
+requires-python = '>=3.7'
+wheels = [
+    { name = 'colorama-0.4.6-py2.py3-none-any.whl', url = 'https://files.pythonhosted.org/packages/colorama-0.4.6-py2.py3-none-any.whl', hashes = { sha256 = '4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6' } },
+]
+
+[[packages]]
+name = 'uvloop'
+version = '0.19.0'
+marker = "sys_platform != 'win32'"
+requires-python = '>=3.8'
+wheels = [
+    { name = 'uvloop-0.19.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl', url = 'https://files.pythonhosted.org/packages/uvloop-linux.whl', hashes = { sha256 = '0000000000000000000000000000000000000000000000000000000000000001' } },
+    { name = 'uvloop-0.19.0-cp312-cp312-macosx_11_0_arm64.whl', url = 'https://files.pythonhosted.org/packages/uvloop-macos.whl', hashes = { sha256 = '0000000000000000000000000000000000000000000000000000000000000002' } },
+]
+
+[[packages]]
+name = 'cryptography'
+version = '42.0.5'
+marker = "sys_platform == 'win32'"
+requires-python = '>=3.7'
+wheels = [
+    { name = 'cryptography-42.0.5-cp39-abi3-win_amd64.whl', url = 'https://files.pythonhosted.org/packages/cryptography-win.whl', hashes = { sha256 = '0000000000000000000000000000000000000000000000000000000000000003' } },
+]
+
+[[packages]]
+name = 'cryptography'
+version = '41.0.7'
+marker = "sys_platform != 'win32'"
+requires-python = '>=3.7'
+wheels = [
+    { name = 'cryptography-41.0.7-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl', url = 'https://files.pythonhosted.org/packages/cryptography-linux.whl', hashes = { sha256 = '0000000000000000000000000000000000000000000000000000000000000004' } },
+    { name = 'cryptography-41.0.7-cp39-abi3-macosx_11_0_arm64.whl', url = 'https://files.pythonhosted.org/packages/cryptography-macos.whl', hashes = { sha256 = '0000000000000000000000000000000000000000000000000000000000000005' } },
+]
+
+[[packages]]
+name = 'numpy'
+version = '2.2.3'
+requires-python = '>=3.10'
+wheels = [
+    { name = 'numpy-2.2.3-cp312-cp312-win_amd64.whl', url = 'https://files.pythonhosted.org/packages/numpy-win.whl', hashes = { sha256 = '0000000000000000000000000000000000000000000000000000000000000006' } },
+    { name = 'numpy-2.2.3-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl', url = 'https://files.pythonhosted.org/packages/numpy-linux.whl', hashes = { sha256 = '0000000000000000000000000000000000000000000000000000000000000007' } },
+]
+
+[[packages]]
+name = 'platform-probe'
+version = '1.0'
+marker = "platform_release == '6.8.0'"
+requires-python = '>=3.8'
+wheels = [
+    { name = 'platform_probe-1.0-py3-none-any.whl', url = 'https://files.pythonhosted.org/packages/platform_probe-1.0-py3-none-any.whl', hashes = { sha256 = '0000000000000000000000000000000000000000000000000000000000000008' } },
+]

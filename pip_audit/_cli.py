@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import IO, NoReturn, cast
 
 from pip_audit import __version__
-from pip_audit._audit import AuditOptions, Auditor
+from pip_audit._audit import AuditOptions, Auditor, EnvironmentAuditReport
 from pip_audit._dependency_source import (
     DependencySource,
     DependencySourceError,
@@ -42,6 +42,7 @@ from pip_audit._service.interface import (
     VulnerabilityService,
 )
 from pip_audit._state import AuditSpinner, AuditState
+from pip_audit._target import load_target_environment_matrix
 from pip_audit._util import assert_never
 
 logging.basicConfig()
@@ -182,6 +183,31 @@ def _enum_help(msg: str, e: type[enum.Enum]) -> str:  # pragma: no cover
     return f"{msg} (choices: {', '.join(str(v) for v in e)})"
 
 
+def _format_environment_report(report: EnvironmentAuditReport) -> str:
+    """Render an environment-matrix report as plain text."""
+
+    lines: list[str] = []
+    for environment in report.environments:
+        conclusion = "PASS" if environment.complete and not environment.vulnerable else "FAIL"
+        lines.append(f"{environment.name}: {conclusion} ({environment.conclusion})")
+        lines.append(
+            f"  coverage: {len(environment.checked)} checked, "
+            f"{len(environment.excluded)} excluded, "
+            f"{len(environment.incomplete)} missing"
+        )
+        for dependency in environment.incomplete:
+            missing = ", ".join(dependency.missing_evidence)
+            lines.append(f"  missing evidence: {dependency.display_name}: {missing}")
+        for dependency in environment.vulnerable:
+            lines.extend(
+                f"  {dependency.display_name}: {vuln.id}" for vuln in dependency.vulnerabilities
+            )
+        lines.extend(f"  warning: {warning}" for warning in environment.warnings)
+
+    lines.append(f"advisory queries: {report.query_count} ({report.cache_hits} reused)")
+    return "\n".join(lines)
+
+
 def _fatal(msg: str) -> NoReturn:  # pragma: no cover
     """
     Log a fatal error to the standard error stream and exit.
@@ -226,6 +252,15 @@ def _parser() -> argparse.ArgumentParser:  # pragma: no cover
         action="store_true",
         help="audit lock files from the local Python project. This "
         "flag only applies to auditing from project paths",
+    )
+    parser.add_argument(
+        "--target-matrix",
+        "--target-environments",
+        dest="target_matrix",
+        type=Path,
+        metavar="FILE",
+        help="audit lock files against an offline target environment matrix; "
+        "requires --locked and a pylock.*.toml input",
     )
     parser.add_argument(
         "-f",
@@ -463,6 +498,14 @@ def audit() -> None:  # pragma: no cover
     if args.project_path is None:
         if args.locked:
             parser.error("The --locked flag can only be used with a project path")
+        if args.target_matrix is not None:
+            parser.error("The --target-matrix flag can only be used with a project path")
+
+    if args.target_matrix is not None:
+        if not args.locked:
+            parser.error("The --target-matrix flag requires --locked")
+        if args.fix:
+            parser.error("The --fix flag cannot be used with --target-matrix")
 
     # Check for flags that are only valid with requirements files
     if args.requirements is None:
@@ -543,6 +586,38 @@ def audit() -> None:  # pragma: no cover
         # since the combination of `--dry-run` and `--fix` implies that the user
         # wants to dry-run the "fix" step instead of the "audit" step
         auditor = Auditor(service, options=AuditOptions(dry_run=args.dry_run and not args.fix))
+
+        if args.target_matrix is not None:
+            if not isinstance(source, PyLockSource):
+                _fatal("--target-matrix requires a pylock.*.toml lock file")
+
+            try:
+                matrix = load_target_environment_matrix(args.target_matrix)
+            except ValueError as exc:
+                _fatal(str(exc))
+
+            report = auditor.audit_matrix(source, matrix)
+            if args.format is OutputFormatChoice.Json:
+                rendered = report.to_json()
+            else:
+                rendered = _format_environment_report(report)
+
+            with _output_io(args.output) as io:
+                print(rendered, file=io)
+
+            for environment in report.environments:
+                status = "complete" if environment.complete else "incomplete"
+                print(
+                    f"{environment.name}: {status}; "
+                    f"{len(environment.checked)} checked, "
+                    f"{len(environment.incomplete)} missing evidence, "
+                    f"{len(environment.vulnerable)} vulnerable",
+                    file=sys.stderr,
+                )
+
+            if not report.complete or report.vulnerabilities:
+                sys.exit(1)
+            return
 
         result: dict[Dependency, list[VulnerabilityResult]] = {}
         pkg_count = 0

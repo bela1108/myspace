@@ -1,0 +1,42 @@
+[[environments]]
+name = 'linux-x86_64'
+platform_tags = ['manylinux_2_17_x86_64', 'manylinux2014_x86_64', 'linux_x86_64']
+[environments.markers]
+implementation_name = 'cpython'
+os_name = 'posix'
+platform_machine = 'x86_64'
+platform_release = '6.8.0'
+platform_system = 'Linux'
+platform_version = '#1 SMP PREEMPT_DYNAMIC'
+python_full_version = '3.12.4'
+platform_python_implementation = 'CPython'
+python_version = '3.12'
+sys_platform = 'linux'
+
+[[environments]]
+name = 'windows-amd64'
+platform_tags = ['win_amd64']
+[environments.markers]
+implementation_name = 'cpython'
+os_name = 'nt'
+platform_machine = 'AMD64'
+platform_system = 'Windows'
+platform_version = '10.0.22631'
+python_full_version = '3.12.4'
+platform_python_implementation = 'CPython'
+python_version = '3.12'
+sys_platform = 'win32'
+
+[[environments]]
+name = 'macos-arm64'
+platform_tags = ['macosx_11_0_arm64']
+[environments.markers]
+implementation_name = 'cpython'
+os_name = 'posix'
+platform_machine = 'arm64'
+platform_system = 'Darwin'
+platform_version = 'Darwin Kernel Version 23.4.0'
+python_full_version = '3.12.4'
+platform_python_implementation = 'CPython'
+python_version = '3.12'
+sys_platform = 'darwin'

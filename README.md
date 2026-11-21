@@ -134,15 +134,16 @@ python -m pip_audit --help
 ```
 
 <!-- @begin-pip-audit-help@ -->
-```
-usage: pip-audit [-h] [-V] [-l] [-r REQUIREMENT] [--locked] [-f FORMAT]
-                 [-s SERVICE] [--osv-url OSV_URL] [-d] [-S]
-                 [--desc [{on,off,auto}]] [--aliases [{on,off,auto}]]
-                 [--cache-dir CACHE_DIR] [--progress-spinner {on,off}]
-                 [--timeout TIMEOUT] [--path PATH] [-v] [--fix]
-                 [--require-hashes] [--index-url INDEX_URL]
-                 [--extra-index-url URL] [--skip-editable] [--no-deps]
-                 [-o FILE] [--ignore-vuln ID] [--disable-pip]
+```console
+usage: pip-audit [-h] [-V] [-l] [-r REQUIREMENT] [--locked]
+                 [--target-matrix FILE] [-f FORMAT] [-s SERVICE]
+                 [--osv-url OSV_URL] [-d] [-S] [--desc [{on,off,auto}]]
+                 [--aliases [{on,off,auto}]] [--cache-dir CACHE_DIR]
+                 [--progress-spinner {on,off}] [--timeout TIMEOUT]
+                 [--path PATH] [-v] [--fix] [--require-hashes]
+                 [--index-url INDEX_URL] [--extra-index-url URL]
+                 [--skip-editable] [--no-deps] [-o FILE] [--ignore-vuln ID]
+                 [--disable-pip]
                  [project_path]
 
 audit the Python environment for dependencies with known vulnerabilities
@@ -162,6 +163,10 @@ options:
   --locked              audit lock files from the local Python project. This
                         flag only applies to auditing from project paths
                         (default: False)
+  --target-matrix FILE, --target-environments FILE
+                        audit lock files against an offline target environment
+                        matrix; requires --locked and a pylock.*.toml input
+                        (default: None)
   -f FORMAT, --format FORMAT
                         the format to emit audit results in (choices: columns,
                         json, cyclonedx-json, cyclonedx-xml, markdown)
@@ -306,6 +311,36 @@ No known vulnerabilities found
 
 `pip-audit` searches the provided path for various Python "project" files.
 At the moment, only `pyproject.toml` and `pylock.*.toml` are supported.
+
+Audit a multi-platform lockfile against an offline target environment matrix:
+
+```console
+$ pip-audit --locked . --target-matrix target-environments.toml
+linux-x86_64: PASS (complete)
+  coverage: 5 checked, 2 excluded, 0 missing
+windows-amd64: FAIL (incomplete)
+  coverage: 4 checked, 2 excluded, 1 missing
+  missing evidence: platform-probe 1.0: platform_release
+macos-arm64: FAIL (incomplete)
+  coverage: 3 checked, 2 excluded, 2 missing
+  missing evidence: numpy 2.2.3: compatible-distribution
+  missing evidence: platform-probe 1.0: platform_release
+advisory queries: 7 (5 reused)
+```
+
+A target matrix gives the audit a fully specified, offline installation target
+for each platform that consumes the lockfile. Each target supplies the PEP 508
+marker variables (for example `python_version`, `sys_platform`, and
+`platform_machine`) and the wheel platform tags it accepts. A lockfile package
+is checked only when its marker applies to that target and at least one locked
+wheel or sdist is installable there. Missing marker variables, architecture
+gaps, and ambiguous same-name versions are reported per environment; they are
+never collapsed into a single passing dependency row. Advisory queries are
+reused only for the same canonical distribution identity (name and version), so
+different versions selected by different platforms remain separate rows.
+
+See `test/assets/environments.matrix.toml` and
+`test/assets/pylock.matrix.toml` for a three-environment sample.
 
 Audit dependencies when there are vulnerabilities present:
 
