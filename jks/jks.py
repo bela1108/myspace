@@ -539,7 +539,9 @@ class KeyStore(AbstractKeystore):
 
         # skip integrity check if no password is provided
         if store_password is None:
-            return cls(store_type, entries)
+            store = cls(store_type, entries)
+            store._source_bytes = data
+            return store
 
         # check keystore integrity (uses UTF-16BE encoding of the password)
         hash_fn = hashlib.sha1
@@ -556,7 +558,9 @@ class KeyStore(AbstractKeystore):
         if expected_hash != found_hash:
             raise KeystoreSignatureException("Hash mismatch; incorrect keystore password?")
 
-        return cls(store_type, entries)
+        store = cls(store_type, entries)
+        store._source_bytes = data
+        return store
 
     @classmethod
     def _write_private_key(cls, alias, item, key_password):
@@ -631,6 +635,36 @@ class KeyStore(AbstractKeystore):
 
     def __init__(self, store_type, entries):
         super(KeyStore, self).__init__(store_type, entries)
+
+    def disclosure_proof(self, scope, source_data=None):
+        """Build a read-only selective-disclosure proof for this keystore.
+
+        ``scope`` may contain aliases, SHA-256 certificate identities, or raw
+        DER certificates. Every occurrence of each selected certificate is
+        retained, including duplicate aliases and certificate-chain slots.
+        """
+        from .disclosure import DisclosureProof
+
+        data = source_data if source_data is not None else self._source_bytes
+        if data is None:
+            raise DisclosureProofException(
+                "This keystore has no source bytes; load it through KeyStore.load or loads"
+            )
+        return DisclosureProof.from_keystore(self, data, scope)
+
+    @classmethod
+    def load_disclosure(cls, filename, store_password, scope):
+        """Load a proof from a file without decrypting key entries."""
+        with open(filename, "rb") as source_file:
+            data = source_file.read()
+        store = cls.loads(data, store_password, try_decrypt_keys=False)
+        return store.disclosure_proof(scope, data)
+
+    prove_disclosure = disclosure_proof
+    disclose = disclosure_proof
+    generate_disclosure_proof = disclosure_proof
+    make_disclosure_proof = disclosure_proof
+    disclosure_from_file = load_disclosure
 
     @property
     def certs(self):

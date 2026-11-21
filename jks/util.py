@@ -70,6 +70,12 @@ class UnsupportedKeystoreEntryTypeException(KeystoreException):
 class UnsupportedKeyFormatException(KeystoreException):
     """Signifies that the key format was an unsupported type."""
     pass
+class DisclosureProofException(KeystoreException):
+    """Signifies that a disclosure proof could not be created or is malformed."""
+    pass
+class UnknownDisclosureScopeException(DisclosureProofException):
+    """Signifies that the requested disclosure scope cannot be resolved."""
+    pass
 
 class AbstractKeystore(object):
     """
@@ -78,6 +84,7 @@ class AbstractKeystore(object):
     def __init__(self, store_type, entries):
         self.store_type = store_type  #: A string indicating the type of keystore that was loaded.
         self.entries = dict(entries)  #: A dictionary of all entries in the keystore, mapped by alias.
+        self._source_bytes = None
 
     @classmethod
     def load(cls, filename, store_password, try_decrypt_keys=True):
@@ -90,6 +97,7 @@ class AbstractKeystore(object):
             ret = cls.loads(input_bytes,
                             store_password,
                             try_decrypt_keys=try_decrypt_keys)
+        ret._source_bytes = input_bytes
         return ret
 
     def save(self, filename, store_password):
