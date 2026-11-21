@@ -1,6 +1,13 @@
 History
 #######
 
+Unreleased
+==========
+
+- Add a pcapng exchange preflight API which combines receiver capability
+  manifests with local discard rules, preserves mixed section endianness, and
+  reports evidence loss by interface scope.
+
 2.1.1
 =====
 

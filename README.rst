@@ -181,6 +181,61 @@ Circumstances that will result in strictness warnings include:
     * Writing EPB/SPB/PB/ISB before writing any IDBs
 
 
+Exchange preflight
+==================
+
+Before handing an archive to a reader that only understands some block types,
+use :func:`pcapng.preflight_exchange`.  It keeps raw block bytes, including
+the byte order of each section, and combines the receiver's capability
+manifest with local discard rules:
+
+.. code-block:: python
+
+    from pcapng import (
+        DiscardPolicy,
+        ReceiverCapabilities,
+        preflight_exchange,
+    )
+
+    receiver = ReceiverCapabilities(
+        ("SHB", "IDB", "EPB", "SPB", "NRB", "ISB"),
+        allow_unknown_blocks=True,
+        name="archive-reader",
+    )
+    policy = DiscardPolicy(discardable_block_types=("ISB",))
+
+    report = preflight_exchange("capture.pcapng", receiver, policy)
+    report.raise_for_errors()
+
+    if report.decision == "accept-with-evidence-loss":
+        print(report.affected_interfaces)
+        print(report.affected_interface_scopes)
+
+    with open("for-downstream.pcapng", "wb") as output:
+        report.write(output)
+
+``report.output`` is produced only when the result is exchangeable, and is
+validated against the same receiver capabilities before it is returned.
+Mixed-endian files keep each section's original byte order.
+
+The report separates four dispositions:
+
+* ``kept_blocks``: interpreted by the receiver;
+* ``skippable_extensions``: retained for readers that may skip unknown
+  extension or optional metadata blocks;
+* ``dropped_blocks``: omitted because the local policy explicitly permits it;
+* ``required_unknown``: blocks that must be interpreted, so the exchange is
+  rejected.
+
+Mandatory Section Header and Interface Description blocks are never treated
+as skippable.  Packet blocks are not silently skipped just because a scanner
+can walk past them: an unsupported packet block rejects the exchange unless
+local policy explicitly permits dropping it.  Optional metadata blocks may be
+skipped by a capable-unknown-block reader, but that still produces an explicit
+evidence-loss entry.  Accepted lossy reports list the impacted sections,
+interface IDs and block kinds separately.
+
+
 Creating a release
 ==================
 
