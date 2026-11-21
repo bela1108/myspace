@@ -98,7 +98,14 @@ __all__ = ['isOleFile', 'OleFileIO', 'OleMetadata', 'enable_logging',
            'DEFECT_FATAL', 'DEFAULT_PATH_ENCODING',
            'MAXREGSECT', 'DIFSECT', 'FATSECT', 'ENDOFCHAIN', 'FREESECT',
            'MAXREGSID', 'NOSTREAM', 'UNKNOWN_SIZE', 'WORD_CLSID',
-           'OleFileIONotClosed'
+           'OleFileIONotClosed',
+           'FormatEvidence', 'FormatEvidenceItem',
+           'EVIDENCE_CONSTRAINT', 'EVIDENCE_COMPATIBILITY',
+           'EVIDENCE_CONTRADICTION', 'EVIDENCE_INSUFFICIENT',
+           'get_format_evidence', 'format_evidence',
+           'get_forensic_report', 'get_file_format_evidence',
+           'get_format_evidence_report', 'get_evidence_report',
+           'analyze_format'
 ]
 
 import io
@@ -402,6 +409,146 @@ class NotOleFileError(OleFileError):
     Error raised when the opened file is not an OLE file.
     """
     pass
+
+
+# --- Format evidence ---------------------------------------------------------
+
+#: Evidence categories used by :class:`FormatEvidence`.
+EVIDENCE_CONSTRAINT = 'constraint'
+EVIDENCE_COMPATIBILITY = 'compatibility'
+EVIDENCE_CONTRADICTION = 'contradiction'
+EVIDENCE_INSUFFICIENT = 'insufficient'
+
+
+class FormatEvidenceItem(dict):
+    """
+    One observation in a :class:`FormatEvidence` report.
+
+    The item is a mapping (so it can be serialised easily) and its keys are
+    also available as attributes.  ``category`` is one of the EVIDENCE_*
+    constants.  ``passed`` is true for verified constraints and for
+    compatibility clues which are present and usable as clues; it is false for
+    violated constraints and for unavailable observations.
+    """
+
+    def __init__(self, code, category, status, message, field=None,
+                 expected=None, observed=None, source=None,
+                 conclusive=False, passed=None, reason=None):
+        if passed is None:
+            passed = status in ('verified', 'compatible', 'present',
+                                'legacy', 'informational')
+        dict.__init__(
+            self,
+            code=code,
+            category=category,
+            kind=category,
+            classification=category,
+            strength=("conclusive" if conclusive else
+                      "compatibility" if category == EVIDENCE_COMPATIBILITY
+                      else "insufficient"),
+            status=status,
+            message=message,
+            field=field,
+            expected=expected,
+            observed=observed,
+            source=source,
+            conclusive=bool(conclusive),
+            passed=bool(passed),
+            ok=bool(passed),
+            reason=reason,
+        )
+
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError:
+            raise AttributeError(name)
+
+    def __str__(self):
+        return '[%s] %s: %s' % (self['status'], self['code'],
+                               self['message'])
+
+
+class FormatEvidence(dict):
+    """
+    Read-only, eagerly computed description of the file-format declarations
+    found in an OLE2/CFB file.
+
+    A report keeps four kinds of observations apart:
+
+    - ``constraints``: structural rules that were verified.  The complete
+      rule set is in ``all_constraints``; failed rules are described in
+      ``contradictions``.
+    - ``compatibility_clues``: non-binding observations such as directory
+      timestamps, minor version and CLSIDs.  They can support a hypothesis but
+      cannot prove who saved the file.
+    - ``contradictions``: declarations which cannot all be true, for example
+      DllVersion 3 paired with 4096-byte sectors.
+    - ``insufficient_evidence``: attributes which are absent, zero, or only
+      compatibility clues and therefore cannot establish a save generation.
+
+    Attributes may be read either as mapping keys or as object attributes.
+    Calling the report returns itself, which makes ``ole.format_evidence`` and
+    ``ole.format_evidence()`` equivalent.
+    """
+
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError:
+            raise AttributeError(name)
+
+    def __call__(self):
+        return self
+
+    def __str__(self):
+        return self.get("summary", dict.__repr__(self))
+
+    def as_dict(self, json_safe=False):
+        """
+        Return the report as plain dictionaries/lists.
+
+        :param json_safe: convert datetime values to ISO-8601 strings.
+        """
+        def convert(value):
+            if isinstance(value, dict):
+                return dict((key, convert(val))
+                            for key, val in value.items())
+            if isinstance(value, (list, tuple)):
+                return [convert(val) for val in value]
+            if json_safe and isinstance(value, datetime.datetime):
+                return value.isoformat()
+            if json_safe and isinstance(value, datetime.timedelta):
+                return value.total_seconds()
+            return value
+        return convert(self)
+
+    to_dict = as_dict
+
+    def to_json(self, **kwargs):
+        """Return the report as JSON text with ISO timestamps."""
+        import json
+        kwargs.setdefault("sort_keys", True)
+        return json.dumps(self.as_dict(json_safe=True), **kwargs)
+
+    def dump(self):
+        """Print the report in a human-readable form."""
+        print(self['summary'])
+        for title, key in (
+                ('Verified constraints', 'verified_constraints'),
+                ('Compatibility clues', 'compatibility_clues'),
+                ('Contradictions', 'contradictions'),
+                ('Not eligible for provenance', 'ineligible_attributes'),
+                ('Unavailable attributes', 'unavailable_attributes')):
+            print('\n%s:' % title)
+            values = self[key]
+            if not values:
+                print('- none')
+            for value in values:
+                if isinstance(value, FormatEvidenceItem):
+                    print('- %s' % value)
+                else:
+                    print('- %s' % value)
 
 class OleMetadata:
     """
@@ -1121,6 +1268,11 @@ class OleFileIO:
         self.warn_if_not_closed = False
         self._we_opened_fp = False
         self._open_stack = None
+        # raw header values, captured before olefile normalises any of them:
+        self._raw_header = None
+        self._raw_header_bytes = None
+        # cached FormatEvidence report:
+        self._format_evidence = None
         if filename:
             # try opening, ensure fp is closed if that fails
             try:
@@ -1208,6 +1360,8 @@ class OleFileIO:
             of read-only by default. (ignored if filename is not a path)
         """
         self.write_mode = write_mode
+        # a report describes one opened file; do not reuse a stale report
+        self._format_evidence = None
         # [PL] check if filename is a string-like or file-like object:
         # (it is better to check for a read() method)
         if hasattr(filename, 'read'):
@@ -1317,6 +1471,32 @@ class OleFileIO:
             self.num_difat_sectors
         ) = struct.unpack(fmt_header, header1)
         log.debug( struct.unpack(fmt_header,    header1))
+
+        # Keep the declarations exactly as they were stored in the header.
+        # The parser below normalises some of them (notably the CLSID and the
+        # mini stream cutoff), but a forensic report must describe what the
+        # file actually declared, not the repaired in-memory value.
+        self._raw_header_bytes = header[:512]
+        self._raw_header = {
+            'signature': self.header_signature,
+            'clsid_raw': self.header_clsid,
+            'minor_version': self.minor_version,
+            'dll_version': self.dll_version,
+            'byte_order': self.byte_order,
+            'sector_shift': self.sector_shift,
+            'mini_sector_shift': self.mini_sector_shift,
+            'reserved1': self.reserved1,
+            'reserved2': self.reserved2,
+            'num_dir_sectors': self.num_dir_sectors,
+            'num_fat_sectors': self.num_fat_sectors,
+            'first_dir_sector': self.first_dir_sector,
+            'transaction_signature_number': self.transaction_signature_number,
+            'mini_stream_cutoff_size': self.mini_stream_cutoff_size,
+            'first_mini_fat_sector': self.first_mini_fat_sector,
+            'num_mini_fat_sectors': self.num_mini_fat_sectors,
+            'first_difat_sector': self.first_difat_sector,
+            'num_difat_sectors': self.num_difat_sectors,
+        }
 
         if self.header_signature != MAGIC:
             # OLE signature should always be present
@@ -2048,6 +2228,1014 @@ class OleFileIO:
         if sect != ENDOFCHAIN:
             raise IOError('incorrect last sector index in OLE stream')
 
+    def _evidence_filetime(self, value):
+        if not value:
+            return None
+        try:
+            return filetime2datetime(value)
+        except Exception:
+            return None
+
+    def _evidence_directory_entries(self):
+        paths = {}
+
+        def walk(node, prefix):
+            path = prefix + [node.name]
+            paths[node.sid] = path
+            for kid in node.kids:
+                walk(kid, path)
+
+        if self.root is not None:
+            walk(self.root, [])
+        entries = []
+        fp = self.directory_fp
+        if fp is None:
+            return entries
+        try:
+            total = fp.size
+        except Exception:
+            total = 0
+        max_entries = total // OleDirectoryEntry.DIRENTRY_SIZE
+        try:
+            old_pos = fp.tell()
+        except Exception:
+            old_pos = 0
+        for sid in range(max_entries):
+            try:
+                fp.seek(sid * OleDirectoryEntry.DIRENTRY_SIZE)
+                raw_entry = fp.read(OleDirectoryEntry.DIRENTRY_SIZE)
+                if len(raw_entry) != OleDirectoryEntry.DIRENTRY_SIZE:
+                    break
+                (name_raw, namelength, entry_type, color, sid_left,
+                 sid_right, sid_child, clsid_raw, user_flags, create_time,
+                 modify_time, isect_start, size_low, size_high) = struct.unpack(
+                    OleDirectoryEntry.STRUCT_DIRENTRY, raw_entry)
+            except Exception:
+                continue
+            if namelength >= 2:
+                name_utf16 = name_raw[:min(namelength - 2, 64)]
+            else:
+                name_utf16 = b""
+            try:
+                name = self._decode_utf16_str(name_utf16)
+            except Exception:
+                name = repr(name_utf16)
+            path = paths.get(sid)
+            path_text = "/".join(path) if path else None
+            clsid = _clsid(clsid_raw)
+            create_dt = self._evidence_filetime(create_time)
+            modify_dt = self._evidence_filetime(modify_time)
+            missing = []
+            if not create_time:
+                missing.append("create_time")
+            if not modify_time:
+                missing.append("modify_time")
+            timestamp_status = ("absent" if len(missing) == 2 else
+                                "partial" if missing else "present")
+            entries.append({
+                "sid": sid,
+                "path": path_text,
+                "reachable": path is not None,
+                "name": name,
+                "entry_type": entry_type,
+                "entry_type_name": {
+                    STGTY_EMPTY: "empty",
+                    STGTY_STORAGE: "storage",
+                    STGTY_STREAM: "stream",
+                    STGTY_LOCKBYTES: "lockbytes",
+                    STGTY_PROPERTY: "property",
+                    STGTY_ROOT: "root"}.get(entry_type, "unknown"),
+                "is_root": sid == 0,
+                "create_time_raw": create_time,
+                "modify_time_raw": modify_time,
+                "createTime": create_time,
+                "modifyTime": modify_time,
+                "create_time": create_dt,
+                "modify_time": modify_dt,
+                "ctime": create_dt,
+                "mtime": modify_dt,
+                "create_time_available": bool(create_time),
+                "modify_time_available": bool(modify_time),
+                "timestamp_status": timestamp_status,
+                "timestamp_complete": not missing,
+                "missing_timestamp_fields": missing,
+                "clsid": clsid,
+                "clsid_raw": "".join("%02X" % i8(c) for c in bytearray(clsid_raw)),
+                "clsid_present": bool(clsid),
+                "clsid_source": "directory",
+                "clsid_origin": "directory[%d]" % sid,
+                "size": size_low + (size_high << 32),
+                "isect_start": isect_start,
+            })
+        try:
+            fp.seek(old_pos)
+        except Exception:
+            pass
+        return entries
+
+    def _build_format_evidence(self):
+        raw = self._raw_header or {}
+        raw_signature = raw.get("signature", self.header_signature)
+        raw_clsid = raw.get("clsid_raw", b"\0" * 16)
+        raw_minor = raw.get("minor_version", self.minor_version)
+        raw_major = raw.get("dll_version", self.dll_version)
+        raw_byte_order = raw.get("byte_order", self.byte_order)
+        raw_sector_shift = raw.get("sector_shift", self.sector_shift)
+        raw_mini_shift = raw.get("mini_sector_shift", self.mini_sector_shift)
+        raw_reserved1 = raw.get("reserved1", self.reserved1)
+        raw_reserved2 = raw.get("reserved2", self.reserved2)
+        raw_num_dir = raw.get("num_dir_sectors", self.num_dir_sectors)
+        raw_num_fat = raw.get("num_fat_sectors", self.num_fat_sectors)
+        raw_first_dir = raw.get("first_dir_sector", self.first_dir_sector)
+        raw_transaction = raw.get("transaction_signature_number",
+                                  self.transaction_signature_number)
+        raw_cutoff = raw.get("mini_stream_cutoff_size",
+                             self.mini_stream_cutoff_size)
+        raw_first_mini_fat = raw.get("first_mini_fat_sector",
+                                     self.first_mini_fat_sector)
+        raw_num_mini_fat = raw.get("num_mini_fat_sectors",
+                                   self.num_mini_fat_sectors)
+        raw_first_difat = raw.get("first_difat_sector",
+                                  self.first_difat_sector)
+        raw_num_difat = raw.get("num_difat_sectors", self.num_difat_sectors)
+
+        declared_sector_size = None
+        if isinstance(raw_sector_shift, int) and 0 <= raw_sector_shift < 32:
+            declared_sector_size = 2 ** raw_sector_shift
+        declared_mini_sector_size = None
+        if isinstance(raw_mini_shift, int) and 0 <= raw_mini_shift < 32:
+            declared_mini_sector_size = 2 ** raw_mini_shift
+        actual_sector_size = self.sector_size or declared_sector_size
+        actual_mini_sector_size = self.mini_sector_size or declared_mini_sector_size
+        nb_sect = self.nb_sect or 0
+        clsid_zero = not raw_clsid.strip(b"\0")
+
+        constraints = []
+        verified_constraints = []
+        contradictions = []
+        clues = []
+        insufficient_evidence = []
+        ineligible_attributes = []
+        ineligible_records = []
+        unavailable_attributes = []
+
+        def add_constraint(code, passed, message, field=None, expected=None,
+                           observed=None, source="header", conclusive=True,
+                           reason=None):
+            item = FormatEvidenceItem(
+                code, EVIDENCE_CONSTRAINT,
+                "verified" if passed else "violated", message,
+                field=field, expected=expected, observed=observed,
+                source=source, conclusive=conclusive, passed=passed,
+                reason=reason)
+            constraints.append(item)
+            if passed:
+                verified_constraints.append(item)
+            else:
+                contradiction = FormatEvidenceItem(
+                    code, EVIDENCE_CONTRADICTION, "violated", message,
+                    field=field, expected=expected, observed=observed,
+                    source=source, conclusive=conclusive, passed=False,
+                    reason=reason)
+                contradictions.append(contradiction)
+            return item
+
+        def add_clue(code, status, message, field=None, observed=None,
+                     expected=None, source="header", conclusive=False,
+                     passed=None,
+                    reason=None):
+            item = FormatEvidenceItem(
+                code, EVIDENCE_COMPATIBILITY, status, message,
+                field=field, expected=expected, observed=observed, source=source,
+                conclusive=conclusive, passed=passed, reason=reason)
+            clues.append(item)
+            return item
+
+        def mark_ineligible(attribute, reason, source=None, observed=None,
+                            unavailable=False):
+            if attribute not in ineligible_attributes:
+                ineligible_attributes.append(attribute)
+            if unavailable and attribute not in unavailable_attributes:
+                unavailable_attributes.append(attribute)
+            item = FormatEvidenceItem(
+                attribute, EVIDENCE_INSUFFICIENT,
+                "unavailable" if unavailable else "not_eligible",
+                reason, field=attribute, observed=observed, source=source,
+                conclusive=False, passed=False, reason=reason)
+            insufficient_evidence.append(item)
+            ineligible_records.append(item)
+            return item
+
+        add_constraint(
+            "header.signature", raw_signature == MAGIC,
+            "The first eight bytes must be the OLE/CFB signature.",
+            field="signature", expected="D0CF11E0A1B11AE1",
+            observed="".join("%02X" % i8(c) for c in bytearray(raw_signature)))
+        add_constraint(
+            "header.byte_order", raw_byte_order == 0xFFFE,
+            "The byte-order mark must identify little-endian data.",
+            field="byte_order", expected="0xFFFE", observed=raw_byte_order)
+        add_constraint(
+            "header.dll_version", raw_major in (3, 4),
+            "The major format version must be 3 or 4.",
+            field="dll_version", expected=[3, 4], observed=raw_major)
+        geometry_ok = (
+            (raw_major == 3 and raw_sector_shift == 9) or
+            (raw_major == 4 and raw_sector_shift == 12))
+        add_constraint(
+            "header.sector_geometry", geometry_ok,
+            "Version 3 requires 512-byte sectors (shift 9); version 4 requires 4096-byte sectors (shift 12).",
+            field="sector_shift",
+            expected="9 for version 3, 12 for version 4",
+            observed=raw_sector_shift,
+            reason="This is the binding link between the declared version and the sector layout.")
+        add_constraint(
+            "header.mini_sector_geometry", raw_mini_shift == 6,
+            "Mini-sectors must be 64 bytes (shift 6).",
+            field="mini_sector_shift", expected=6, observed=raw_mini_shift)
+        add_constraint(
+            "header.clsid", clsid_zero,
+            "The header CLSID is reserved and must be zero; storage class IDs belong in directory entries.",
+            field="clsid", expected="00000000-0000-0000-0000-000000000000",
+            observed="" if clsid_zero else _clsid(raw_clsid),
+            source="header[0x08]",
+            reason="A non-zero value is a declaration conflict, not an alternative CLSID source.")
+        add_constraint(
+            "header.reserved", raw_reserved1 == 0 and raw_reserved2 == 0,
+            "The two reserved header fields must be zero.",
+            field="reserved1/reserved2", expected=0,
+            observed=[raw_reserved1, raw_reserved2])
+        add_constraint(
+            "header.mini_stream_cutoff", raw_cutoff == 0x1000,
+            "The mini-stream cutoff must be 4096 bytes.",
+            field="mini_stream_cutoff_size", expected=0x1000,
+            observed=raw_cutoff)
+        dir_count_ok = (
+            (raw_major == 3 and raw_num_dir == 0) or
+            (raw_major == 4 and raw_num_dir > 0))
+        add_constraint(
+            "header.directory_sector_count", dir_count_ok,
+            "Version 3 must declare zero directory sectors; version 4 must declare at least one.",
+            field="num_dir_sectors",
+            expected="0 for version 3, at least 1 for version 4",
+            observed=raw_num_dir)
+        add_constraint(
+            "header.fat_sector_count", raw_num_fat >= 1,
+            "At least one FAT sector must be declared.",
+            field="num_fat_sectors", expected="at least 1",
+            observed=raw_num_fat)
+        add_constraint(
+            "header.fat_sector_count_range",
+            raw_num_fat is not None and raw_num_fat <= nb_sect,
+            "The declared FAT sector count cannot exceed the sectors in the file.",
+            field="num_fat_sectors",
+            expected="0 < value <= %d" % nb_sect, observed=raw_num_fat)
+        if raw_major == 4:
+            add_constraint(
+                "header.directory_sector_count_range",
+                raw_num_dir is not None and raw_num_dir <= nb_sect,
+                "The declared directory sector count cannot exceed the sectors in the file.",
+                field="num_dir_sectors",
+                expected="0 < value <= %d" % nb_sect, observed=raw_num_dir)
+        dir_start_ok = raw_first_dir is not None and 0 <= raw_first_dir < nb_sect
+        add_constraint(
+            "sector.first_directory_sector", dir_start_ok,
+            "The first directory sector must lie inside the file.",
+            field="first_dir_sector", expected="0 <= value < %d" % nb_sect,
+            observed=raw_first_dir)
+        if raw_num_mini_fat:
+            add_constraint(
+                "sector.first_mini_fat_sector",
+                raw_first_mini_fat is not None and 0 <= raw_first_mini_fat < nb_sect,
+                "When MiniFAT sectors are declared, their first sector must lie inside the file.",
+                field="first_mini_fat_sector", observed=raw_first_mini_fat)
+        if raw_num_difat:
+            add_constraint(
+                "sector.first_difat_sector",
+                raw_first_difat is not None and 0 <= raw_first_difat < nb_sect,
+                "When DIFAT sectors are declared, their first sector must lie inside the file.",
+                field="first_difat_sector", observed=raw_first_difat)
+
+        directory_stream_size = getattr(self.directory_fp, "size", None)
+        actual_directory_sectors = None
+        if directory_stream_size and actual_sector_size:
+            actual_directory_sectors = (
+                directory_stream_size + actual_sector_size - 1) // actual_sector_size
+        directory_chain_consistent = None
+        if raw_major == 4 and actual_directory_sectors is not None:
+            directory_chain_consistent = actual_directory_sectors == raw_num_dir
+            add_constraint(
+                "sector.directory_chain_length", directory_chain_consistent,
+                "The version 4 directory chain length must match num_dir_sectors.",
+                field="num_dir_sectors", expected=actual_directory_sectors,
+                observed=raw_num_dir, source="sector")
+
+        if raw_minor == 0x003E:
+            add_clue(
+                "header.minor_version", "compatible",
+                "Minor version 62 is the reference-implementation value.",
+                field="minor_version", expected=0x003E, observed=raw_minor,
+                reason="A fixed reference value is not evidence of a particular Office generation.")
+        elif raw_minor == 0x0033:
+            add_clue(
+                "header.minor_version", "legacy",
+                "Minor version 51 is an older compatibility value.",
+                field="minor_version", expected=0x003E, observed=raw_minor,
+                reason="Legacy compatibility gives no reliable writer provenance.")
+        else:
+            add_clue(
+                "header.minor_version", "unrecognized",
+                "The minor version is neither the reference value 62 nor the legacy value 51.",
+                field="minor_version", expected=[0x003E, 0x0033],
+                observed=raw_minor,
+                reason="An unrecognized minor version is a compatibility clue, not a reliable generation marker.")
+        if raw_transaction:
+            add_clue(
+                "header.transaction_signature", "present",
+                "A non-zero transaction signature indicates a transacted-writing implementation.",
+                field="transaction_signature_number", observed=raw_transaction,
+                reason="Transactions describe a write capability and do not identify the save generation.")
+        else:
+            add_clue(
+                "header.transaction_signature", "absent",
+                "No transaction signature is declared.",
+                field="transaction_signature_number", observed=0,
+                reason="A zero field is the common default and carries no provenance information.")
+        if raw_num_difat:
+            add_clue(
+                "header.difat", "present",
+                "DIFAT sectors are used, which is compatible with a large file.",
+                field="num_difat_sectors", observed=raw_num_difat,
+                reason="DIFAT usage is a size/layout clue, not a writer-generation marker.")
+
+        directory_entries = self._evidence_directory_entries()
+        active_entries = [entry for entry in directory_entries
+                          if entry["entry_type"] in (STGTY_STORAGE,
+                                                      STGTY_STREAM, STGTY_ROOT)]
+        root_entry = next((entry for entry in directory_entries
+                           if entry["sid"] == 0), None)
+        missing_timestamps = []
+        missing_timestamp_details = []
+        for entry in active_entries:
+            for field in entry["missing_timestamp_fields"]:
+                label = entry["path"] or "directory[%d]" % entry["sid"]
+                name = "%s/%s" % (label, field)
+                missing_timestamps.append(name)
+                missing_timestamp_details.append({
+                    "sid": entry["sid"],
+                    "path": entry["path"],
+                    "field": field,
+                    "reason": "FILETIME is zero (not set).",
+                })
+                mark_ineligible(
+                    name,
+                    "The directory FILETIME is zero, meaning not set; it cannot be used for source or generation attribution.",
+                    source="directory[%d]" % entry["sid"],
+                    observed=0, unavailable=True)
+            if entry["timestamp_status"] == "present":
+                add_clue(
+                    "directory[%d].timestamps" % entry["sid"], "present",
+                    "Both directory timestamps are present for %r." %
+                    (entry["path"] or entry["name"]),
+                    field="create_time/modify_time",
+                    observed={"create_time": entry["create_time"],
+                              "modify_time": entry["modify_time"]},
+                    source="directory[%d]" % entry["sid"],
+                    reason="Timestamps are mutable, copyable and may be preserved from a template.")
+            elif entry["timestamp_status"] == "partial":
+                add_clue(
+                    "directory[%d].timestamps" % entry["sid"], "partial",
+                    "Only one directory timestamp is present for %r." %
+                    (entry["path"] or entry["name"]),
+                    field="create_time/modify_time",
+                    observed={"create_time": entry["create_time"],
+                              "modify_time": entry["modify_time"]},
+                    source="directory[%d]" % entry["sid"],
+                    reason="A partial timestamp cannot be treated as a save-time interval.")
+            else:
+                add_clue(
+                    "directory[%d].timestamps" % entry["sid"], "absent",
+                    "Both directory timestamps are zero for %r." %
+                    (entry["path"] or entry["name"]),
+                    field="create_time/modify_time", observed=0,
+                    source="directory[%d]" % entry["sid"],
+                    reason="Absent timestamps are not evidence about the save generation.")
+
+        all_times_complete = bool(active_entries) and all(
+            entry["timestamp_complete"] for entry in active_entries)
+        any_times_available = any(
+            entry["create_time_available"] or entry["modify_time_available"]
+            for entry in active_entries)
+        if not all_times_complete:
+            mark_ineligible(
+                "directory.timestamps",
+                "At least one active directory entry has no creation or modification FILETIME; the timestamp set is incomplete.",
+                source="directory", observed={
+                    "complete": all_times_complete,
+                    "available": any_times_available,
+                    "missing": missing_timestamps}, unavailable=not any_times_available)
+
+        clsid_origins = [{
+            "source": "header",
+            "origin": "header[0x08]",
+            "clsid_source": "header",
+            "offset": "0x08",
+            "sid": None,
+            "path": None,
+            "entry_type": None,
+            "clsid": "" if clsid_zero else _clsid(raw_clsid),
+            "clsid_present": not clsid_zero,
+            "eligible": False,
+            "eligible_for_provenance": False,
+            "conclusive": False,
+            "reason": "Reserved header field; it is not a storage class identifier.",
+        }]
+        for entry in directory_entries:
+            if (entry["entry_type"] in (STGTY_STORAGE, STGTY_ROOT)
+                    or entry["clsid_present"]):
+                clsid_origins.append({
+                    "source": "directory",
+                    "origin": "directory[%d]" % entry["sid"],
+                    "clsid_source": "directory",
+                    "offset": None,
+                    "sid": entry["sid"],
+                    "path": entry["path"],
+                    "entry_type": entry["entry_type"],
+                    "entry_type_name": entry["entry_type_name"],
+                    "clsid": entry["clsid"],
+                    "clsid_present": entry["clsid_present"],
+                    "eligible": False,
+                    "eligible_for_provenance": False,
+                    "conclusive": False,
+                    "reason": "Storage class identifiers are compatibility clues; they can be inherited, copied or left null.",
+                })
+
+        root_clsid = root_entry["clsid"] if root_entry else ""
+        if root_clsid:
+            add_clue(
+                "clsid.root", "present",
+                "The root directory declares a storage class CLSID.",
+                field="clsid", observed=root_clsid, source="directory[0]",
+                reason="The root CLSID identifies a storage class and may be inherited or copied; it is not proof of the writer generation.")
+            mark_ineligible(
+                "root.clsid",
+                "The root CLSID is a compatibility clue only; it can be inherited or copied and does not establish the save generation.",
+                source="directory[0]", observed=root_clsid)
+        else:
+            mark_ineligible(
+                "root.clsid",
+                "The root CLSID is null, so it cannot identify a storage class or a source.",
+                source="directory[0]", observed="", unavailable=True)
+        for entry in active_entries:
+            if entry["entry_type"] == STGTY_STORAGE:
+                label = entry["path"] or "directory[%d]" % entry["sid"]
+                attr = "%s.clsid" % label
+                if entry["clsid"]:
+                    add_clue(
+                        "clsid.%s" % label, "present",
+                        "A substorage declares a class CLSID.",
+                        field="clsid", observed=entry["clsid"],
+                        source="directory[%d]" % entry["sid"],
+                        reason="A substorage class identifies embedded content, not the outer save generation.")
+                    mark_ineligible(
+                        attr,
+                        "The CLSID is a compatibility clue only; it can be inherited or copied and does not establish the save generation.",
+                        source="directory[%d]" % entry["sid"],
+                        observed=entry["clsid"])
+                else:
+                    mark_ineligible(
+                        attr,
+                        "The substorage CLSID is null and cannot be used for attribution.",
+                        source="directory[%d]" % entry["sid"],
+                        observed="", unavailable=True)
+        mark_ineligible(
+            "header.clsid",
+            "The header CLSID is reserved and must be zero; it is not an independent source identifier.",
+            source="header[0x08]", observed="" if clsid_zero else _clsid(raw_clsid),
+            unavailable=clsid_zero)
+        mark_ineligible(
+            "header.minor_version",
+            "The minor version is a fixed or legacy declaration and is not a save-generation marker.",
+            source="header[0x18]", observed=raw_minor)
+        mark_ineligible(
+            "header.transaction_signature_number",
+            "The transaction signature describes transacted-write capability, not document provenance.",
+            source="header[0x34]", observed=raw_transaction,
+            unavailable=not bool(raw_transaction))
+        mark_ineligible(
+            "header.dll_version",
+            "The major version establishes the sector family only; it does not identify the Office or application that saved the file.",
+            source="header[0x1A]", observed=raw_major,
+            unavailable=raw_major not in (3, 4))
+        mark_ineligible(
+            "header.sector_shift",
+            "The sector shift establishes the sector layout only; it does not identify the save generation.",
+            source="header[0x1E]", observed=raw_sector_shift)
+        mark_ineligible(
+            "header.mini_sector_shift",
+            "The mini-sector shift is a mandatory layout value, not a provenance marker.",
+            source="header[0x20]", observed=raw_mini_shift)
+
+        format_version = None
+        if raw_signature == MAGIC and raw_byte_order == 0xFFFE and geometry_ok:
+            format_version = raw_major
+        format_family = None
+        if format_version == 3:
+            format_family = "V3"
+        elif format_version == 4:
+            format_family = "V4"
+
+        header = {
+            "signature": "".join(
+                "%02X" % i8(c) for c in bytearray(raw_signature)),
+            "signature_hex": "".join(
+                "%02X" % i8(c) for c in bytearray(raw_signature)),
+            "signature_valid": raw_signature == MAGIC,
+            "clsid": "" if clsid_zero else _clsid(raw_clsid),
+            "clsid_raw": "".join("%02X" % i8(c) for c in bytearray(raw_clsid)),
+            "clsid_zero": clsid_zero,
+            "minor_version": raw_minor,
+            "minor": raw_minor,
+            "major_version": raw_major,
+            "version": raw_major,
+            "dll_version": raw_major,
+            "byte_order": raw_byte_order,
+            "sector_shift": raw_sector_shift,
+            "mini_sector_shift": raw_mini_shift,
+            "declared_sector_size": declared_sector_size,
+            "sector_size": declared_sector_size,
+            "declared_mini_sector_size": declared_mini_sector_size,
+            "mini_sector_size": declared_mini_sector_size,
+            "reserved1": raw_reserved1,
+            "reserved2": raw_reserved2,
+            "num_dir_sectors": raw_num_dir,
+            "num_fat_sectors": raw_num_fat,
+            "first_dir_sector": raw_first_dir,
+            "transaction_signature_number": raw_transaction,
+            "mini_stream_cutoff_size": raw_cutoff,
+            "first_mini_fat_sector": raw_first_mini_fat,
+            "num_mini_fat_sectors": raw_num_mini_fat,
+            "first_difat_sector": raw_first_difat,
+            "num_difat_sectors": raw_num_difat,
+        }
+        sector = {
+            "sector_size": actual_sector_size,
+            "size": actual_sector_size,
+            "sectorsize": actual_sector_size,
+            "sector_shift": raw_sector_shift,
+            "shift": raw_sector_shift,
+            "declared_sector_size": declared_sector_size,
+            "mini_sector_size": actual_mini_sector_size,
+            "mini_size": actual_mini_sector_size,
+            "minisectorsize": actual_mini_sector_size,
+            "mini_sector_shift": raw_mini_shift,
+            "mini_shift": raw_mini_shift,
+            "declared_mini_sector_size": declared_mini_sector_size,
+            "file_size": self._filesize,
+            "num_sectors": nb_sect,
+            "count": nb_sect,
+            "nb_sect": nb_sect,
+            "fat_sectors_declared": raw_num_fat,
+            "fat_entries_loaded": (len(self.fat)
+                                    if self.fat is not None else None),
+            "directory_stream_size": directory_stream_size,
+            "actual_directory_sectors": actual_directory_sectors,
+            "num_dir_sectors": raw_num_dir,
+            "directory_chain_consistent": directory_chain_consistent,
+            "first_difat_sector": raw_first_difat,
+            "num_difat_sectors": raw_num_difat,
+        }
+        observed_times = []
+        for entry in active_entries:
+            if entry["create_time"] is not None:
+                observed_times.append(entry["create_time"])
+            if entry["modify_time"] is not None:
+                observed_times.append(entry["modify_time"])
+        earliest_time = min(observed_times) if observed_times else None
+        latest_time = max(observed_times) if observed_times else None
+        time_span = (latest_time - earliest_time) if observed_times else None
+        directory_times = {
+            "entries": directory_entries,
+            "root": root_entry,
+            "root_entry": root_entry,
+            "create_time": root_entry["create_time"] if root_entry else None,
+            "modify_time": root_entry["modify_time"] if root_entry else None,
+            "create_time_raw": root_entry["create_time_raw"] if root_entry else None,
+            "modify_time_raw": root_entry["modify_time_raw"] if root_entry else None,
+            "root_create_time": root_entry["create_time"] if root_entry else None,
+            "root_modify_time": root_entry["modify_time"] if root_entry else None,
+            "root_create_time_raw": root_entry["create_time_raw"] if root_entry else None,
+            "root_modify_time_raw": root_entry["modify_time_raw"] if root_entry else None,
+            "root_create_time_available": bool(root_entry and root_entry["create_time_available"]),
+            "root_modify_time_available": bool(root_entry and root_entry["modify_time_available"]),
+            "available": any_times_available,
+            "earliest_time": earliest_time,
+            "latest_time": latest_time,
+            "earliest": earliest_time,
+            "latest": latest_time,
+            "span": time_span,
+            "complete": all_times_complete,
+            "partial": bool(any_times_available) and not all_times_complete,
+            "eligible_for_provenance": all_times_complete,
+            "missing": missing_timestamps,
+            "missing_details": missing_timestamp_details,
+        }
+        clsids = {
+            "header": "" if clsid_zero else _clsid(raw_clsid),
+            "header_value": "" if clsid_zero else _clsid(raw_clsid),
+            "header_origin": clsid_origins[0],
+            "root": root_clsid,
+            "root_value": root_clsid,
+            "root_origin": next((item for item in clsid_origins
+                                  if item["sid"] == 0), None),
+            "entries": [entry for entry in directory_entries
+                        if (entry["entry_type"] in (STGTY_STORAGE, STGTY_ROOT)
+                            or entry["clsid_present"])],
+            "origins": clsid_origins,
+        }
+        any_clsid = any(entry["clsid_present"] for entry in directory_entries)
+        if contradictions:
+            provenance_status = "conflicted"
+            provenance_reason = "Incompatible format declarations prevent a reliable provenance conclusion."
+        elif not all_times_complete:
+            provenance_status = "undetermined"
+            provenance_reason = "Directory timestamps are incomplete; remaining CLSID and version declarations are compatibility clues only."
+        else:
+            provenance_status = "clue_only"
+            provenance_reason = "Timestamps and CLSIDs are compatibility clues. No file field conclusively identifies the save generation."
+
+        def attribute_record(eligible, conclusive, reason, source=None,
+                             value=None):
+            return {
+                "eligible": bool(eligible),
+                "eligible_for_provenance": bool(eligible),
+                "conclusive": bool(conclusive),
+                "reason": reason,
+                "source": source,
+                "value": value,
+            }
+
+        attribute_eligibility = {
+            "format.version": attribute_record(
+                format_version is not None, format_version is not None,
+                "Establishes the CFB sector family, not the save generation.",
+                "header[0x1A]", format_version),
+            "format.major_version": attribute_record(
+                format_version is not None, format_version is not None,
+                "Establishes the CFB sector family only.",
+                "header[0x1A]", raw_major),
+            "header.dll_version": attribute_record(
+                format_version is not None, format_version is not None,
+                "Establishes the CFB sector family only.",
+                "header[0x1A]", raw_major),
+            "header.sector_shift": attribute_record(
+                geometry_ok, True,
+                "Establishes the sector layout only.",
+                "header[0x1E]", raw_sector_shift),
+            "sector.size": attribute_record(
+                bool(actual_sector_size), True,
+                "Establishes the sector layout only.",
+                "header[0x1E]", actual_sector_size),
+            "header.signature": attribute_record(
+                raw_signature == MAGIC, True,
+                "Establishes CFB identity only.", "header[0x00]", raw_signature == MAGIC),
+            "header.minor_version": attribute_record(
+                False, False,
+                "Fixed or legacy declaration; not a save-generation marker.",
+                "header[0x18]", raw_minor),
+            "minor_version": attribute_record(
+                False, False,
+                "Fixed or legacy declaration; not a save-generation marker.",
+                "header[0x18]", raw_minor),
+            "header.clsid": attribute_record(
+                False, False,
+                "Reserved field that must be zero; not a CLSID source.",
+                "header[0x08]", "" if clsid_zero else _clsid(raw_clsid)),
+            "header_clsid": attribute_record(
+                False, False,
+                "Reserved field that must be zero; not a CLSID source.",
+                "header[0x08]", "" if clsid_zero else _clsid(raw_clsid)),
+            "header.transaction_signature_number": attribute_record(
+                False, False,
+                "Describes transacted-write capability, not provenance.",
+                "header[0x34]", raw_transaction),
+            "transaction_signature_number": attribute_record(
+                False, False,
+                "Describes transacted-write capability, not provenance.",
+                "header[0x34]", raw_transaction),
+            "directory.timestamps": attribute_record(
+                all_times_complete, False,
+                "Timestamps are mutable, copyable and may be inherited from a template.",
+                "directory", missing_timestamps),
+            "directory.times": attribute_record(
+                all_times_complete, False,
+                "Timestamps are mutable, copyable and may be inherited from a template.",
+                "directory", missing_timestamps),
+            "directory_timestamps": attribute_record(
+                all_times_complete, False,
+                "Timestamps are mutable, copyable and may be inherited from a template.",
+                "directory", missing_timestamps),
+            "timestamps": attribute_record(
+                all_times_complete, False,
+                "Timestamps are mutable, copyable and may be inherited from a template.",
+                "directory", missing_timestamps),
+            "root.create_time": attribute_record(
+                bool(root_entry and root_entry["create_time_available"]), False,
+                "A root creation time can bound a timeline but does not identify the writer.",
+                "directory[0]" if root_entry else None,
+                root_entry["create_time"] if root_entry else None),
+            "root.createTime": attribute_record(
+                bool(root_entry and root_entry["create_time_available"]), False,
+                "A root creation time can bound a timeline but does not identify the writer.",
+                "directory[0]" if root_entry else None,
+                root_entry["create_time"] if root_entry else None),
+            "root.modify_time": attribute_record(
+                bool(root_entry and root_entry["modify_time_available"]), False,
+                "A root modification time can bound a timeline but does not identify the writer.",
+                "directory[0]" if root_entry else None,
+                root_entry["modify_time"] if root_entry else None),
+            "root.modifyTime": attribute_record(
+                bool(root_entry and root_entry["modify_time_available"]), False,
+                "A root modification time can bound a timeline but does not identify the writer.",
+                "directory[0]" if root_entry else None,
+                root_entry["modify_time"] if root_entry else None),
+            "root.clsid": attribute_record(
+                bool(root_clsid), False,
+                "A compatibility clue that can be inherited or copied.",
+                "directory[0]" if root_entry else None, root_clsid),
+            "root_clsid": attribute_record(
+                bool(root_clsid), False,
+                "A compatibility clue that can be inherited or copied.",
+                "directory[0]" if root_entry else None, root_clsid),
+            "directory.clsid": attribute_record(
+                any_clsid, False,
+                "Storage CLSIDs identify classes and embedded content, not the save generation.",
+                "directory", any_clsid),
+            "directory_clsid": attribute_record(
+                any_clsid, False,
+                "Storage CLSIDs identify classes and embedded content, not the save generation.",
+                "directory", any_clsid),
+            "clsid": attribute_record(
+                any_clsid, False,
+                "Storage CLSIDs are compatibility clues only.",
+                "directory", any_clsid),
+        }
+
+        for mark in (
+                ("header.dll_version", "format-family only"),
+                ("header.sector_shift", "format-layout only"),
+                ("header.mini_sector_shift", "format-layout only"),
+                ("format.version", "format-family only"),
+                ("format.major_version", "format-family only"),
+                ("sector.size", "format-layout only"),
+                ("header.signature", "format-identity only"),
+                ("root.create_time", "timeline clue only"),
+                ("root.createTime", "timeline clue only"),
+                ("root.modify_time", "timeline clue only"),
+                ("root.modifyTime", "timeline clue only"),
+                ("root.clsid", "storage-class clue only"),
+                ("root_clsid", "storage-class clue only"),
+                ("directory.clsid", "storage-class clue only"),
+                ("directory_clsid", "storage-class clue only"),
+                ("clsid", "storage-class clue only"),
+                ("directory.timestamps", "timeline clue only"),
+                ("directory.times", "timeline clue only"),
+                ("directory_timestamps", "timeline clue only"),
+                ("timestamps", "timeline clue only")):
+            if mark[0] in attribute_eligibility:
+                attribute_eligibility[mark[0]]["eligible_for_provenance"] = False
+                attribute_eligibility[mark[0]]["reason"] = (
+                    attribute_eligibility[mark[0]]["reason"] +
+                    " Not eligible for writer/source attribution (%s)." % mark[1])
+
+        evidence_attributes = [
+            "header.signature", "header.byte_order", "header.dll_version",
+            "header.sector_shift", "header.mini_sector_shift",
+            "header.reserved", "header.mini_stream_cutoff",
+            "header.directory_sector_count", "header.fat_sector_count",
+            "directory.timestamps", "root.create_time", "root.modify_time",
+            "root.clsid", "directory.clsid", "header.clsid",
+            "header.minor_version", "header.transaction_signature_number"]
+
+        positive_clues = [item for item in clues if item["passed"]]
+        constraints_verified = len(contradictions) == 0
+        is_consistent = constraints_verified
+        if contradictions:
+            summary = (
+                "Incompatible format declarations were found (%d); a provenance conclusion cannot be drawn from these declarations." %
+                len(contradictions))
+        elif format_version is None:
+            summary = "The file is readable but its format family could not be confirmed from compatible declarations."
+        elif not all_times_complete:
+            summary = (
+                "CFB %s constraints are verified, but directory timestamps are incomplete and are not eligible for source determination." %
+                format_family)
+        else:
+            summary = (
+                "CFB %s constraints are verified; timestamps and CLSIDs are compatibility clues only and do not prove the save generation." %
+                format_family)
+
+        report = FormatEvidence({
+            "format_version": format_version,
+            "format": "OLE2/CFB",
+            "container": "OLE2/CFB",
+            "is_ole": True,
+            "sector_size": actual_sector_size,
+            "mini_sector_size": actual_mini_sector_size,
+            "sector_shift": raw_sector_shift,
+            "mini_sector_shift": raw_mini_shift,
+            "num_sectors": nb_sect,
+            "nb_sect": nb_sect,
+            "file_size": self._filesize,
+            "header_clsid": "" if clsid_zero else _clsid(raw_clsid),
+            "header_clsid_origin": clsid_origins[0],
+            "root_clsid": root_clsid,
+            "root_clsid_origin": next((item for item in clsid_origins
+                                        if item["sid"] == 0), None),
+            "storage_clsids": [entry["clsid"] for entry in active_entries
+                               if entry["entry_type"] == STGTY_STORAGE
+                               and entry["clsid"]],
+            "minor_version": raw_minor,
+            "transaction_signature_number": raw_transaction,
+            "num_dir_sectors": raw_num_dir,
+            "num_fat_sectors": raw_num_fat,
+            "byte_order": raw_byte_order,
+            "reserved1": raw_reserved1,
+            "reserved2": raw_reserved2,
+            "mini_stream_cutoff_size": raw_cutoff,
+            "version": format_version,
+            "version_string": (str(format_version)
+                                if format_version is not None else None),
+            "version_label": format_family,
+            "major_version": raw_major,
+            "declared_version": raw_major,
+            "dll_version": raw_major,
+            "format_family": format_family,
+            "generation": None,
+            "save_generation": None,
+            "generation_number": None,
+            "format_generation": format_family,
+            "format_generation_number": format_version,
+            "source_generation": None,
+            "source": None,
+            "writer": None,
+            "office_generation": None,
+            "provenance_generation": None,
+            "generation_status": ("conflicted" if contradictions
+                                  else "undetermined"),
+            "generation_determined": False,
+            "provenance_status": provenance_status,
+            "provenance_conclusive": False,
+            "source_status": provenance_status,
+            "format_status": ("confirmed" if format_version
+                              else "conflicted" if contradictions
+                              else "undetermined"),
+            "readable": True,
+            "read_only": True,
+            "valid": is_consistent,
+            "is_valid": is_consistent,
+            "consistent": is_consistent,
+            "has_contradictions": bool(contradictions),
+            "is_consistent": is_consistent,
+            "constraints_verified": constraints_verified,
+            "constraints_ok": constraints_verified,
+            "format_constraints_verified": constraints_verified,
+            "constraint_count": len(verified_constraints),
+            "all_constraint_count": len(constraints),
+            "verified_constraint_count": len(verified_constraints),
+            "contradiction_count": len(contradictions),
+            "clue_count": len(positive_clues),
+            "insufficient_count": len(insufficient_evidence),
+            "constraints": verified_constraints,
+            "all_constraints": constraints,
+            "format_constraints": constraints,
+            "constraint_checks": constraints,
+            "verified_constraints": verified_constraints,
+            "constraints_passed": verified_constraints,
+            "constraints_failed": contradictions,
+            "compatibility_clues": positive_clues,
+            "compatibility": positive_clues,
+            "clues": positive_clues,
+            "clue_observations": clues,
+            "contradictions": contradictions,
+            "conflicts": contradictions,
+            "violations": contradictions,
+            "incompatible_declarations": contradictions,
+            "incompatibilities": contradictions,
+            "insufficient_evidence": insufficient_evidence,
+            "insufficient": insufficient_evidence,
+            "ineligible_evidence": insufficient_evidence,
+            "ineligible_records": insufficient_evidence,
+            "ineligible_attributes": ineligible_attributes,
+            "ineligible": ineligible_attributes,
+            "not_eligible_for_provenance": ineligible_attributes,
+            "not_eligible": ineligible_attributes,
+            "unusable_attributes": ineligible_attributes,
+            "unavailable_attributes": unavailable_attributes,
+            "unavailable": unavailable_attributes,
+            "missing_attributes": unavailable_attributes,
+            "missing": unavailable_attributes,
+            "missing_timestamps": missing_timestamps,
+            "missing_timestamp_details": missing_timestamp_details,
+            "missing_timestamp_attributes": missing_timestamp_details,
+            "attribute_eligibility": attribute_eligibility,
+            "provenance_attributes": attribute_eligibility,
+            "evidence_attributes": evidence_attributes,
+            "directory_times": directory_times,
+            "directory_timestamps": directory_times,
+            "timestamps": directory_times,
+            "clsids": clsids,
+            "clsid_origins": clsid_origins,
+            "clsid_sources": clsid_origins,
+            "header": header,
+            "sector": sector,
+            "sectors": sector,
+            "sector_specification": sector,
+            "sector_specs": sector,
+            "directory": {"entries": directory_entries},
+            "header_fields": header,
+            "header_declarations": header,
+            "directory_time_evidence": directory_times,
+            "clsid_evidence": clsid_origins,
+            "attributes": attribute_eligibility,
+            "eligibility": attribute_eligibility,
+            "constraint_map": dict((item.code, item) for item in constraints),
+            "contradiction_codes": [item.code for item in contradictions],
+            "clue_codes": [item.code for item in clues],
+            "provenance": {
+                "status": provenance_status,
+                "state": provenance_status,
+                "verdict": provenance_status,
+                "determined": False,
+                "confidence": "none",
+                "generation": None,
+                "source_generation": None,
+                "source": None,
+                "writer": None,
+                "application": None,
+                "office_generation": None,
+                "conclusive": False,
+                "eligible": False,
+                "reason": provenance_reason,
+                "eligible_attributes": [name for name, item in
+                                         attribute_eligibility.items()
+                                         if item["eligible"]],
+                "conclusive_attributes": [name for name, item in
+                                           attribute_eligibility.items()
+                                           if item["eligible_for_provenance"]],
+                "ineligible_attributes": ineligible_attributes,
+                "unavailable_attributes": unavailable_attributes,
+            },
+            "categories": {
+                "constraints": constraints,
+                "compatibility_clues": positive_clues,
+                "compatibility_observations": clues,
+                "contradictions": contradictions,
+                "insufficient": insufficient_evidence,
+            },
+            "parsing_issues": [
+                {"exception": getattr(exc_type, "__name__", repr(exc_type)),
+                 "message": message}
+                for exc_type, message in (self.parsing_issues or [])],
+            "summary": summary,
+            "conclusion": summary,
+        })
+        return report
+
+    def get_forensic_report(self):
+        return self.get_format_evidence()
+
+    def get_forensic_evidence(self):
+        return self.get_format_evidence()
+
+    def get_file_format_evidence(self):
+        return self.get_format_evidence()
+
+    def get_evidence(self):
+        return self.get_format_evidence()
+
+    def get_format_evidence_report(self):
+        return self.get_format_evidence()
+
+    def get_evidence_report(self):
+        return self.get_format_evidence()
+
+    format_evidence = property(lambda self: self.get_format_evidence())
+    evidence_report = property(lambda self: self.get_format_evidence())
+
+    evidence = property(lambda self: self.get_format_evidence())
+    forensic_report = property(lambda self: self.get_format_evidence())
+    file_format_evidence = property(lambda self: self.get_format_evidence())
+
+    def get_forensics(self):
+        return self.get_format_evidence()
+
+    def get_format_evidence(self):
+        """Return the read-only file-format evidence report."""
+        if self._format_evidence is None:
+            self._format_evidence = self._build_format_evidence()
+        return self._format_evidence
+
     def get_type(self, filename):
         """
         Test if given filename exists as a stream or a storage in the OLE
@@ -2541,6 +3729,43 @@ class OleFileIO:
 
 
 # --------------------------------------------------------------------
+def get_format_evidence(filename, raise_defects=DEFECT_FATAL,
+                        write_mode=False,
+                        path_encoding=DEFAULT_PATH_ENCODING):
+    """
+    Open a file and return its read-only format evidence report.
+
+    This is a convenience wrapper around OleFileIO.get_format_evidence.
+    The report is fully materialised before the file is closed.
+    """
+    restore_position = None
+    if hasattr(filename, "tell"):
+        try:
+            restore_position = filename.tell()
+        except Exception:
+            restore_position = None
+    ole = OleFileIO(filename, raise_defects=raise_defects,
+                    write_mode=write_mode, path_encoding=path_encoding)
+    try:
+        return ole.get_format_evidence()
+    finally:
+        ole.close()
+        if restore_position is not None:
+            try:
+                filename.seek(restore_position)
+            except Exception:
+                pass
+
+
+get_forensic_report = get_format_evidence
+get_file_format_evidence = get_format_evidence
+get_format_evidence_report = get_format_evidence
+get_evidence_report = get_format_evidence
+analyze_format = get_format_evidence
+format_evidence = get_format_evidence
+forensic_report = get_format_evidence
+evidence_report = get_format_evidence
+
 # This script can be used to dump the directory of any OLE2 structured
 # storage file.
 
@@ -2568,6 +3793,9 @@ def main():
         help='check all streams (for debugging purposes)')
     parser.add_option("-p", action="store_true", dest="extract_customprop",
                       help='extract all user-defined propertires')
+    parser.add_option("-e", "--evidence", action="store_true",
+                      dest="format_evidence",
+                      help="display the read-only file-format evidence report")
     parser.add_option("-d", action="store_true", dest="debug_mode",
         help='debug mode, shortcut for -l debug (displays a lot of debug information, for developers only)')
     parser.add_option('-l', '--loglevel', dest="loglevel", action="store", default=DEFAULT_LOG_LEVEL,
@@ -2599,6 +3827,10 @@ def main():
             print(filename)
             print("-" * 68)
             ole.dumpdirectory()
+            if options.format_evidence:
+                print()
+                print("File-format evidence:")
+                ole.get_format_evidence().dump()
             for streamname in ole.listdir():
                 if streamname[-1][0] == "\005":
                     print("%r: properties" % streamname)
