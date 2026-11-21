@@ -41,3 +41,22 @@ documented [in-toto#663](https://github.com/in-toto/in-toto/issues/663).
 ```{eval-rst}
 .. autofunction:: in_toto.verifylib.in_toto_verify
 ```
+
+## Command Evidence
+
+```{eval-rst}
+.. autofunction:: in_toto.command_evidence.collect_command_evidence
+```
+
+```{eval-rst}
+.. autofunction:: in_toto.command_evidence.verify_command_evidence
+```
+
+```{eval-rst}
+.. autoclass:: in_toto.command_evidence.CommandEvidenceExpectation
+```
+
+```{eval-rst}
+.. autoclass:: in_toto.command_evidence.CommandEvidenceReport
+   :members:
+```
