@@ -1263,3 +1263,12 @@ class Copyright:
 
     def __repr__(self) -> str:
         return f'<Copyright text={self.text}>'
+
+
+def __getattr__(name: str) -> Any:
+    """Lazily expose the license decision API from the model package."""
+    from .license_decision import __all__ as _decision_exports
+    if name in _decision_exports:
+        from . import license_decision
+        return getattr(license_decision, name)
+    raise AttributeError(f'module {__name__!r} has no attribute {name!r}')

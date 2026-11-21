@@ -687,3 +687,68 @@ class _LicenseRepositorySerializationHelper(serializable.helpers.BaseHelper):
             else:
                 raise CycloneDxDeserializationException(f'unexpected: {li!r}')
         return repo
+
+
+# License decision APIs live in a separate module so that the serialization
+# models stay independent from policy evaluation.  The lazy re-export keeps
+# ``from cyclonedx.model.license import LicensePolicy`` working while avoiding
+# an import cycle with the component/BOM models.
+_LICENSE_DECISION_EXPORTS = frozenset({
+    'ArtifactScope',
+    'ChannelPolicy',
+    'ChannelLicensePolicy',
+    'ComponentDecision',
+    'ComponentLicenseDecision',
+    'ConditionConflict',
+    'ConflictGroup',
+    'DecisionStatus',
+    'DistributionChannelPolicy',
+    'DistributionDecision',
+    'DistributionPolicy',
+    'DistributionScope',
+    'DistributionType',
+    'EvidenceSource',
+    'EvidenceStatus',
+    'LicenseCombination',
+    'LicenseComplianceEngine',
+    'LicenseConflict',
+    'LicenseConflictGroup',
+    'LicenseConflictReason',
+    'LicenseDecision',
+    'LicenseDecisionAPI',
+    'LicenseDecisionEngine',
+    'LicenseDecisionError',
+    'LicenseDecisionOutcome',
+    'LicenseDecisionResult',
+    'LicenseDecisionStatus',
+    'LicenseEvidenceStatus',
+    'LicensePolicy',
+    'LicensePolicyEngine',
+    'LicenseRule',
+    'LicenseSelection',
+    'LicenseSource',
+    'LicenseAssessment',
+    'LicenseUnknownPolicy',
+    'LicenseVerdict',
+    'LicensingPolicy',
+    'ReleaseScope',
+    'SelectedLicense',
+    'UnknownLicensePolicy',
+    'check_license_policy',
+    'check_distribution_compliance',
+    'can_distribute',
+    'decide_license_compliance',
+    'decide_licenses',
+    'decide_distribution',
+    'evaluate_license_policy',
+    'evaluate_license_compliance',
+    'evaluate_licenses',
+    'is_distributable',
+})
+
+
+def __getattr__(name: str) -> Any:
+    if name in _LICENSE_DECISION_EXPORTS:
+        from . import license_decision
+        return getattr(license_decision, name)
+    raise AttributeError(f'module {__name__!r} has no attribute {name!r}')
