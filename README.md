@@ -34,3 +34,28 @@ Of course it only works if you are running it as administrator or a use that has
 
 # Installing
 ```python3 setup.py install```
+
+## Context comparison (postmortem reports)
+The exception stream context is captured at exception time; a thread-list
+context is only a normal thread snapshot. They can be compared without
+treating the two as equivalent evidence:
+
+```python
+from minidump.minidumpfile import MinidumpFile
+
+dump = MinidumpFile.parse("crash.dmp")
+comparison = dump.get_context_comparison()  # or thread_id=0x1234
+print(comparison.to_report())
+```
+
+Each register row carries its source (`exception` or `thread`), `ContextFlags`
+validity, and a status. A register that exists only in the thread context is
+reported as normal-thread-state-only. Missing context pages and unknown
+architectures keep their raw bytes and RVA provenance; unavailable values are
+reported as unknown, never fabricated as zero.
+
+CLI:
+
+```
+minidump --context-compare crash.dmp [--thread-id 0x1234]
+```

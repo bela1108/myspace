@@ -18,6 +18,20 @@ from minidump.common_structs import *
 from minidump.constants import MINIDUMP_STREAM_TYPE
 from minidump.directory import MINIDUMP_DIRECTORY
 from minidump.streams.SystemInfoStream import PROCESSOR_ARCHITECTURE
+from minidump.context import (
+	_read_descriptor,
+	parse_context_data,
+	ContextComparer,
+	ContextComparison,
+	ContextSnapshot,
+	ContextSource,
+	RegisterComparison,
+	RegisterSource,
+	RegisterStatus,
+	RegisterValidity,
+	RegisterValue,
+	compare_contexts,
+)
 from minidump.structures.peb import PEB
 
 
@@ -216,20 +230,90 @@ class MinidumpFile:
 			self.__parse_thread_context()
 		except Exception as e:
 			logging.exception('Thread context parsing error!')
+		try:
+			self.__parse_exception_context()
+		except Exception as e:
+			logging.exception('Exception context parsing error!')
 
 	def __parse_thread_context(self):
 		if not self.sysinfo or not self.threads:
 			return
 		for thread in self.threads.threads:
-			rva = thread.ThreadContext.Rva
-			self.file_handle.seek(rva)
-			if self.sysinfo.ProcessorArchitecture == PROCESSOR_ARCHITECTURE.AMD64:
-				thread.ContextObject = CONTEXT.parse(self.file_handle)
-			elif self.sysinfo.ProcessorArchitecture == PROCESSOR_ARCHITECTURE.INTEL:
-				thread.ContextObject = WOW64_CONTEXT.parse(self.file_handle)
+			raw, reason = _read_descriptor(self.file_handle, thread.ThreadContext)
+			thread.ContextRaw = raw
+			thread.ContextAvailable = bool(raw)
+			thread.ContextMissingReason = reason
+			thread.ContextObject = parse_context_data(
+				raw, self.sysinfo.ProcessorArchitecture
+			)
+			if thread.ContextObject is not None:
+				thread.ContextFlags = thread.ContextObject.ContextFlags
+
+	def __parse_exception_context(self):
+		if not self.sysinfo or not self.exception:
+			return
+		for record in self.exception.exception_records:
+			raw, reason = _read_descriptor(self.file_handle, record.ThreadContext)
+			record.ContextRaw = raw
+			record.ContextAvailable = bool(raw)
+			record.ContextMissingReason = reason
+			record.ContextObject = parse_context_data(
+				raw, self.sysinfo.ProcessorArchitecture
+			)
+			record.ExceptionContextObject = record.ContextObject
+			if record.ContextObject is not None:
+				record.ContextFlags = record.ContextObject.ContextFlags
+
+	def get_context_comparison(self, thread_id=None, record_index=0):
+		"""
+		Returns a report-ready comparison between the exception-time context
+		and the matching normal thread context.
+		"""
+		from minidump.context import ContextComparer
+		return ContextComparer(self).compare(
+			thread_id=thread_id, record_index=record_index
+		)
+
+	def compare_contexts(self, thread_id=None, record_index=0):
+		return self.get_context_comparison(thread_id, record_index)
+
+	def compare_exception_context(self, thread_id=None, record_index=0):
+		return self.get_context_comparison(thread_id, record_index)
+
+	def compare_thread_contexts(self, thread_id=None, record_index=0):
+		return self.get_context_comparison(thread_id, record_index)
+
+	def context_comparison(self, thread_id=None, record_index=0):
+		return self.get_context_comparison(thread_id, record_index)
+
+	def compare_context_registers(self, thread_id=None, record_index=0):
+		return self.get_context_comparison(thread_id, record_index)
+
+	def compare_exception_registers(self, thread_id=None, record_index=0):
+		return self.get_context_comparison(thread_id, record_index)
+
+	def get_register_comparison(self, thread_id=None, record_index=0):
+		return self.get_context_comparison(thread_id, record_index)
+
+	def context_diff(self, thread_id=None, record_index=0):
+		return self.get_context_comparison(thread_id, record_index)
+
+	def compare_context(self, thread_id=None, record_index=0):
+		return self.get_context_comparison(thread_id, record_index)
+
+	def get_context_compare(self, thread_id=None, record_index=0):
+		return self.get_context_comparison(thread_id, record_index)
+
+	def context_compare(self, thread_id=None, record_index=0):
+		return self.get_context_comparison(thread_id, record_index)
+
+	def get_register_context_comparison(self, thread_id=None, record_index=0):
+		return self.get_context_comparison(thread_id, record_index)
 
 	def __parse_peb(self):
-		if not self.sysinfo or not self.threads:
+		if not self.sysinfo or not self.threads or not self.modules:
+			return
+		if not self.memory_segments and not self.memory_segments_64:
 			return
 		
 		self.peb = PEB.from_minidump(self)

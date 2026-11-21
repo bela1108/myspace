@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import io
+
 # https://www.vergiliusproject.com/kernels/x64/Windows%2010%20%7C%202016/1507%20Threshold%201/_M128A
 class M128A:
     def __init__(self):
@@ -193,16 +195,23 @@ class CTX_DUMMYUNIONNAME:
     @classmethod
     def parse(cls, buff):
         dun = cls()
+        # The members below are alternatives occupying the same 0x200-byte
+        # storage.  Read the storage once instead of consuming each alias in
+        # sequence; otherwise the following VectorRegister array is read from
+        # the wrong offset.
+        raw = buff.read(0x200)
+        if len(raw) < 0x200:
+            raw += b'\x00' * (0x200 - len(raw))
 
-        dun.FltSave = XMM_SAVE_AREA32.parse(buff)
-        dun.Q = NEON128.parse_array(buff, 16)
+        dun.FltSave = XMM_SAVE_AREA32.parse(io.BytesIO(raw[:0x200]))
+        dun.Q = NEON128.parse_array(io.BytesIO(raw[:0x100]), 16)
         dun.D = [
-            int.from_bytes(buff.read(8), byteorder = 'little', signed = False)
+            int.from_bytes(raw[i * 8:i * 8 + 8], byteorder = 'little', signed = False)
             for i in range(32)
         ]
-        dun.DUMMYSTRUCTNAME = CTX_DUMMYSTRUCTNAME.parse(buff)
+        dun.DUMMYSTRUCTNAME = CTX_DUMMYSTRUCTNAME.parse(io.BytesIO(raw[:0x1A0]))
         dun.S = [
-            int.from_bytes(buff.read(4), byteorder = 'little', signed = False)
+            int.from_bytes(raw[i * 4:i * 4 + 4], byteorder = 'little', signed = False)
             for i in range(32)
         ]
         return dun

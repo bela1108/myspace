@@ -109,6 +109,7 @@ class SUITE_MASK(enum.IntFlag):
 class MINIDUMP_SYSTEM_INFO:
 	def __init__(self):
 		self.ProcessorArchitecture = None
+		self.ProcessorArchitectureRaw = None
 		self.ProcessorLevel = None
 		self.ProcessorRevision = None
 		self.Reserved0 = None
@@ -177,7 +178,11 @@ class MINIDUMP_SYSTEM_INFO:
 	@staticmethod
 	def parse(buff):
 		msi = MINIDUMP_SYSTEM_INFO()
-		msi.ProcessorArchitecture = PROCESSOR_ARCHITECTURE(int.from_bytes(buff.read(2), byteorder = 'little', signed = False))
+		msi.ProcessorArchitectureRaw = int.from_bytes(buff.read(2), byteorder = 'little', signed = False)
+		try:
+			msi.ProcessorArchitecture = PROCESSOR_ARCHITECTURE(msi.ProcessorArchitectureRaw)
+		except ValueError:
+			msi.ProcessorArchitecture = PROCESSOR_ARCHITECTURE.UNKNOWN
 		msi.ProcessorLevel = int.from_bytes(buff.read(2), byteorder = 'little', signed = False)
 		msi.ProcessorRevision = int.from_bytes(buff.read(2), byteorder = 'little', signed = False)
 		#the below field is present in the documentation from MSDN, however is not present in the actual dump
@@ -213,6 +218,7 @@ class MINIDUMP_SYSTEM_INFO:
 class MinidumpSystemInfo:
 	def __init__(self):
 		self.ProcessorArchitecture = None
+		self.ProcessorArchitectureRaw = None
 		self.ProcessorLevel = None
 		self.ProcessorRevision = None
 		self.NumberOfProcessors = None
@@ -272,6 +278,7 @@ class MinidumpSystemInfo:
 		chunk = io.BytesIO(buff.read(dir.Location.DataSize))
 		si = MINIDUMP_SYSTEM_INFO.parse(chunk)
 		t.ProcessorArchitecture = si.ProcessorArchitecture
+		t.ProcessorArchitectureRaw = getattr(si, 'ProcessorArchitectureRaw', None)
 		t.ProcessorLevel = si.ProcessorLevel
 		t.ProcessorRevision = si.ProcessorRevision
 		t.NumberOfProcessors = si.NumberOfProcessors
@@ -302,6 +309,7 @@ class MinidumpSystemInfo:
 		chunk = io.BytesIO(chunk_data)
 		si = MINIDUMP_SYSTEM_INFO.parse(chunk)
 		t.ProcessorArchitecture = si.ProcessorArchitecture
+		t.ProcessorArchitectureRaw = getattr(si, 'ProcessorArchitectureRaw', None)
 		t.ProcessorLevel = si.ProcessorLevel
 		t.ProcessorRevision = si.ProcessorRevision
 		t.NumberOfProcessors = si.NumberOfProcessors

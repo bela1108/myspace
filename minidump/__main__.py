@@ -29,6 +29,8 @@ def run():
 	parser.add_argument('--misc', action='store_true', help='Show misc info')
 	parser.add_argument('--peb', action='store_true', help='Show PEB info')
 	parser.add_argument('--all', action='store_true', help='Show all info')
+	parser.add_argument('--context-compare', '--context-comparison', dest='context_compare', action='store_true', help='Compare exception and thread register contexts')
+	parser.add_argument('--thread-id', type=lambda x: int(x, 0), default=None, help='Thread id for context comparison (default: exception thread)')
 	parser.add_argument('-r', '--read-addr', type=lambda x: int(x,0), help='Dump a memory region from the process\'s addres space')
 	parser.add_argument('-s', '--read-size', type=lambda x: int(x,0), default = 0x20, help='Dump a memory region from the process\'s addres space')
 
@@ -50,7 +52,6 @@ def run():
 	else:
 
 		mf = MinidumpFile.parse(args.minidumpfile)
-		reader = mf.get_reader()
 
 		if args.all or args.threads:
 			if mf.threads is not None:
@@ -95,7 +96,11 @@ def run():
 			if mf.peb is not None:
 				print(str(mf.peb))
 
+		if args.context_compare:
+			print(mf.get_context_comparison(thread_id=args.thread_id).to_report())
+
 		if args.read_addr:
+			reader = mf.get_reader()
 			buff_reader = reader.get_buffered_reader()
 			buff_reader.move(args.read_addr)
 			data = buff_reader.peek(args.read_size)

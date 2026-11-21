@@ -69,6 +69,15 @@ class MinidumpShell(cmd.Cmd):
 		if self.mini.exception is not None:
 			print(str(self.mini.exception))
 
+	def do_comparecontext(self, args):
+		"""Compares exception-time and normal thread register contexts"""
+		thread_id = args2int(args.strip()) if args.strip() else None
+		print(self.mini.get_context_comparison(thread_id=thread_id).to_report())
+
+	def do_contextcompare(self, args):
+		"""Alias for comparecontext"""
+		return self.do_comparecontext(args)
+
 	def do_comments(self, args):
 		"""Lists all comments (if any)"""
 		if self.mini.comment_a is not None:
