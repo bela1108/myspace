@@ -1,6 +1,14 @@
 Release history
 ===============
 
+Unreleased
+----------
+
+* Add macholib.bindings for per-slice static import binding reports.
+  The reports map library ordinals to dylib load commands, retain weak,
+  special and unresolved states, and keep identical symbol names from
+  different slices or modules as separate rows.
+
 macholib 1.16.4
 ---------------
 

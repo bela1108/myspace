@@ -22,3 +22,9 @@ and likely contains bugs. It also does not work for 64-bit binaries.
       The end result of this is that the code does not
       support 64-bit code at all and likely doesn't work
       properly for 32-bit code as well.
+
+.. method:: bindings()
+
+   Return a per-slice :class:`macholib.bindings.SliceBindings` report for
+   this symbol table's slice.  This uses the object-form nlist data rather
+   than the deprecated helpers above and understands dylib ordinals.

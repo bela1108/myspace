@@ -30,6 +30,7 @@ Reference Guide
    MachoOGraph
    MachoOStandalone
    SymbolTable
+   bindings
    dyld
    dylib
    framework

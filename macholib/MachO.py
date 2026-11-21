@@ -155,6 +155,21 @@ class MachO(object):
                 changed = True
         return changed
 
+    def getBindings(self, **kw):
+        """Compatibility spelling for bindings()."""
+        return self.bindings(**kw)
+
+    def bindings(self, **kw):
+        """
+        Return a per-slice static import-binding report.
+
+        See :mod:`macholib.bindings` for details about the information
+        included in the report.
+        """
+        from macholib.bindings import analyze_macho
+
+        return analyze_macho(self, **kw)
+
     def load_header(self, fh, offset, size):
         fh.seek(offset)
         header = struct.unpack(">I", fh.read(4))[0]
@@ -474,6 +489,27 @@ class MachOHeader(object):
             if lc.cmd == LC_DYSYMTAB:
                 return cmd
         return None
+
+    def getBindings(self, index=None, **kw):
+        """Compatibility spelling for bindings()."""
+        return self.bindings(index=index, **kw)
+
+    def bindings(self, index=None, **kw):
+        """
+        Return the static import-binding report for this header.
+
+        When *index* is not specified the header's position in its parent
+        Mach-O file is used as the slice index.
+        """
+        from macholib.bindings import analyze_slice
+
+        if index is None:
+            index = 0
+            for pos, header in enumerate(self.parent.headers):
+                if header is self:
+                    index = pos
+                    break
+        return analyze_slice(self.parent, self, index=index, **kw)
 
     def get_filetype_shortname(self, filetype):
         if filetype in MH_FILETYPE_SHORTNAMES:

@@ -29,6 +29,7 @@ class SymbolTable(object):
             openfile = open
         if header is None:
             header = macho.headers[0]
+        self.macho = macho
         self.macho_header = header
         with openfile(macho.filename, "rb") as fh:
             self.symtab = header.getSymbolTableCommand()
@@ -39,6 +40,22 @@ class SymbolTable(object):
 
             if self.dysymtab is not None:
                 self.readDynamicSymbolTable(fh)
+
+    def getBindings(self, **kw):
+        """Compatibility spelling for bindings()."""
+        return self.bindings(**kw)
+
+    def bindings(self, **kw):
+        """
+        Return a static import-binding report for this symbol table's slice.
+
+        Unlike the older helpers in this class, the report understands
+        library ordinals, weak references and special ordinals.  See
+        :mod:`macholib.bindings`.
+        """
+        from macholib.bindings import analyze_slice
+
+        return analyze_slice(self.macho, self.macho_header, **kw)
 
     def readSymbolTable(self, fh):
         cmd = self.symtab
