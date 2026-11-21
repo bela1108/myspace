@@ -5,8 +5,26 @@ from collections import deque
 import lxml.html
 import lxml.html.clean
 
+from .text_alternatives import (
+    REFERENCE_ATTRIBUTES,
+    TEXT_ALTERNATIVE_ATTRIBUTES,
+    TEXT_ALTERNATIVE_TAGS,
+    SanitizeResult,
+    TextAlternativeDecision,
+    _Candidate,
+    apply_text_alternative_plans,
+    build_id_index,
+    decide_text_alternatives,
+)
 
-__all__ = ("Sanitizer",)
+
+__all__ = (
+    "TEXT_ALTERNATIVE_ATTRIBUTES",
+    "TEXT_ALTERNATIVE_TAGS",
+    "SanitizeResult",
+    "Sanitizer",
+    "TextAlternativeDecision",
+)
 
 
 def sanitize_href(href):
@@ -171,6 +189,8 @@ DEFAULT_SETTINGS = {
         anchor_id_to_name,
     ],
     "element_postprocessors": [],
+    "text_alternative_tags": set(TEXT_ALTERNATIVE_TAGS),
+    "text_alternative_attributes": dict(TEXT_ALTERNATIVE_ATTRIBUTES),
 }
 
 
@@ -187,6 +207,8 @@ class Sanitizer:
         self.__dict__.update(DEFAULT_SETTINGS)
         self.__dict__.update(settings or {})
 
+        self._configure_text_alternatives(settings or {})
+
         # Allow iterables of any kind, not just sets.
         self.tags = coerce_to_set(self.tags)
         self.empty = coerce_to_set(self.empty)
@@ -199,6 +221,11 @@ class Sanitizer:
         self.attributes = {
             tag: coerce_to_set(attributes)
             for tag, attributes in self.attributes.items()
+        }
+        self.text_alternative_tags = coerce_to_set(self.text_alternative_tags)
+        self.text_alternative_attributes = {
+            tag: tuple(attributes)
+            for tag, attributes in self.text_alternative_attributes.items()
         }
 
         if self.keep_typographic_whitespace:
@@ -236,6 +263,73 @@ class Sanitizer:
                 'Always allow "rel" when allowing "target" as anchor attribute'
             )
 
+    def _configure_text_alternatives(self, settings):  # noqa: C901
+        """Accept the documented setting and a few convenient aliases."""
+
+        unset = object()
+        configured = unset
+        for key in (
+            "text_alternative",
+            "text_alternatives",
+            "accessible_text_alternatives",
+            "accessible_text_alternative_tags",
+            "aria_text_alternatives",
+            "aria_text_fallbacks",
+            "accessible_name_fallbacks",
+        ):
+            if key in settings and "text_alternative_tags" not in settings:
+                configured = settings[key]
+                break
+
+        # The attributes map is always copied so instances do not share it.
+        configured_attributes = self.text_alternative_attributes
+        self.text_alternative_attributes = {
+            tag: tuple(attributes) for tag, attributes in configured_attributes.items()
+        }
+
+        if configured is not unset:
+            if configured is True:
+                self.text_alternative_tags = set(TEXT_ALTERNATIVE_TAGS)
+            elif configured is False or configured is None:
+                self.text_alternative_tags = set()
+            elif isinstance(configured, dict):
+                tags = set()
+                for tag, value in configured.items():
+                    if value is False:
+                        continue
+                    tags.add(tag)
+                    if isinstance(value, str):
+                        self.text_alternative_attributes[tag] = (value,)
+                    elif isinstance(value, tuple | list | set | frozenset):
+                        self.text_alternative_attributes[tag] = tuple(value)
+                    elif isinstance(value, dict):
+                        if value.get("enabled") is False:
+                            tags.discard(tag)
+                            continue
+                        attributes = value.get("attributes", value.get("attribute"))
+                        if isinstance(attributes, str):
+                            self.text_alternative_attributes[tag] = (attributes,)
+                        elif attributes:
+                            self.text_alternative_attributes[tag] = tuple(attributes)
+                self.text_alternative_tags = tags
+            else:
+                self.text_alternative_tags = coerce_to_set(configured)
+
+        if isinstance(self.text_alternative_tags, bool):
+            self.text_alternative_tags = (
+                set(TEXT_ALTERNATIVE_TAGS) if self.text_alternative_tags else set()
+            )
+        else:
+            self.text_alternative_tags = set(coerce_to_set(self.text_alternative_tags))
+
+        if not isinstance(self.text_alternative_attributes, dict):
+            raise TypeError("text_alternative_attributes must be a dict")
+
+        self.text_alternative_attributes = {
+            tag: (attributes,) if isinstance(attributes, str) else tuple(attributes)
+            for tag, attributes in self.text_alternative_attributes.items()
+        }
+
     @staticmethod
     def is_mergeable(e1, e2):
         """
@@ -254,7 +348,7 @@ class Sanitizer:
             normalize_tail=not inside,
         )
 
-    def sanitize(self, html):  # noqa: C901 -- I know.
+    def sanitize(self, html):
         """
         Clean HTML code from ugly copy-pasted CSS and empty elements
 
@@ -262,6 +356,24 @@ class Sanitizer:
 
         Requires ``lxml`` and, for especially broken HTML, ``beautifulsoup4``.
         """
+        html, _decisions = self._sanitize(html)
+        return html
+
+    def sanitize_with_report(self, html):
+        """Sanitize and return the accessible-text decisions as well."""
+
+        html, decisions = self._sanitize(html)
+        return SanitizeResult(
+            html=html,
+            text_alternatives=tuple(
+                decision for decision in decisions if decision.status == "applied"
+            ),
+            manual=tuple(
+                decision for decision in decisions if decision.status == "manual"
+            ),
+        )
+
+    def _sanitize(self, html):  # noqa: C901 -- I know.
 
         # normalize unicode
         if self.keep_typographic_whitespace:
@@ -273,7 +385,7 @@ class Sanitizer:
         try:
             doc = lxml.html.fromstring(html)
             lxml.html.tostring(doc, encoding="utf-8")
-        except Exception:  # noqa: BLE001 -- we could and maybe should be more specific
+        except Exception:
             from lxml.html import soupparser  # noqa: PLC0415
 
             doc = soupparser.fromstring(html)
@@ -294,6 +406,9 @@ class Sanitizer:
         # walk the tree recursively, because we want to be able to remove
         # previously emptied elements completely
         backlog = deque(doc.iterdescendants())
+        id_index = build_id_index(doc)
+        candidates = []
+        seen_candidates = set()
 
         doc = self.normalize_whitespace(doc)
 
@@ -305,6 +420,20 @@ class Sanitizer:
 
             for processor in self.element_preprocessors:
                 element = processor(element)
+
+            if (
+                element.tag in self.text_alternative_tags
+                and element.tag in self.tags
+                and id(element) not in seen_candidates
+            ):
+                references = {
+                    attribute: value
+                    for attribute in REFERENCE_ATTRIBUTES
+                    if (value := element.get(attribute))
+                }
+                if references:
+                    seen_candidates.add(id(element))
+                    candidates.append(_Candidate(element, references))
 
             if self.drop_disallowed_contents and element.tag not in self.tags:
                 element.drop_tree()
@@ -433,6 +562,25 @@ class Sanitizer:
             host_whitelist=self.embedded_hosts,
         )(doc)
 
+        if candidates:
+            document_order = {node: index for index, node in enumerate(doc.iter())}
+            candidates.sort(
+                key=lambda candidate: document_order.get(
+                    candidate.element, len(document_order)
+                )
+            )
+
+        decisions, plans = decide_text_alternatives(
+            doc,
+            candidates,
+            id_index,
+            allowed_attributes=self.attributes,
+            eligible_tags=self.text_alternative_tags & self.tags,
+            output_attributes=self.text_alternative_attributes,
+            whitespace_re=self.whitespace_re,
+        )
+        apply_text_alternative_plans(plans)
+
         html = lxml.html.tostring(doc, encoding="unicode")
 
         # add a space before the closing slash in empty tags
@@ -441,4 +589,4 @@ class Sanitizer:
         # remove wrapping tag needed by XML parser
         html = re.sub(r"^<div>|</div>$", "", html)
 
-        return html
+        return html, decisions

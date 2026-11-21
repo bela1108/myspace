@@ -124,6 +124,15 @@ The keys' meaning is as follows:
   merged by default. This callable can be used to prevent merging of
   adjacent elements e.g. when their classes do not match
   (``lambda e1, e2: e1.get('class') == e2.get('class')``)
+- ``text_alternative_tags``: The small set of element types for which lost
+  accessible text may be derived from an existing, unambiguous text
+  reference. Defaults to ``{"area", "embed", "iframe", "img", "input",
+  "object"}``. Set ``text_alternatives`` to ``False`` (or this setting to an
+  empty set) to disable the fallback pass.
+- ``text_alternative_attributes``: Preferred attributes to fill when a lost
+  name can be restored without widening the attribute allowlist. Attributes
+  are only used when they are already allowed for the element; otherwise the
+  alternative is emitted as plain text.
 
 Settings can be specified partially when initializing a sanitizer
 instance, but are still checked for consistency. For example, it is not
@@ -145,6 +154,57 @@ An example for an even more restricted configuration might be::
 The rationale for such a restricted set of allowed tags (e.g. no
 images) is documented in the `design decisions`_ section of
 django-content-editor_'s documentation.
+
+Accessible text alternatives
+============================
+
+Rich-text policies sometimes keep an element while removing the attribute
+which supplied its accessible name or description.  The sanitizer can recover
+the text from an existing ``aria-labelledby`` or ``aria-describedby``
+reference without adding any new tag, link or attribute permission.
+
+The reference must resolve to exactly one element inside the fragment being
+sanitized, and the referenced element must still contain text after
+sanitization.  If the referenced ID is duplicated, missing, outside the
+fragment, or its text did not survive sanitization, nothing is changed
+automatically; the case is reported for manual review instead.
+
+When the policy already allows a suitable attribute (``alt``, ``title`` or
+``aria-label``), the derived name is written there.  Otherwise the text is
+placed next to the element as plain text.  ``sanitize_with_report`` returns a
+``SanitizeResult`` which is also usable as the sanitized HTML string and
+exposes the applied and manual decisions::
+
+    >>> sanitizer = Sanitizer({
+    ...     "tags": {"p", "img", "ul", "li", "span"},
+    ...     "empty": {"img"},
+    ...     "separate": {"p", "li"},
+    ...     "attributes": {
+    ...         "img": {"src"},
+    ...         "p": {"id"},
+    ...         "li": {"id"},
+    ...         "span": {"id"},
+    ...     },
+    ... })
+    >>> source = (
+    ...     '<p><img src="chart.png" aria-describedby="trend"></p>'
+    ...     '<p id="trend">Sales grew steadily.</p>'
+    ...     '<ul><li><img src="badge.png" aria-labelledby="badge"></li>'
+    ...     '<li id="badge">Gold badge.</li></ul>'
+    ...     '<p><img src="logo.png" aria-describedby="dup"></p>'
+    ...     '<p id="dup">First.</p><p id="dup">Second.</p>'
+    ... )
+    >>> result = sanitizer.sanitize_with_report(source)
+    >>> str(result)
+    '<p><img src="chart.png"> Sales grew steadily.</p><p id="trend">Sales grew steadily.</p><ul><li><img src="badge.png"> Gold badge.</li><li id="badge">Gold badge.</li></ul><p><img src="logo.png"></p><p id="dup">First.</p><p id="dup">Second.</p>'
+    >>> result.manual[0].reason
+    'duplicate-id'
+
+``aria-labelledby``/``aria-describedby`` attributes which remain allowed by
+the policy are left alone and are never duplicated.  The derived text uses
+only text which is already present in the source document; the sanitizer does
+not invent a description, restore a rejected attribute, add a link, or add a
+new element type.
 
 Django
 ======

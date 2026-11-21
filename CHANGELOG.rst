@@ -7,6 +7,12 @@ Next version
 
 - Dropped support for Python < 3.10.
 - Added Python 3.14 and 3.15 to the CI matrix.
+- Added safe accessible-text fallbacks for retained image, embed, iframe,
+  input, object and area elements.  Lost ``aria-labelledby`` /
+  ``aria-describedby`` text is reused only when it resolves to one in-scope
+  element, and only through tags and attributes which the policy already
+  allows.  Ambiguous, unresolved and out-of-scope references are reported by
+  ``sanitize_with_report`` for manual review.
 
 2.7 (2026-10-25)
 ================

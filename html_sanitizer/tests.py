@@ -830,3 +830,189 @@ git commit
             ],
             sanitizer=sanitizer,
         )
+
+    def text_alternative_sanitizer(self):
+        return Sanitizer(
+            {
+                "tags": {"p", "img", "ul", "li", "span"},
+                "empty": {"img"},
+                "separate": {"p", "li"},
+                "attributes": {
+                    "img": {"src"},
+                    "p": {"id"},
+                    "li": {"id"},
+                    "span": {"id"},
+                },
+            }
+        )
+
+    def test_text_alternative_from_unique_references(self):
+        sanitizer = self.text_alternative_sanitizer()
+        self.run_tests(
+            [
+                (
+                    (
+                        '<p><img src="chart.png" alt="old" aria-describedby="trend">'
+                        "</p>"
+                        '<p id="trend">Steady growth <strong>all year</strong>.</p>'
+                    ),
+                    (
+                        '<p><img src="chart.png"> Steady growth all year.</p>'
+                        '<p id="trend">Steady growth all year.</p>'
+                    ),
+                ),
+                (
+                    (
+                        '<ul><li><img src="badge.png" aria-labelledby="badge">'
+                        '</li><li id="badge">Gold badge.</li></ul>'
+                    ),
+                    (
+                        '<ul><li><img src="badge.png"> Gold badge.</li>'
+                        '<li id="badge">Gold badge.</li></ul>'
+                    ),
+                ),
+            ],
+            sanitizer=sanitizer,
+        )
+
+    def test_text_alternative_report(self):
+        sanitizer = self.text_alternative_sanitizer()
+        source = (
+            '<p><img src="logo.png" aria-describedby="description"></p>'
+            '<p id="description">First description.</p>'
+            '<p id="description">Second description.</p>'
+        )
+
+        result = sanitizer.sanitize_with_report(source)
+
+        self.assertEqual(
+            str(result),
+            (
+                '<p><img src="logo.png"></p>'
+                '<p id="description">First description.</p>'
+                '<p id="description">Second description.</p>'
+            ),
+        )
+        self.assertEqual(result.text_alternatives, ())
+        self.assertEqual(len(result.manual), 1)
+        self.assertEqual(result.manual[0].reason, "duplicate-id")
+        self.assertEqual(result.manual[0].references, ("description",))
+        self.assertIsNone(result.manual[0].text)
+
+    def test_text_alternative_leaves_unresolved_references_for_review(self):
+        sanitizer = self.text_alternative_sanitizer()
+        source = '<p><img src="logo.png" aria-describedby="missing"></p>'
+
+        result = sanitizer.sanitize_with_report(source)
+
+        self.assertEqual(str(result), '<p><img src="logo.png"></p>')
+        self.assertEqual(result.manual[0].reason, "unresolved-reference")
+
+    def test_text_alternative_uses_only_allowed_attributes(self):
+        sanitizer = Sanitizer(
+            {
+                "tags": {"p", "img", "span"},
+                "empty": {"img"},
+                "separate": {"p"},
+                "attributes": {
+                    "img": {"src", "alt"},
+                    "p": {"id"},
+                    "span": {"id"},
+                },
+            }
+        )
+
+        self.run_tests(
+            [
+                (
+                    (
+                        '<p><img src="chart.png" aria-labelledby="caption">'
+                        '</p><span id="caption">Quarterly sales.</span>'
+                    ),
+                    (
+                        '<p><img src="chart.png" alt="Quarterly sales."></p>'
+                        '<span id="caption">Quarterly sales.</span>'
+                    ),
+                )
+            ],
+            sanitizer=sanitizer,
+        )
+
+    def test_allowed_aria_reference_is_not_duplicated(self):
+        sanitizer = Sanitizer(
+            {
+                "tags": {"p", "img", "span"},
+                "empty": {"img"},
+                "separate": {"p"},
+                "attributes": {
+                    "img": {"src", "aria-describedby"},
+                    "p": {"id"},
+                    "span": {"id"},
+                },
+            }
+        )
+
+        self.run_tests(
+            [
+                (
+                    (
+                        '<p><img src="chart.png" aria-describedby="caption">'
+                        '</p><span id="caption">Quarterly sales.</span>'
+                    ),
+                    (
+                        '<p><img src="chart.png" aria-describedby="caption">'
+                        '</p><span id="caption">Quarterly sales.</span>'
+                    ),
+                )
+            ],
+            sanitizer=sanitizer,
+        )
+
+    def test_text_alternative_reports_dropped_targets_for_review(self):
+        sanitizer = Sanitizer(
+            {
+                "tags": {"p", "img"},
+                "empty": {"img"},
+                "separate": {"p"},
+                "attributes": {"img": {"src"}, "p": {"id"}},
+                "drop_disallowed_contents": True,
+            }
+        )
+        source = (
+            '<p><img src="chart.png" aria-describedby="gone"></p>'
+            '<div id="gone">Removed description.</div>'
+        )
+
+        result = sanitizer.sanitize_with_report(source)
+
+        self.assertEqual(str(result), '<p><img src="chart.png"></p>')
+        self.assertEqual(result.text_alternatives, ())
+        self.assertEqual(result.manual[0].reason, "out-of-scope-reference")
+
+    def test_text_alternative_detects_lost_target_id(self):
+        # The ARIA attribute is allowed, but its target ID is not. The
+        # reference would be dangling after sanitization, so the existing
+        # text is used as a visible fallback instead.
+        sanitizer = Sanitizer(
+            {
+                "tags": {"p", "img"},
+                "empty": {"img"},
+                "separate": {"p"},
+                "attributes": {"img": {"src", "aria-describedby"}, "p": set()},
+            }
+        )
+        source = (
+            '<p><img src="chart.png" aria-describedby="caption"></p>'
+            '<p id="caption">Quarterly sales.</p>'
+        )
+
+        result = sanitizer.sanitize_with_report(source)
+
+        self.assertEqual(
+            str(result),
+            (
+                '<p><img src="chart.png" aria-describedby="caption">'
+                " Quarterly sales.</p><p>Quarterly sales.</p>"
+            ),
+        )
+        self.assertEqual(result.text_alternatives[0].output, "text")
