@@ -135,6 +135,37 @@ count and enumerate them. There are also some special segment classes
 that have more information about well-known segments. Take a look at
 `elftools/elf/segments.py` for more details.
 
+### Cross-artifact GNU properties
+
+`elftools.elf.gnu_properties.build_property_inventory` (or its alias
+`inventory_files`) accepts the exact list of ELF files that will ship
+together in a deployment. It groups them by `e_machine`, reads their
+`NT_GNU_PROPERTY_TYPE_0` notes, and reports each architecture feature bit as
+one of:
+
+- `full`: every artifact in that architecture group declares the property
+  type and sets the bit.
+- `pending`: at least one artifact omits the property type. An omitted type
+  is not treated as a zero-valued claim, so the result needs confirmation.
+- `not_set`: every artifact declares the property type, but at least one
+  clears the bit.
+- `not_declared`: no artifact in the group declares the property type.
+
+A property note reachable from both `PT_NOTE` and `SHT_NOTE` is counted once,
+using its file offset, size, and descriptor bytes as the evidence key. The
+returned `declared_intersection` is the bitwise AND across artifacts that do
+declare the property type; check the feature-level records for deployment
+coverage when declarations are missing. Artifacts with a machine for which no
+property-bit schema is known are returned in `uninterpretable_artifacts` with
+their raw entries and are excluded from every intersection.
+
+The same inventory is available from the command line:
+
+``` text
+> python scripts/gnu_property_inventory.py main.elf libfoo.so libbar.so
+> python scripts/gnu_property_inventory.py --json main.elf libfoo.so
+```
+
 ### Structs and headers
 
 Most objects in ELF and DWARF have \"headers\", and such objects usually
