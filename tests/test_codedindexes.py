@@ -82,3 +82,16 @@ def test_coded_index_resolution_without_fixture():
     assert unresolved.table is None
     assert unresolved.row_index == 2
     assert unresolved.row is None
+
+
+def test_coded_index_identity_is_independent_of_parse_mode():
+    lazy_table = _FakeTable('TypeRef', {1: object()})
+    full_table = _FakeTable('TypeRef', {1: object()})
+
+    lazy_ref = codedindex.TypeDefOrRef((1 << codedindex.TypeDefOrRef.tag_bits) | 1, [lazy_table])
+    full_ref = codedindex.TypeDefOrRef((1 << codedindex.TypeDefOrRef.tag_bits) | 1, [full_table])
+
+    assert lazy_ref.reference_identity == ('TypeRef', 1)
+    assert lazy_ref == full_ref
+    assert hash(lazy_ref) == hash(full_ref)
+    assert lazy_ref != codedindex.TypeDefOrRef((1 << codedindex.TypeDefOrRef.tag_bits) | 2, [full_table])

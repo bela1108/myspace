@@ -93,6 +93,34 @@ attribute of a dnPE object.
                     res_hash.add(hashlib.sha256(entry.data).hexdigest())
 
 
+Static ``TypeRef`` Attribution
+-------------------------------
+
+``dnfile.attribution`` resolves metadata ``TypeRef`` rows against an explicit
+set of samples.  It does not probe the filesystem for an ``AssemblyRef`` target.
+Pass paths, a directory of ``.dll``/``.exe`` samples, or already parsed ``dnPE``
+objects:
+
+.. code-block:: python
+
+    from dnfile.attribution import attribute_type_references
+
+    report = attribute_type_references(
+        ['app.exe', 'Helper.1.dll', 'Helper.2.dll', 'Helper.3.dll'],
+    )
+
+    for result in report.resolved:
+        print(result.reference.full_name)
+        print(result.candidate.full_name)
+        print(result.definition.table, result.definition.row_index)
+
+Each candidate assembly produces its own result.  ``ExportedType`` forwarding
+and nested ``TypeRef`` scopes are followed, while ``result.evidence`` and
+``report.graph.edges`` retain the exact metadata table, 1-based row number, and
+file offset used for the conclusion.  When an ``AssemblyRef`` target is absent,
+the result remains ``missing-assembly`` and carries the expected assembly
+identity plus the originating row in ``result.missing``.
+
 TODO
 ----
 

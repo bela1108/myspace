@@ -664,6 +664,19 @@ class MDTableIndex(Generic[RowType]):
         self.row_index: int = row_index
 
     @property
+    def reference_identity(self) -> Tuple[Optional[str], int]:
+        """Stable identity of the target, independent of parse mode."""
+        return (self.table.name if self.table is not None else None, self.row_index)
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, MDTableIndex):
+            return NotImplemented
+        return self.reference_identity == other.reference_identity
+
+    def __hash__(self) -> int:
+        return hash(self.reference_identity)
+
+    @property
     def row(self) -> Optional[RowType]:
         if self.table is None:
             return None
