@@ -85,6 +85,35 @@ def _add_initialize_baseline_options(parser: argparse.ArgumentParser) -> None:
             'slim baselines will need to be remade to be audited.'
         ),
     )
+    group.add_argument(
+        '--coverage-report',
+        action='store_true',
+        help=(
+            'Outputs an anonymized group-coverage report instead of a baseline. The report '
+            'contains no per-finding fingerprints (no hashes, filenames, or line numbers): '
+            'only aggregate scan-outcome tallies and k-anonymized per-detector counts.'
+        ),
+    )
+    group.add_argument(
+        '--min-group-size',
+        type=int,
+        default=3,
+        metavar='N',
+        help=(
+            'Caller-approved minimum group size for coverage reports. Detector groups with '
+            'fewer findings than this are merged together, or suppressed entirely if the '
+            'merged pool is still too small. Defaults to 3.'
+        ),
+    )
+    group.add_argument(
+        '--coverage-diff',
+        nargs=1,
+        metavar='FILENAME',
+        help=(
+            'Reconciles the freshly generated coverage report against a previously exported '
+            'one, at group level only. Implies --coverage-report.'
+        ),
+    )
 
 
 def parse_args(args: argparse.Namespace) -> None:

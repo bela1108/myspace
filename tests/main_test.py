@@ -29,6 +29,55 @@ class TestScan:
         assert printer.message
 
     @staticmethod
+    def test_coverage_report_exports_no_fingerprints():
+        with mock_printer(main_module) as printer:
+            main_module.main([
+                'scan',
+                '--coverage-report',
+                '--all-files',
+                '--min-group-size',
+                '3',
+                'test_data/coverage_demo',
+            ])
+
+        report = json.loads(printer.message)
+        assert report['report_type'] == 'detect-secrets/coverage-report'
+        assert report['min_group_size'] == 3
+        assert set(report['coverage']) == {
+            'scanned_files',
+            'skipped_files',
+            'failed_files',
+        }
+        assert 'hashed_secret' not in printer.message
+        assert 'results' not in report
+
+    @staticmethod
+    def test_coverage_diff_reconciles_with_previous_report():
+        with mock_named_temporary_file() as f, mock_printer(main_module) as printer:
+            main_module.main([
+                'scan',
+                '--coverage-report',
+                '--all-files',
+                'test_data/coverage_demo',
+            ])
+            f.write(printer.message.encode())
+            f.seek(0)
+            printer.clear()
+
+            main_module.main([
+                'scan',
+                '--coverage-diff',
+                f.name,
+                '--all-files',
+                'test_data/coverage_demo',
+            ])
+
+        report = json.loads(printer.message)
+        reconciliation = report['reconciliation']
+        assert reconciliation['coverage_consistent'] is True
+        assert reconciliation['individual_findings_actionable'] is False
+
+    @staticmethod
     def test_saves_to_baseline():
         # We create an empty baseline, with customized settings.
         # This way, we expect the engine to use the settings configured by the baseline,

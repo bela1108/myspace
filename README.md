@@ -458,6 +458,23 @@ analytics:
   --json        Outputs results in a machine-readable format.
 ```
 
+### Exporting Anonymized Group-Coverage Reports
+
+For environments where no per-finding fingerprints (not even the
+`hashed_secret` values stored in baselines) may be persisted, the scan
+action can instead export a group-coverage report:
+
+```bash
+$ detect-secrets scan --coverage-report --min-group-size 3
+```
+
+The report tallies files by scan outcome (scanned / legitimately skipped /
+failed) and findings per detector, merging or suppressing groups smaller
+than the approved `--min-group-size`, so that two exported reports cannot
+be differenced to recover the status of any specific candidate. Use
+`--coverage-diff` to reconcile a fresh scan against a previously exported
+report. See [docs/coverage.md](docs/coverage.md) for details.
+
 ## Configuration
 
 This tool operates through a system of **plugins** and **filters**.

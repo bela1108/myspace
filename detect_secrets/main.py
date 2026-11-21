@@ -6,6 +6,7 @@ from typing import Optional
 
 from . import audit
 from .core import baseline
+from .core import coverage
 from .core import plugins
 from .core.log import log
 from .core.scan import get_files_to_scan
@@ -14,6 +15,7 @@ from .core.scan import scan_line
 from .core.secrets_collection import SecretsCollection
 from .core.usage import ParserBuilder
 from .exceptions import InvalidBaselineError
+from .exceptions import UnableToReadBaselineError
 from .settings import get_plugins
 from .settings import get_settings
 
@@ -65,6 +67,24 @@ def handle_scan_action(args: argparse.Namespace) -> None:
                 secrets[secret.filename].add(secret)
 
         print(json.dumps(baseline.format_for_output(secrets), indent=2))
+        return
+
+    if args.coverage_report or args.coverage_diff:
+        report = coverage.scan_coverage(
+            *args.path,
+            should_scan_all_files=args.all_files,
+            root=args.custom_root,
+        ).export(min_group_size=args.min_group_size)
+
+        if args.coverage_diff:
+            try:
+                previous = baseline.load_from_file(args.coverage_diff[0])
+                report['reconciliation'] = coverage.reconcile_reports(previous, report)
+            except (UnableToReadBaselineError, ValueError) as e:
+                log.error(f'Unable to reconcile coverage reports: {e}')
+                return
+
+        print(json.dumps(report, indent=2))
         return
 
     secrets = baseline.create(
