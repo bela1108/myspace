@@ -6,3 +6,4 @@
 
 from .scanner import FileScanner  # noqa
 from .writer import FileWriter  # noqa
+from .coverage_audit import audit_capture_coverage  # noqa
