@@ -131,6 +131,42 @@ Supported key types are
 
 See also ["Backdooring MS Office documents with secret master keys"](https://web.archive.org/web/20171008075059/http://secuinside.com/archive/2015/2015-1-9.pdf) for more information on the key types.
 
+#### Compare archived copies (OOXML)
+
+`compare_office_files()` builds a redacted evidence report for two OOXML
+files. It keeps three kinds of evidence separate:
+
+* `public_header`: container, encryption scheme, algorithm attributes, and
+  SHA-256 digests available without a password;
+* `verified_plaintext_identity`: the decrypted OOXML package and per-part
+  SHA-256 digests, available only after the password verifier and, for Agile
+  encryption, the payload HMAC succeed;
+* `credential_unavailable`: the evidence that could not be examined and the
+  container location that blocked it.
+
+```python
+import msoffcrypto
+
+report = msoffcrypto.compare_office_files(
+    "archived.docx",
+    "received.docx",
+    password="Passw0rd",
+)
+print(report["conclusion"]["code"])
+```
+
+Use `left_password=` and `right_password=` when the two files use different
+passwords. The conclusion codes distinguish
+`same_plaintext_encryption_changed`, `different_plaintext`, and
+`plaintext_unverified`; an exact byte-for-byte repeat is reported as
+`same_plaintext_same_encryption`.
+
+The report never contains the password, decrypted part contents, salts,
+verifiers, HMAC values, or encrypted keys. Header values are normalized
+attributes, and secret-bearing header fields are represented by SHA-256
+digests only. Part and stream locations use `ole:<stream>` and `zip:<part>`
+trace labels.
+
 #### Encryption (OOXML only, experimental)
 
 > [!IMPORTANT]

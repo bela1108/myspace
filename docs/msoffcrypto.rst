@@ -18,3 +18,8 @@ Module contents
    :members:
    :undoc-members:
    :show-inheritance:
+
+Comparison report
+-----------------
+
+.. autofunction:: msoffcrypto.compare_office_files

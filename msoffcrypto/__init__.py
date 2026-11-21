@@ -4,6 +4,8 @@ import olefile
 
 from msoffcrypto import exceptions
 
+from msoffcrypto.comparison import compare_office_files, comparison_report
+
 
 def OfficeFile(file):
     """Return an office file object based on the format of given file.
