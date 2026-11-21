@@ -1,6 +1,14 @@
 History
 #######
 
+Unreleased
+==========
+
+- Add ``pcapng.manifest``: read-only sign-off manifest backend recording
+  packet capture positions, resolved interface attribution and
+  caller-trusted options into a recomputable digest, for verifying
+  re-exported captures.
+
 2.1.1
 =====
 
