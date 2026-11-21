@@ -6,6 +6,7 @@
 import struct
 import ntpath
 from .common_structs import *
+from .memoryreport import plan_sourced_read, build_report_from_values
 from .streams.SystemInfoStream import PROCESSOR_ARCHITECTURE
 
 class VirtualSegment:
@@ -274,6 +275,7 @@ class MinidumpBufferedReader:
 
 class MinidumpFileReader:
 	def __init__(self, minidumpfile):
+		self.minidump_file = minidumpfile
 		self.modules = minidumpfile.modules.modules
 		self.unloaded_modules = []
 		if minidumpfile.unloaded_modules is not None:
@@ -355,3 +357,22 @@ class MinidumpFileReader:
 			if segment.inrange(virt_addr):
 				return segment.read(virt_addr, size, self.file_handle)
 		raise Exception('Address not in memory range! %s' % hex(virt_addr))
+
+	def read_sourced(self, virt_addr, size):
+		"""
+		Sourced read over [virt_addr, virt_addr + size).
+
+		Every memory stream backing the requested interval is consulted. The
+		returned MemoryReadReport keeps the bytes supported by each source
+		(stitched across adjacent segments), the maximal ranges where all
+		sources agree, the disputed ranges with their distinct candidate
+		values, and holes where no stream provides evidence.
+		"""
+		sources = self.minidump_file.get_memory_sources()
+		plan = plan_sourced_read(virt_addr, size, sources)
+
+		def value_getter(source, segment, start_address, end_address):
+			read_size = end_address - start_address
+			return segment.read(start_address, read_size, self.file_handle)
+
+		return build_report_from_values(virt_addr, size, plan, value_getter)

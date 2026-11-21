@@ -14,6 +14,7 @@ from minidump.header import MinidumpHeader
 from minidump.aminidumpreader import AMinidumpFileReader
 from minidump.streams import *
 from minidump.common_structs import *
+from minidump.memoryreport import MemorySource
 from minidump.constants import MINIDUMP_STREAM_TYPE
 from minidump.directory import MINIDUMP_DIRECTORY
 
@@ -44,6 +45,7 @@ class AMinidumpFile:
 		self.modules = None
 		self.memory_segments = None
 		self.memory_segments_64 = None
+		self.memory_sources = []
 		self.sysinfo = None
 		self.comment_a = None
 		self.comment_w = None
@@ -79,14 +81,17 @@ class AMinidumpFile:
 		return await AMinidumpFile.parse_buff(io.BytesIO(data))
 
 	@staticmethod
-	def parse_buff(buffer):
+	async def parse_buff(buffer):
 		mf = AMinidumpFile()
 		mf.file_handle = buffer
-		mf._parse()
+		await mf._parse()
 		return mf
 
 	def get_reader(self):
 		return AMinidumpFileReader(self)
+
+	def get_memory_sources(self):
+		return list(self.memory_sources)
 
 	async def _parse(self):
 		await self.__parse_header()
@@ -131,6 +136,8 @@ class AMinidumpFile:
 				logging.debug('Found MemoryListStream @%x Size: %d' % (dir.Location.Rva, dir.Location.DataSize))
 				self.memory_segments = await MinidumpMemoryList.aparse(dir, self.file_handle)
 				#logging.debug(str(self.memory_segments))
+				self.memory_sources.append(MemorySource.from_stream(
+					dir.StreamType, dir, self.memory_segments, len(self.memory_sources)))
 				continue
 			elif dir.StreamType == MINIDUMP_STREAM_TYPE.SystemInfoStream:
 				logging.debug('Found SystemInfoStream @%x Size: %d' % (dir.Location.Rva, dir.Location.DataSize))
@@ -146,6 +153,8 @@ class AMinidumpFile:
 				logging.debug('Found Memory64ListStream @%x Size: %d' % (dir.Location.Rva, dir.Location.DataSize))
 				self.memory_segments_64 = await MinidumpMemory64List.aparse(dir, self.file_handle)
 				#logging.debug(str(self.memory_segments_64))
+				self.memory_sources.append(MemorySource.from_stream(
+					dir.StreamType, dir, self.memory_segments_64, len(self.memory_sources)))
 				continue
 			elif dir.StreamType == MINIDUMP_STREAM_TYPE.CommentStreamA:
 				logging.debug('Found CommentStreamA @%x Size: %d' % (dir.Location.Rva, dir.Location.DataSize))

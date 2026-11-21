@@ -15,6 +15,7 @@ from minidump.header import MinidumpHeader
 from minidump.minidumpreader import MinidumpFileReader
 from minidump.streams import *
 from minidump.common_structs import *
+from minidump.memoryreport import MemorySource
 from minidump.constants import MINIDUMP_STREAM_TYPE
 from minidump.directory import MINIDUMP_DIRECTORY
 from minidump.streams.SystemInfoStream import PROCESSOR_ARCHITECTURE
@@ -33,6 +34,7 @@ class MinidumpFile:
 		self.modules:MinidumpModuleList = None
 		self.memory_segments:MinidumpMemoryList = None
 		self.memory_segments_64:MinidumpMemory64List = None
+		self.memory_sources:List[MemorySource] = []
 		self.sysinfo:MinidumpSystemInfo = None
 		self.comment_a:CommentStreamA = None
 		self.comment_w:CommentStreamW = None
@@ -78,6 +80,9 @@ class MinidumpFile:
 
 	def get_reader(self):
 		return MinidumpFileReader(self)
+
+	def get_memory_sources(self):
+		return list(self.memory_sources)
 
 	def _parse(self):
 		self.__parse_header()
@@ -125,6 +130,8 @@ class MinidumpFile:
 				logging.debug('Found MemoryListStream @%x Size: %d' % (dir.Location.Rva, dir.Location.DataSize))
 				self.memory_segments = MinidumpMemoryList.parse(dir, self.file_handle)
 				#logging.debug(str(self.memory_segments))
+				self.memory_sources.append(MemorySource.from_stream(
+					dir.StreamType, dir, self.memory_segments, len(self.memory_sources)))
 				continue
 			elif dir.StreamType == MINIDUMP_STREAM_TYPE.SystemInfoStream:
 				logging.debug('Found SystemInfoStream @%x Size: %d' % (dir.Location.Rva, dir.Location.DataSize))
@@ -140,6 +147,8 @@ class MinidumpFile:
 				logging.debug('Found Memory64ListStream @%x Size: %d' % (dir.Location.Rva, dir.Location.DataSize))
 				self.memory_segments_64 = MinidumpMemory64List.parse(dir, self.file_handle)
 				#logging.debug(str(self.memory_segments_64))
+				self.memory_sources.append(MemorySource.from_stream(
+					dir.StreamType, dir, self.memory_segments_64, len(self.memory_sources)))
 				continue
 			elif dir.StreamType == MINIDUMP_STREAM_TYPE.CommentStreamA:
 				logging.debug('Found CommentStreamA @%x Size: %d' % (dir.Location.Rva, dir.Location.DataSize))

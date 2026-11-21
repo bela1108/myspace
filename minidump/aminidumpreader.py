@@ -6,6 +6,7 @@
 import struct
 import ntpath
 from .common_structs import *
+from .memoryreport import plan_sourced_read, build_report_from_values_async
 from .streams.SystemInfoStream import PROCESSOR_ARCHITECTURE
 
 
@@ -276,6 +277,7 @@ class AMinidumpBufferedReader:
 
 class AMinidumpFileReader:
 	def __init__(self, minidumpfile):
+		self.minidump_file = minidumpfile
 		self.modules = minidumpfile.modules.modules
 		self.sysinfo = minidumpfile.sysinfo
 
@@ -338,3 +340,18 @@ class AMinidumpFileReader:
 				return await segment.aread(virt_addr, size, self.file_handle)
 		raise Exception('Address not in memory range! %s' % hex(virt_addr))
 
+	async def aread_sourced(self, virt_addr, size):
+		"""
+		Async counterpart of MinidumpFileReader.read_sourced.
+
+		Runs the exact same planning and classification rules as the
+		synchronous entry point; only the byte fetching is awaited.
+		"""
+		sources = self.minidump_file.get_memory_sources()
+		plan = plan_sourced_read(virt_addr, size, sources)
+
+		async def value_getter(source, segment, start_address, end_address):
+			read_size = end_address - start_address
+			return await segment.aread(start_address, read_size, self.file_handle)
+
+		return await build_report_from_values_async(virt_addr, size, plan, value_getter)
