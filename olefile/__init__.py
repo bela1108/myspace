@@ -25,4 +25,7 @@ from .olefile import *
 # import metadata not covered by *:
 from .olefile import __version__, __author__, __date__, __all__
 
+# sparse / partial-image forensic support (see olefile.sparse):
+from . import sparse
+
 
