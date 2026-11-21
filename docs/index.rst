@@ -23,6 +23,7 @@ Contents:
    model
    install
    examples
+   overlap
    issues
    bugtracker
    todo
