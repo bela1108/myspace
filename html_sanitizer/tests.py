@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from .sanitizer import Sanitizer
+from .verification import ApprovalScope, ReviewRecord, StructuralSummary, verify
 
 
 default_sanitizer = Sanitizer()
@@ -830,3 +831,203 @@ git commit
             ],
             sanitizer=sanitizer,
         )
+
+
+class VerificationTestCase(TestCase):
+    def summary(self, html, policy_version="policy-a"):
+        return StructuralSummary.from_html(html, policy_version=policy_version)
+
+    def test_unchanged_edited_and_missing_are_distinct(self):
+        reviewed = (
+            "<h2>Introduction</h2><p>The quick brown fox jumps over the lazy dog.</p>"
+        )
+        summary = self.summary(reviewed)
+        scope = ApprovalScope.from_sections({"introduction": summary.sections[0].id})
+
+        unchanged = verify(
+            reviewed,
+            summary=summary,
+            scope=scope,
+            policy_version="policy-a",
+        )
+        entry = unchanged["introduction"]
+        self.assertEqual(entry.status, "unchanged")
+        self.assertTrue(entry.matched)
+        self.assertTrue(entry.claimable)
+        self.assertEqual(unchanged.claimable_keys, ("introduction",))
+
+        edited = verify(
+            (
+                "<h2>Introduction</h2>"
+                "<p>The quick brown fox jumped over the lazy dog.</p>"
+            ),
+            summary=summary,
+            scope=scope,
+            policy_version="policy-a",
+        )
+        entry = edited["introduction"]
+        self.assertEqual(entry.status, "edited")
+        self.assertTrue(entry.matched)
+        self.assertFalse(entry.claimable)
+        self.assertGreater(entry.similarity, 0.5)
+        self.assertEqual(edited.counts["edited"], 1)
+
+        # The new policy no longer allows headings, so the section identity is
+        # gone even though the body text survives.
+        sanitizer = Sanitizer(
+            {"tags": {"p"}, "empty": set(), "separate": {"p"}, "attributes": {}}
+        )
+        missing_html = sanitizer.sanitize(reviewed)
+        missing = verify(
+            missing_html,
+            summary=summary,
+            scope=scope,
+            policy_version="policy-a",
+            current_policy_version="policy-b",
+        )
+        entry = missing["introduction"]
+        self.assertEqual(entry.status, "missing")
+        self.assertFalse(entry.matched)
+        self.assertFalse(entry.claimable)
+        self.assertIsNone(entry.current_path)
+
+    def test_moving_two_same_named_sections_keeps_their_identity(self):
+        reviewed = (
+            "<h2>Overview</h2><p>intro</p>"
+            "<h2>Notes</h2><p>alpha</p>"
+            "<h2>Notes</h2><p>beta</p>"
+        )
+        summary = self.summary(reviewed)
+        self.assertEqual(
+            [section.id for section in summary.sections],
+            [
+                "section:0",
+                "section:2",
+                "section:4",
+            ],
+        )
+        self.assertEqual(
+            summary.sections[1].name_digest, summary.sections[2].name_digest
+        )
+        self.assertNotEqual(
+            summary.sections[1].content_digest,
+            summary.sections[2].content_digest,
+        )
+
+        scope = ApprovalScope.from_sections(
+            {
+                "notes-a": summary.sections[1].id,
+                "notes-b": summary.sections[2].id,
+            }
+        )
+        # Move both same-named subsections: the alpha section now follows the
+        # beta section, and vice versa.
+        final = (
+            "<h2>Overview</h2><p>intro</p>"
+            "<h2>Notes</h2><p>beta</p>"
+            "<h2>Notes</h2><p>alpha</p>"
+        )
+        report = verify(
+            final,
+            summary=summary,
+            scope=scope,
+            policy_version="policy-a",
+        )
+
+        notes_a = report["notes-a"]
+        notes_b = report["notes-b"]
+        self.assertEqual(notes_a.status, "moved")
+        self.assertEqual(notes_a.original_path, (2,))
+        self.assertEqual(notes_a.current_path, (4,))
+        self.assertEqual(notes_b.status, "moved")
+        self.assertEqual(notes_b.original_path, (4,))
+        self.assertEqual(notes_b.current_path, (2,))
+        self.assertEqual(report.with_status("unchanged"), ())
+        self.assertEqual(report.matched_keys, ("notes-a", "notes-b"))
+        self.assertEqual(report.claimable_keys, ())
+        self.assertEqual(report.counts["moved"], 2)
+
+    def test_duplicate_at_the_old_path_is_not_claimed(self):
+        reviewed = (
+            "<h2>Overview</h2><p>intro</p>"
+            "<h2>Notes</h2><p>alpha</p>"
+            "<h2>Notes</h2><p>beta</p>"
+        )
+        summary = self.summary(reviewed)
+        # Only the second, otherwise identically named section was approved.
+        scope = ApprovalScope.from_sections({"notes-b": summary.sections[2].id})
+        final = (
+            "<h2>Overview</h2><p>intro</p>"
+            "<h2>Notes</h2><p>beta</p>"
+            "<h2>Notes</h2><p>alpha</p>"
+        )
+        report = verify(
+            final,
+            summary=summary,
+            scope=scope,
+            policy_version="policy-a",
+        )
+
+        entry = report["notes-b"]
+        self.assertEqual(entry.status, "moved")
+        self.assertEqual(entry.current_path, (2,))
+        self.assertFalse(entry.claimable)
+        # The unapproved duplicate now sits at the old path, but it must not
+        # inherit the approval merely because its heading name matches.
+        self.assertEqual(report.matched_keys, ("notes-b",))
+        self.assertEqual(report.claimable_keys, ())
+        self.assertEqual(len(report.entries), 1)
+
+    def test_policy_version_is_bound_and_reported(self):
+        reviewed = "<h2>Notes</h2><p>alpha</p>"
+        summary = self.summary(reviewed, policy_version="policy-a")
+        scope = ApprovalScope.from_sections({"notes": summary.sections[0].id})
+
+        with self.assertRaisesRegex(ValueError, "recorded for policy version"):
+            verify(
+                reviewed,
+                summary=summary,
+                scope=scope,
+                policy_version="policy-b",
+            )
+
+        report = verify(
+            reviewed,
+            summary=summary,
+            scope=scope,
+            policy_version="policy-a",
+            current_policy_version="policy-b",
+        )
+        self.assertTrue(report.policy_changed)
+        self.assertEqual(report.current_policy_version, "policy-b")
+        self.assertEqual(report.claimable_keys, ("notes",))
+
+        record = ReviewRecord(summary=summary, scope=scope, policy_version="policy-a")
+        restored = ReviewRecord.from_dict(record.to_dict())
+        self.assertEqual(restored.verify(reviewed).claimable_keys, ("notes",))
+
+    def test_report_and_summary_do_not_contain_reviewed_text(self):
+        reviewed = (
+            "<h2>Reviewed heading 73c9</h2>"
+            "<p>Reviewed body 4f1a that must never be copied into a report.</p>"
+        )
+        summary = self.summary(reviewed)
+        scope = ApprovalScope.from_sections({"notes": summary.sections[0].id})
+        report = verify(
+            reviewed,
+            summary=summary,
+            scope=scope,
+            policy_version="policy-a",
+        )
+
+        rendered = " ".join(
+            (
+                repr(summary),
+                repr(report),
+                str(summary.to_dict()),
+                str(report.to_dict()),
+            )
+        )
+        self.assertNotIn("Reviewed heading 73c9", rendered)
+        self.assertNotIn("Reviewed body 4f1a", rendered)
+        self.assertNotIn("must never be copied", rendered)

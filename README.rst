@@ -174,6 +174,82 @@ The ``get_sanitizer`` function caches sanitizer instances, so feel free
 to call it as often as you want to.
 
 
+Verifying earlier approvals
+===========================
+
+Sanitizer configurations change over time. When content has already been
+reviewed, the library can check which parts of a newly sanitized document are
+still identical to the reviewed object. Approvals are bound to three
+caller-supplied pieces of information:
+
+- a ``StructuralSummary`` of the reviewed document,
+- an ``ApprovalScope`` naming the approved sections or elements, and
+- the policy version under which the review was made.
+
+Summaries contain only tag paths, section identifiers and one-way fingerprints.
+They never contain the reviewed document's text, and neither do verification
+reports::
+
+    >>> from html_sanitizer import (
+    ...     ApprovalScope, Sanitizer, StructuralSummary, verify,
+    ... )
+    >>> reviewed = (
+    ...     "<h2>Introduction</h2><p>Hello.</p>"
+    ...     "<h2>Notes</h2><p>First note.</p>"
+    ... )
+    >>> summary = StructuralSummary.from_html(
+    ...     reviewed, policy_version="policy-2026-10"
+    ... )
+    >>> scope = ApprovalScope.from_sections(
+    ...     {"introduction": summary.sections[0].id}
+    ... )
+    >>> final = Sanitizer().sanitize(reviewed)
+    >>> report = verify(
+    ...     final,
+    ...     summary=summary,
+    ...     scope=scope,
+    ...     policy_version="policy-2026-10",
+    ...     current_policy_version="policy-2026-11",
+    ... )
+    >>> report["introduction"].status
+    'unchanged'
+    >>> report.policy_changed
+    True
+    >>> report.claimable_keys
+    ('introduction',)
+
+Every scope item receives one of four statuses:
+
+- ``unchanged``: the approved object is at the same structural path with the
+  same content. It is the only status for which ``claimable`` is true.
+- ``edited``: the object is still at its original path, but its body changed.
+  ``similarity`` gives a text-free estimate of how much of it remains.
+- ``moved``: the same object was found at another path. ``current_path``
+  reports the new location so that it can be re-anchored or reviewed.
+- ``missing``: the object was not found, for example because sanitization
+  removed the section.
+
+``matched_keys`` contains everything except missing items. ``claimable_keys``
+contains unchanged items only. A changed policy version is reported via
+``policy_changed`` but does not by itself hide which content still matches;
+the caller can decide whether unchanged items may be carried over. The
+``ReviewRecord`` helper bundles a summary, a scope and a policy version for
+storage::
+
+    >>> from html_sanitizer import ReviewRecord
+    >>> record = ReviewRecord(
+    ...     summary=summary, scope=scope, policy_version="policy-2026-10"
+    ... )
+    >>> record.verify(final).claimable_keys
+    ('introduction',)
+
+Sections are the implicit regions formed by headings: a heading and all
+following siblings up to the next heading of the same or a higher level.
+Because a section's fingerprint covers its body, two sections with the same
+heading are still distinguished. Moving either one is reported as ``moved``
+instead of being mistaken for the other same-named section.
+
+
 Security issues
 ===============
 
