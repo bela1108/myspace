@@ -28,6 +28,7 @@ def run():
 	parser.add_argument('--handles', action='store_true', help='List handles')
 	parser.add_argument('--misc', action='store_true', help='Show misc info')
 	parser.add_argument('--peb', action='store_true', help='Show PEB info')
+	parser.add_argument('--attribution', action='store_true', help='Attribute exception addresses against loaded/unloaded modules')
 	parser.add_argument('--all', action='store_true', help='Show all info')
 	parser.add_argument('-r', '--read-addr', type=lambda x: int(x,0), help='Dump a memory region from the process\'s addres space')
 	parser.add_argument('-s', '--read-size', type=lambda x: int(x,0), default = 0x20, help='Dump a memory region from the process\'s addres space')
@@ -50,7 +51,7 @@ def run():
 	else:
 
 		mf = MinidumpFile.parse(args.minidumpfile)
-		reader = mf.get_reader()
+		reader = mf.get_reader() if args.read_addr else None
 
 		if args.all or args.threads:
 			if mf.threads is not None:
@@ -95,7 +96,12 @@ def run():
 			if mf.peb is not None:
 				print(str(mf.peb))
 
+		if args.attribution:
+			from minidump.forensic_report import build_report
+			print(build_report(mf))
+
 		if args.read_addr:
+			reader = mf.get_reader()
 			buff_reader = reader.get_buffered_reader()
 			buff_reader.move(args.read_addr)
 			data = buff_reader.peek(args.read_size)
