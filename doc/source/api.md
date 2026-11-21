@@ -41,3 +41,17 @@ documented [in-toto#663](https://github.com/in-toto/in-toto/issues/663).
 ```{eval-rst}
 .. autofunction:: in_toto.verifylib.in_toto_verify
 ```
+
+## Artifact Rule Diagnostics
+
+```{eval-rst}
+.. autofunction:: in_toto.rule_diagnostics.diagnose_item_rules
+```
+
+```{eval-rst}
+.. autofunction:: in_toto.rule_diagnostics.diagnose_steps
+```
+
+```{eval-rst}
+.. autofunction:: in_toto.rule_diagnostics.run_order_experiments
+```

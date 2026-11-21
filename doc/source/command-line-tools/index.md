@@ -29,6 +29,14 @@ in-toto-match-products: match local artifacts against link metadata products <in
 in-toto-verify: perform final product supply chain verification <in-toto-verify>
 ```
 
+## Diagnostics
+
+```{toctree}
+:maxdepth: 2
+
+in-toto-diagnose: explain artifact rule consumption and ordering <in-toto-diagnose>
+```
+
 ## Utilities
 
 ```{toctree}

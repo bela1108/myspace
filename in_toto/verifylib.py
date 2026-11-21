@@ -1187,6 +1187,58 @@ def verify_all_item_rules(items, links):
         verify_item_rules(item.name, "products", item.expected_products, links)
 
 
+def diagnose_item_rules(source_name, source_type, rules, links, mandatory=None):
+    """Diagnose artifact-rule consumption and ordering (see rule_diagnostics)."""
+    from in_toto import rule_diagnostics  # noqa: PLC0415
+
+    return rule_diagnostics.diagnose_item_rules(
+        source_name,
+        source_type,
+        rules,
+        links,
+        mandatory=mandatory,
+    )
+
+
+def diagnose_rule_order(source_name, source_type, rules, links, mandatory=None):
+    """Alias for diagnose_item_rules."""
+    return diagnose_item_rules(
+        source_name, source_type, rules, links, mandatory=mandatory
+    )
+
+
+def diagnose_steps(steps, links, mandatory=None):
+    """Diagnose all rules of passed steps (see rule_diagnostics)."""
+    from in_toto import rule_diagnostics  # noqa: PLC0415
+
+    return rule_diagnostics.diagnose_steps(steps, links, mandatory=mandatory)
+
+
+def diagnose_layout(layout, links, mandatory=None):
+    """Diagnose layout step and inspection rules (see rule_diagnostics)."""
+    from in_toto import rule_diagnostics  # noqa: PLC0415
+
+    return rule_diagnostics.diagnose_layout(layout, links, mandatory=mandatory)
+
+
+def diagnose_scenario(scenario, mandatory=None):
+    """Diagnose a self-contained offline scenario (see rule_diagnostics)."""
+    from in_toto import rule_diagnostics  # noqa: PLC0415
+
+    return rule_diagnostics.diagnose_scenario(scenario, mandatory=mandatory)
+
+
+def run_order_experiments(
+    source_name, source_type, rules, links, mandatory=None
+):
+    """Run original, independent, and shadowing order experiments."""
+    from in_toto import rule_diagnostics  # noqa: PLC0415
+
+    return rule_diagnostics.run_order_experiments(
+        source_name, source_type, rules, links, mandatory=mandatory
+    )
+
+
 def verify_threshold_constraints(layout, chain_link_dict):
     """
     <Purpose>
