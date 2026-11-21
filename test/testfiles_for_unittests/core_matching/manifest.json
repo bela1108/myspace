@@ -1,0 +1,92 @@
+{
+  "schema": "pyelftools-core-file-match-fixtures-v1",
+  "page_size": 4096,
+  "cases": [
+    {
+      "case": "unique",
+      "core": "unique/core.elf",
+      "archives": [
+        {
+          "path": "/opt/acme/libwidget.so",
+          "file": "unique/widget-a.so",
+          "label": "widget-a.so"
+        },
+        {
+          "path": "/opt/acme/libwidget.so",
+          "file": "unique/widget-b.so",
+          "label": "widget-b.so"
+        }
+      ],
+      "status": "matched",
+      "selected": "widget-a.so",
+      "expected": {
+        "status": "matched",
+        "selected": "widget-a.so",
+        "reason": "first mapped page and readable build-id match only widget-a.so"
+      }
+    },
+    {
+      "case": "unconfirmed",
+      "core": "unconfirmed/core.elf",
+      "archives": [
+        {
+          "path": "/opt/acme/libshared.so",
+          "file": "unconfirmed/shared-a.so",
+          "label": "shared-a.so"
+        },
+        {
+          "path": "/opt/acme/libshared.so",
+          "file": "unconfirmed/shared-b.so",
+          "label": "shared-b.so"
+        }
+      ],
+      "status": "unconfirmed",
+      "selected": null,
+      "expected": {
+        "status": "unconfirmed",
+        "selected": null,
+        "reason": "all evidence pages are absent and both layouts are plausible"
+      }
+    },
+    {
+      "case": "contradicted",
+      "core": "contradicted/core.elf",
+      "archives": [
+        {
+          "path": "/opt/acme/libbroken.so",
+          "file": "contradicted/broken-a.so",
+          "label": "broken-a.so"
+        },
+        {
+          "path": "/opt/acme/libbroken.so",
+          "file": "contradicted/broken-b.so",
+          "label": "broken-b.so"
+        }
+      ],
+      "status": "contradicted",
+      "selected": null,
+      "expected": {
+        "status": "contradicted",
+        "selected": null,
+        "reason": "the retained page matches neither same-path archive"
+      }
+    }
+  ],
+  "inventory": [
+    {
+      "case": "unique",
+      "status": "matched",
+      "selected": "widget-a.so"
+    },
+    {
+      "case": "unconfirmed",
+      "status": "unconfirmed",
+      "selected": null
+    },
+    {
+      "case": "contradicted",
+      "status": "contradicted",
+      "selected": null
+    }
+  ]
+}

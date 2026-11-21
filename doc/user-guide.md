@@ -135,6 +135,16 @@ count and enumerate them. There are also some special segment classes
 that have more information about well-known segments. Take a look at
 `elftools/elf/segments.py` for more details.
 
+### Matching files recorded in a core
+
+ELF core files record file-backed VM mappings in `NT_FILE`, but not the
+device, inode or build-id of each original file. `elftools.elf.corefile`
+matches those mappings against candidate archives that the caller supplies
+explicitly, using `PT_LOAD` geometry, retained pages, page offsets and
+readable build-ids. It never resolves an `NT_FILE` path on the filesystem.
+See [core-file-matching.md](core-file-matching.md) for the API and the
+matched/unconfirmed/contradicted outcome rules.
+
 ### Structs and headers
 
 Most objects in ELF and DWARF have \"headers\", and such objects usually

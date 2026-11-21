@@ -261,6 +261,44 @@ class ELFFile:
             if type is None or segment['p_type'] == type:
                 yield segment
 
+    def get_core_file_mappings(self) -> list[Any]:
+        """Return the file-backed ranges recorded by NT_FILE notes.
+
+        This is a convenience wrapper around
+        :func:`elftools.elf.corefile.get_core_file_mappings`. It only parses
+        this core file; it does not open any path recorded in the note.
+        """
+        from .corefile import get_core_file_mappings
+
+        return get_core_file_mappings(self)
+
+    def iter_core_file_mappings(self) -> Iterator[Any]:
+        """Iterate over file-backed NT_FILE mapping records."""
+        return iter(self.get_core_file_mappings())
+
+    def get_nt_file_mappings(self) -> list[Any]:
+        """Alias for :meth:`get_core_file_mappings`."""
+        return self.get_core_file_mappings()
+
+    def iter_nt_file_mappings(self) -> Iterator[Any]:
+        """Alias for :meth:`iter_core_file_mappings`."""
+        return self.iter_core_file_mappings()
+
+    def match_core_files(self, archives: Any, **kwargs: Any) -> Any:
+        """Match this core's NT_FILE entries against explicit archives.
+
+        archives contains caller-supplied candidate originals (streams,
+        ELFFile instances, or explicitly passed paths). Paths recorded in
+        the core are never resolved or opened automatically.
+        """
+        from .corefile import match_core_files
+
+        return match_core_files(self, archives, **kwargs)
+
+    def match_core_archives(self, archives: Any, **kwargs: Any) -> Any:
+        """Alias for :meth:`match_core_files`."""
+        return self.match_core_files(archives, **kwargs)
+
     def address_offsets(self, start: int, size: int = 1) -> Iterator[int]:
         """ Yield a file offset for each ELF segment containing a memory region.
 
