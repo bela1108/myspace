@@ -49,6 +49,29 @@ Everything is an object, and raw structure values are stored in an object's "str
 attribute.  The CLR directory entry object is accessible from the "net"
 attribute of a dnPE object.
 
+Entry point inspection
+----------------------
+
+The CLI header stores one value whose meaning depends on the CLR flags.  When
+``CLR_NATIVE_ENTRYPOINT`` is set, ``EntryPointTokenOrRva`` is a native RVA;
+otherwise it is a ``MethodDef`` or ``File`` metadata token.  The resolver keeps
+that distinction, maps native and method RVAs through the PE sections, and
+returns the raw declaration even when the metadata tables cannot be read.
+
+.. code-block:: python
+
+    result = pe.get_entry_point()
+
+    print(result.kind)          # method, file, native, none, or invalid
+    print(result.status)        # verified, unverified, or contradictory
+    print(result.raw_value)     # always the value from the CLI header
+    print(result.conflicts)     # cross-check failures, if any
+    print(result.reasons)       # why the target was classified this way
+
+Use ``result.to_dict()`` for a JSON-friendly backend response.  The
+``dnfile.entrypoint`` module also exposes ``resolve_entry_point()``,
+``describe_entry_point()``, and ``EntryPointResolver``.
+
 .. code-block:: python
 
     import dnfile

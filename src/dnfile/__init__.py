@@ -25,10 +25,19 @@ from typing import Dict, List, Optional
 from pefile import PE as _PE
 from pefile import DIRECTORY_ENTRY, MAX_SYMBOL_EXPORT_COUNT, Dump, Structure, DataContainer, PEFormatError
 
-from . import base, enums, errors, stream, resource
+from . import base, entrypoint, enums, errors, stream, resource
 
 logger = logging.getLogger(__name__)
 CLR_METADATA_SIGNATURE = 0x424A5342
+
+# Public entry-point API.
+EntryPoint = entrypoint.EntryPoint
+EntryPointKind = entrypoint.EntryPointKind
+EntryPointStatus = entrypoint.EntryPointStatus
+PeAddress = entrypoint.PeAddress
+resolve_entry_point = entrypoint.resolve_entry_point
+resolve_entrypoint = entrypoint.resolve_entry_point
+EntryPointResolver = entrypoint.EntryPointResolver
 
 
 def _recover_stream_entry_rva(pe: "dnPE", candidate_rva: int, metadata_end_rva: int):
@@ -143,6 +152,23 @@ class dnPE(_PE):
         result = _copymod.deepcopy(super().get_warnings())
         result.extend(self._warnings)
         return result
+
+    def get_entry_point(self):
+        """
+        Resolve the CLI entry-point declaration.
+
+        The raw CLI header value is preserved even when the metadata needed
+        to expand a token cannot be parsed.
+        """
+        return entrypoint.resolve_entry_point(self)
+
+    @property
+    def entry_point(self):
+        return self.get_entry_point()
+
+    @property
+    def entrypoint(self):
+        return self.get_entry_point()
 
     def __parse__(self, fname, data, fast_load):
         super().__parse__(fname, data, fast_load)
@@ -459,6 +485,15 @@ class ClrData(DataContainer):
             assert self._resources is not None
         return self._resources
 
+    def get_entry_point(self):
+        """Resolve the entry-point declaration for this CLR header."""
+
+        return entrypoint.resolve_entry_point(self)
+
+    @property
+    def entry_point(self):
+        return self.get_entry_point()
+
     # Structure description from:
     # http://www.ntcore.com/files/dotnetformat.htm
     _format = (
@@ -520,6 +555,7 @@ class ClrData(DataContainer):
         self.mdtables = None
         self._resources = None
         self.Flags = None
+        self._pe = pe
 
         # Set the flags according to the Flags member
         flags_object = enums.ClrHeaderFlags(clr_struct.Flags)
