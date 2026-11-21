@@ -134,3 +134,38 @@ __all__ = """
 
     OBJ_MAP, OBJ_MAP_OBSERVABLE, EXT_MAP
 """.replace(",", " ").split()
+
+from ..migration import (  # noqa: E402
+    ConversionResult, Converter, Diagnostic, IDMap, ObjectCollection,
+    ObservedDataConversion, ObservedDataConversionError,
+    ObservedDataConverter, ObservedDataIDMap, ObservedDataImporter,
+    UnresolvedContent, UnresolvedReference,
+    convert_observed_data, convert_observed_data_2_0_to_2_1,
+    convert_observed_data_to_2_1, convert_observed_data_v20_to_21,
+    convert_observed_data_v20_to_v21,
+    convert_observed_data_to_21, convert_observed_data_to_v21,
+    extract_observed_data_objects, extract_observed_objects,
+    import_observed_data, migrate_observed_data,
+    migrate_observed_data_to_v21, observed_data_to_21,
+    observed_data_to_objects,
+    observed_data_to_v21, upgrade_observed_data,
+)
+
+__all__ += [
+    "ConversionResult", "Diagnostic", "IDMap", "ObjectCollection",
+    "ObservedDataConversion", "ObservedDataConversionError",
+    "ObservedDataConverter", "ObservedDataIDMap",
+    "UnresolvedContent", "UnresolvedReference",
+    "convert_observed_data", "convert_observed_data_2_0_to_2_1",
+    "convert_observed_data_to_2_1", "convert_observed_data_to_21",
+    "convert_observed_data_to_v21", "convert_observed_data_v20_to_21",
+    "convert_observed_data_v20_to_v21",
+    "import_observed_data", "migrate_observed_data",
+    "migrate_observed_data_to_v21", "observed_data_to_21",
+    "observed_data_to_v21", "upgrade_observed_data",
+]
+
+from .. import migration  # noqa: E402,F401
+from ..migration import __all__ as _migration_all  # noqa: E402
+
+__all__ += [name for name in _migration_all if name not in __all__]

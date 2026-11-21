@@ -9,6 +9,7 @@
    equivalence
    exceptions
    markings
+   migration
    parsing
    pattern_visitor
    patterns
@@ -38,6 +39,21 @@ from .environment import Environment, ObjectFactory
 from .markings import (
     add_markings, clear_markings, get_markings, is_marked, remove_markings,
     set_markings,
+)
+from .migration import (
+    ConversionResult, Converter, Diagnostic, IDMap, ObjectCollection,
+    ObservedDataConversion, ObservedDataConversionError,
+    ObservedDataConverter, ObservedDataIDMap, ObservedDataImporter,
+    UnresolvedContent, UnresolvedReference,
+    convert_observed_data, convert_observed_data_2_0_to_2_1,
+    convert_observed_data_to_2_1, convert_observed_data_v20_to_21,
+    convert_observed_data_v20_to_v21,
+    convert_observed_data_to_21, convert_observed_data_to_v21,
+    extract_observed_data_objects, extract_observed_objects,
+    import_observed_data, migrate_observed_data,
+    migrate_observed_data_to_v21, observed_data_to_21,
+    observed_data_to_objects,
+    observed_data_to_v21, upgrade_observed_data,
 )
 from .parsing import parse, parse_observable
 from .patterns import (

@@ -871,3 +871,12 @@ def CustomObject(type='x-custom-type', properties=None, extension_name=None, is_
         return _custom_object_builder(cls, type, _properties, '2.1', _DomainObject)
 
     return wrapper
+def convert_observed_data(data, *args, **kwargs):
+    """Offline conversion of STIX 2.0 observed-data to STIX 2.1."""
+    from ..migration import convert_observed_data as _convert
+
+    return _convert(data, *args, **kwargs)
+
+
+migrate_observed_data = convert_observed_data
+observed_data_to_v21 = convert_observed_data

@@ -224,6 +224,21 @@ class ObservedData(_DomainObject):
         ('granular_markings', ListProperty(GranularMarking)),
     ])
 
+    def to_v21(self, **kwargs):
+        """Convert this observation to STIX 2.1 embedded objects + refs."""
+        from ..migration import convert_observed_data
+
+        return convert_observed_data(self, **kwargs)
+
+    convert_to_v21 = to_v21
+    to_21 = to_v21
+    to_stix21 = to_v21
+    migrate = to_v21
+
+    def to_v21_observed_data(self, **kwargs):
+        """Return only the rewritten STIX 2.1 observed-data record."""
+        return self.to_v21(**kwargs).converted_observed_data
+
 
 class Report(_DomainObject):
     """For more detailed information on this object's properties, see
@@ -377,3 +392,12 @@ def CustomObject(type='x-custom-type', properties=None):
         )
         return _custom_object_builder(cls, type, _properties, '2.0', _DomainObject)
     return wrapper
+def convert_observed_data(data, *args, **kwargs):
+    """Offline conversion of STIX 2.0 observed-data to STIX 2.1."""
+    from ..migration import convert_observed_data as _convert
+
+    return _convert(data, *args, **kwargs)
+
+
+migrate_observed_data = convert_observed_data
+observed_data_to_v21 = convert_observed_data

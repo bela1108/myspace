@@ -145,3 +145,22 @@ def parse_observable(data, _valid_refs=None, allow_custom=False, interoperabilit
         )
 
     return obj_class(allow_custom=allow_custom, interoperability=interoperability, **obj)
+
+
+def convert_observed_data(data, *args, **kwargs):
+    """Offline conversion of STIX 2.0 observed-data to STIX 2.1 content.
+
+    This is a convenience re-export of
+    :func:`stix2.migration.convert_observed_data`.
+    """
+    from .migration import convert_observed_data as _convert
+
+    return _convert(data, *args, **kwargs)
+
+
+migrate_observed_data = convert_observed_data
+observed_data_to_v21 = convert_observed_data
+convert_observed_data_to_v21 = convert_observed_data
+convert_observed_data_to_21 = convert_observed_data
+convert_observed_data_2_0_to_2_1 = convert_observed_data
+observed_data_to_21 = convert_observed_data

@@ -168,6 +168,18 @@ class Environment(DataStoreMixin):
         return _parse(*args, **kwargs)
     parse.__doc__ = _parse.__doc__
 
+    def convert_observed_data(self, *args, **kwargs):
+        """Convert STIX 2.0 observed-data into STIX 2.1 content.
+
+        This is a convenience wrapper around
+        :func:`stix2.migration.convert_observed_data`.
+        """
+        from .migration import convert_observed_data
+
+        return convert_observed_data(*args, **kwargs)
+
+    migrate_observed_data = convert_observed_data
+
     def creator_of(self, obj):
         """Retrieve the Identity refered to by the object's `created_by_ref`.
 
