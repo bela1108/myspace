@@ -86,6 +86,12 @@ class SigmaConfigurationError(SigmaError):
     pass
 
 
+class SigmaSelectionError(SigmaConfigurationError):
+    """Error in configuration of Sigma rule selection."""
+
+    pass
+
+
 class SigmaConversionError(SigmaError):
     """Rule conversion failed."""
 

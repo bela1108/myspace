@@ -69,6 +69,12 @@ Pipeline and Processing Exceptions
 .. autoclass:: sigma.exceptions.SigmaTransformationError
    :show-inheritance:
 
+Rule Selection Exceptions
+-------------------------
+
+.. autoclass:: sigma.exceptions.SigmaSelectionError
+   :show-inheritance:
+
 Collection Exceptions
 ---------------------
 

@@ -8,6 +8,7 @@ Complete reference documentation for all pySigma modules, classes, and functions
 
    rules
    collection
+   selection
    backends
    processing
    conditions
