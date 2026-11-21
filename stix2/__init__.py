@@ -35,6 +35,13 @@ from .datastore.taxii import (
     TAXIICollectionSink, TAXIICollectionSource, TAXIICollectionStore,
 )
 from .environment import Environment, ObjectFactory
+from .export import (
+    ExportReport, ExportedBundle, MarkingPolicy, export_bundle,
+    export_bundle_by_markings, export_bundle_for_caller,
+    export_bundle_for_markings, export_bundle_with_report, export_for_caller,
+    filter_bundle,
+    filter_bundle_by_markings, redact_bundle, sanitize_bundle,
+)
 from .markings import (
     add_markings, clear_markings, get_markings, is_marked, remove_markings,
     set_markings,

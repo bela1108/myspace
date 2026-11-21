@@ -37,6 +37,15 @@ class Bundle(_STIXBase20):
 
         super(Bundle, self).__init__(**kwargs)
 
+    def export(self, allowed_markings=None, **kwargs):
+        """Return a caller-filtered copy of this Bundle.
+
+        See stix2.export.export_bundle for the accepted permissions and
+        report semantics.
+        """
+        from ..export import export_bundle
+        return export_bundle(self, allowed_markings, **kwargs)
+
     def get_obj(self, obj_uuid):
         if "objects" in self._inner:
             found_objs = [elem for elem in self.objects if elem['id'] == obj_uuid]
