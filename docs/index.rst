@@ -36,6 +36,7 @@ You can contribute to `pypdf on GitHub <https://github.com/py-pdf/pypdf>`_.
    user/adding-pdf-annotations
    user/add-watermark
    user/add-javascript
+   user/interactive-sanitization
    user/viewer-preferences
    user/forms
    user/handling-outlines
@@ -63,6 +64,7 @@ You can contribute to `pypdf on GitHub <https://github.com/py-pdf/pypdf>`_.
    modules/Transformation
    modules/XmpInformation
    modules/actions
+   modules/interactive
    modules/annotations
    modules/constants
    modules/configuration

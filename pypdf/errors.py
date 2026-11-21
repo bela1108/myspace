@@ -72,3 +72,7 @@ class LimitReachedError(PyPdfError):
 
 class XmpDocumentError(PyPdfError, RuntimeError):
     """Raised when the XMP XML document context is invalid or missing."""
+
+
+class SanitizationError(PyPdfError):
+    """Raised when a derived PDF cannot be safely sanitized or verified."""
