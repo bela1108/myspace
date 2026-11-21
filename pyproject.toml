@@ -84,6 +84,9 @@ validation = ["jsonschema", "referencing", "lxml"]
 json-validation = ["jsonschema", "referencing"]
 xml-validation = ["lxml"]
 
+[tool.poetry.scripts]
+cyclonedx-bom-compare = "cyclonedx.contrib.bom.compare:main"
+
 [tool.poetry.group.dev.dependencies]
 ddt = "1.7.2"
 coverage = "7.10.7"

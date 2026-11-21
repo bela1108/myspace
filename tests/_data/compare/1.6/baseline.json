@@ -1,0 +1,226 @@
+{
+  "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "serialNumber": "urn:uuid:0b2a43e8-11a4-4bff-9d55-111111111111",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-01-10T08:00:00Z",
+    "component": {
+      "type": "application",
+      "bom-ref": "app@1.0.0",
+      "group": "com.acme",
+      "name": "demo-app",
+      "version": "1.0.0",
+      "purl": "pkg:maven/com.acme/demo-app@1.0.0"
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "widget-suite@1.4.0",
+      "group": "com.acme",
+      "name": "widget-suite",
+      "version": "1.4.0",
+      "purl": "pkg:maven/com.acme/widget-suite@1.4.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "1111111111111111111111111111111111111111111111111111111111111111"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "name",
+            "confidence": 1.0,
+            "concludedValue": "widget-suite"
+          },
+          {
+            "field": "purl",
+            "confidence": 1.0,
+            "concludedValue": "pkg:maven/com.acme/widget-suite@1.4.0"
+          }
+        ],
+        "occurrences": [
+          {
+            "location": "lib/widget/core/decoder.py",
+            "line": 12,
+            "symbol": "decode"
+          },
+          {
+            "location": "lib/widget/ui/render.py",
+            "line": 8,
+            "symbol": "render"
+          }
+        ]
+      }
+    },
+    {
+      "type": "library",
+      "bom-ref": "legacy-parser@1.2.0",
+      "group": "org.acme",
+      "name": "legacy-parser",
+      "version": "1.2.0",
+      "purl": "pkg:maven/org.acme/legacy-parser@1.2.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "name",
+            "confidence": 1.0,
+            "concludedValue": "legacy-parser"
+          },
+          {
+            "field": "purl",
+            "confidence": 1.0,
+            "concludedValue": "pkg:maven/org.acme/legacy-parser@1.2.0"
+          }
+        ],
+        "occurrences": [
+          {
+            "location": "lib/legacy/parser.py",
+            "line": 3,
+            "symbol": "parse"
+          }
+        ]
+      }
+    },
+    {
+      "type": "library",
+      "bom-ref": "telemetry@1.0.0",
+      "group": "com.acme",
+      "name": "telemetry",
+      "version": "1.0.0",
+      "purl": "pkg:maven/com.acme/telemetry@1.0.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "60303ae22b998861bce3b28f33eec1be758a213c86c93c076dbe9f558c11c752"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "name",
+            "confidence": 1.0,
+            "concludedValue": "telemetry"
+          },
+          {
+            "field": "purl",
+            "confidence": 1.0,
+            "concludedValue": "pkg:maven/com.acme/telemetry@1.0.0"
+          }
+        ],
+        "occurrences": [
+          {
+            "location": "lib/telemetry/agent.py",
+            "line": 5,
+            "symbol": "start"
+          }
+        ]
+      }
+    },
+    {
+      "type": "library",
+      "bom-ref": "opaque@1.0.0",
+      "group": "org.other",
+      "name": "opaque",
+      "version": "1.0.0",
+      "purl": "pkg:npm/other/opaque@1.0.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "codec-lib@1.0.0",
+      "group": "org.acme",
+      "name": "codec-lib",
+      "version": "1.0.0",
+      "purl": "pkg:maven/org.acme/codec-lib@1.0.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "app@1.0.0",
+      "dependsOn": [
+        "widget-suite@1.4.0",
+        "legacy-parser@1.2.0",
+        "telemetry@1.0.0",
+        "opaque@1.0.0"
+      ]
+    },
+    {
+      "ref": "widget-suite@1.4.0",
+      "dependsOn": [
+        "legacy-parser@1.2.0",
+        "codec-lib@1.0.0"
+      ]
+    },
+    {
+      "ref": "legacy-parser@1.2.0",
+      "dependsOn": [
+        "codec-lib@1.0.0"
+      ]
+    },
+    {
+      "ref": "telemetry@1.0.0",
+      "dependsOn": []
+    },
+    {
+      "ref": "opaque@1.0.0",
+      "dependsOn": []
+    },
+    {
+      "ref": "codec-lib@1.0.0",
+      "dependsOn": []
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "bom-ref": "finding-widget-split",
+      "id": "CVE-2026-1001",
+      "source": {
+        "name": "NVD",
+        "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-1001"
+      },
+      "description": "Synthetic finding used by the split fixture.",
+      "affects": [
+        {
+          "ref": "widget-suite@1.4.0"
+        }
+      ]
+    },
+    {
+      "bom-ref": "finding-parser-repack",
+      "id": "CVE-2026-1002",
+      "source": {
+        "name": "NVD",
+        "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-1002"
+      },
+      "description": "Synthetic finding used by the repackaged fixture.",
+      "affects": [
+        {
+          "ref": "legacy-parser@1.2.0"
+        }
+      ]
+    },
+    {
+      "bom-ref": "finding-telemetry-conflict",
+      "id": "CVE-2026-1003",
+      "source": {
+        "name": "NVD",
+        "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-1003"
+      },
+      "description": "Synthetic finding used by the conflicting-evidence fixture.",
+      "affects": [
+        {
+          "ref": "telemetry@1.0.0"
+        }
+      ]
+    }
+  ]
+}

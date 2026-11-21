@@ -1,0 +1,278 @@
+{
+  "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "serialNumber": "urn:uuid:0b2a43e8-11a4-4bff-9d55-222222222222",
+  "version": 2,
+  "metadata": {
+    "timestamp": "2026-02-10T08:00:00Z",
+    "component": {
+      "type": "application",
+      "bom-ref": "app@2.0.0",
+      "group": "com.acme",
+      "name": "demo-app",
+      "version": "2.0.0",
+      "purl": "pkg:maven/com.acme/demo-app@2.0.0"
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "widget-core@2.0.0",
+      "group": "com.acme",
+      "name": "widget-core",
+      "version": "2.0.0",
+      "purl": "pkg:maven/com.acme/widget-core@2.0.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "2222222222222222222222222222222222222222222222222222222222222222"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "name",
+            "confidence": 1.0,
+            "concludedValue": "widget-core"
+          },
+          {
+            "field": "purl",
+            "confidence": 1.0,
+            "concludedValue": "pkg:maven/com.acme/widget-core@2.0.0"
+          }
+        ],
+        "occurrences": [
+          {
+            "location": "lib/widget/core/decoder.py",
+            "line": 12,
+            "symbol": "decode"
+          }
+        ]
+      }
+    },
+    {
+      "type": "library",
+      "bom-ref": "widget-ui@2.0.0",
+      "group": "com.acme",
+      "name": "widget-ui",
+      "version": "2.0.0",
+      "purl": "pkg:maven/com.acme/widget-ui@2.0.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "3333333333333333333333333333333333333333333333333333333333333333"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "name",
+            "confidence": 1.0,
+            "concludedValue": "widget-ui"
+          },
+          {
+            "field": "purl",
+            "confidence": 1.0,
+            "concludedValue": "pkg:maven/com.acme/widget-ui@2.0.0"
+          }
+        ],
+        "occurrences": [
+          {
+            "location": "lib/widget/ui/render.py",
+            "line": 8,
+            "symbol": "render"
+          }
+        ]
+      }
+    },
+    {
+      "type": "library",
+      "bom-ref": "parser-ng@9.0.0",
+      "group": "org.acme",
+      "name": "parser-ng",
+      "version": "9.0.0",
+      "purl": "pkg:maven/org.acme/parser-ng@9.0.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "name",
+            "confidence": 1.0,
+            "concludedValue": "parser-ng"
+          },
+          {
+            "field": "purl",
+            "confidence": 1.0,
+            "concludedValue": "pkg:maven/org.acme/parser-ng@9.0.0"
+          }
+        ],
+        "occurrences": [
+          {
+            "location": "lib/legacy/parser.py",
+            "line": 3,
+            "symbol": "parse"
+          }
+        ]
+      }
+    },
+    {
+      "type": "library",
+      "bom-ref": "telemetry@1.0.0",
+      "group": "com.acme",
+      "name": "telemetry",
+      "version": "1.0.0",
+      "purl": "pkg:maven/com.acme/telemetry@1.0.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "name",
+            "confidence": 1.0,
+            "concludedValue": "telemetry"
+          },
+          {
+            "field": "purl",
+            "confidence": 1.0,
+            "concludedValue": "pkg:maven/com.acme/telemetry@1.0.0"
+          }
+        ],
+        "occurrences": [
+          {
+            "location": "lib/telemetry/agent.py",
+            "line": 5,
+            "symbol": "start"
+          }
+        ]
+      }
+    },
+    {
+      "type": "library",
+      "bom-ref": "telemetry-loader@2.0.0",
+      "group": "com.acme",
+      "name": "telemetry-loader",
+      "version": "2.0.0",
+      "purl": "pkg:maven/com.acme/telemetry-loader@2.0.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "60303ae22b998861bce3b28f33eec1be758a213c86c93c076dbe9f558c11c752"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "name",
+            "confidence": 1.0,
+            "concludedValue": "telemetry-loader"
+          },
+          {
+            "field": "purl",
+            "confidence": 1.0,
+            "concludedValue": "pkg:maven/com.acme/telemetry-loader@2.0.0"
+          }
+        ],
+        "occurrences": [
+          {
+            "location": "lib/telemetry/agent.py",
+            "line": 5,
+            "symbol": "start"
+          }
+        ]
+      }
+    },
+    {
+      "type": "library",
+      "bom-ref": "opaque@2.0.0",
+      "group": "org.renamed",
+      "name": "opaque",
+      "version": "2.0.0",
+      "purl": "pkg:generic/org.renamed/opaque@2.0.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "codec-lib@1.0.0",
+      "group": "org.acme",
+      "name": "codec-lib",
+      "version": "1.0.0",
+      "purl": "pkg:maven/org.acme/codec-lib@1.0.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "4444444444444444444444444444444444444444444444444444444444444444"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "render-ui@1.0.0",
+      "group": "org.acme",
+      "name": "render-ui",
+      "version": "1.0.0",
+      "purl": "pkg:maven/org.acme/render-ui@1.0.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "app@2.0.0",
+      "dependsOn": [
+        "widget-core@2.0.0",
+        "widget-ui@2.0.0",
+        "parser-ng@9.0.0",
+        "telemetry@1.0.0",
+        "opaque@2.0.0"
+      ]
+    },
+    {
+      "ref": "widget-core@2.0.0",
+      "dependsOn": [
+        "parser-ng@9.0.0",
+        "codec-lib@1.0.0"
+      ]
+    },
+    {
+      "ref": "widget-ui@2.0.0",
+      "dependsOn": [
+        "render-ui@1.0.0"
+      ]
+    },
+    {
+      "ref": "parser-ng@9.0.0",
+      "dependsOn": [
+        "codec-lib@1.0.0"
+      ]
+    },
+    {
+      "ref": "telemetry@1.0.0",
+      "dependsOn": [
+        "telemetry-loader@2.0.0"
+      ]
+    },
+    {
+      "ref": "telemetry-loader@2.0.0",
+      "dependsOn": []
+    },
+    {
+      "ref": "opaque@2.0.0",
+      "dependsOn": []
+    },
+    {
+      "ref": "codec-lib@1.0.0",
+      "dependsOn": []
+    },
+    {
+      "ref": "render-ui@1.0.0",
+      "dependsOn": []
+    }
+  ]
+}
