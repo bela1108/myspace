@@ -133,6 +133,7 @@ from oletools.thirdparty.tablestream import tablestream
 from oletools import oleobj, ftguess
 import olefile
 from oletools.common import clsid
+from oletools.common.scan_budget import BudgetAccount, CONTAINER, ATTACHMENT
 
 # === LOGGING =================================================================
 
@@ -850,7 +851,21 @@ def sanitize_filename(filename, replacement='_', max_length=200):
     return sane_fname
 
 
-def process_file(container, filename, data, output_dir=None, save_object=False):
+def _charge_budget(budget, object_id, category, amount):
+    """Charge one processing stage to an optional caller budget."""
+    if budget is None or not amount:
+        return
+    if isinstance(budget, BudgetAccount):
+        budget.charge(category, amount)
+    else:
+        try:
+            budget.charge(object_id, category, amount)
+        except TypeError:
+            budget.charge(category, amount)
+
+
+def process_file(container, filename, data, output_dir=None, save_object=False,
+                 budget=None, object_id=None):
     if output_dir:
         if not os.path.isdir(output_dir):
             log.info('creating output directory %s' % output_dir)
@@ -866,6 +881,7 @@ def process_file(container, filename, data, output_dir=None, save_object=False):
     # TODO: option to extract objects to files (false by default)
     if data is None:
         data = open(filename, 'rb').read()
+    _charge_budget(budget, object_id or filename, CONTAINER, len(data))
     print('='*79)
     print('File: %r - size: %d bytes' % (filename, len(data)))
     tstream = tablestream.TableStream(
@@ -876,6 +892,8 @@ def process_file(container, filename, data, output_dir=None, save_object=False):
     rtfp = RtfObjParser(data)
     rtfp.parse()
     for rtfobj in rtfp.objects:
+        _charge_budget(budget, object_id or filename, ATTACHMENT,
+                       rtfobj.oledata_size or 0)
         ole_color = None
         if rtfobj.is_ole:
             ole_column = 'format_id: %d ' % rtfobj.format_id

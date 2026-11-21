@@ -342,6 +342,7 @@ from oletools import ppt_parser
 from oletools import oleform
 from oletools import rtfobj
 from oletools import crypto
+from oletools.common.scan_budget import BudgetAccount, CONTAINER as BUDGET_CONTAINER, MACRO as BUDGET_MACRO
 from oletools.common.io_encoding import ensure_stdout_handles_unicode
 from oletools.common import codepages
 from oletools import ftguess
@@ -2681,7 +2682,7 @@ class VBA_Parser(object):
     # TODO: relaxed is enabled by default temporarily, until a solution is found for issue #593
 
     def __init__(self, filename, data=None, container=None, relaxed=True, encoding=DEFAULT_API_ENCODING,
-                 disable_pcode=False):
+                 disable_pcode=False, budget=None, object_id=None):
         """
         Constructor for VBA_Parser
 
@@ -2705,6 +2706,16 @@ class VBA_Parser(object):
         # TODO: filename should only be a string, data should be used for the file-like object
         # TODO: filename should be mandatory, optional data is a string or file-like object
         # TODO: also support olefile and zipfile as input
+        self.budget = budget
+        self.budget_object_id = filename if object_id is None else object_id
+        if budget is not None:
+            container_size = 0
+            if isinstance(data, (bytes, bytearray)):
+                container_size = len(data)
+            elif data is None and isinstance(filename, str) and \
+                    os.path.isfile(filename):
+                container_size = os.path.getsize(filename)
+            self._charge_budget(BUDGET_CONTAINER, container_size)
         if data is None:
             # open file from disk:
             _file = filename
@@ -2822,6 +2833,18 @@ class VBA_Parser(object):
             msg = '%s is not a supported file type, cannot extract VBA Macros.' % self.filename
             log.info(msg)
             raise FileOpenError(msg)
+
+    def _charge_budget(self, category, amount):
+        """Charge one parsing stage to the optional caller-provided budget."""
+        if self.budget is None or not amount:
+            return
+        if isinstance(self.budget, BudgetAccount):
+            self.budget.charge(category, amount)
+        else:
+            try:
+                self.budget.charge(self.budget_object_id, category, amount)
+            except TypeError:
+                self.budget.charge(category, amount)
 
     def open_ole(self, _file):
         """
@@ -3504,6 +3527,12 @@ class VBA_Parser(object):
             return unicode_str.encode(self.encoding, errors='replace')
 
     def extract_macros(self):
+        """Extract macros, charging each yielded source to the budget."""
+        for result in self._extract_macros():
+            self._charge_budget(BUDGET_MACRO, len(result[3] or ""))
+            yield result
+
+    def _extract_macros(self):
         """
         Extract and decompress source code for each VBA macro found in the file
 

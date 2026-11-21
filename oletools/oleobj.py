@@ -72,6 +72,8 @@ from oletools.ppt_record_parser import (is_ppt, PptFile,
                                         PptRecordExOleVbaActiveXAtom)
 from oletools.ooxml import XmlParser
 from oletools.common.io_encoding import ensure_stdout_handles_unicode
+from oletools.common.scan_budget import BudgetAccount, ATTACHMENT
+from oletools.common.scan_budget import BudgetExhausted
 
 # -----------------------------------------------------------------------------
 # CHANGELOG:
@@ -833,7 +835,20 @@ def find_customUI(xml_parser):
             yield customui_onload
 
 
-def process_file(filename, data, output_dir=None):
+def _charge_budget(budget, object_id, category, amount):
+    """Charge one processing stage to an optional caller budget."""
+    if budget is None or not amount:
+        return
+    if isinstance(budget, BudgetAccount):
+        budget.charge(category, amount)
+    else:
+        try:
+            budget.charge(object_id, category, amount)
+        except TypeError:
+            budget.charge(category, amount)
+
+
+def process_file(filename, data, output_dir=None, budget=None, object_id=None):
     """ find embedded objects in given file
 
     if data is given (from xglob for encrypted zip files), then filename is
@@ -929,6 +944,8 @@ def process_file(filename, data, output_dir=None):
                         next_size = min(DUMP_CHUNK_SIZE, opkg.actual_size)
                         while next_size:
                             data = stream.read(next_size)
+                            _charge_budget(budget, object_id or filename,
+                                           ATTACHMENT, len(data))
                             writer.write(data)
                             n_dumped += len(data)
                             if len(data) != next_size:
@@ -938,6 +955,8 @@ def process_file(filename, data, output_dir=None):
                             next_size = min(DUMP_CHUNK_SIZE,
                                             opkg.actual_size - n_dumped)
                     did_dump = True
+                except BudgetExhausted:
+                    raise
                 except Exception as exc:
                     log.warning('error dumping to {0} ({1})'
                                 .format(fname, exc))
