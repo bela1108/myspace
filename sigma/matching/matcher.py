@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any, Iterable
-
-from typing_extensions import Self
+from typing import Any, Iterable, Self
 
 from sigma.collection import SigmaCollection
 from sigma.correlations import SigmaCorrelationRule, SigmaExtendedCorrelationCondition
 from sigma.matching.compiler import MatchCompiler
 from sigma.matching.correlation_matcher import SigmaCorrelationRuleMatcher
 from sigma.matching.event import Event, EventLogSource
+from sigma.matching.explanation import ExplanationStatus, MatchExplanation, MatchExplainer
 from sigma.matching.match import SigmaMatch
 from sigma.matching.rule_matcher import SigmaRuleMatcher
 from sigma.processing.pipeline import ProcessingPipeline
@@ -99,6 +98,60 @@ class SigmaMatcher:
         for event in events:
             all_matches.extend(self.match(event))
         return all_matches
+
+    def explain(
+        self,
+        event: Event | SigmaMatch,
+        rule: SigmaRule | str | None = None,
+    ) -> MatchExplanation:
+        """
+        Explain a match with a minimal set of event fields.
+
+        Pass a :class:`SigmaMatch` directly, or an event. When an event matches several rules,
+        select the rule with its object, name or title to obtain an unambiguous explanation.
+        """
+        if isinstance(event, SigmaMatch):
+            return MatchExplainer().explain(event, self._resolve_explanation_event(event))
+
+        matches = self.match(event)
+        if rule is not None:
+            matches = [match for match in matches if self._rule_matches_selector(match.rule, rule)]
+            if not matches:
+                return MatchExplanation(
+                    ExplanationStatus.NO_MATCH,
+                    rule=rule if isinstance(rule, SigmaRule) else None,
+                    event=event,
+                    reason="event does not match the requested rule",
+                )
+
+        if not matches:
+            return MatchExplanation(
+                ExplanationStatus.NO_MATCH,
+                rule=rule if isinstance(rule, SigmaRule) else None,
+                event=event,
+                reason="event does not match any rule",
+            )
+        if len(matches) > 1:
+            return MatchExplanation(
+                ExplanationStatus.UNDECIDABLE,
+                event=event,
+                reason="event matches multiple rules; select one rule to explain",
+            )
+        return MatchExplainer().explain(matches[0])
+
+    def explain_all(self, event: Event) -> list[MatchExplanation]:
+        """Explain every rule match for *event* independently."""
+        return [MatchExplainer().explain(match) for match in self.match(event)]
+
+    @staticmethod
+    def _resolve_explanation_event(match: SigmaMatch) -> Event | None:
+        return match.events[-1] if match.events else None
+
+    @staticmethod
+    def _rule_matches_selector(rule: Any, selector: SigmaRule | str) -> bool:
+        if isinstance(selector, SigmaRule):
+            return rule is selector
+        return selector in (getattr(rule, "name", None), getattr(rule, "title", None))
 
     def _get_matchers(self, logsource: EventLogSource) -> list[SigmaRuleMatcher]:
         """Get all rule matchers whose logsource contains the event's logsource."""

@@ -179,6 +179,32 @@ Each :class:`~sigma.matching.SigmaMatch` exposes:
         if m.group_values:
             print(f"Group  : {m.group_values}")
 
+Explaining Matches
+------------------
+
+When an alert fires, the matcher can explain which event fields minimally support the decision.
+The explainer is offline and deliberately supports a small, explicit subset of the detection
+language: ``and``, ``or`` and field-bound string, number, boolean, null and existence checks.
+Negated conditions, keyword matches, field references and advanced value types are reported as
+``undecidable`` instead of being interpreted loosely.
+
+.. code-block:: python
+
+    from sigma.matching import explain_match
+
+    result = explain_match(matches[0])
+    print(result.report())
+
+A result has one of four statuses:
+
+* ``explained`` — exactly one minimal field set supports the match.
+* ``tied`` — several incomparable minimal field sets support the match.
+* ``undecidable`` — the rule uses a construct outside the supported subset.
+* ``no_match`` — the event no longer matches the rule.
+
+Reports show field names and the rule predicate that justifies each field by default. Event
+values are only included when ``report(include_values=True)`` is requested.
+
 Using as a Context Manager
 --------------------------
 

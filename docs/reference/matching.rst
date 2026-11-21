@@ -41,6 +41,33 @@ SigmaMatch
    :undoc-members:
    :show-inheritance:
 
+Match Explanations
+------------------
+
+.. autoclass:: sigma.matching.MatchExplainer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: sigma.matching.MatchExplanation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: sigma.matching.ExplanationStatus
+   :members:
+   :undoc-members:
+
+.. autoclass:: sigma.matching.ExplanationAlternative
+   :members:
+   :undoc-members:
+
+.. autoclass:: sigma.matching.FieldEvidence
+   :members:
+   :undoc-members:
+
+.. autofunction:: sigma.matching.explain_match
+
 SigmaRuleMatcher
 ----------------
 

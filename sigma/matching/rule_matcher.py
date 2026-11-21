@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 from sigma.matching.compiler import CompiledMatcher, MatchCompiler
@@ -8,6 +7,7 @@ from sigma.matching.event import Event
 from sigma.matching.match import SigmaMatch
 
 if TYPE_CHECKING:
+    from sigma.matching.explanation import MatchExplanation
     from sigma.rule.rule import SigmaRule
 
 
@@ -28,3 +28,9 @@ class SigmaRuleMatcher:
                 timestamp=event.timestamp,
             )
         return None
+
+    def explain(self, event: Event) -> MatchExplanation:
+        """Explain which fields minimally support a match of this rule against *event*."""
+        from sigma.matching.explanation import MatchExplainer
+
+        return MatchExplainer(self.rule, compiler=self._compiler).explain(event)
