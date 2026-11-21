@@ -62,6 +62,7 @@ packages = [
 ]
 script-files = [
     "scripts/readelf.py",
+    "scripts/tls_info.py",
 ]
 platforms = [
     'Cross Platform',

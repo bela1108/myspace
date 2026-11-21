@@ -48,6 +48,7 @@ if TYPE_CHECKING:
     from typing import Self
 
     from ..construct.lib.container import Container
+    from .tls import TLSDescription
 
 
 class ELFFile:
@@ -286,6 +287,31 @@ class ELFFile:
         return (self.has_section('.debug_info') or
             self.has_section('.zdebug_info') or
             (not strict and self.has_section('.eh_frame')))
+
+    def get_tls_info(
+        self,
+        *,
+        verify: bool = True,
+        include_bytes: bool = False,
+    ) -> TLSDescription:
+        """ Return a static description of this file's thread-local storage.
+
+            The description correlates ``PT_TLS``, ``SHF_TLS`` sections, and
+            ``STT_TLS`` symbols.  TLS symbol values are interpreted as offsets
+            into the per-thread TLS block, not as ordinary virtual addresses.
+        """
+        from .tls import describe_tls
+
+        return describe_tls(self, verify=verify, include_bytes=include_bytes)
+
+    def get_tls_description(
+        self,
+        *,
+        verify: bool = True,
+        include_bytes: bool = False,
+    ) -> TLSDescription:
+        """ Alias for :meth:`get_tls_info`. """
+        return self.get_tls_info(verify=verify, include_bytes=include_bytes)
 
     def get_dwarf_info(
         self,

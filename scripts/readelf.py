@@ -95,6 +95,7 @@ from elftools.elf.sections import (
     SymbolTableSection,
 )
 from elftools.elf.segments import InterpSegment
+from elftools.elf.tls import describe_tls, format_tls_description
 
 if TYPE_CHECKING:
     from elftools.construct.lib.container import Container
@@ -529,6 +530,10 @@ class ReadElf:
                     f"{symbol_shndx:>4} "
                     f"{_format_symbol_name(symbol_name):.25}{version_info}"
                 )
+
+    def display_tls(self) -> None:
+        """ Display the static TLS file/memory layout. """
+        self._emitline(format_tls_description(describe_tls(self.elffile)))
 
     def display_dynamic_tags(self) -> None:
         """ Display the dynamic tags contained in the file
@@ -1917,6 +1922,9 @@ def main(stream: IO[str] | None = None) -> None:
     argparser.add_argument('-A', '--arch-specific',
             action='store_true', dest='show_arch_specific',
             help='Display the architecture-specific information (if present)')
+    argparser.add_argument('--tls',
+            action='store_true', dest='show_tls',
+            help='Display the static layout of thread-local storage')
     argparser.add_argument('--debug-dump',
             action='store', dest='debug_dump_what', metavar='<what>',
             help=(
@@ -1967,6 +1975,8 @@ def main(stream: IO[str] | None = None) -> None:
                 readelf.display_version_info()
             if args.show_arch_specific:
                 readelf.display_arch_specific()
+            if args.show_tls:
+                readelf.display_tls()
             if args.show_hex_dump:
                 readelf.display_hex_dump(args.show_hex_dump)
             if args.show_string_dump:

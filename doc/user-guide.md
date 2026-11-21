@@ -135,6 +135,33 @@ count and enumerate them. There are also some special segment classes
 that have more information about well-known segments. Take a look at
 `elftools/elf/segments.py` for more details.
 
+### ELF thread-local storage
+
+Thread-local storage needs a file-oriented explanation that is different
+from ordinary section addressing. Use `ELFFile.get_tls_info()` (implemented
+in `elftools/elf/tls.py`) to get a dict-like, JSON-serializable description
+that joins `PT_TLS`, `SHF_TLS` sections, and `STT_TLS` symbols:
+
+```python
+with open(path, 'rb') as stream:
+    info = ELFFile(stream).get_tls_info()
+```
+
+The report separates the initialization template
+(`PT_TLS.p_offset`/`p_filesz`), the per-thread zero-filled range
+(`[p_filesz, p_memsz)`, which has no file offset), and addresses outside
+the TLS block. An `STT_TLS` symbol's `st_value` is interpreted as an offset
+into that block, never as `section address + value`. When section headers
+are missing, symbol tables are absent, or symbols have no size, the
+affected ranges are listed under `unconfirmed` instead of being guessed.
+
+`scripts/tls_info.py` renders the report as text or JSON; pass two files to
+compare template and per-thread sizes:
+
+```text
+python scripts/tls_info.py --json FILE1.elf FILE2.elf
+```
+
 ### Structs and headers
 
 Most objects in ELF and DWARF have \"headers\", and such objects usually
