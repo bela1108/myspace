@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Case-scoped anonymization export for plugin results** (`regipy.anonymize`)
+  - `CaseAnonymizer` pseudonymizes plugin output for external disclosure according to a caller-supplied `AnonymizationPolicy` that declares each field's source (`identity`, `object_id`, `key_path`, `keep`); undeclared fields are dropped (default-deny)
+  - Pseudonyms are deterministic HMAC tokens keyed by a per-case secret: evidence correlates within a case, but different cases using the same username produce unrelated tokens and cannot be merged from the external results
+  - `export_public` emits only one-way tokens (real identities are not recoverable from it), while `export_internal_mapping` writes the reversible token-to-original mapping (including the case secret) for internal review; `from_internal_mapping` resumes a case so updated material keeps stable tokens
+
 ## [6.5.2] - 2026-10-17
 
 ### Fixed

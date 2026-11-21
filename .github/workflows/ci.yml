@@ -58,6 +58,9 @@ jobs:
       - name: Run tests with pytest
         run: pytest -v regipy_tests/tests.py
 
+      - name: Run anonymization tests
+        run: pytest -v regipy_tests/test_anonymize.py
+
       - name: Run CLI tests
         run: pytest -v regipy_tests/cli_tests.py
 
