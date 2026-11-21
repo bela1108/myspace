@@ -23,6 +23,7 @@ Contents:
    model
    install
    examples
+   configuration
    issues
    bugtracker
    todo
@@ -33,4 +34,3 @@ Indices and tables
 
 * :ref:`genindex`
 * :ref:`search`
-

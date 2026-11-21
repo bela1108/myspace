@@ -25,6 +25,7 @@ Features
 - CPE rich comparison.
 - CPE cross-version conversion.
 - CPE Language parsing and evaluation.
+- Offline advisory configuration explanation with tri-state inventory evidence.
 - LGPL Licensed.
 - Semantic versioning.
 - Tests.
