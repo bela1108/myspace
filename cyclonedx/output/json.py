@@ -37,13 +37,15 @@ from ..schema.schema import (
 from . import BaseOutput
 
 if TYPE_CHECKING:  # pragma: no cover
+    from ..downgrade.policy import BaseDowngradePolicy
     from ..model.bom import Bom
 
 
 class Json(BaseOutput, BaseSchemaVersion):
 
-    def __init__(self, bom: 'Bom') -> None:
-        super().__init__(bom=bom)
+    def __init__(self, bom: 'Bom', *,
+                 downgrade_policy: Optional['BaseDowngradePolicy'] = None) -> None:
+        super().__init__(bom=bom, downgrade_policy=downgrade_policy)
         self._bom_json: dict[str, Any] = dict()
 
     @property
@@ -62,6 +64,8 @@ class Json(BaseOutput, BaseSchemaVersion):
         if not schema_uri:
             raise FormatNotSupportedException(
                 f'JSON is not supported by CycloneDX in schema version {self.schema_version.to_version()}')
+
+        self._check_downgrade_policy()
 
         _json_core = {
             '$schema': schema_uri,

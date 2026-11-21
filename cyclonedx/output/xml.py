@@ -37,12 +37,14 @@ from ..schema.schema import (
 from . import BaseOutput
 
 if TYPE_CHECKING:  # pragma: no cover
+    from ..downgrade.policy import BaseDowngradePolicy
     from ..model.bom import Bom
 
 
 class Xml(BaseSchemaVersion, BaseOutput):
-    def __init__(self, bom: 'Bom') -> None:
-        super().__init__(bom=bom)
+    def __init__(self, bom: 'Bom', *,
+                 downgrade_policy: Optional['BaseDowngradePolicy'] = None) -> None:
+        super().__init__(bom=bom, downgrade_policy=downgrade_policy)
         self._bom_xml: str = ''
 
     @property
@@ -60,6 +62,7 @@ class Xml(BaseSchemaVersion, BaseOutput):
         _view = SCHEMA_VERSIONS[self.schema_version_enum]
         bom = self.get_bom()
         bom.validate()
+        self._check_downgrade_policy()
         xmlns = self.get_target_namespace()
         with BomRefDiscriminator.from_bom(bom):
             self._bom_xml = '<?xml version="1.0" ?>\n' + xml_dumps(  # type:ignore[call-overload]

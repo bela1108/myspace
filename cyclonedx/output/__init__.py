@@ -33,9 +33,13 @@ else:
     from typing_extensions import deprecated
 
 from ..contrib.bom.utils import BomRefDiscriminator as _BomRefDiscriminator
+from ..downgrade import analyze_downgrade as _analyze_downgrade
+from ..downgrade import enforce as _enforce_downgrade
+from ..downgrade.report import DowngradeLossReport as _DowngradeLossReport
 from ..schema import OutputFormat, SchemaVersion
 
 if TYPE_CHECKING:  # pragma: no cover
+    from ..downgrade.policy import BaseDowngradePolicy
     from ..model.bom import Bom
     from .json import Json as JsonOutputter
     from .xml import Xml as XmlOutputter
@@ -43,10 +47,42 @@ if TYPE_CHECKING:  # pragma: no cover
 
 class BaseOutput(ABC):
 
-    def __init__(self, bom: 'Bom', **kwargs: int) -> None:
+    def __init__(self, bom: 'Bom', *,
+                 downgrade_policy: Optional['BaseDowngradePolicy'] = None,
+                 **kwargs: int) -> None:
         super().__init__(**kwargs)
         self._bom = bom
         self._generated: bool = False
+        self._downgrade_policy = downgrade_policy
+        self._downgrade_report: Optional[_DowngradeLossReport] = None
+
+    @property
+    def downgrade_policy(self) -> Optional['BaseDowngradePolicy']:
+        """Policy that decides which downgrade losses abort generation."""
+        return self._downgrade_policy
+
+    def set_downgrade_policy(self, policy: Optional['BaseDowngradePolicy']) -> None:
+        """Configure which downgrade losses block output after construction."""
+        self._downgrade_policy = policy
+
+    @property
+    def downgrade_report(self) -> Optional[_DowngradeLossReport]:
+        """The loss report computed during the last generate run, if any."""
+        return self._downgrade_report
+
+    def get_downgrade_report(self) -> _DowngradeLossReport:
+        """Compute (or return the cached) format-agnostic downgrade loss report.
+
+        The BOM is only read, never mutated, so the same instance can still be
+        serialized against a newer schema version.
+        """
+        if self._downgrade_report is None or self._downgrade_report.target_version is not self.schema_version:
+            self._downgrade_report = _analyze_downgrade(self._bom, self.schema_version)
+        return self._downgrade_report
+
+    def _check_downgrade_policy(self) -> None:
+        report = self.get_downgrade_report()
+        _enforce_downgrade(self._downgrade_policy, report)
 
     @property
     @abstractmethod
@@ -98,23 +134,28 @@ class BaseOutput(ABC):
 
 @overload
 def make_outputter(bom: 'Bom', output_format: Literal[OutputFormat.JSON],
-                   schema_version: SchemaVersion) -> 'JsonOutputter':
+                   schema_version: SchemaVersion, *,
+                   downgrade_policy: Optional['BaseDowngradePolicy'] = None) -> 'JsonOutputter':
     ...  # pragma: no cover
 
 
 @overload
 def make_outputter(bom: 'Bom', output_format: Literal[OutputFormat.XML],
-                   schema_version: SchemaVersion) -> 'XmlOutputter':
+                   schema_version: SchemaVersion, *,
+                   downgrade_policy: Optional['BaseDowngradePolicy'] = None) -> 'XmlOutputter':
     ...  # pragma: no cover
 
 
 @overload
 def make_outputter(bom: 'Bom', output_format: OutputFormat,
-                   schema_version: SchemaVersion) -> Union['XmlOutputter', 'JsonOutputter']:
+                   schema_version: SchemaVersion, *,
+                   downgrade_policy: Optional['BaseDowngradePolicy'] = None
+                   ) -> Union['XmlOutputter', 'JsonOutputter']:
     ...  # pragma: no cover
 
 
-def make_outputter(bom: 'Bom', output_format: OutputFormat, schema_version: SchemaVersion) -> BaseOutput:
+def make_outputter(bom: 'Bom', output_format: OutputFormat, schema_version: SchemaVersion, *,
+                   downgrade_policy: Optional['BaseDowngradePolicy'] = None) -> BaseOutput:
     """
     Helper method to quickly get the correct output class/formatter.
 
@@ -126,6 +167,8 @@ def make_outputter(bom: 'Bom', output_format: OutputFormat, schema_version: Sche
     :param bom: Bom
     :param output_format: OutputFormat
     :param schema_version: SchemaVersion
+    :param downgrade_policy: optional policy that blocks generation when the downgrade
+        would lose security information the caller considers unacceptable
     :return: BaseOutput
     """
     if TYPE_CHECKING:  # pragma: no cover
@@ -140,7 +183,7 @@ def make_outputter(bom: 'Bom', output_format: OutputFormat, schema_version: Sche
     klass = BY_SCHEMA_VERSION.get(schema_version, None)
     if klass is None:
         raise ValueError(f'Unknown {output_format.name}/schema_version: {schema_version!r}')
-    return klass(bom)
+    return klass(bom, downgrade_policy=downgrade_policy)
 
 # region deprecated re-export
 

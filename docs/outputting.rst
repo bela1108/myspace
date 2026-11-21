@@ -83,3 +83,48 @@ Alternatively, if the output format and schema version are constants, you can us
 
     outputter = XmlV1Dot2(bom=bom)
     outputter.output_to_file(filename='/tmp/sbom-v1.2.xml')
+
+
+Downgrade loss report and release gating
+----------------------------------------
+
+When a BOM authored against a recent CycloneDX schema is serialized to an older schema version, some security
+information can no longer be represented. The :py:mod:`cyclonedx.downgrade` package computes a loss report
+*before* the document is generated. The judgment is purely based on the in-memory model, so the exact same report
+is produced for JSON and XML output, and the BOM instance itself is never mutated and can still be serialized to
+the newest schema version.
+
+Each :py:class:`~cyclonedx.downgrade.DowngradeLoss` is classified by a ``LossCategory`` (vulnerability analysis,
+crypto asset or reference) and a ``LossKind``:
+
+* ``DROPPED`` - the information has no representation in the target schema and disappears.
+* ``NORMALIZED`` - the information remains through a coarser, lossy equivalent (for example an enum value that only
+  exists in newer schemas is rewritten to ``other``); the surviving representation is exposed via ``equivalent``.
+
+Inspect the report without blocking anything:
+
+.. code-block:: python
+
+    from cyclonedx.downgrade import analyze_downgrade
+    from cyclonedx.schema import SchemaVersion
+
+    report = analyze_downgrade(bom, SchemaVersion.V1_4)
+    print(report.render_text())
+
+Configure which losses abort a release via a :py:class:`~cyclonedx.downgrade.DowngradePolicy`, and pass it to the
+outputter. When a configured loss would occur, ``output_as_string`` raises
+:py:class:`~cyclonedx.downgrade.DowngradeRejectedError` carrying the full report; otherwise generation proceeds.
+
+.. code-block:: python
+
+    from cyclonedx.downgrade import DowngradePolicy, LossCategory
+    from cyclonedx.output import make_outputter, OutputFormat, SchemaVersion
+
+    # block only dropped crypto assets, tolerate everything else
+    policy = DowngradePolicy(blocked_categories={LossCategory.CRYPTO_ASSET})
+    outputter = make_outputter(bom, OutputFormat.JSON, SchemaVersion.V1_4, downgrade_policy=policy)
+    bom_json = outputter.output_as_string()
+
+Convenience presets are available as :py:meth:`DowngradePolicy.report_only`,
+:py:meth:`DowngradePolicy.block_dropped` and :py:meth:`DowngradePolicy.block_any`. A report is also always reachable
+through ``outputter.get_downgrade_report()`` regardless of whether a policy is configured.
