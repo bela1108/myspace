@@ -1,0 +1,42 @@
+{
+  "errors": [],
+  "generated_at": "2026-11-20T09:05:00Z",
+  "rule_set_version": "1.8.0",
+  "report_name": "worker-service",
+  "metrics": {},
+  "results": [
+    {
+      "code": "8   data = pickle.loads(blob)\n",
+      "filename": "app/yamlutil.py",
+      "issue_confidence": "HIGH",
+      "issue_severity": "MEDIUM",
+      "issue_text": "Pickle and modules that wrap it can be unsafe",
+      "line_number": 8,
+      "line_range": [8],
+      "test_name": "pickle_loads",
+      "test_id": "B614"
+    },
+    {
+      "code": "5   exec(payload)\n",
+      "filename": "app/execmod.py",
+      "issue_confidence": "HIGH",
+      "issue_severity": "MEDIUM",
+      "issue_text": "Use of exec detected.",
+      "line_number": 5,
+      "line_range": [5],
+      "test_name": "exec_used",
+      "test_id": "B102"
+    },
+    {
+      "code": "3   TOKEN = \"abcd1234\"\n",
+      "filename": "app/tokens.py",
+      "issue_confidence": "MEDIUM",
+      "issue_severity": "LOW",
+      "issue_text": "Possible hardcoded password: 'abcd1234'",
+      "line_number": 3,
+      "line_range": [3],
+      "test_name": "hardcoded_password_string",
+      "test_id": "B105"
+    }
+  ]
+}
