@@ -298,6 +298,11 @@ class Doc97File(base.BaseOfficeFile):
             tablename=tablename,
         )
 
+    def protection_attributes(self):
+        from msoffcrypto.protection import doc97_protection_attributes
+
+        return doc97_protection_attributes(self)
+
     def load_key(self, password=None):
         fib = self.info.fib
         logger.debug(

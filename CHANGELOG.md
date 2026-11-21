@@ -1,3 +1,10 @@
+Unreleased
+==========
+
+  * Add password-free protection inspection with caller supplied policies and
+    a stable report schema for DOC, XLS, PPT and OOXML files
+    (`msoffcrypto.protection`).
+
 
 v6.1.0 / 2026-11-04
 ===================

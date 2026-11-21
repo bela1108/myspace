@@ -1,6 +1,14 @@
 msoffcrypto package
 ===================
 
+Protection inspection
+---------------------
+
+.. toctree::
+   :maxdepth: 1
+
+   msoffcrypto.protection
+
 Subpackages
 -----------
 

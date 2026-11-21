@@ -52,6 +52,20 @@ parser = argparse.ArgumentParser()
 group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument("-p", "--password", nargs="?", const="", dest="password", help="password text")
 group.add_argument("-t", "--test", dest="test_encrypted", action="store_true", help="test if the file is encrypted")
+group.add_argument(
+    "-r",
+    "--protection-report",
+    dest="protection_report",
+    nargs="+",
+    metavar="FILE",
+    type=argparse.FileType("rb"),
+    help="inspect protection records without a password (one or more files)",
+)
+parser.add_argument(
+    "--policy",
+    type=argparse.FileType("r"),
+    help="JSON policy used with --protection-report",
+)
 parser.add_argument("-e", dest="encrypt", action="store_true", help="encryption mode (default is false)")
 parser.add_argument("-v", dest="verbose", action="store_true", help="print verbose information")
 parser.add_argument("infile", nargs="?", type=argparse.FileType("rb"), help="input file")
@@ -66,6 +80,21 @@ def main():
         logging.basicConfig(level=logging.DEBUG, format="%(message)s")
         version = _get_version()
         logger.debug("Version: {}".format(version))
+
+    if args.protection_report:
+        import json
+
+        from msoffcrypto.protection import inspect_protection
+
+        from msoffcrypto.protection import build_report
+
+        policy = json.load(args.policy) if args.policy else None
+        if len(args.protection_report) == 1:
+            result = inspect_protection(args.protection_report[0], policy=policy)
+        else:
+            result = build_report(args.protection_report, policy=policy)
+        print(json.dumps(dict(result), ensure_ascii=False, indent=2))
+        return
 
     if args.test_encrypted:
         if not is_encrypted(args.infile):

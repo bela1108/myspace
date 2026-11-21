@@ -194,6 +194,45 @@ with open("plain.xlsx", "rb") as f:
 
 PRs are welcome!
 
+## Inspecting protection without a password
+
+Attachment intake and records-management workflows often need to classify a
+legacy Office file by the protection stored in it.  `inspect_protection()` reads
+the public protection header only: it never calls `load_key()` and never
+attempts decryption, so it also works when the password cannot be recovered.
+
+```python
+from msoffcrypto import ProtectionPolicy, build_report, inspect_protection
+
+policy = ProtectionPolicy(
+    min_key_size=128,
+    allowed_algorithms=["RC4", "AES"],
+    allowed_hash_algorithms=["SHA1", "SHA256", "SHA512"],
+)
+
+record = inspect_protection("legacy.doc", policy=policy)
+print(record["status"])   # plaintext / unknown / compliant / non_compliant
+print(record["action"])   # archive / supplement
+
+report = build_report(
+    ["legacy.doc", "legacy.xls", "legacy.ppt"],
+    policy=policy,
+)
+print(report.to_json(indent=2))
+```
+
+`unknown` means the protection type was recognized but a parameter needed by
+the policy could not be read.  `non_compliant` means a read parameter already
+proves that the policy is violated.  The same report schema is used for DOC,
+XLS, PPT and OOXML files, so records from different formats can be compared
+directly.  The CLI exposes the same password-free mode:
+
+```
+msoffcrypto-tool --protection-report legacy.doc
+msoffcrypto-tool --protection-report --policy policy.json legacy.xls
+msoffcrypto-tool --protection-report legacy.doc legacy.xls legacy.ppt
+```
+
 ## Tests
 
 With [coverage](https://github.com/nedbat/coveragepy) and [pytest](https://pytest.org/):

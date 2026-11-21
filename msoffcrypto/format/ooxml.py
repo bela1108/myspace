@@ -63,14 +63,15 @@ def _parseinfo_standard(ole):
 def _parseinfo_agile(ole):
     ole.seek(8)
     xml = parseString(ole.read())
-    keyDataSalt = base64.b64decode(
-        xml.getElementsByTagName("keyData")[0].getAttribute("saltValue")
-    )
-    keyDataHashAlgorithm = xml.getElementsByTagName("keyData")[0].getAttribute(
-        "hashAlgorithm"
-    )
-    keyDataBlockSize = int(
-        xml.getElementsByTagName("keyData")[0].getAttribute("blockSize")
+    keyData = xml.getElementsByTagName("keyData")[0]
+    keyDataSalt = base64.b64decode(keyData.getAttribute("saltValue"))
+    keyDataHashAlgorithm = keyData.getAttribute("hashAlgorithm")
+    keyDataBlockSize = int(keyData.getAttribute("blockSize"))
+    keyDataCipherAlgorithm = keyData.getAttribute("cipherAlgorithm")
+    keyDataKeyBits = (
+        int(keyData.getAttribute("keyBits"))
+        if keyData.getAttribute("keyBits")
+        else None
     )
     encryptedHmacKey = base64.b64decode(
         xml.getElementsByTagName("dataIntegrity")[0].getAttribute("encryptedHmacKey")
@@ -98,6 +99,17 @@ def _parseinfo_agile(ole):
     passwordSalt = base64.b64decode(password_node.getAttribute("saltValue"))
     passwordHashAlgorithm = password_node.getAttribute("hashAlgorithm")
     passwordKeyBits = int(password_node.getAttribute("keyBits"))
+    passwordCipherAlgorithm = password_node.getAttribute("cipherAlgorithm")
+    passwordSaltSize = (
+        int(password_node.getAttribute("saltSize"))
+        if password_node.getAttribute("saltSize")
+        else None
+    )
+    passwordBlockSize = (
+        int(password_node.getAttribute("blockSize"))
+        if password_node.getAttribute("blockSize")
+        else None
+    )
     info = {
         "keyDataSalt": keyDataSalt,
         "keyDataHashAlgorithm": keyDataHashAlgorithm,
@@ -111,6 +123,11 @@ def _parseinfo_agile(ole):
         "passwordSalt": passwordSalt,
         "passwordHashAlgorithm": passwordHashAlgorithm,
         "passwordKeyBits": passwordKeyBits,
+        "cipherAlgorithm": passwordCipherAlgorithm or keyDataCipherAlgorithm,
+        "keyDataCipherAlgorithm": keyDataCipherAlgorithm,
+        "keyDataKeyBits": keyDataKeyBits,
+        "passwordSaltSize": passwordSaltSize,
+        "passwordBlockSize": passwordBlockSize,
     }
     return info
 
@@ -122,9 +139,9 @@ def _parseinfo(ole):
     elif versionMajor in [2, 3, 4] and versionMinor == 2:  # Standard
         return "standard", _parseinfo_standard(ole)
     elif versionMajor in [3, 4] and versionMinor == 3:  # Extensible
-        raise exceptions.DecryptionError(
-            "Unsupported EncryptionInfo version (Extensible Encryption)"
-        )
+        # Keep the type available for metadata inspection.  Decryption still
+        # rejects it in load_key/decrypt because the format is unsupported.
+        return "extensible", {}
     raise exceptions.DecryptionError(
         "Unsupported EncryptionInfo version ({}:{})".format(versionMajor, versionMinor)
     )
@@ -175,12 +192,17 @@ class OOXMLFile(base.BaseOfficeFile):
             elif self.type == "standard":
                 self.keyTypes = ("password", "secret_key")
             elif self.type == "extensible":
-                pass
+                self.keyTypes = ()
         elif _is_ooxml(file):
             self.type = "plain"
             self.file = file
         else:
             raise exceptions.FileFormatError("Unsupported file format")
+
+    def protection_attributes(self):
+        from msoffcrypto.protection import ooxml_protection_attributes
+
+        return ooxml_protection_attributes(self)
 
     def load_key(
         self, password=None, private_key=None, secret_key=None, verify_password=False

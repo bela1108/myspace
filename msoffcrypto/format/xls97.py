@@ -471,6 +471,11 @@ class Xls97File(base.BaseOfficeFile):
             workbook=workbook,
         )
 
+    def protection_attributes(self):
+        from msoffcrypto.protection import xls97_protection_attributes
+
+        return xls97_protection_attributes(self)
+
     def __del__(self):
         """Destructor, closes opened stream."""
         if hasattr(self, "data") and self.data and self.data.workbook:

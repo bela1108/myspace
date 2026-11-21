@@ -543,6 +543,11 @@ class Ppt97File(base.BaseOfficeFile):
             powerpointdocument=powerpointdocument,
         )
 
+    def protection_attributes(self):
+        from msoffcrypto.protection import ppt97_protection_attributes
+
+        return ppt97_protection_attributes(self)
+
     def __del__(self):
         """Destructor, closes opened streams."""
         if hasattr(self, "data") and self.data:

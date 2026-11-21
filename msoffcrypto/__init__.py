@@ -3,6 +3,38 @@ import zipfile
 import olefile
 
 from msoffcrypto import exceptions
+from msoffcrypto.protection import (
+    ACTION_ARCHIVE,
+    ACTION_SUPPLEMENT,
+    EncryptionPolicy,
+    EncryptionRecord,
+    EncryptionReport,
+    EncryptionStatus,
+    Policy,
+    ProtectionInfo,
+    ProtectionPolicy,
+    ProtectionRecord,
+    ProtectionReport,
+    ProtectionResult,
+    ProtectionStatus,
+    Report,
+    apply_policy,
+    build_encryption_report,
+    build_report,
+    compare,
+    classify,
+    evaluate,
+    evaluate_record,
+    get_encryption_info,
+    get_protection_info,
+    inspect_encryption,
+    inspect_protection,
+    parse_cryptoapi_header,
+    parse_encryption_header,
+    protection_attributes,
+    record_from_attributes,
+    report,
+)
 
 
 def OfficeFile(file):
