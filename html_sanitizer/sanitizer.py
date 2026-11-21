@@ -1,12 +1,17 @@
 import re
 import unicodedata
 from collections import deque
+from dataclasses import dataclass
 
 import lxml.html
 import lxml.html.clean
 
 
-__all__ = ("Sanitizer",)
+__all__ = (
+    "OutputValidationError",
+    "PolicyViolation",
+    "Sanitizer",
+)
 
 
 def sanitize_href(href):
@@ -154,6 +159,7 @@ DEFAULT_SETTINGS = {
     "preserve_whitespace": {"pre"},
     "keep_typographic_whitespace": False,
     "drop_disallowed_contents": False,
+    "validate_output": False,
     "add_nofollow": False,
     "autolink": False,
     "embedded_hosts": set(),
@@ -180,6 +186,38 @@ def coerce_to_set(value):
     elif isinstance(value, tuple | list):
         return set(value)
     raise TypeError(f"Expected a set but got value {value!r} of type {type(value)}")
+
+
+@dataclass(frozen=True)
+class PolicyViolation:
+    """A single element or attribute rejected by the output policy."""
+
+    tag: str
+    rule: str
+    location: str
+    attribute: str | None = None
+
+    def __str__(self):
+        if self.attribute is not None:
+            return (
+                f"{self.location}: rule {self.rule!r} rejects attribute"
+                f" {self.attribute!r} on <{self.tag}> element"
+            )
+        return (
+            f"{self.location}: rule {self.rule!r} rejects <{self.tag}>"
+            " element"
+        )
+
+
+class OutputValidationError(ValueError):
+    """Raised when the final serialized DOM violates the output policy."""
+
+    def __init__(self, violations, *, label=None):
+        self.violations = list(violations)
+        self.label = label
+        result = f"result {label!r}" if label is not None else "the result"
+        details = "; ".join(str(violation) for violation in self.violations)
+        super().__init__(f"Withdrawing {result}: {details}")
 
 
 class Sanitizer:
@@ -440,5 +478,79 @@ class Sanitizer:
 
         # remove wrapping tag needed by XML parser
         html = re.sub(r"^<div>|</div>$", "", html)
+
+        if self.validate_output:
+            html = self.validate(html)
+
+        return html
+
+    @staticmethod
+    def _parse_fragment(html):
+        """Parse a serialized HTML fragment the same way ``sanitize`` does."""
+        try:
+            doc = lxml.html.fromstring("<div>%s</div>" % html)
+            lxml.html.tostring(doc, encoding="utf-8")
+        except Exception:  # noqa: BLE001 -- mirror sanitize()'s fallback
+            from lxml.html import soupparser  # noqa: PLC0415
+
+            doc = soupparser.fromstring("<div>%s</div>" % html)
+        return doc
+
+    def validate(self, html, *, label=None):
+        """
+        Validate a final, serialized HTML fragment against the output policy.
+
+        The fragment is serialized first and then reparsed, so validation
+        judges exactly the DOM that a consumer would parse from the final
+        output. Element and attribute permissions reuse the same ``tags`` and
+        ``attributes`` allowlists as sanitization itself. Comments and text
+        nodes are not elements and therefore never violate the policy.
+
+        Returns the fragment unchanged when it conforms, otherwise raises an
+        ``OutputValidationError``. ``label`` may be passed to identify the
+        extension or result which produced the fragment in error messages.
+        """
+        doc = self._parse_fragment(html)
+        tree = doc.getroottree()
+        wrapper = doc.find(".//div")
+        if wrapper is None:
+            wrapper = doc
+
+        violations = []
+        for element in wrapper.iterdescendants():
+            if not isinstance(element.tag, str):
+                # Comments and processing instructions carry no tag name and
+                # are not subject to the element/attribute allowlists.
+                continue
+
+            location = "line %s, %s" % (
+                element.sourceline if element.sourceline is not None else "?",
+                tree.getpath(element),
+            )
+
+            if element.tag not in self.tags:
+                violations.append(
+                    PolicyViolation(
+                        tag=element.tag,
+                        rule="tags",
+                        location=location,
+                    )
+                )
+                continue
+
+            allowed = self.attributes.get(element.tag, set())
+            for attribute in element.attrib:
+                if attribute not in allowed:
+                    violations.append(
+                        PolicyViolation(
+                            tag=element.tag,
+                            rule="attributes",
+                            location=location,
+                            attribute=attribute,
+                        )
+                    )
+
+        if violations:
+            raise OutputValidationError(violations, label=label)
 
         return html

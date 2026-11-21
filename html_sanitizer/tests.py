@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from .sanitizer import Sanitizer
+from .sanitizer import OutputValidationError, Sanitizer
 
 
 default_sanitizer = Sanitizer()
@@ -830,3 +830,107 @@ git commit
             ],
             sanitizer=sanitizer,
         )
+
+    def test_validate_comment_fixture_passes(self):
+        # An extension which only adds a plain comment produces a final DOM
+        # consisting of allowed elements plus a comment; comments are not
+        # elements and therefore pass the output policy unchanged.
+        sanitizer = Sanitizer()
+        fragment = "<p>Hello</p><!-- extension marker -->"
+
+        self.assertEqual(
+            sanitizer.validate(fragment, label="comment-extension"),
+            fragment,
+        )
+
+    def test_validate_unauthorized_attribute_fixture_rejected(self):
+        # A different extension enriches the serialized result with an
+        # attribute which is not part of the policy; its result is withdrawn.
+        sanitizer = Sanitizer()
+        fragment = "<p data-tracking-id=\"42\">Hello</p>"
+
+        with self.assertRaises(OutputValidationError) as ctx:
+            sanitizer.validate(fragment, label="rich-text-extension")
+
+        error = ctx.exception
+        self.assertEqual(error.label, "rich-text-extension")
+        self.assertEqual(len(error.violations), 1)
+        violation = error.violations[0]
+        self.assertEqual(violation.tag, "p")
+        self.assertEqual(violation.rule, "attributes")
+        self.assertEqual(violation.attribute, "data-tracking-id")
+        message = str(error)
+        self.assertIn("rich-text-extension", message)
+        self.assertIn("attributes", message)
+        self.assertIn("data-tracking-id", message)
+        self.assertIn("line 1", message)
+
+    def test_validate_rejects_disallowed_tag(self):
+        sanitizer = Sanitizer()
+
+        with self.assertRaises(OutputValidationError) as ctx:
+            sanitizer.validate("<p>ok</p><span>nope</span>", label="bad")
+
+        violation = ctx.exception.violations[0]
+        self.assertEqual(violation.tag, "span")
+        self.assertEqual(violation.rule, "tags")
+        self.assertIn("tags", str(ctx.exception))
+
+    def test_validate_uses_sanitizer_attribute_allowlist(self):
+        sanitizer = Sanitizer({"attributes": {"p": {"class"}}})
+
+        self.assertEqual(
+            sanitizer.validate("<p class=\"centered\">ok</p>"),
+            "<p class=\"centered\">ok</p>",
+        )
+
+        with self.assertRaises(OutputValidationError) as ctx:
+            sanitizer.validate("<p title=\"no\">ok</p>")
+        self.assertEqual(ctx.exception.violations[0].attribute, "title")
+
+    def test_validate_judges_reparsed_serialized_dom(self):
+        # Validation runs against the reparsed serialization, not an
+        # in-memory tree; the returned value is the untouched fragment.
+        sanitizer = Sanitizer()
+        fragment = "<p>Hello</p><strong>world</strong>"
+        self.assertIs(sanitizer.validate(fragment), fragment)
+
+    def test_validate_output_disabled_by_default(self):
+        # Existing pages keep their exact output when validation is off.
+        fragment = "<b>Keep</b> this <i>as is</i>"
+        self.assertEqual(
+            Sanitizer().sanitize(fragment),
+            "<strong>Keep</strong> this <em>as is</em>",
+        )
+
+    def test_sanitize_with_output_validation_keeps_compliant_output(self):
+        sanitizer = Sanitizer({"validate_output": True})
+        fragment = "<b>Keep</b> this <i>as is</i>"
+
+        # Same output as without validation; nothing is withdrawn.
+        self.assertEqual(
+            sanitizer.sanitize(fragment),
+            Sanitizer().sanitize(fragment),
+        )
+
+    def test_sanitize_with_output_validation_withdraws_tampered_result(self):
+        # Simulate an extension adding an unauthorized attribute after
+        # sanitization by validating the final serialized fragment itself.
+        sanitizer = Sanitizer({"validate_output": True})
+        final = sanitizer.sanitize("<p>Hello</p>") + "<p data-x=\"1\">x</p>"
+
+        with self.assertRaises(OutputValidationError) as ctx:
+            sanitizer.validate(final, label="tampered-extension")
+        self.assertEqual(ctx.exception.label, "tampered-extension")
+        self.assertEqual(ctx.exception.violations[0].rule, "attributes")
+
+    def test_validate_error_location_mentions_node_position(self):
+        sanitizer = Sanitizer()
+        fragment = "<p>first</p>\n<p onclick=\"track()\">second</p>"
+
+        with self.assertRaises(OutputValidationError) as ctx:
+            sanitizer.validate(fragment, label="locator")
+        message = str(ctx.exception)
+        self.assertIn("line 2", message)
+        self.assertIn("/p[2]", message)
+        self.assertIn("locator", message)

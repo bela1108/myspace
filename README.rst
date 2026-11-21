@@ -61,6 +61,7 @@ The default settings are::
         "preserve_whitespace": {"pre"},
         "keep_typographic_whitespace": False,
         "drop_disallowed_contents": False,
+        "validate_output": False,
         "add_nofollow": False,
         "autolink": False,
         "embedded_hosts": set(),
@@ -99,6 +100,18 @@ The keys' meaning is as follows:
   contents. By default, only the tags themselves are removed and their
   contents are kept. Element preprocessors run first, so e.g. ``b`` tags
   are still converted into ``strong`` tags instead of being dropped.
+- ``validate_output``: Run an additional output validation stage after
+  sanitization. The final serialized fragment is reparsed and every element
+  and attribute is checked against the same ``tags`` and ``attributes``
+  allowlists used during sanitization. Fragments which conform are returned
+  unchanged; non-conforming fragments raise an ``OutputValidationError``
+  whose message names the node position (line and path), the violated rule
+  (``tags`` or ``attributes``) and, optionally, the result being withdrawn.
+  Comments are not elements and therefore always pass. Disabled by default,
+  so existing output is not affected. Validation can also be invoked
+  directly through ``Sanitizer.validate(html, label=...)``, e.g. on the
+  final DOM handed back by an extension which adds its own rich text
+  annotations.
 - ``add_nofollow``: Whether to add ``rel="nofollow"`` to all links.
 - ``autolink``: Enable lxml_'s autolinker_. May be either a boolean or a
   dictionary; a dictionary is passed as keyword arguments to
@@ -145,6 +158,35 @@ An example for an even more restricted configuration might be::
 The rationale for such a restricted set of allowed tags (e.g. no
 images) is documented in the `design decisions`_ section of
 django-content-editor_'s documentation.
+
+Output validation
+=================
+
+Content services sometimes let extensions add their own rich text
+annotations after sanitization. The optional output validation stage
+judges the final, serialized DOM instead of the in-memory tree: the
+fragment is serialized, reparsed and then checked against the very same
+``tags`` and ``attributes`` allowlists, so an extension cannot smuggle
+unauthorized elements or attributes into the published result.
+
+Enable it per sanitizer, or call it explicitly::
+
+    >>> from html_sanitizer import Sanitizer
+    >>> from html_sanitizer.sanitizer import OutputValidationError
+    >>> sanitizer = Sanitizer({"validate_output": True})
+    >>> # Plain comments are not elements and pass the policy unchanged
+    >>> sanitizer.validate("<p>Hello</p><!-- extension marker -->", label="comments")
+    "<p>Hello</p><!-- extension marker -->"
+    >>> try:
+    ...     sanitizer.validate("<p data-tracking-id=42>Hello</p>", label="rich-text")
+    ... except OutputValidationError as exc:
+    ...     print(exc)
+    Withdrawing result 'rich-text': line 1, /html/body/div/p: rule 'attributes' rejects attribute 'data-tracking-id' on <p> element
+
+The error message identifies the withdrawn result (``label``), the node
+position (line and tree path) and the violated rule (``tags`` or
+``attributes``). Conforming fragments, including fragments which only
+add comments, are returned byte-for-byte unchanged.
 
 Django
 ======

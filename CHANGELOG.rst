@@ -5,6 +5,7 @@ Change log
 Next version
 ============
 
+- Added an optional output validation stage (``validate_output`` setting / ``Sanitizer.validate()``) which reparses the final serialized DOM and checks it against the same element and attribute allowlists. Violations raise ``OutputValidationError`` naming the node position, the violated rule and the withdrawn result.
 - Dropped support for Python < 3.10.
 - Added Python 3.14 and 3.15 to the CI matrix.
 
