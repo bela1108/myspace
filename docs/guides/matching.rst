@@ -243,3 +243,66 @@ Two constructor parameters control memory use for correlation state:
   correlation match to avoid unbounded memory growth on high-cardinality rules.
 * ``max_correlation_state`` (default ``None``, unlimited) — limits the total number of
   entries retained in the sliding window per group key.
+
+Semantic Reference Backend
+--------------------------
+
+:class:`~sigma.matching.SemanticReferenceBackend` is a deliberately small, in-memory
+semantic oracle for correlation migrations. It accepts the same
+:class:`~sigma.matching.Event` objects as :class:`~sigma.matching.SigmaMatcher`, but only
+implements ``event_count`` and ``temporal_ordered`` correlations. Use it to generate
+replayable expected results for synthetic events; it is not intended as a production
+streaming engine.
+
+.. code-block:: python
+
+    from sigma.matching import SemanticReferenceBackend
+
+    backend = SemanticReferenceBackend.from_yaml(rules_yaml)
+    report = backend.evaluate(events)
+
+    for hit in report.hits:
+        print(hit.rule.name, hit.group_values, hit.count)
+        for evidence in hit.evidence:
+            print(evidence.sequence, evidence.event.data, evidence.source_rules)
+
+    for group in report.group_counts:
+        print(group.rule.name, group.group_key, group.count)
+
+    report.assert_supported()
+
+Semantics are intentionally explicit:
+
+* **Window boundary.** For an anchor event at ``t``, the window is the closed interval
+  ``[t - timespan, t]``. An event exactly on the older boundary is included. The anchor event
+  is included as well. After the anchor advances, expired events are removed and known groups
+  remain in :attr:`~sigma.matching.SemanticReferenceReport.group_counts` with count ``0``.
+* **Input order.** Events must be supplied in non-decreasing timestamp order. An out-of-order
+  event raises :class:`~sigma.matching.SemanticReferenceError` instead of producing a count
+  that silently depends on arrival order.
+* **Ties.** Multiple events at the same timestamp are count-compatible: all of them contribute
+  to ``event_count``. They are not order-compatible: ``temporal_ordered`` requires each step to
+  use a distinct event with a strictly later timestamp. If several ordered witness chains exist,
+  the lexicographically earliest chain by input sequence is returned.
+* **Shared events.** ``event_count`` counts distinct input events, not base-rule matches. If one
+  event matches two referenced rules, it contributes one count, and its
+  :class:`~sigma.matching.SemanticEvidence` lists both source rules. Temporal witnesses never
+  reuse the same input event for two positions.
+* **Missing group keys.** Every field in ``group-by`` must exist in the event. A match missing
+  any group field is excluded from correlation state and appears in
+  :attr:`~sigma.matching.SemanticReferenceReport.skipped` with
+  :class:`~sigma.matching.GroupKeySkipReason.MISSING_FIELD`. An explicitly present ``None`` is a
+  group value, so it is not conflated with a missing field. Unhashable group values are also
+  skipped and marked.
+* **Unsupported operations.** Unordered ``temporal``, value-based correlations, extended
+  boolean conditions, event-count conditions with a field selector, non-default
+  ``temporal_ordered`` conditions, and nested correlation references are not evaluated. They
+  are listed in
+  :attr:`~sigma.matching.SemanticReferenceReport.unsupported` and
+  :meth:`~sigma.matching.SemanticReferenceReport.assert_supported` can be used as an assertion
+  in migration tests.
+
+Every hit and group count carries :class:`~sigma.matching.SemanticEvidence` containing the
+original :class:`~sigma.matching.Event` object and its zero-based input sequence. This keeps the
+group count, the hit condition, and the witness events independently inspectable when comparing
+an old and a replacement backend.

@@ -72,3 +72,51 @@ part of the public API, but are documented here for completeness.
    :members:
    :undoc-members:
    :show-inheritance:
+
+Semantic Reference Backend
+--------------------------
+
+.. autoclass:: sigma.matching.SemanticReferenceBackend
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: sigma.matching.SemanticReferenceReport
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: sigma.matching.SemanticCorrelationHit
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: sigma.matching.GroupCount
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: sigma.matching.SemanticEvidence
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: sigma.matching.SkippedMatch
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: sigma.matching.UnsupportedOperation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: sigma.matching.GroupKeySkipReason
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: sigma.matching.SemanticReferenceError
+   :members:
+   :undoc-members:
+   :show-inheritance:
