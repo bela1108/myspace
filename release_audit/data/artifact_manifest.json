@@ -1,0 +1,22 @@
+{
+  "manifest_id": "REL-2026.11",
+  "generated_by": "release-engineering",
+  "generated_at": "2026-11-18T03:00:00Z",
+  "description": "可发布载体清单（伪造示例数据），仅 channel=production 的构件纳入本次核对",
+  "artifacts": [
+    {
+      "artifact_id": "payments-api",
+      "version": "2.3.1",
+      "path": "dist/payments_api-2.3.1.tar.gz",
+      "built_at": "2026-10-18T09:30:00Z",
+      "channel": "production"
+    },
+    {
+      "artifact_id": "payments-worker",
+      "version": "2.3.1",
+      "path": "dist/payments_worker-2.3.1-py3-none-any.whl",
+      "built_at": "2026-10-18T09:41:00Z",
+      "channel": "production"
+    }
+  ]
+}

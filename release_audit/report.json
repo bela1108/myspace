@@ -1,0 +1,115 @@
+{
+  "manifest_id": "REL-2026.11",
+  "revocation_record": "REV-2026-11-20",
+  "scans": [
+    "scan-2026-09-10",
+    "scan-2026-11-05"
+  ],
+  "results": [
+    {
+      "label": "MK-01",
+      "artifact_id": "payments-api",
+      "file": "src/payments/config.py",
+      "line_number": 14,
+      "type": "Secret Keyword",
+      "alert_kind": "legacy",
+      "evidence_window": {
+        "first_seen": "2026-09-10T14:02:11Z",
+        "last_seen": "2026-11-05T10:48:53Z"
+      },
+      "seen_in_scans": [
+        "scan-2026-09-10",
+        "scan-2026-11-05"
+      ],
+      "revocation_window": {
+        "start": "2026-10-01T00:00:00Z",
+        "end": "2026-10-31T23:59:59Z"
+      },
+      "status": "confirmed",
+      "reason": "证据区间与吊销区间交叉，构件在标记停用后仍携带该标记"
+    },
+    {
+      "label": "MK-04",
+      "artifact_id": "payments-api",
+      "file": "src/payments/config.py",
+      "line_number": 27,
+      "type": "Base64 High Entropy String",
+      "alert_kind": "new",
+      "evidence_window": {
+        "first_seen": "2026-11-05T10:48:53Z",
+        "last_seen": "2026-11-05T10:48:53Z"
+      },
+      "seen_in_scans": [
+        "scan-2026-11-05"
+      ],
+      "status": "pending_review",
+      "reason": "缺来源：扫描证据缺少 source_commit，无法确认引入途径"
+    },
+    {
+      "label": "MK-02",
+      "artifact_id": "payments-worker",
+      "file": "src/worker/settings.py",
+      "line_number": 8,
+      "type": "Secret Keyword",
+      "alert_kind": "legacy",
+      "evidence_window": {
+        "first_seen": "2026-09-10T14:02:11Z",
+        "last_seen": "2026-11-05T10:48:53Z"
+      },
+      "seen_in_scans": [
+        "scan-2026-09-10",
+        "scan-2026-11-05"
+      ],
+      "revocation_window": {
+        "start": "2026-08-01T00:00:00Z",
+        "end": "2026-08-31T23:59:59Z"
+      },
+      "status": "pending_review",
+      "reason": "时间区间不交叉：告警证据区间与吊销区间无重叠，需人工复核"
+    },
+    {
+      "label": "MK-03",
+      "artifact_id": "payments-worker",
+      "file": "src/worker/settings.py",
+      "line_number": 19,
+      "type": "Base64 High Entropy String",
+      "alert_kind": "new",
+      "evidence_window": {
+        "first_seen": "2026-11-05T10:48:53Z",
+        "last_seen": "2026-11-05T10:48:53Z"
+      },
+      "seen_in_scans": [
+        "scan-2026-11-05"
+      ],
+      "revocation_window": {
+        "start": "2026-11-01T00:00:00Z",
+        "end": "2026-11-15T23:59:59Z"
+      },
+      "status": "confirmed",
+      "reason": "证据区间与吊销区间交叉，构件在标记停用后仍携带该标记"
+    },
+    {
+      "label": "MK-06",
+      "artifact_id": "payments-worker",
+      "file": "src/worker/utils.py",
+      "line_number": 5,
+      "type": "Base64 High Entropy String",
+      "alert_kind": "new",
+      "evidence_window": {
+        "first_seen": "2026-11-05T10:48:53Z",
+        "last_seen": "2026-11-05T10:48:53Z"
+      },
+      "seen_in_scans": [
+        "scan-2026-11-05"
+      ],
+      "status": "out_of_scope",
+      "reason": "标记不在吊销记录中，仅登记不下结论"
+    }
+  ],
+  "not_detected": [
+    {
+      "label": "MK-05",
+      "status": "not_detected"
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "scan_id": "scan-2026-11-05",
+  "tool": "detect-secrets",
+  "tool_version": "1.5.0",
+  "generated_at": "2026-11-05T10:48:53Z",
+  "note": "本次发布审核的扫描结果，hashed_secret 为 detect-secrets 原生哈希，marker_token 为调用方不透明标记",
+  "findings": [
+    {
+      "artifact_id": "payments-api",
+      "file": "src/payments/config.py",
+      "line_number": 14,
+      "type": "Secret Keyword",
+      "hashed_secret": "1f3870be274f6c49b3e31a0c6728957f",
+      "marker_token": "opaque://marker/7f3a9c21",
+      "source_commit": "a1b2c3d",
+      "source_committed_at": "2026-08-22T10:11:00Z"
+    },
+    {
+      "artifact_id": "payments-api",
+      "file": "src/payments/config.py",
+      "line_number": 27,
+      "type": "Base64 High Entropy String",
+      "hashed_secret": "7d793037a0760186574b0282f2f435e7",
+      "marker_token": "opaque://marker/d9e2bb10",
+      "source_commit": null,
+      "source_committed_at": null
+    },
+    {
+      "artifact_id": "payments-worker",
+      "file": "src/worker/settings.py",
+      "line_number": 8,
+      "type": "Secret Keyword",
+      "hashed_secret": "5d41402abc4b2a76b9719d911017c592",
+      "marker_token": "opaque://marker/b28e04d7",
+      "source_commit": "e4f5a6b",
+      "source_committed_at": "2026-07-30T16:40:00Z"
+    },
+    {
+      "artifact_id": "payments-worker",
+      "file": "src/worker/settings.py",
+      "line_number": 19,
+      "type": "Base64 High Entropy String",
+      "hashed_secret": "2c1743a391305fbf367df8e4f069f9f9",
+      "marker_token": "opaque://marker/c41f77aa",
+      "source_commit": "i7j8k9l",
+      "source_committed_at": "2026-11-02T08:15:00Z"
+    },
+    {
+      "artifact_id": "payments-worker",
+      "file": "src/worker/utils.py",
+      "line_number": 5,
+      "type": "Base64 High Entropy String",
+      "hashed_secret": "98f13708210194c475687be6106a3b84",
+      "marker_token": "opaque://marker/99aa1122",
+      "source_commit": "m0n1o2p",
+      "source_committed_at": "2026-10-29T12:00:00Z"
+    }
+  ]
+}
