@@ -157,6 +157,7 @@ links to the source for the various pre-defined type classes.
 
  - [Universal Types with BER/DER Decoder and DER Encoder](docs/universal_types.md)
  - [PEM Encoder and Decoder](docs/pem.md)
+ - [PKCS#12 Protection Inventory](docs/pkcs12_inventory.md)
 
 ### Reference
 

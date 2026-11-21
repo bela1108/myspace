@@ -10,6 +10,9 @@ ASN.1 type classes for PKCS#12 files. Exports the following items:
  - SecretBag()
 
 Other type classes are defined that help compose the types listed above.
+
+Read-only protection inventories and batch governance reports are provided by
+asn1crypto.pkcs12_audit, and are also available via Pfx.inventory().
 """
 
 from __future__ import unicode_literals, division, absolute_import, print_function
@@ -119,6 +122,36 @@ class Pfx(Sequence):
             self._authenticated_safe = AuthenticatedSafe.load(content.native)
         return self._authenticated_safe
 
+    def inventory(self, policy=None):
+        """
+        Builds a read-only, layer-aware protection inventory for this archive.
+
+        No decryption, password handling or MAC validation is performed.
+
+        :param policy:
+            None for the default policy, or a dict of audit thresholds
+
+        :return:
+            A Pkcs12Inventory instance
+        """
+
+        from .pkcs12_audit import inventory_pfx
+        return inventory_pfx(self, policy=policy)
+
+    def audit(self, policy=None):
+        """
+        Alias for Pfx.inventory().
+        """
+
+        return self.inventory(policy=policy)
+
+    def protection_inventory(self, policy=None):
+        """
+        Alias for Pfx.inventory().
+        """
+
+        return self.inventory(policy=policy)
+
 
 class AuthenticatedSafe(SequenceOf):
     _child_spec = ContentInfo
@@ -191,3 +224,50 @@ class SafeBag(Sequence):
 
 
 SafeContents._child_spec = SafeBag
+
+
+def inventory(value, policy=None):
+    """
+    Builds a read-only, layer-aware protection inventory for a PKCS#12 archive.
+
+    :param value:
+        A Pfx object, DER bytes, a file-like object or a filesystem path
+
+    :param policy:
+        None for the default policy, or a dict of audit thresholds
+
+    :return:
+        A Pkcs12Inventory instance
+    """
+
+    from .pkcs12_audit import inventory as _inventory
+    return _inventory(value, policy=policy)
+
+
+def governance_report(archives, *extra, **kwargs):
+    """
+    Builds a batch governance report that binds every conclusion to the
+    archive layer where the observed protection is applied.
+
+    :param archives:
+        A Pfx, DER bytes, path, inventory, or a list/tuple of those values
+
+    :param extra:
+        Additional archives
+
+    :param kwargs:
+        policy - None for the default policy, or a dict of audit thresholds
+        names - an optional list of archive names
+
+    :return:
+        An OrderedDict containing layers_to_change and summary
+    """
+
+    from .pkcs12_audit import governance_report as _governance_report
+    return _governance_report(archives, *extra, **kwargs)
+
+
+audit = inventory
+analyze = inventory
+inspect = inventory
+protection_inventory = inventory
