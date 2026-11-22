@@ -112,6 +112,30 @@ Windows Shortcut Information:
 }
 ```
 
+## Offline lineage reconstruction
+
+The `LnkParse3.lineage` module correlates the current (droid) and original
+(birth droid) identifiers of the `DISTRIBUTED_LINK_TRACKER_BLOCK` across
+several samples and combines them with caller-supplied context (collection
+order, hardware generation) to propose a traceable migration/copy lineage.
+Identifier matches are the only evidence that creates an edge; collection
+order, hardware generation and header timestamps only constrain it. Shared
+identifiers may stem from snapshot reuse, so equally supported predecessors
+are kept as parallel branches, and every exported edge carries its
+provenance for review.
+
+```python
+>>> from LnkParse3.lineage import extract_identity, build_lineage
+>>> identities = [
+...     extract_identity(path="backup1.lnk", collection_order=1, hardware_generation=1),
+...     extract_identity(path="migrated.lnk", collection_order=2, hardware_generation=2),
+... ]
+>>> lineage = build_lineage(identities)
+>>> lineage.parallel_predecessors()
+{...}
+>>> lineage.export("lineage.json")  # edges with provenance
+```
+
 # Extracted data
 
 List of data in LNK structure and their current status of implementation.
