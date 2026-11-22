@@ -1,0 +1,232 @@
+{
+  "advisory": {
+    "advisory_id": "CVE-2026-0001",
+    "applies_from": "2026-09-01T00:00:00+00:00",
+    "applies_until": "2026-10-01T00:00:00+00:00",
+    "description": "Withdrawn WebLogic 12.2.1.3 advisory under re-review.",
+    "retracted_at": "2026-10-03T00:00:00+00:00"
+  },
+  "as_of": "2026-11-01T00:00:00+00:00",
+  "assets": [
+    {
+      "asset_id": "wls-01",
+      "basis": [
+        "historical_match",
+        "verified_replacement"
+      ],
+      "family": "oracle_weblogic",
+      "family_coverage_complete": true,
+      "latest_match": null,
+      "manifest_complete": true,
+      "matches": [
+        {
+          "cpe": "cpe:2.3:a:oracle:weblogic_server:12.2.1.3:*:*:*:*:*:*:*",
+          "observed_at": "2026-09-15T00:00:00+00:00",
+          "source": "pre-retraction CMDB snapshot",
+          "within_applicability_window": true
+        }
+      ],
+      "observations_considered": [
+        {
+          "cpe": "cpe:2.3:a:oracle:weblogic_server:12.2.1.3:*:*:*:*:*:*:*",
+          "observed_at": "2026-09-15T00:00:00+00:00",
+          "source": "pre-retraction CMDB snapshot"
+        },
+        {
+          "cpe": "cpe:2.3:a:oracle:weblogic_server:12.2.1.4:*:*:*:*:*:*:*",
+          "observed_at": "2026-10-20T00:00:00+00:00",
+          "source": "post-retraction CMDB snapshot"
+        }
+      ],
+      "reasons": [
+        {
+          "code": "historical_match",
+          "evidence": "cpe:2.3:a:oracle:weblogic_server:12.2.1.3:*:*:*:*:*:*:*",
+          "message": "inventory evidence contains at least one CPE matching the advisory condition"
+        },
+        {
+          "code": "verified_replacement",
+          "evidence": "CHG-4711 / signed install receipt",
+          "message": "verified replacement evidence shows the affected component was replaced at 2026-10-18T00:00:00+00:00"
+        }
+      ],
+      "replacement_evidence": {
+        "asset_id": "wls-01",
+        "evidence_ref": "CHG-4711 / signed install receipt",
+        "family": null,
+        "installed_cpe": "cpe:2.3:a:oracle:weblogic_server:12.2.1.4:*:*:*:*:*:*:*",
+        "removed_cpe": "cpe:2.3:a:oracle:weblogic_server:12.2.1.3:*:*:*:*:*:*:*",
+        "replaced_at": "2026-10-18T00:00:00+00:00",
+        "verified": true
+      },
+      "status": "closed",
+      "status_label": "confirmed_closed"
+    },
+    {
+      "asset_id": "wls-02",
+      "basis": [
+        "historical_match",
+        "cpe_match"
+      ],
+      "family": "oracle_weblogic",
+      "family_coverage_complete": true,
+      "latest_match": {
+        "cpe": "cpe:2.3:a:oracle:weblogic_server:12.2.1.3:*:*:*:*:*:*:*",
+        "observed_at": "2026-10-20T00:00:00+00:00",
+        "source": "post-retraction CMDB snapshot",
+        "within_applicability_window": false
+      },
+      "manifest_complete": true,
+      "matches": [
+        {
+          "cpe": "cpe:2.3:a:oracle:weblogic_server:12.2.1.3:*:*:*:*:*:*:*",
+          "observed_at": "2026-09-15T00:00:00+00:00",
+          "source": "pre-retraction CMDB snapshot",
+          "within_applicability_window": true
+        },
+        {
+          "cpe": "cpe:2.3:a:oracle:weblogic_server:12.2.1.3:*:*:*:*:*:*:*",
+          "observed_at": "2026-10-20T00:00:00+00:00",
+          "source": "post-retraction CMDB snapshot",
+          "within_applicability_window": false
+        }
+      ],
+      "observations_considered": [
+        {
+          "cpe": "cpe:2.3:a:oracle:weblogic_server:12.2.1.3:*:*:*:*:*:*:*",
+          "observed_at": "2026-09-15T00:00:00+00:00",
+          "source": "pre-retraction CMDB snapshot"
+        },
+        {
+          "cpe": "cpe:2.3:a:oracle:weblogic_server:12.2.1.3:*:*:*:*:*:*:*",
+          "observed_at": "2026-10-20T00:00:00+00:00",
+          "source": "post-retraction CMDB snapshot"
+        }
+      ],
+      "reasons": [
+        {
+          "code": "historical_match",
+          "evidence": "cpe:2.3:a:oracle:weblogic_server:12.2.1.3:*:*:*:*:*:*:*",
+          "message": "inventory evidence contains at least one CPE matching the advisory condition"
+        },
+        {
+          "code": "cpe_match",
+          "evidence": "cpe:2.3:a:oracle:weblogic_server:12.2.1.3:*:*:*:*:*:*:*",
+          "message": "the latest observation still matches the advisory condition"
+        }
+      ],
+      "replacement_evidence": null,
+      "status": "affected",
+      "status_label": "still_affected"
+    },
+    {
+      "asset_id": "wls-03",
+      "basis": [
+        "incomplete_manifest"
+      ],
+      "family": "oracle_weblogic",
+      "family_coverage_complete": true,
+      "latest_match": null,
+      "manifest_complete": false,
+      "matches": [],
+      "observations_considered": [
+        {
+          "cpe": "cpe:2.3:o:redhat:enterprise_linux:8:*:*:*:*:*:*:*",
+          "observed_at": "2026-10-20T00:00:00+00:00",
+          "source": "partial package inventory"
+        }
+      ],
+      "reasons": [
+        {
+          "code": "incomplete_manifest",
+          "evidence": "only 1 of 3 package sources submitted",
+          "message": "the asset manifest is incomplete; a non-match cannot prove the component is absent"
+        }
+      ],
+      "replacement_evidence": null,
+      "status": "insufficient_evidence",
+      "status_label": "missing_evidence"
+    }
+  ],
+  "excluded_assets": [],
+  "family_exclusions": [
+    {
+      "basis": {
+        "code": "family_excluded_with_proof",
+        "evidence": "signed software inventory export 2026-10-21",
+        "message": "inventory coverage for family 'apache_log4j' is complete"
+      },
+      "coverage_complete": true,
+      "excluded": true,
+      "family": "apache_log4j"
+    },
+    {
+      "basis": {
+        "code": "family_exclusion_unproven",
+        "evidence": "2 of 3 collectors reported; one host missing",
+        "message": "inventory coverage for family 'openssl' is incomplete; a non-match cannot exclude it"
+      },
+      "coverage_complete": false,
+      "excluded": false,
+      "family": "openssl"
+    }
+  ],
+  "provable_scope": {
+    "confirmed_closed": [
+      "wls-01"
+    ],
+    "excluded_families": [
+      "apache_log4j"
+    ],
+    "insufficient_evidence": [
+      "wls-03"
+    ],
+    "missing_evidence": [
+      "wls-03"
+    ],
+    "still_affected": [
+      "wls-02"
+    ],
+    "unproven_exclusions": [
+      "openssl"
+    ]
+  },
+  "scope": {
+    "approved_families": [
+      "oracle_weblogic",
+      "apache_log4j",
+      "openssl"
+    ],
+    "coverage": {
+      "apache_log4j": {
+        "complete": true,
+        "evidence": "signed software inventory export 2026-10-21",
+        "observed_assets": []
+      },
+      "openssl": {
+        "complete": false,
+        "evidence": "2 of 3 collectors reported; one host missing",
+        "observed_assets": []
+      },
+      "oracle_weblogic": {
+        "complete": true,
+        "evidence": "CMDB export 2026-10-21 covers all WebLogic hosts",
+        "observed_assets": []
+      }
+    },
+    "requested_exclusions": [
+      "apache_log4j",
+      "openssl"
+    ]
+  },
+  "summary": {
+    "affected": 1,
+    "closed": 1,
+    "insufficient_evidence": 1
+  },
+  "summary_by_label": {
+    "confirmed_closed": 1,
+    "missing_evidence": 1,
+    "still_affected": 1
+  }
+}

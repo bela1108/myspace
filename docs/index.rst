@@ -23,6 +23,7 @@ Contents:
    model
    install
    examples
+   retraction
    issues
    bugtracker
    todo

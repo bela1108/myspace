@@ -116,7 +116,7 @@ class CPELanguage2_3(CPELanguage):
         return False
 
     @classmethod
-    def _ocilcheck(location, ocil_id):
+    def _ocilcheck(cls, location, ocil_id):
         """
         Perform an OCIL check.
 
@@ -130,7 +130,7 @@ class CPELanguage2_3(CPELanguage):
         raise NotImplementedError(errmsg)
 
     @classmethod
-    def _ovalcheck(location, oval_id):
+    def _ovalcheck(cls, location, oval_id):
         """
         Perform an OVAL check.
 
@@ -290,7 +290,7 @@ class CPELanguage2_3(CPELanguage):
 
         # Identify a check of CPE names (OVAL, OCIL...)
         elif cpel_dom.nodeName == TAG_CHECK_CPE:
-            return CPELanguage2_3._check_fact_ref_Eval(cpel_dom)
+            return CPELanguage2_3._check_fact_ref_eval(cpel_dom)
 
         # Identify a logical operator element
         elif cpel_dom.nodeName == TAG_LOGITEST:
