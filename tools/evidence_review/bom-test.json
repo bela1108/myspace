@@ -1,0 +1,58 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "serialNumber": "urn:uuid:8f2b3c4d-5e6f-7081-92a3-b4c5d6e7f809",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-11-21T09:30:00Z",
+    "lifecycles": [
+      { "phase": "build" }
+    ],
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "name": "testlab-fixture-scanner",
+          "version": "0.9.1",
+          "supplier": { "name": "TestLab QA" }
+        }
+      ]
+    },
+    "properties": [
+      { "name": "cdx:evidence:role", "value": "test" },
+      { "name": "cdx:evidence:environment", "value": "test" }
+    ]
+  },
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/libalpha@1.4.2",
+      "name": "libalpha",
+      "version": "1.4.2",
+      "purl": "pkg:pypi/libalpha@1.4.2",
+      "hashes": [
+        { "alg": "SHA-256", "content": "9f2c4d8a1b3e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeef" }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/libbeta@2.0.0",
+      "name": "libbeta",
+      "version": "2.0.0",
+      "purl": "pkg:pypi/libbeta@2.0.0",
+      "hashes": [
+        { "alg": "SHA-256", "content": "1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809" }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/libgamma@9.9.9",
+      "name": "libgamma",
+      "version": "9.9.9",
+      "purl": "pkg:pypi/libgamma@9.9.9",
+      "hashes": [
+        { "alg": "SHA-256", "content": "ffeeddccbbaa99887766554433221100ffeeddccbbaa99887766554433221100" }
+      ]
+    }
+  ]
+}
