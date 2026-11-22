@@ -181,6 +181,37 @@ Circumstances that will result in strictness warnings include:
     * Writing EPB/SPB/PB/ISB before writing any IDBs
 
 
+Forensic pairing of two capture ends
+====================================
+
+The read-only :mod:`pcapng.pairing` module compares observations from two ends
+of the same link.  The caller specifies the direction labels and a finite
+timestamp window; matching uses the original packet length and the complete
+captured common prefix rather than packet-header similarity alone.
+
+.. code-block:: python
+
+    from pcapng.pairing import pair_pcapng
+
+    report = pair_pcapng(
+        "left.pcapng",
+        "right.pcapng",
+        left_direction="outbound",
+        right_direction="inbound",
+        max_time_delta=0.010,
+    )
+
+    for pair in report.pairs:
+        for truncation in pair.truncations:
+            print(truncation.side, truncation.offset)
+
+Many-to-one candidates, repeated prefixes, and differing payloads stay in
+``report.unresolved`` instead of being paired.  Different truncation offsets
+are reported on both sides; two captures truncated at exactly the same offset
+remain unresolved unless identical-partial pairing is explicitly allowed.
+See ``examples/pair_captures.py`` for a JSON-report CLI.
+
+
 Creating a release
 ==================
 

@@ -1,6 +1,12 @@
 History
 #######
 
+Unreleased
+==========
+
+- Add read-only forensic pairing for the two ends of a captured link, including
+  finite time windows, mutually unique prefix matching, and truncation offsets.
+
 2.1.1
 =====
 

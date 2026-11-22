@@ -22,6 +22,18 @@ class PcapngDumpError(PcapngException):
     pass
 
 
+class PairingError(PcapngException):
+    """Base for errors raised by the forensic pairing interface"""
+
+    pass
+
+
+class PairingInputError(PairingError, ValueError):
+    """Indicate invalid input to the forensic pairing interface"""
+
+    pass
+
+
 class PcapngStrictnessError(PcapngException):
     """Indicate a condition about poorly formed pcapng files"""
 
