@@ -40,8 +40,30 @@ class TextProcessor:
         yield from _chars_to_string(chars)
 
     def read_string(self, binary):
-        it = self.read_strings(binary)
-        return next(it)
+        text, _, _ = self.read_string_with_status(binary)
+        return text
+
+    def read_string_with_status(self, binary):
+        """Read one code-page string and report how certain its decoding is.
+
+        The returned status is one of ``exact``, ``utf8_fallback`` or
+        ``replacement``.  A fallback or replacement decoding is deliberately
+        distinguishable from an exact decoding so callers can keep uncertain
+        values out of material that leaves the evidence system.
+        """
+        raw = self._first_ansi_string(binary)
+        try:
+            return raw.decode(self.cp), "exact", len(raw)
+        except UnicodeDecodeError:
+            # Keep the historical UTF-8 fallback, but do not claim it is
+            # certain: the bytes did not decode with the declared code page.
+            try:
+                return raw.decode("utf-8"), "utf8_fallback", len(raw)
+            except UnicodeDecodeError as e:
+                string = raw.decode(self.cp, errors="replace")
+                msg = f"Error while decoding string `{string}` ({e})"
+                warnings.warn(msg)
+                return string, "replacement", len(raw)
 
     def read_unicode_strings(self, binary):
         chars = []
@@ -66,8 +88,33 @@ class TextProcessor:
         yield from _chars_to_string(chars)
 
     def read_unicode_string(self, binary):
-        it = self.read_unicode_strings(binary)
-        return next(it)
+        text, _, _ = self.read_unicode_string_with_status(binary)
+        return text
+
+    def read_unicode_string_with_status(self, binary):
+        """Read one UTF-16LE string and report decoding certainty."""
+        raw = self._first_unicode_string(binary)
+        try:
+            return raw.decode("utf-16le"), "exact", len(raw)
+        except UnicodeDecodeError as e:
+            string = raw.decode("utf-16le", errors="replace")
+            msg = f"Error while decoding string `{string}` ({e})"
+            warnings.warn(msg)
+            return string, "replacement", len(raw)
+
+    @staticmethod
+    def _first_ansi_string(binary):
+        end = binary.find(b"\x00")
+        if end == -1:
+            return binary
+        return binary[:end]
+
+    @staticmethod
+    def _first_unicode_string(binary):
+        for index in range(0, len(binary) - 1, 2):
+            if binary[index : index + 2] == b"\x00\x00":
+                return binary[:index]
+        return binary
 
     @staticmethod
     def _2bytes_each(binary):

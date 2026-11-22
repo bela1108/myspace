@@ -112,6 +112,38 @@ Windows Shortcut Information:
 }
 ```
 
+# Read-only evidence excerpts
+
+`LnkFile.get_excerpt()` builds a read-only report that keeps display text,
+target text and ExtraData device metadata separate. Each field carries an
+absolute `offset`, a `length`, an `index` alias, a raw-byte digest and a
+decoding certainty value, so a custodian can re-read the original bytes.
+
+```python
+>>> import LnkParse3
+>>> with open(tests/samples/microsoft_example, rb) as indata:
+...     lnk = LnkParse3.lnk_file(indata)
+...     excerpt = lnk.get_excerpt(case_number=CASE-2026-001)
+>>> excerpt.external          # approved display text plus the case number
+>>> excerpt.fields[relative_path].offset
+>>> excerpt.raw_bytes(relative_path)
+>>> excerpt.verify()          # re-read every reported text span
+```
+
+Disclosure is decided per field identity. A device field that happens to
+contain the same string as the display label is still withheld. The default
+policy releases display text only; target text and device metadata remain
+available in the internal report for the custodian. Values decoded with a
+fallback or replacement character are recorded as uncertain and are never
+released to `excerpt.external`.
+
+Use `approved_fields` to approve individual fields or aliases. Approved target
+text can be released; device metadata requires both approval and the explicit
+`include_device=True` switch. `external_only_display=True` restricts release to
+the display-text category. The CLI exposes the same operation with `--excerpt`,
+`--external`, `--case-number`, `--display-label` and repeatable
+`--approved-field` options.
+
 # Extracted data
 
 List of data in LNK structure and their current status of implementation.

@@ -23,10 +23,11 @@ HasLinkTargetIDList bit (LinkFlags section 2.1.1) in the ShellLinkHeader.
 class LnkTargets:
     SIZE_OF_ID_LIST_SIZE = 2
 
-    def __init__(self, indata=None, cp=None):
+    def __init__(self, indata=None, cp=None, base_offset=0):
         self._targets = {}
         self.cp = cp
         self._raw = indata
+        self.base_offset = base_offset
 
         start = self.SIZE_OF_ID_LIST_SIZE
         end = self.size()
@@ -68,6 +69,7 @@ class LnkTargets:
         --------------------------------
         """
         rest = self._raw_targets
+        consumed = 0
         while rest:
             factory = TargetFactory(indata=rest)
             target_class = factory.target_class()
@@ -76,9 +78,14 @@ class LnkTargets:
                 # Empty or unknown target object.
                 break
 
-            target = target_class(indata=rest, cp=self.cp)
+            target = target_class(
+                indata=rest,
+                cp=self.cp,
+                base_offset=self.base_offset + self.SIZE_OF_ID_LIST_SIZE + consumed,
+            )
 
             size = factory.item_size()
+            consumed += size
             rest = rest[size:]
             yield target
 

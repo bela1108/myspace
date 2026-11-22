@@ -66,6 +66,7 @@ class LnkFile:
         # Parse header
         self.header = LnkHeader(indata=self.indata)
         index += self.header.size()
+        self._header_index = 0
 
         # XXX: json
         self._target_index = index + 2
@@ -73,25 +74,44 @@ class LnkFile:
         # Parse ID List
         self.targets = None
         if self.has_target_id_list():
-            self.targets = LnkTargets(indata=self.indata[index:], cp=self.cp)
+            self.targets = LnkTargets(
+                indata=self.indata[index:],
+                cp=self.cp,
+                base_offset=index,
+            )
             index += self.targets.size()
 
         # Parse Link Info
         self.info = None
+        self._link_info_index = index
         if self.has_link_info() and not self.force_no_link_info():
-            info = LnkInfo(indata=self.indata[index:], cp=self.cp)
+            info = LnkInfo(indata=self.indata[index:], cp=self.cp, base_offset=index)
             info_class = InfoFactory(info).info_class()
             if info_class:
-                self.info = info_class(indata=self.indata[index:], cp=self.cp)
+                self.info = info_class(
+                    indata=self.indata[index:],
+                    cp=self.cp,
+                    base_offset=index,
+                )
                 index += self.info.size()
 
         # Parse String Data
-        self.string_data = StringData(self, indata=self.indata[index:], cp=self.cp)
+        self._string_data_index = index
+        self.string_data = StringData(
+            self,
+            indata=self.indata[index:],
+            cp=self.cp,
+            base_offset=index,
+        )
         index += self.string_data.size()
 
         # Parse Extra Data
+        self._extra_data_index = index
         self.extras = ExtraData(
-            indata=self.indata[index:], cp=self.cp, allow_terminal_blocks=self.allow_terminal_blocks
+            indata=self.indata[index:],
+            cp=self.cp,
+            allow_terminal_blocks=self.allow_terminal_blocks,
+            base_offset=index,
         )
         index += self.extras.size()
 
@@ -344,6 +364,57 @@ class LnkFile:
 
         return res
 
+    def excerpt(self, *args, **kwargs):
+        """Return a read-only, provenance-aware excerpt of this shortcut."""
+        from LnkParse3.excerpt import build_excerpt
+
+        return build_excerpt(self, *args, **kwargs)
+
+    def get_excerpt(self, *args, **kwargs):
+        return self.excerpt(*args, **kwargs)
+
+    def read_only_excerpt(self, *args, **kwargs):
+        return self.excerpt(*args, **kwargs)
+
+    def readonly_excerpt(self, *args, **kwargs):
+        return self.excerpt(*args, **kwargs)
+
+    def disclosure_report(self, *args, **kwargs):
+        return self.excerpt(*args, **kwargs)
+
+    def external_excerpt(self, *args, **kwargs):
+        return self.excerpt(*args, **kwargs).external
+
+    def get_external_excerpt(self, *args, **kwargs):
+        return self.external_excerpt(*args, **kwargs)
+
+    def export_excerpt(self, *args, **kwargs):
+        return self.external_excerpt(*args, **kwargs)
+
+    def external_report(self, *args, **kwargs):
+        return self.external_excerpt(*args, **kwargs)
+
+    def to_excerpt(self, *args, **kwargs):
+        return self.excerpt(*args, **kwargs)
+
+    def create_excerpt(self, *args, **kwargs):
+        return self.excerpt(*args, **kwargs)
+
+    def extract_excerpt(self, *args, **kwargs):
+        return self.excerpt(*args, **kwargs)
+
+    def make_excerpt(self, *args, **kwargs):
+        return self.excerpt(*args, **kwargs)
+
+    def get_report(self, *args, **kwargs):
+        return self.excerpt(*args, **kwargs)
+
+    def get_disclosure_report(self, *args, **kwargs):
+        return self.excerpt(*args, **kwargs)
+
+    def print_excerpt(self, external=False, **kwargs):
+        self.excerpt(**kwargs).print_json(external=external)
+
 
 def main():
     arg_parser = argparse.ArgumentParser(description=__description__)
@@ -370,11 +441,46 @@ def main():
         action="store_true",
         help="print all extracted data (i.e. offsets and sizes)",
     )
+    arg_parser.add_argument(
+        "--excerpt",
+        action="store_true",
+        help="print a read-only, provenance-aware disclosure excerpt",
+    )
+    arg_parser.add_argument(
+        "--external",
+        action="store_true",
+        help="with --excerpt, print only material approved for external release",
+    )
+    arg_parser.add_argument(
+        "--case-number",
+        dest="case_number",
+        default=None,
+        help="case file number to attach to an excerpt",
+    )
+    arg_parser.add_argument(
+        "--display-label",
+        dest="display_label",
+        default=None,
+        help="display label to attach to an excerpt",
+    )
+    arg_parser.add_argument(
+        "--approved-field",
+        dest="approved_fields",
+        action="append",
+        default=None,
+        help="approve one field, alias, or category for an excerpt (repeatable)",
+    )
     args = arg_parser.parse_args()
 
     with open(args.file, "rb") as file:
         lnk = LnkFile(fhandle=file, cp=args.cp)
-        if args.target:
+        if args.excerpt:
+            lnk.excerpt(
+                case_number=args.case_number,
+                display_label=args.display_label,
+                approved_fields=args.approved_fields,
+            ).print_json(external=args.external)
+        elif args.target:
             lnk.print_shortcut_target(pjson=args.json)
         elif args.json:
             lnk.print_json(args.print_all)

@@ -35,10 +35,11 @@ class LnkTargetBase:
 
     SIZE_OF_TARGET_SIZE = 2
 
-    def __init__(self, indata=None, cp=None):
+    def __init__(self, indata=None, cp=None, base_offset=0):
         self._target = {}
         self.cp = cp
         self._raw = indata
+        self.base_offset = base_offset
 
         self.text_processor = TextProcessor(cp=self.cp)
 

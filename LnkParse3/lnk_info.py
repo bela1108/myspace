@@ -53,8 +53,9 @@ ShellLinkHeader.
 
 
 class LnkInfo:
-    def __init__(self, indata=None, cp=None):
+    def __init__(self, indata=None, cp=None, base_offset=0):
         self._raw = indata
+        self.base_offset = base_offset
         self.text_processor = TextProcessor(cp=cp)
 
     def size(self):

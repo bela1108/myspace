@@ -14,10 +14,11 @@ A structure consisting of zero or more property data blocks followed by a termin
 
 
 class ExtraData:
-    def __init__(self, indata=None, cp=None, allow_terminal_blocks=True):
+    def __init__(self, indata=None, cp=None, allow_terminal_blocks=True, base_offset=0):
         self.cp = cp
         self._raw = indata
         self.allow_terminal_blocks = allow_terminal_blocks
+        self.base_offset = base_offset
 
         self.process()
 
@@ -27,6 +28,7 @@ class ExtraData:
     def process(self):
         self.data = []
         rest = self._raw
+        consumed = 0
         while rest:
             factory = ExtraFactory(indata=rest)
             try:
@@ -42,12 +44,21 @@ class ExtraData:
 
             cls = factory.extra_class()
             if cls:
-                extra = cls(indata=data, cp=self.cp)
+                extra = cls(
+                    indata=data,
+                    cp=self.cp,
+                    base_offset=self.base_offset + consumed,
+                )
                 self.data.append(extra)
+            consumed += size
 
         # If there is data following the Terminal Block, we should take note of it and tell the user.
         if self.allow_terminal_blocks and len(rest) > 4 and unpack("<I", rest[:4])[0] < 0x00000004:
-            extra = Terminal(indata=rest, cp=self.cp)
+            extra = Terminal(
+                indata=rest,
+                cp=self.cp,
+                base_offset=self.base_offset + consumed,
+            )
             self.data.append(extra)
 
     def size(self) -> int:

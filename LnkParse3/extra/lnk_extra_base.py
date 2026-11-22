@@ -13,9 +13,10 @@ from LnkParse3.text_processor import TextProcessor
 
 
 class LnkExtraBase:
-    def __init__(self, indata=None, cp=None):
+    def __init__(self, indata=None, cp=None, base_offset=0):
         self._raw = indata
         self.cp = cp
+        self.base_offset = base_offset
         self.text_processor = TextProcessor(cp=cp)
 
     def size(self):
