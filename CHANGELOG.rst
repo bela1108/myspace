@@ -7,6 +7,13 @@ Next version
 
 - Dropped support for Python < 3.10.
 - Added Python 3.14 and 3.15 to the CI matrix.
+- Added an optional offline change ledger
+  (html_sanitizer.audit.ChangeLedger) reachable through
+  Sanitizer.sanitize_with_ledger and the ledger argument of
+  sanitize. It records parse, structural and explicit-policy decisions,
+  exposes only structural aliases and reason codes publicly, keeps the
+  original nodes internally, retains unalignable nodes as pending entries and
+  avoids re-recording earlier decisions when rules are tightened.
 
 2.7 (2026-10-25)
 ================

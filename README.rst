@@ -146,6 +146,58 @@ The rationale for such a restricted set of allowed tags (e.g. no
 images) is documented in the `design decisions`_ section of
 django-content-editor_'s documentation.
 
+Change ledger (offline audit trail)
+===================================
+
+When an editor asks *why* a paragraph or a small fragment disappeared, the
+sanitized output alone cannot answer the question: the original and the
+cleaned node trees no longer line up. The optional change ledger is an
+offline audit trail which is never embedded in the returned HTML. It is
+obtained through an entry point right next to ``sanitize``::
+
+    >>> from html_sanitizer import Sanitizer
+    >>> sanitizer = Sanitizer()
+    >>> output, ledger = sanitizer.sanitize_with_ledger(
+    ...     '<p>Title <b>bold</b></p><script>alert(1)</script>'
+    ... )
+
+Three decision points are tracked separately:
+
+- ``parse`` -- parser fallback, comments and ``style``/``script`` tags
+  removed by the first lxml cleaner;
+- ``structure`` -- the sanitizer's own tidying (tag rewrites such as
+  ``b`` -> ``strong``, merges, empty/whitespace elements, list markers,
+  control characters);
+- ``policy`` -- explicit allowlist decisions (disallowed tags and
+  attributes, blocked embedded hosts, sanitized hrefs).
+
+Two views exist. The public view only contains content-free structural
+aliases and reason codes, so it can be sent to suppliers or shown in an
+editor without leaking document text::
+
+    >>> ledger.public_entries()
+    [{'alias': '/script[0]', 'category': 'parse',
+     'reason': 'script-tag-removed'}, ...]
+
+The internal view additionally keeps the fingerprint and the original
+lxml node, so an auditor can navigate back to the source of a decision via
+``ledger.original_for(alias)``.
+
+Nodes which disappear without an attributable decision are never silently
+dropped: they stay in ``ledger.pending()`` with the ``unaligned-node``
+reason until a human confirms them.
+
+When rules are tightened in several steps, pass the previous ledger (or one
+rebuilt from an exported public view with
+``ChangeLedger.from_public_entries``) as ``previous``. Fragments that were
+already the subject of a decision are then marked ``repeated`` instead of
+being recorded as new decisions::
+
+    >>> output_two, ledger_two = stricter.sanitize_with_ledger(
+    ...     output, previous=ledger
+    ... )
+    >>> ledger_two.decisions(include_repeated=False)  # only genuinely new
+
 Django
 ======
 
@@ -188,3 +240,4 @@ Please report security issues to me directly at mk@feinheit.ch.
 .. _design decisions: http://django-content-editor.readthedocs.io/en/latest/#design-decisions
 .. _lxml: http://lxml.de/
 .. _autolinker: http://lxml.de/api/lxml.html.clean-module.html
+
