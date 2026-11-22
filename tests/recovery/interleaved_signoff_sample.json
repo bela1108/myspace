@@ -1,0 +1,74 @@
+{
+  "listings": [
+    {
+      "store_id": "edge-backup-20260315",
+      "exported_at": "2026-03-15T02:00:00Z",
+      "entries": [
+        {
+          "alias": "partner-ca",
+          "cert_fingerprint": "sha256:d221fdbb667ebb47b51ba69565cf12b60c7d3de2e0bdaa8a629653c5493310df",
+          "cert_type": "X.509"
+        }
+      ]
+    },
+    {
+      "store_id": "edge-backup-20260403",
+      "exported_at": "2026-04-03T02:00:00Z",
+      "entries": [
+        {
+          "alias": "partner-ca",
+          "cert_fingerprint": "sha256:d221fdbb667ebb47b51ba69565cf12b60c7d3de2e0bdaa8a629653c5493310df",
+          "cert_type": "X.509"
+        }
+      ]
+    },
+    {
+      "store_id": "edge-backup-20260410",
+      "exported_at": "2026-04-10T02:00:00Z",
+      "entries": [
+        {
+          "alias": "partner-ca",
+          "cert_fingerprint": "sha256:93aaa3415fac2f3da940045d52931f653ee822541440514c534f9547429321e2",
+          "cert_type": "X.509"
+        }
+      ]
+    }
+  ],
+  "tickets": [
+    {
+      "ticket_id": "CHG-2001",
+      "scenario": "partner-mtls",
+      "alias": "partner-ca",
+      "previous_fingerprint": "sha256:d221fdbb667ebb47b51ba69565cf12b60c7d3de2e0bdaa8a629653c5493310df",
+      "new_fingerprint": "sha256:93aaa3415fac2f3da940045d52931f653ee822541440514c534f9547429321e2",
+      "effective_at": "2026-04-01T00:00:00Z",
+      "consumers": ["consumer-a", "consumer-b"]
+    }
+  ],
+  "signoffs": [
+    {
+      "consumer": "consumer-a",
+      "ticket_id": "CHG-2001",
+      "fingerprint": "sha256:d221fdbb667ebb47b51ba69565cf12b60c7d3de2e0bdaa8a629653c5493310df",
+      "signed_at": "2026-03-28T09:00:00Z"
+    },
+    {
+      "consumer": "consumer-b",
+      "ticket_id": "CHG-2001",
+      "fingerprint": "sha256:93aaa3415fac2f3da940045d52931f653ee822541440514c534f9547429321e2",
+      "signed_at": "2026-03-30T09:00:00Z"
+    },
+    {
+      "consumer": "consumer-a",
+      "ticket_id": "CHG-2001",
+      "fingerprint": "sha256:93aaa3415fac2f3da940045d52931f653ee822541440514c534f9547429321e2",
+      "signed_at": "2026-04-02T09:00:00Z"
+    },
+    {
+      "consumer": "consumer-b",
+      "ticket_id": "CHG-2001",
+      "fingerprint": "sha256:d221fdbb667ebb47b51ba69565cf12b60c7d3de2e0bdaa8a629653c5493310df",
+      "signed_at": "2026-04-04T09:00:00Z"
+    }
+  ]
+}

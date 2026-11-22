@@ -1,0 +1,92 @@
+{
+  "alias": "partner-ca",
+  "decision": "current",
+  "notes": [
+    "store edge-backup-20260403 was exported at 2026-04-03T02:00:00Z, after ticket CHG-2001 became effective at 2026-04-01T00:00:00Z, yet still carries the previous certificate sha256:d221fdbb667ebb47b51ba69565cf12b60c7d3de2e0bdaa8a629653c5493310df; generation determined by fingerprint, not by export time"
+  ],
+  "restore": {
+    "alias": "partner-ca",
+    "cert_fingerprint": "sha256:93aaa3415fac2f3da940045d52931f653ee822541440514c534f9547429321e2",
+    "documented_by": "CHG-2001",
+    "exported_at": "2026-04-10T02:00:00Z",
+    "introduced_by": "CHG-2001",
+    "source_store": "edge-backup-20260410"
+  },
+  "retain": [
+    {
+      "entries": [
+        {
+          "alias": "partner-ca",
+          "cert_fingerprint": "sha256:d221fdbb667ebb47b51ba69565cf12b60c7d3de2e0bdaa8a629653c5493310df",
+          "cert_type": "X.509"
+        }
+      ],
+      "exported_at": "2026-03-15T02:00:00Z",
+      "reasons": [
+        {
+          "cert_fingerprint": "sha256:d221fdbb667ebb47b51ba69565cf12b60c7d3de2e0bdaa8a629653c5493310df",
+          "consumers": [
+            "consumer-a",
+            "consumer-b"
+          ],
+          "reason": "generation_still_signed_off",
+          "ticket_id": "CHG-2001"
+        }
+      ],
+      "store_id": "edge-backup-20260315"
+    },
+    {
+      "entries": [
+        {
+          "alias": "partner-ca",
+          "cert_fingerprint": "sha256:d221fdbb667ebb47b51ba69565cf12b60c7d3de2e0bdaa8a629653c5493310df",
+          "cert_type": "X.509"
+        }
+      ],
+      "exported_at": "2026-04-03T02:00:00Z",
+      "reasons": [
+        {
+          "cert_fingerprint": "sha256:d221fdbb667ebb47b51ba69565cf12b60c7d3de2e0bdaa8a629653c5493310df",
+          "consumers": [
+            "consumer-a",
+            "consumer-b"
+          ],
+          "reason": "generation_still_signed_off",
+          "ticket_id": "CHG-2001"
+        }
+      ],
+      "store_id": "edge-backup-20260403"
+    },
+    {
+      "entries": [
+        {
+          "alias": "partner-ca",
+          "cert_fingerprint": "sha256:93aaa3415fac2f3da940045d52931f653ee822541440514c534f9547429321e2",
+          "cert_type": "X.509"
+        }
+      ],
+      "exported_at": "2026-04-10T02:00:00Z",
+      "reasons": [
+        {
+          "cert_fingerprint": "sha256:93aaa3415fac2f3da940045d52931f653ee822541440514c534f9547429321e2",
+          "consumers": [
+            "consumer-a",
+            "consumer-b"
+          ],
+          "reason": "restore_source",
+          "ticket_id": "CHG-2001"
+        }
+      ],
+      "store_id": "edge-backup-20260410"
+    }
+  ],
+  "scenario": "partner-mtls",
+  "tickets": [
+    {
+      "effective_at": "2026-04-01T00:00:00Z",
+      "new_fingerprint": "sha256:93aaa3415fac2f3da940045d52931f653ee822541440514c534f9547429321e2",
+      "previous_fingerprint": "sha256:d221fdbb667ebb47b51ba69565cf12b60c7d3de2e0bdaa8a629653c5493310df",
+      "ticket_id": "CHG-2001"
+    }
+  ]
+}
