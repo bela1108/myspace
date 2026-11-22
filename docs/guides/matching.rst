@@ -243,3 +243,76 @@ Two constructor parameters control memory use for correlation state:
   correlation match to avoid unbounded memory growth on high-cardinality rules.
 * ``max_correlation_state`` (default ``None``, unlimited) — limits the total number of
   entries retained in the sliding window per group key.
+
+Offline Release-Order Verification
+----------------------------------
+
+When a correlation rule is migrated from one set of base rules to another, deploying the
+correlation rule before its new base rules creates a window in which the signal cannot be
+decided at all. :class:`~sigma.matching.ReleaseOrderVerifier` compares the two possible
+rollout orders offline and renders an effectiveness table for the switch hour:
+
+.. code-block:: python
+
+    from datetime import datetime, timedelta, timezone
+    from sigma.matching import (
+        Event,
+        EventLogSource,
+        MarkerEvent,
+        ReleaseOrderVerifier,
+    )
+
+    old_rules = "... YAML with login_old, access_old and demo_signal ..."
+    new_rules = "... YAML with login_new, access_new and demo_signal ..."
+    effective_at = datetime(2026, 11, 23, 12, 0, tzinfo=timezone.utc)
+    logsource = EventLogSource(category="auth", product="test")
+
+    markers = [
+        MarkerEvent(
+            "login_marker",
+            Event(
+                effective_at + timedelta(minutes=1),
+                logsource,
+                {"event": "login", "user": "alice"},
+            ),
+        ),
+        MarkerEvent(
+            "access_marker",
+            Event(
+                effective_at + timedelta(minutes=1, seconds=30),
+                logsource,
+                {"event": "access", "user": "alice"},
+            ),
+        ),
+    ]
+
+    report = ReleaseOrderVerifier(
+        old_rules,
+        new_rules,
+        effective_at,
+        markers,
+        rollout_minutes=60,
+        phase_minutes=30,
+    ).verify()
+    print(report.to_table())
+
+The table lists both orders. ``BASE_FIRST`` installs new base rules while the old correlation
+is still active, switches the correlation afterwards and retires the old rules at the end.
+``CORRELATION_FIRST`` switches the correlation before the new base rules exist; the affected
+signal is shown as ``GAP`` and the summary reports the first minute at which it is lost.
+
+The separate ``compile`` column makes the distinction explicit: a stage can compile cleanly and
+still show ``GAP`` for a signal whose base-rule dependency is undeployed.
+
+The status of each signal is one of:
+
+* ``OK`` — all dependencies are present and the marker events produce the signal.
+* ``NO FIRE`` — dependencies are complete, but the marker events do not produce the signal.
+* ``GAP`` — a referenced base rule is undeployed, so the signal cannot be fully decided even
+  though every deployed rule compiles.
+* ``MISSING`` — the correlation rule itself is not deployed in this stage.
+* ``ERR`` — a deployed rule fails to compile.
+
+The marker events are replayed against each stage snapshot with the normal
+:class:`~sigma.matching.SigmaMatcher`, so dependency findings and observed signal behaviour
+come from the same parser and matching engine as production checks.

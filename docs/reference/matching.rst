@@ -57,6 +57,51 @@ SigmaCorrelationRuleMatcher
    :undoc-members:
    :show-inheritance:
 
+Release-Order Verification
+--------------------------
+
+.. autoclass:: sigma.matching.ReleaseOrderVerifier
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: sigma.matching.ReleaseOrderReport
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: sigma.matching.ReleaseOrderAssessment
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: sigma.matching.StageAssessment
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: sigma.matching.SignalAssessment
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: sigma.matching.SignalStatus
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: sigma.matching.ReleaseOrder
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: sigma.matching.MarkerEvent
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autofunction:: sigma.matching.verify_release_order
+
 Internal Components
 -------------------
 
