@@ -13,6 +13,12 @@ Unlike the modules in `../`, these features are not part of the official Cyclone
 - They may change more frequently than the core and are not guaranteed to follow the same versioning rules.
 - Users should evaluate these modules carefully and consult documentation or source comments for details.
 
+## Modules
+- `bom/` - BOM ref discrimination and dependency graph utilities.
+- `decommission/` - offline reconciliation of a service decommission against
+  CycloneDX BOMs, joining out-of-band credential claims, service usage
+  declarations and local consumer confirmation receipts into a duty ticket.
+
 ## Contributing
 Contributions are welcome. To add an extension:
 1. Follow the contribution guidelines in the main repository.
