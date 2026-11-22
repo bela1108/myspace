@@ -5,6 +5,7 @@
 
    confidence
    datastore
+   delivery
    environment
    equivalence
    exceptions
@@ -59,5 +60,21 @@ from .registry import _collect_stix2_mappings
 from .v21 import *  # This import will always be the latest STIX 2.X version
 from .version import DEFAULT_VERSION, __version__
 from .versioning import new_version, revoke
+# isort: off
+# Delivery imports v21 bundle and must load after the version modules.
+from .delivery import (
+    CASE_PROPERTIES, CATEGORY_PROPERTIES, EMBARGO_PROPERTIES,
+    SOURCE_VERSION_PROPERTIES, TARGET_VERSION_PROPERTIES,
+    DeclassificationPolicy, DeliveryItem, DeliveryPermit, DeliveryPlanner,
+    DeliveryPolicy, DeliveryPreview, DeliveryPreviewBuilder, DeliveryPreviewError,
+    EmbargoPermit, EmbargoPolicy, EmbargoPreview, EmbargoTransition, Permission,
+    PublicationPermit, PublicationPreview, ReleaseDecision, ReleasePermit,
+    ReleasePreview, build_delivery_preview, build_release_preview,
+    compute_delivery_preview, compute_delivery_set, compute_release_set,
+    delivery_preview, delivery_transition, embargo_transition,
+    preview_around_embargo, preview_delivery, preview_release,
+    preview_release_set, preview_transition, release_preview,
+)
+# isort: on
 
 _collect_stix2_mappings()

@@ -62,4 +62,9 @@ setup(
         'taxii': ['taxii2-client>=2.3.0'],
         'semantic': ['haversine', 'rapidfuzz'],
     },
+    entry_points={
+        'console_scripts': [
+            'stix2-delivery-preview=stix2.delivery:main',
+        ],
+    },
 )
