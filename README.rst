@@ -142,6 +142,39 @@ Assuming ``metadata.xml`` contains SAML metadata for the assertion source:
     )
     verified_data = XMLVerifier().verify(data, expect_config=config).signed_xml
 
+Delivery contract checks
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Signature verification answers whether the XML was signed. It does not answer whether a particular
+receiver can interpret every signed field. After XMLVerifier.verify succeeds, pass the VerifyResult to
+check_delivery_contract together with the verified object identity, receiver declarations, field
+ownership, and co-sign requirements:
+
+.. code-block:: python
+
+    from signxml import DeliveryContract, Recipient, XMLVerifier
+
+    result = XMLVerifier().verify(signed_xml, x509_cert=cert)
+    contract = DeliveryContract(
+        version="v2",
+        field_owners={"Order/Amount": "ARCH-1", "Order/Currency": "ARCH-1", "Order/Buyer": "ARCH-1"},
+        must_sign_together={"Order/Amount", "Order/Currency"},
+        recipients=[
+            Recipient("erp", ["Order/Amount", "Order/Currency"], "v2"),
+            Recipient("analytics", ["Order/Buyer"], "v2"),
+        ],
+    )
+    report = contract.check(result, object_identity="ARCH-1")
+    decision = report["erp"]
+
+A missing, ambiguous, or misowned required field refuses only the receiver that depends on it.
+Optional or ambiguous fields produce a manual review sheet. Other receivers are evaluated
+independently. The report records delivered, refused, and review fields per receiver.
+
+Contracts may be versioned with versions=... so receivers can declare the context they use. Changing
+a field owner with DeliveryContract.with_field_owner produces a new contract; affected_recipients()
+returns only the receivers whose declared fields changed and therefore need to re-accept or re-sign.
+
 Signing with external private keys
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

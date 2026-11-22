@@ -132,6 +132,51 @@ class VerifyResult:
     signature_key: bytes
     "The cryptographic key that was used to verify the signature, in PEM format (for asymmetric keys) or raw secret bytes (for HMAC keys)"
 
+    @property
+    def object_identity(self) -> str | None:
+        """
+        The identity declared by the verified signed object, taken from its Id, ID, id,
+        or xml:id attribute. Return None when the signed object is not XML or has no such
+        attribute.
+        """
+
+        if self.signed_xml is not None and hasattr(self.signed_xml, "get"):
+            for attribute in ("Id", "ID", "id", "xml:id"):
+                value = self.signed_xml.get(attribute)
+                if value:
+                    return value
+        return None
+
+    @property
+    def object_id(self) -> str | None:
+        """
+        Alias for object_identity.
+        """
+
+        return self.object_identity
+
+    @property
+    def identity(self) -> str | None:
+        """
+        Alias for object_identity.
+        """
+
+        return self.object_identity
+
+    def check_delivery_contract(self, contract, *args, **kwargs):
+        """
+        Check this verified result against a delivery contract.
+
+        This is a convenience wrapper around signxml.check_delivery_contract.
+        """
+
+        from .delivery import check_delivery_contract as _check_delivery_contract
+
+        return _check_delivery_contract(self, *args, contract=contract, **kwargs)
+
+    check_contract = check_delivery_contract
+    verify_delivery_contract = check_delivery_contract
+
 
 class XMLVerifier(XMLSignatureProcessor):
     """
@@ -675,6 +720,32 @@ class XMLVerifier(XMLSignatureProcessor):
             else verify_results
         )
 
+    def check_delivery_contract(self, verification, *args, **kwargs):
+        """
+        Check a successful verification result against a delivery contract.
+
+        This is a convenience wrapper around signxml.check_delivery_contract.
+        """
+
+        from .delivery import check_delivery_contract as _check_delivery_contract
+
+        return _check_delivery_contract(verification, *args, **kwargs)
+
+    def verify_and_check_contract(self, data, contract, **kwargs):
+        """
+        Verify a signature and then check the result against a delivery contract.
+
+        Signature failures are raised before the contract check runs.
+        """
+
+        from .delivery import verify_and_check_delivery_contract as _verify_and_check_delivery_contract
+
+        return _verify_and_check_delivery_contract(self, data, contract, **kwargs)
+
+    verify_delivery_contract = verify_and_check_contract
+    verify_and_check = verify_and_check_contract
+    verify_with_contract = verify_and_check_contract
+
     def _verify_reference(
         self,
         reference,
@@ -831,3 +902,31 @@ class XMLVerifier(XMLSignatureProcessor):
         if result is not None:
             result = bytes_to_long(b64decode(result.text))
         return result
+
+
+def check_delivery_contract(verification, *args, **kwargs):
+    """
+    Check a successful SignXML verification result against a delivery contract.
+
+    This is a convenience wrapper around signxml.check_delivery_contract.
+    """
+
+    from .delivery import check_delivery_contract as _check_delivery_contract
+
+    return _check_delivery_contract(verification, *args, **kwargs)
+
+
+verify_delivery_contract = check_delivery_contract
+
+
+def verify_and_check_delivery_contract(verifier, data, contract, **kwargs):
+    """
+    Verify a signature and then check the result against a delivery contract.
+    """
+
+    from .delivery import verify_and_check_delivery_contract as _verify_and_check_delivery_contract
+
+    return _verify_and_check_delivery_contract(verifier, data, contract, **kwargs)
+
+
+verify_and_check_contract = verify_and_check_delivery_contract
