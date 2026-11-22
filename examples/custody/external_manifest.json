@@ -1,0 +1,33 @@
+{
+  "case_id": "CASE-2026-11-EVTX-001",
+  "entries": [
+    {
+      "evidence_id": "system-short.evtx",
+      "record_start": 12049,
+      "record_end": 12050,
+      "receipt_id": "R2",
+      "sha256": "10053898ede71eb96575e87f6f31d6834e1a2108726119523431c489e30c8976"
+    },
+    {
+      "evidence_id": "system-short.evtx",
+      "record_start": 12051,
+      "record_end": 12051,
+      "receipt_id": "R2",
+      "digest": "sha256:d6bd6942ba48deddce22b5a263492b674f28bbcd2a4b5339995166e9b12546e2"
+    },
+    {
+      "evidence_id": "security-short.evtx",
+      "record_start": 1,
+      "record_end": 2,
+      "receipt_id": "R1",
+      "sha256": "ecf123ae16b69904b935c7a550f379d9db9d2c9fd483d0b84951a88dd19888b7"
+    },
+    {
+      "evidence_id": "security-short.evtx",
+      "record_start": 3,
+      "record_end": 3,
+      "receipt_id": "R4",
+      "sha256": "272081032b81f5818093241539f51c4cd02bad5ad75b45422508df7512d41c17"
+    }
+  ]
+}

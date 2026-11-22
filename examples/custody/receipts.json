@@ -1,0 +1,67 @@
+{
+  "receipts": [
+    {
+      "receipt_id": "R1",
+      "kind": "handover",
+      "from_principal": "u-a",
+      "to_principal": "u-b",
+      "signer_id": "u-a",
+      "status": "unsigned",
+      "event_at": "2026-10-20T09:00:00Z",
+      "scope": [
+        {
+          "evidence_id": "security-short.evtx",
+          "start": 1,
+          "end": 2
+        }
+      ]
+    },
+    {
+      "receipt_id": "R2",
+      "kind": "shift_change",
+      "from_principal": "u-a",
+      "to_principal": "u-b",
+      "signer_id": "u-b",
+      "signed_at": "2026-10-25T09:00:00Z",
+      "status": "signed",
+      "scope": [
+        {
+          "evidence_id": "system-short.evtx",
+          "start": 12049,
+          "end": 12051
+        }
+      ]
+    },
+    {
+      "receipt_id": "R3",
+      "kind": "supplemental",
+      "amends": "R1",
+      "signer_id": "u-b",
+      "signed_at": "2026-11-05T10:00:00Z",
+      "status": "signed",
+      "scope": [
+        {
+          "evidence_id": "security-short.evtx",
+          "start": 1,
+          "end": 2
+        }
+      ]
+    },
+    {
+      "receipt_id": "R4",
+      "kind": "handover",
+      "from_principal": "u-a",
+      "to_principal": "u-b",
+      "signer_id": "u-b",
+      "signed_at": "2026-12-01T10:00:00Z",
+      "status": "signed",
+      "scope": [
+        {
+          "evidence_id": "security-short.evtx",
+          "start": 3,
+          "end": 3
+        }
+      ]
+    }
+  ]
+}

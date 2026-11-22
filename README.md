@@ -68,6 +68,35 @@ Or use [just](https://github.com/casey/just) to run the linters:
 
     just lint
 
+Offline EVTX custody reconciliation
+-----------------------------------
+`evtx_custody_reconcile` is a read-only audit for handing EVTX attachments to a
+long-term custodian.  It uses caller-supplied record ranges, custodian
+permissions, signed receipts, an external hand-over manifest, and an internal
+responsibility table to report:
+
+- `reviewable` / `可继续复查`: the range is in the external manifest, a valid
+  receiving signature covers it, and the custodian has full view permission.
+- `summary_only` / `只剩摘要`: custody is effective, but the permission is
+  summary-only (or the external entry carries only a digest).
+- `not_accepted` / `尚未被承接`: the range is missing from the manifest, has no
+  valid receiving signature, is late, or is outside the custodian's authority.
+
+A prior holder keeping a copy is never treated as a transfer.  A transferor's
+signature alone is not acceptance; the receiving custodian must sign, or a
+supplemental receipt must amend the hand-over.  The internal responsibility
+table is authoritative for the actual signer, while the external report removes
+names, paths, summaries, record text, and other sensitive fields.
+
+```bash
+.venv/bin/python -m evtx_scripts.evtx_custody_reconcile examples/custody/case.json
+.venv/bin/python -m evtx_scripts.evtx_custody_reconcile examples/custody/case.json --external-json
+```
+
+See `examples/custody/README.md` for the two short logs, shift-change and
+supplemental receipts, and the expected reports.
+
+
 License
 -------
 python-evtx is licensed under the Apache License, Version 2.0.  This means it is freely available for use and modification in a personal and professional capacity.  

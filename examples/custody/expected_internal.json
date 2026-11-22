@@ -1,0 +1,1139 @@
+{
+  "case_id": "CASE-2026-11-EVTX-001",
+  "generated_at": "2026-11-30T23:59:59Z",
+  "offline": true,
+  "archive_deadline": "2026-11-30T23:59:59Z",
+  "custodian": {
+    "id": "archive-team",
+    "role": "long-term custodian"
+  },
+  "summary": {
+    "reviewable_records": 4,
+    "summary_only_records": 1,
+    "not_accepted_records": 1,
+    "reviewable_segments": 2,
+    "summary_only_segments": 1,
+    "not_accepted_segments": 1,
+    "total_records": 6,
+    "total_range_records": 6,
+    "all_sources_verified": true
+  },
+  "evidence": [
+    {
+      "evidence_id": "system-short.evtx",
+      "path": "system-short.evtx",
+      "source_sha256": "0389bb3dfffce47a293b1d724d2c26d316c31a0b0ca89c5f8113f17b5eba8af1",
+      "source_verified": true,
+      "source_errors": [],
+      "records_loaded": 3,
+      "ranges": [
+        {
+          "start": 12049,
+          "end": 12051,
+          "evidence_id": "system-short.evtx"
+        }
+      ],
+      "segments": [
+        {
+          "evidence_id": "system-short.evtx",
+          "start": 12049,
+          "end": 12050,
+          "record_count": 2,
+          "records_present": 2,
+          "records_missing": 0,
+          "status": "reviewable",
+          "status_zh": "可继续复查",
+          "reason": "signed_scope_and_full_access",
+          "reason_zh": "外部清单、有效签收与完整查看权限均已核对",
+          "access": "full",
+          "sensitivity": "internal",
+          "summary_only": false,
+          "receipt_id": "R2",
+          "signed_at": "2026-10-25T09:00:00Z",
+          "effective_at": "2026-10-25T09:00:00Z",
+          "signer": {
+            "principal_id": "u-b",
+            "role": "long-term custodian",
+            "verified": true,
+            "source": "internal_responsibility",
+            "reason": null,
+            "actual_name": "Li Na",
+            "declared_name": null
+          },
+          "manifest_receipt_id": "R2",
+          "digest": "10053898ede71eb96575e87f6f31d6834e1a2108726119523431c489e30c8976",
+          "digest_verified": true,
+          "manifest_digest_verified": true
+        },
+        {
+          "evidence_id": "system-short.evtx",
+          "start": 12051,
+          "end": 12051,
+          "record_count": 1,
+          "records_present": 1,
+          "records_missing": 0,
+          "status": "summary_only",
+          "status_zh": "只剩摘要",
+          "reason": "custodian_has_summary_only",
+          "reason_zh": "保管人权限只允许摘要",
+          "access": "summary",
+          "sensitivity": "restricted",
+          "summary_only": true,
+          "receipt_id": "R2",
+          "signed_at": "2026-10-25T09:00:00Z",
+          "effective_at": "2026-10-25T09:00:00Z",
+          "signer": {
+            "principal_id": "u-b",
+            "role": "long-term custodian",
+            "verified": true,
+            "source": "internal_responsibility",
+            "reason": null,
+            "actual_name": "Li Na",
+            "declared_name": null
+          },
+          "manifest_receipt_id": "R2",
+          "digest": "d6bd6942ba48deddce22b5a263492b674f28bbcd2a4b5339995166e9b12546e2",
+          "digest_verified": true,
+          "manifest_digest_verified": true
+        }
+      ]
+    },
+    {
+      "evidence_id": "security-short.evtx",
+      "path": "security-short.evtx",
+      "source_sha256": "765e3342b70356271625efa8f81f1e83003f6131f6684edb90f62fcdfcaca0e0",
+      "source_verified": true,
+      "source_errors": [],
+      "records_loaded": 3,
+      "ranges": [
+        {
+          "start": 1,
+          "end": 3,
+          "evidence_id": "security-short.evtx"
+        }
+      ],
+      "segments": [
+        {
+          "evidence_id": "security-short.evtx",
+          "start": 1,
+          "end": 2,
+          "record_count": 2,
+          "records_present": 2,
+          "records_missing": 0,
+          "status": "reviewable",
+          "status_zh": "可继续复查",
+          "reason": "signed_scope_and_full_access",
+          "reason_zh": "外部清单、有效签收与完整查看权限均已核对",
+          "access": "full",
+          "sensitivity": "internal",
+          "summary_only": false,
+          "receipt_id": "R3",
+          "signed_at": "2026-11-05T10:00:00Z",
+          "effective_at": "2026-10-20T09:00:00Z",
+          "signer": {
+            "principal_id": "u-b",
+            "role": "long-term custodian",
+            "verified": true,
+            "source": "internal_responsibility",
+            "reason": null,
+            "actual_name": "Li Na",
+            "declared_name": null
+          },
+          "manifest_receipt_id": "R1",
+          "digest": "ecf123ae16b69904b935c7a550f379d9db9d2c9fd483d0b84951a88dd19888b7",
+          "digest_verified": true,
+          "manifest_digest_verified": true
+        },
+        {
+          "evidence_id": "security-short.evtx",
+          "start": 3,
+          "end": 3,
+          "record_count": 1,
+          "records_present": 1,
+          "records_missing": 0,
+          "status": "not_accepted",
+          "status_zh": "尚未被承接",
+          "reason": "signed_after_deadline",
+          "reason_zh": "签收时间晚于销档期限",
+          "access": "full",
+          "sensitivity": "restricted",
+          "summary_only": false,
+          "receipt_id": null,
+          "signed_at": null,
+          "effective_at": null,
+          "signer": null,
+          "manifest_receipt_id": "R4",
+          "digest": "272081032b81f5818093241539f51c4cd02bad5ad75b45422508df7512d41c17",
+          "digest_verified": null,
+          "manifest_digest_verified": null
+        }
+      ]
+    }
+  ],
+  "handover_scope": {
+    "manifest_entries": [
+      {
+        "evidence_id": "system-short.evtx",
+        "start": 12049,
+        "end": 12050,
+        "record_count": 2,
+        "receipt_id": "R2",
+        "sha256": "10053898ede71eb96575e87f6f31d6834e1a2108726119523431c489e30c8976",
+        "all_scope": false,
+        "raw_fields": [
+          "evidence_id",
+          "receipt_id",
+          "record_end",
+          "record_start",
+          "sha256"
+        ]
+      },
+      {
+        "evidence_id": "system-short.evtx",
+        "start": 12051,
+        "end": 12051,
+        "record_count": 1,
+        "receipt_id": "R2",
+        "sha256": "d6bd6942ba48deddce22b5a263492b674f28bbcd2a4b5339995166e9b12546e2",
+        "all_scope": false,
+        "raw_fields": [
+          "digest",
+          "evidence_id",
+          "receipt_id",
+          "record_end",
+          "record_start"
+        ]
+      },
+      {
+        "evidence_id": "security-short.evtx",
+        "start": 1,
+        "end": 2,
+        "record_count": 2,
+        "receipt_id": "R1",
+        "sha256": "ecf123ae16b69904b935c7a550f379d9db9d2c9fd483d0b84951a88dd19888b7",
+        "all_scope": false,
+        "raw_fields": [
+          "evidence_id",
+          "receipt_id",
+          "record_end",
+          "record_start",
+          "sha256"
+        ]
+      },
+      {
+        "evidence_id": "security-short.evtx",
+        "start": 3,
+        "end": 3,
+        "record_count": 1,
+        "receipt_id": "R4",
+        "sha256": "272081032b81f5818093241539f51c4cd02bad5ad75b45422508df7512d41c17",
+        "all_scope": false,
+        "raw_fields": [
+          "evidence_id",
+          "receipt_id",
+          "record_end",
+          "record_start",
+          "sha256"
+        ]
+      }
+    ],
+    "matched": [
+      {
+        "evidence_id": "system-short.evtx",
+        "start": 12049,
+        "end": 12050,
+        "receipt_id": "R2",
+        "reason": "receipt_valid",
+        "reason_zh": "receipt_valid",
+        "effective_receipt_id": "R2",
+        "signer": {
+          "principal_id": "u-b",
+          "role": "long-term custodian",
+          "verified": true,
+          "source": "internal_responsibility",
+          "reason": null,
+          "actual_name": "Li Na",
+          "declared_name": null
+        }
+      },
+      {
+        "evidence_id": "system-short.evtx",
+        "start": 12051,
+        "end": 12051,
+        "receipt_id": "R2",
+        "reason": "receipt_valid",
+        "reason_zh": "receipt_valid",
+        "effective_receipt_id": "R2",
+        "signer": {
+          "principal_id": "u-b",
+          "role": "long-term custodian",
+          "verified": true,
+          "source": "internal_responsibility",
+          "reason": null,
+          "actual_name": "Li Na",
+          "declared_name": null
+        }
+      },
+      {
+        "evidence_id": "security-short.evtx",
+        "start": 1,
+        "end": 2,
+        "receipt_id": "R1",
+        "reason": "receipt_valid",
+        "reason_zh": "receipt_valid",
+        "effective_receipt_id": "R3",
+        "signer": {
+          "principal_id": "u-b",
+          "role": "long-term custodian",
+          "verified": true,
+          "source": "internal_responsibility",
+          "reason": null,
+          "actual_name": "Li Na",
+          "declared_name": null
+        }
+      }
+    ],
+    "manifest_without_receipt": [
+      {
+        "evidence_id": "security-short.evtx",
+        "start": 3,
+        "end": 3,
+        "receipt_id": "R4",
+        "reason": "signed_after_deadline",
+        "reason_zh": "签收时间晚于销档期限"
+      }
+    ],
+    "receipt_without_manifest": [],
+    "scope_matches": false,
+    "scope_check": {
+      "manifest_entries": 4,
+      "matched": 3,
+      "manifest_without_receipt": 1,
+      "receipt_without_manifest": 0,
+      "scope_matches": false
+    }
+  },
+  "signer_verification": {
+    "actual_signer": {
+      "receipt_id": "R2",
+      "signed_at": "2026-10-25T09:00:00Z",
+      "principal_id": "u-b",
+      "role": "long-term custodian",
+      "verified": true,
+      "source": "internal_responsibility",
+      "reason": null,
+      "actual_name": "Li Na",
+      "declared_name": null
+    },
+    "signers": [
+      {
+        "receipt_id": "R2",
+        "signed_at": "2026-10-25T09:00:00Z",
+        "principal_id": "u-b",
+        "role": "long-term custodian",
+        "verified": true,
+        "source": "internal_responsibility",
+        "reason": null,
+        "actual_name": "Li Na",
+        "declared_name": null
+      },
+      {
+        "receipt_id": "R3",
+        "signed_at": "2026-11-05T10:00:00Z",
+        "principal_id": "u-b",
+        "role": "long-term custodian",
+        "verified": true,
+        "source": "internal_responsibility",
+        "reason": null,
+        "actual_name": "Li Na",
+        "declared_name": null
+      }
+    ],
+    "receipts": [
+      {
+        "receipt_id": "R1",
+        "kind": "handover",
+        "valid": false,
+        "reason": "receipt_unsigned",
+        "signed_at": null,
+        "effective_at": null,
+        "base_receipt_id": null,
+        "signer": {
+          "principal_id": "u-b",
+          "role": "long-term custodian",
+          "verified": true,
+          "source": "internal_responsibility",
+          "reason": null,
+          "actual_name": "Li Na",
+          "declared_name": null
+        },
+        "checks": [
+          "receipt_unsigned"
+        ]
+      },
+      {
+        "receipt_id": "R2",
+        "kind": "shift_change",
+        "valid": true,
+        "reason": "receipt_valid",
+        "signed_at": "2026-10-25T09:00:00Z",
+        "effective_at": "2026-10-25T09:00:00Z",
+        "base_receipt_id": null,
+        "signer": {
+          "principal_id": "u-b",
+          "role": "long-term custodian",
+          "verified": true,
+          "source": "internal_responsibility",
+          "reason": null,
+          "actual_name": "Li Na",
+          "declared_name": null
+        },
+        "checks": [
+          "signed_at_present",
+          "receipt_valid"
+        ]
+      },
+      {
+        "receipt_id": "R3",
+        "kind": "supplemental",
+        "valid": true,
+        "reason": "receipt_valid",
+        "signed_at": "2026-11-05T10:00:00Z",
+        "effective_at": "2026-10-20T09:00:00Z",
+        "base_receipt_id": "R1",
+        "signer": {
+          "principal_id": "u-b",
+          "role": "long-term custodian",
+          "verified": true,
+          "source": "internal_responsibility",
+          "reason": null,
+          "actual_name": "Li Na",
+          "declared_name": null
+        },
+        "checks": [
+          "signed_at_present",
+          "supplemental_amends:R1",
+          "receipt_valid"
+        ]
+      },
+      {
+        "receipt_id": "R4",
+        "kind": "handover",
+        "valid": false,
+        "reason": "signed_after_deadline",
+        "signed_at": "2026-12-01T10:00:00Z",
+        "effective_at": null,
+        "base_receipt_id": null,
+        "signer": {
+          "principal_id": "u-b",
+          "role": "long-term custodian",
+          "verified": true,
+          "source": "internal_responsibility",
+          "reason": null,
+          "actual_name": "Li Na",
+          "declared_name": null
+        },
+        "checks": [
+          "signed_at_present",
+          "signed_after_deadline"
+        ]
+      }
+    ],
+    "internal_table_used": true,
+    "prior_holder_possession_ignored": true
+  },
+  "warnings": [
+    "previous holder still has a copy; possession is not treated as transfer",
+    "external manifest contains ranges without an effective receipt"
+  ],
+  "redacted_fields": [],
+  "status": "not_accepted",
+  "status_zh": "尚未被承接",
+  "segments": [
+    {
+      "evidence_id": "system-short.evtx",
+      "start": 12049,
+      "end": 12050,
+      "record_count": 2,
+      "records_present": 2,
+      "records_missing": 0,
+      "status": "reviewable",
+      "status_zh": "可继续复查",
+      "reason": "signed_scope_and_full_access",
+      "reason_zh": "外部清单、有效签收与完整查看权限均已核对",
+      "access": "full",
+      "sensitivity": "internal",
+      "summary_only": false,
+      "receipt_id": "R2",
+      "signed_at": "2026-10-25T09:00:00Z",
+      "effective_at": "2026-10-25T09:00:00Z",
+      "signer": {
+        "principal_id": "u-b",
+        "role": "long-term custodian",
+        "verified": true,
+        "source": "internal_responsibility",
+        "reason": null,
+        "actual_name": "Li Na",
+        "declared_name": null
+      },
+      "manifest_receipt_id": "R2",
+      "digest": "10053898ede71eb96575e87f6f31d6834e1a2108726119523431c489e30c8976",
+      "digest_verified": true,
+      "manifest_digest_verified": true
+    },
+    {
+      "evidence_id": "system-short.evtx",
+      "start": 12051,
+      "end": 12051,
+      "record_count": 1,
+      "records_present": 1,
+      "records_missing": 0,
+      "status": "summary_only",
+      "status_zh": "只剩摘要",
+      "reason": "custodian_has_summary_only",
+      "reason_zh": "保管人权限只允许摘要",
+      "access": "summary",
+      "sensitivity": "restricted",
+      "summary_only": true,
+      "receipt_id": "R2",
+      "signed_at": "2026-10-25T09:00:00Z",
+      "effective_at": "2026-10-25T09:00:00Z",
+      "signer": {
+        "principal_id": "u-b",
+        "role": "long-term custodian",
+        "verified": true,
+        "source": "internal_responsibility",
+        "reason": null,
+        "actual_name": "Li Na",
+        "declared_name": null
+      },
+      "manifest_receipt_id": "R2",
+      "digest": "d6bd6942ba48deddce22b5a263492b674f28bbcd2a4b5339995166e9b12546e2",
+      "digest_verified": true,
+      "manifest_digest_verified": true
+    },
+    {
+      "evidence_id": "security-short.evtx",
+      "start": 1,
+      "end": 2,
+      "record_count": 2,
+      "records_present": 2,
+      "records_missing": 0,
+      "status": "reviewable",
+      "status_zh": "可继续复查",
+      "reason": "signed_scope_and_full_access",
+      "reason_zh": "外部清单、有效签收与完整查看权限均已核对",
+      "access": "full",
+      "sensitivity": "internal",
+      "summary_only": false,
+      "receipt_id": "R3",
+      "signed_at": "2026-11-05T10:00:00Z",
+      "effective_at": "2026-10-20T09:00:00Z",
+      "signer": {
+        "principal_id": "u-b",
+        "role": "long-term custodian",
+        "verified": true,
+        "source": "internal_responsibility",
+        "reason": null,
+        "actual_name": "Li Na",
+        "declared_name": null
+      },
+      "manifest_receipt_id": "R1",
+      "digest": "ecf123ae16b69904b935c7a550f379d9db9d2c9fd483d0b84951a88dd19888b7",
+      "digest_verified": true,
+      "manifest_digest_verified": true
+    },
+    {
+      "evidence_id": "security-short.evtx",
+      "start": 3,
+      "end": 3,
+      "record_count": 1,
+      "records_present": 1,
+      "records_missing": 0,
+      "status": "not_accepted",
+      "status_zh": "尚未被承接",
+      "reason": "signed_after_deadline",
+      "reason_zh": "签收时间晚于销档期限",
+      "access": "full",
+      "sensitivity": "restricted",
+      "summary_only": false,
+      "receipt_id": null,
+      "signed_at": null,
+      "effective_at": null,
+      "signer": null,
+      "manifest_receipt_id": "R4",
+      "digest": "272081032b81f5818093241539f51c4cd02bad5ad75b45422508df7512d41c17",
+      "digest_verified": null,
+      "manifest_digest_verified": null
+    }
+  ],
+  "reviewable": [
+    {
+      "evidence_id": "system-short.evtx",
+      "start": 12049,
+      "end": 12050,
+      "record_count": 2,
+      "records_present": 2,
+      "records_missing": 0,
+      "status": "reviewable",
+      "status_zh": "可继续复查",
+      "reason": "signed_scope_and_full_access",
+      "reason_zh": "外部清单、有效签收与完整查看权限均已核对",
+      "access": "full",
+      "sensitivity": "internal",
+      "summary_only": false,
+      "receipt_id": "R2",
+      "signed_at": "2026-10-25T09:00:00Z",
+      "effective_at": "2026-10-25T09:00:00Z",
+      "signer": {
+        "principal_id": "u-b",
+        "role": "long-term custodian",
+        "verified": true,
+        "source": "internal_responsibility",
+        "reason": null,
+        "actual_name": "Li Na",
+        "declared_name": null
+      },
+      "manifest_receipt_id": "R2",
+      "digest": "10053898ede71eb96575e87f6f31d6834e1a2108726119523431c489e30c8976",
+      "digest_verified": true,
+      "manifest_digest_verified": true
+    },
+    {
+      "evidence_id": "security-short.evtx",
+      "start": 1,
+      "end": 2,
+      "record_count": 2,
+      "records_present": 2,
+      "records_missing": 0,
+      "status": "reviewable",
+      "status_zh": "可继续复查",
+      "reason": "signed_scope_and_full_access",
+      "reason_zh": "外部清单、有效签收与完整查看权限均已核对",
+      "access": "full",
+      "sensitivity": "internal",
+      "summary_only": false,
+      "receipt_id": "R3",
+      "signed_at": "2026-11-05T10:00:00Z",
+      "effective_at": "2026-10-20T09:00:00Z",
+      "signer": {
+        "principal_id": "u-b",
+        "role": "long-term custodian",
+        "verified": true,
+        "source": "internal_responsibility",
+        "reason": null,
+        "actual_name": "Li Na",
+        "declared_name": null
+      },
+      "manifest_receipt_id": "R1",
+      "digest": "ecf123ae16b69904b935c7a550f379d9db9d2c9fd483d0b84951a88dd19888b7",
+      "digest_verified": true,
+      "manifest_digest_verified": true
+    }
+  ],
+  "summary_only": [
+    {
+      "evidence_id": "system-short.evtx",
+      "start": 12051,
+      "end": 12051,
+      "record_count": 1,
+      "records_present": 1,
+      "records_missing": 0,
+      "status": "summary_only",
+      "status_zh": "只剩摘要",
+      "reason": "custodian_has_summary_only",
+      "reason_zh": "保管人权限只允许摘要",
+      "access": "summary",
+      "sensitivity": "restricted",
+      "summary_only": true,
+      "receipt_id": "R2",
+      "signed_at": "2026-10-25T09:00:00Z",
+      "effective_at": "2026-10-25T09:00:00Z",
+      "signer": {
+        "principal_id": "u-b",
+        "role": "long-term custodian",
+        "verified": true,
+        "source": "internal_responsibility",
+        "reason": null,
+        "actual_name": "Li Na",
+        "declared_name": null
+      },
+      "manifest_receipt_id": "R2",
+      "digest": "d6bd6942ba48deddce22b5a263492b674f28bbcd2a4b5339995166e9b12546e2",
+      "digest_verified": true,
+      "manifest_digest_verified": true
+    }
+  ],
+  "not_accepted": [
+    {
+      "evidence_id": "security-short.evtx",
+      "start": 3,
+      "end": 3,
+      "record_count": 1,
+      "records_present": 1,
+      "records_missing": 0,
+      "status": "not_accepted",
+      "status_zh": "尚未被承接",
+      "reason": "signed_after_deadline",
+      "reason_zh": "签收时间晚于销档期限",
+      "access": "full",
+      "sensitivity": "restricted",
+      "summary_only": false,
+      "receipt_id": null,
+      "signed_at": null,
+      "effective_at": null,
+      "signer": null,
+      "manifest_receipt_id": "R4",
+      "digest": "272081032b81f5818093241539f51c4cd02bad5ad75b45422508df7512d41c17",
+      "digest_verified": null,
+      "manifest_digest_verified": null
+    }
+  ],
+  "source_evidence": [
+    {
+      "evidence_id": "system-short.evtx",
+      "path": "system-short.evtx",
+      "source_sha256": "0389bb3dfffce47a293b1d724d2c26d316c31a0b0ca89c5f8113f17b5eba8af1",
+      "source_verified": true,
+      "source_errors": [],
+      "records_loaded": 3,
+      "ranges": [
+        {
+          "start": 12049,
+          "end": 12051,
+          "evidence_id": "system-short.evtx"
+        }
+      ],
+      "segments": [
+        {
+          "evidence_id": "system-short.evtx",
+          "start": 12049,
+          "end": 12050,
+          "record_count": 2,
+          "records_present": 2,
+          "records_missing": 0,
+          "status": "reviewable",
+          "status_zh": "可继续复查",
+          "reason": "signed_scope_and_full_access",
+          "reason_zh": "外部清单、有效签收与完整查看权限均已核对",
+          "access": "full",
+          "sensitivity": "internal",
+          "summary_only": false,
+          "receipt_id": "R2",
+          "signed_at": "2026-10-25T09:00:00Z",
+          "effective_at": "2026-10-25T09:00:00Z",
+          "signer": {
+            "principal_id": "u-b",
+            "role": "long-term custodian",
+            "verified": true,
+            "source": "internal_responsibility",
+            "reason": null,
+            "actual_name": "Li Na",
+            "declared_name": null
+          },
+          "manifest_receipt_id": "R2",
+          "digest": "10053898ede71eb96575e87f6f31d6834e1a2108726119523431c489e30c8976",
+          "digest_verified": true,
+          "manifest_digest_verified": true
+        },
+        {
+          "evidence_id": "system-short.evtx",
+          "start": 12051,
+          "end": 12051,
+          "record_count": 1,
+          "records_present": 1,
+          "records_missing": 0,
+          "status": "summary_only",
+          "status_zh": "只剩摘要",
+          "reason": "custodian_has_summary_only",
+          "reason_zh": "保管人权限只允许摘要",
+          "access": "summary",
+          "sensitivity": "restricted",
+          "summary_only": true,
+          "receipt_id": "R2",
+          "signed_at": "2026-10-25T09:00:00Z",
+          "effective_at": "2026-10-25T09:00:00Z",
+          "signer": {
+            "principal_id": "u-b",
+            "role": "long-term custodian",
+            "verified": true,
+            "source": "internal_responsibility",
+            "reason": null,
+            "actual_name": "Li Na",
+            "declared_name": null
+          },
+          "manifest_receipt_id": "R2",
+          "digest": "d6bd6942ba48deddce22b5a263492b674f28bbcd2a4b5339995166e9b12546e2",
+          "digest_verified": true,
+          "manifest_digest_verified": true
+        }
+      ]
+    },
+    {
+      "evidence_id": "security-short.evtx",
+      "path": "security-short.evtx",
+      "source_sha256": "765e3342b70356271625efa8f81f1e83003f6131f6684edb90f62fcdfcaca0e0",
+      "source_verified": true,
+      "source_errors": [],
+      "records_loaded": 3,
+      "ranges": [
+        {
+          "start": 1,
+          "end": 3,
+          "evidence_id": "security-short.evtx"
+        }
+      ],
+      "segments": [
+        {
+          "evidence_id": "security-short.evtx",
+          "start": 1,
+          "end": 2,
+          "record_count": 2,
+          "records_present": 2,
+          "records_missing": 0,
+          "status": "reviewable",
+          "status_zh": "可继续复查",
+          "reason": "signed_scope_and_full_access",
+          "reason_zh": "外部清单、有效签收与完整查看权限均已核对",
+          "access": "full",
+          "sensitivity": "internal",
+          "summary_only": false,
+          "receipt_id": "R3",
+          "signed_at": "2026-11-05T10:00:00Z",
+          "effective_at": "2026-10-20T09:00:00Z",
+          "signer": {
+            "principal_id": "u-b",
+            "role": "long-term custodian",
+            "verified": true,
+            "source": "internal_responsibility",
+            "reason": null,
+            "actual_name": "Li Na",
+            "declared_name": null
+          },
+          "manifest_receipt_id": "R1",
+          "digest": "ecf123ae16b69904b935c7a550f379d9db9d2c9fd483d0b84951a88dd19888b7",
+          "digest_verified": true,
+          "manifest_digest_verified": true
+        },
+        {
+          "evidence_id": "security-short.evtx",
+          "start": 3,
+          "end": 3,
+          "record_count": 1,
+          "records_present": 1,
+          "records_missing": 0,
+          "status": "not_accepted",
+          "status_zh": "尚未被承接",
+          "reason": "signed_after_deadline",
+          "reason_zh": "签收时间晚于销档期限",
+          "access": "full",
+          "sensitivity": "restricted",
+          "summary_only": false,
+          "receipt_id": null,
+          "signed_at": null,
+          "effective_at": null,
+          "signer": null,
+          "manifest_receipt_id": "R4",
+          "digest": "272081032b81f5818093241539f51c4cd02bad5ad75b45422508df7512d41c17",
+          "digest_verified": null,
+          "manifest_digest_verified": null
+        }
+      ]
+    }
+  ],
+  "manifest_scope": {
+    "manifest_entries": [
+      {
+        "evidence_id": "system-short.evtx",
+        "start": 12049,
+        "end": 12050,
+        "record_count": 2,
+        "receipt_id": "R2",
+        "sha256": "10053898ede71eb96575e87f6f31d6834e1a2108726119523431c489e30c8976",
+        "all_scope": false,
+        "raw_fields": [
+          "evidence_id",
+          "receipt_id",
+          "record_end",
+          "record_start",
+          "sha256"
+        ]
+      },
+      {
+        "evidence_id": "system-short.evtx",
+        "start": 12051,
+        "end": 12051,
+        "record_count": 1,
+        "receipt_id": "R2",
+        "sha256": "d6bd6942ba48deddce22b5a263492b674f28bbcd2a4b5339995166e9b12546e2",
+        "all_scope": false,
+        "raw_fields": [
+          "digest",
+          "evidence_id",
+          "receipt_id",
+          "record_end",
+          "record_start"
+        ]
+      },
+      {
+        "evidence_id": "security-short.evtx",
+        "start": 1,
+        "end": 2,
+        "record_count": 2,
+        "receipt_id": "R1",
+        "sha256": "ecf123ae16b69904b935c7a550f379d9db9d2c9fd483d0b84951a88dd19888b7",
+        "all_scope": false,
+        "raw_fields": [
+          "evidence_id",
+          "receipt_id",
+          "record_end",
+          "record_start",
+          "sha256"
+        ]
+      },
+      {
+        "evidence_id": "security-short.evtx",
+        "start": 3,
+        "end": 3,
+        "record_count": 1,
+        "receipt_id": "R4",
+        "sha256": "272081032b81f5818093241539f51c4cd02bad5ad75b45422508df7512d41c17",
+        "all_scope": false,
+        "raw_fields": [
+          "evidence_id",
+          "receipt_id",
+          "record_end",
+          "record_start",
+          "sha256"
+        ]
+      }
+    ],
+    "matched": [
+      {
+        "evidence_id": "system-short.evtx",
+        "start": 12049,
+        "end": 12050,
+        "receipt_id": "R2",
+        "reason": "receipt_valid",
+        "reason_zh": "receipt_valid",
+        "effective_receipt_id": "R2",
+        "signer": {
+          "principal_id": "u-b",
+          "role": "long-term custodian",
+          "verified": true,
+          "source": "internal_responsibility",
+          "reason": null,
+          "actual_name": "Li Na",
+          "declared_name": null
+        }
+      },
+      {
+        "evidence_id": "system-short.evtx",
+        "start": 12051,
+        "end": 12051,
+        "receipt_id": "R2",
+        "reason": "receipt_valid",
+        "reason_zh": "receipt_valid",
+        "effective_receipt_id": "R2",
+        "signer": {
+          "principal_id": "u-b",
+          "role": "long-term custodian",
+          "verified": true,
+          "source": "internal_responsibility",
+          "reason": null,
+          "actual_name": "Li Na",
+          "declared_name": null
+        }
+      },
+      {
+        "evidence_id": "security-short.evtx",
+        "start": 1,
+        "end": 2,
+        "receipt_id": "R1",
+        "reason": "receipt_valid",
+        "reason_zh": "receipt_valid",
+        "effective_receipt_id": "R3",
+        "signer": {
+          "principal_id": "u-b",
+          "role": "long-term custodian",
+          "verified": true,
+          "source": "internal_responsibility",
+          "reason": null,
+          "actual_name": "Li Na",
+          "declared_name": null
+        }
+      }
+    ],
+    "manifest_without_receipt": [
+      {
+        "evidence_id": "security-short.evtx",
+        "start": 3,
+        "end": 3,
+        "receipt_id": "R4",
+        "reason": "signed_after_deadline",
+        "reason_zh": "签收时间晚于销档期限"
+      }
+    ],
+    "receipt_without_manifest": [],
+    "scope_matches": false,
+    "scope_check": {
+      "manifest_entries": 4,
+      "matched": 3,
+      "manifest_without_receipt": 1,
+      "receipt_without_manifest": 0,
+      "scope_matches": false
+    }
+  },
+  "actual_signer": {
+    "receipt_id": "R2",
+    "signed_at": "2026-10-25T09:00:00Z",
+    "principal_id": "u-b",
+    "role": "long-term custodian",
+    "verified": true,
+    "source": "internal_responsibility",
+    "reason": null,
+    "actual_name": "Li Na",
+    "declared_name": null
+  },
+  "external": {
+    "case_id": "CASE-2026-11-EVTX-001",
+    "generated_at": "2026-11-30T23:59:59Z",
+    "offline": true,
+    "status": "not_accepted",
+    "status_zh": "尚未被承接",
+    "archive_deadline": "2026-11-30T23:59:59Z",
+    "custodian": {
+      "role": "long-term custodian"
+    },
+    "handover_scope": [
+      {
+        "evidence_id": "system-short.evtx",
+        "start": 12049,
+        "end": 12050,
+        "record_count": 2,
+        "status": "reviewable",
+        "status_zh": "可继续复查",
+        "reason_code": "signed_scope_and_full_access",
+        "receipt_id": "R2",
+        "signed_at": "2026-10-25T09:00:00Z",
+        "sha256": "10053898ede71eb96575e87f6f31d6834e1a2108726119523431c489e30c8976",
+        "digest_verified": true,
+        "manifest_digest_verified": true
+      },
+      {
+        "evidence_id": "system-short.evtx",
+        "start": 12051,
+        "end": 12051,
+        "record_count": 1,
+        "status": "summary_only",
+        "status_zh": "只剩摘要",
+        "reason_code": "custodian_has_summary_only",
+        "receipt_id": "R2",
+        "signed_at": "2026-10-25T09:00:00Z",
+        "sha256": "d6bd6942ba48deddce22b5a263492b674f28bbcd2a4b5339995166e9b12546e2",
+        "digest_verified": true,
+        "manifest_digest_verified": true
+      },
+      {
+        "evidence_id": "security-short.evtx",
+        "start": 1,
+        "end": 2,
+        "record_count": 2,
+        "status": "reviewable",
+        "status_zh": "可继续复查",
+        "reason_code": "signed_scope_and_full_access",
+        "receipt_id": "R3",
+        "signed_at": "2026-11-05T10:00:00Z",
+        "sha256": "ecf123ae16b69904b935c7a550f379d9db9d2c9fd483d0b84951a88dd19888b7",
+        "digest_verified": true,
+        "manifest_digest_verified": true
+      },
+      {
+        "evidence_id": "security-short.evtx",
+        "start": 3,
+        "end": 3,
+        "record_count": 1,
+        "status": "not_accepted",
+        "status_zh": "尚未被承接",
+        "reason_code": "signed_after_deadline",
+        "receipt_id": null,
+        "signed_at": null,
+        "sha256": "272081032b81f5818093241539f51c4cd02bad5ad75b45422508df7512d41c17",
+        "digest_verified": null,
+        "manifest_digest_verified": null
+      }
+    ],
+    "counts": {
+      "reviewable_records": 4,
+      "summary_only_records": 1,
+      "not_accepted_records": 1,
+      "reviewable_segments": 2,
+      "summary_only_segments": 1,
+      "not_accepted_segments": 1,
+      "total_records": 6,
+      "total_range_records": 6
+    },
+    "scope_check": {
+      "manifest_entries": 4,
+      "matched": 3,
+      "manifest_without_receipt": 1,
+      "receipt_without_manifest": 0,
+      "scope_matches": false
+    },
+    "manifest": [
+      {
+        "evidence_id": "system-short.evtx",
+        "start": 12049,
+        "end": 12050,
+        "record_count": 2,
+        "receipt_id": "R2",
+        "sha256": "10053898ede71eb96575e87f6f31d6834e1a2108726119523431c489e30c8976",
+        "all_scope": false
+      },
+      {
+        "evidence_id": "system-short.evtx",
+        "start": 12051,
+        "end": 12051,
+        "record_count": 1,
+        "receipt_id": "R2",
+        "sha256": "d6bd6942ba48deddce22b5a263492b674f28bbcd2a4b5339995166e9b12546e2",
+        "all_scope": false
+      },
+      {
+        "evidence_id": "security-short.evtx",
+        "start": 1,
+        "end": 2,
+        "record_count": 2,
+        "receipt_id": "R1",
+        "sha256": "ecf123ae16b69904b935c7a550f379d9db9d2c9fd483d0b84951a88dd19888b7",
+        "all_scope": false
+      },
+      {
+        "evidence_id": "security-short.evtx",
+        "start": 3,
+        "end": 3,
+        "record_count": 1,
+        "receipt_id": "R4",
+        "sha256": "272081032b81f5818093241539f51c4cd02bad5ad75b45422508df7512d41c17",
+        "all_scope": false
+      }
+    ],
+    "source_digests": [
+      {
+        "evidence_id": "system-short.evtx",
+        "sha256": "0389bb3dfffce47a293b1d724d2c26d316c31a0b0ca89c5f8113f17b5eba8af1"
+      },
+      {
+        "evidence_id": "security-short.evtx",
+        "sha256": "765e3342b70356271625efa8f81f1e83003f6131f6684edb90f62fcdfcaca0e0"
+      }
+    ],
+    "actual_signer": {
+      "receipt_id": "R2",
+      "role": "long-term custodian",
+      "verified": true
+    },
+    "sensitive_fields_omitted": true,
+    "omitted_sensitive_field_count": 0
+  }
+}

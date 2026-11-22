@@ -1,0 +1,19 @@
+{
+  "case_id": "CASE-2026-11-EVTX-001",
+  "roles": [
+    {
+      "principal_id": "u-a",
+      "actual_name": "Zhang Wei",
+      "role": "investigation custodian",
+      "authorized_from": "2026-09-01T00:00:00Z",
+      "authorized_to": "2026-10-25T09:00:00Z"
+    },
+    {
+      "principal_id": "u-b",
+      "actual_name": "Li Na",
+      "role": "long-term custodian",
+      "authorized_from": "2026-10-25T09:00:00Z",
+      "authorized_to": "2027-01-01T00:00:00Z"
+    }
+  ]
+}
