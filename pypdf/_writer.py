@@ -787,6 +787,36 @@ class PdfWriter(PdfDocCommon):
         """
         deprecation_with_replacement("add_js", "add_open_action", "7.0.0")
 
+    def sanitize_interactive(
+        self,
+        *,
+        policy: Any = None,
+        reviewer: Callable[[Any], Any] | None = None,
+    ) -> Any:
+        """Explicitly review and sanitize interactive actions in this writer.
+
+        External-resource and unexplained actions are detached from outlines,
+        page annotations, form fields, page/catalog action dictionaries, and
+        the JavaScript name tree. Approved local navigation is retained.
+
+        This method mutates the writer, not the reader it was cloned from. It
+        refuses incremental writers because their backing stream is the
+        original file.
+
+        Args:
+            policy: Optional interactive sanitization policy.
+            reviewer: Optional callback receiving an ActionFinding. Return
+                True to approve a local action that passed the policy.
+
+        Returns:
+            A SanitizationReport with retained and removed action outcomes.
+        """
+        from .interactive import sanitize_writer  # noqa: PLC0415
+
+        return sanitize_writer(self, policy=policy, reviewer=reviewer)
+
+    sanitize_interactive_actions = sanitize_interactive
+
     def add_open_action(self, action: Action) -> None:
         """
         Add an action to the document-level JavaScript name tree.

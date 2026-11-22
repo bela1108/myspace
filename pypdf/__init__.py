@@ -17,6 +17,25 @@ from ._text_extraction import mult
 from ._version import __version__
 from ._writer import ObjectDeletionFlag, PdfWriter
 from .constants import ImageType
+from .interactive import (
+    ActionClassification,
+    ActionDisposition,
+    ActionFinding,
+    ApprovalScope,
+    BookmarkFinding,
+    DestinationFinding,
+    FormFieldFinding,
+    InteractiveReview,
+    NavigationDisposition,
+    SanitizationPolicy,
+    SanitizationReport,
+    SurfaceKind,
+    SurfaceRef,
+    review_interactive_actions,
+    sanitize_interactive_bytes,
+    sanitize_interactive_pdf,
+    sanitize_writer,
+)
 from .pagerange import PageRange, parse_filename_page_ranges
 from .papersizes import PaperSize
 
@@ -32,9 +51,18 @@ _debug_versions = (
 )
 
 __all__ = [
+    "ActionClassification",
+    "ActionDisposition",
+    "ActionFinding",
+    "ApprovalScope",
+    "BookmarkFinding",
     "Configuration",
+    "DestinationFinding",
     "DocumentInformation",
+    "FormFieldFinding",
     "ImageType",
+    "InteractiveReview",
+    "NavigationDisposition",
     "ObjectDeletionFlag",
     "PageObject",
     "PageRange",
@@ -42,6 +70,10 @@ __all__ = [
     "PasswordType",
     "PdfReader",
     "PdfWriter",
+    "SanitizationPolicy",
+    "SanitizationReport",
+    "SurfaceKind",
+    "SurfaceRef",
     "Transformation",
     "__version__",
     "_debug_versions",
@@ -50,4 +82,8 @@ __all__ = [
     "mult",
     "overwrite_configuration",
     "parse_filename_page_ranges",
+    "review_interactive_actions",
+    "sanitize_interactive_bytes",
+    "sanitize_interactive_pdf",
+    "sanitize_writer",
 ]
