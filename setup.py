@@ -32,7 +32,7 @@ def read_file(path_segments):
 
 setup(
     name="signedjson",
-    packages=["signedjson"],
+    packages=["signedjson", "signedjson.acceptance"],
     description="Sign JSON with Ed25519 signatures",
     use_scm_version=True,
     setup_requires=["setuptools_scm"],
