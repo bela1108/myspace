@@ -38,6 +38,7 @@ from datetime import datetime
 import attr
 import securesystemslib._gpg.functions
 import securesystemslib.exceptions
+import securesystemslib.formats
 from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
 
@@ -85,6 +86,10 @@ class Layout(Signable):
 
       readme: A human readable description of the software supply chain.
 
+      sampling: An optional, owner-signed `in_toto.sampling.SamplingPolicy`
+          agreement. If set, release verification also requires signed review
+          evidence for the deterministic sample drawn from verified links.
+
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -94,6 +99,7 @@ class Layout(Signable):
     keys = attr.ib()
     expires = attr.ib()
     readme = attr.ib()
+    sampling = attr.ib()
 
     def __init__(self, **kwargs):
         super().__init__()
@@ -102,6 +108,7 @@ class Layout(Signable):
         self.inspect = kwargs.get("inspect", [])
         self.keys = kwargs.get("keys", {})
         self.readme = kwargs.get("readme", "")
+        self.sampling = kwargs.get("sampling")
 
         # Assign a default expiration (one month) if not expiration date is passed
         # TODO: Is one month a sensible default? In any case, we need a valid
@@ -148,7 +155,26 @@ class Layout(Signable):
         ]
         data["inspect"] = inspections
 
+        if data.get("sampling") is not None:
+            # Imported here to avoid a model/sampling import cycle.
+            from in_toto.sampling import SamplingPolicy  # noqa: PLC0415
+
+            data["sampling"] = SamplingPolicy.read(data["sampling"])
+
         return Layout(**data)
+
+    @property
+    def signable_bytes(self):
+        """Canonical bytes for signing.
+
+        ``sampling`` is omitted when unset so that layouts created before
+        sampling support keep their original signatures and serialization.
+        """
+        data = attr.asdict(self)
+        if data.get("sampling") is None:
+            data.pop("sampling", None)
+
+        return securesystemslib.formats.encode_canonical(data).encode("UTF-8")
 
     def set_relative_expiration(self, days=0, months=0, years=0):
         """Sets layout expiration relative to today.
@@ -396,6 +422,29 @@ class Layout(Signable):
 
         return key_dict
 
+    def add_sampling_policy(self, policy):
+        """Attach an owner-signed sampling policy to the layout.
+
+        Arguments:
+          policy: A `SamplingPolicy` or its dictionary representation.
+
+        Returns:
+          The attached `SamplingPolicy` instance.
+        """
+        from in_toto.sampling import SamplingPolicy  # noqa: PLC0415
+
+        self.sampling = SamplingPolicy.read(policy)
+        return self.sampling
+
+    def get_sampling_policy(self):
+        """Return the attached sampling policy, if any."""
+        if self.sampling is None:
+            return None
+
+        from in_toto.sampling import SamplingPolicy  # noqa: PLC0415
+
+        return SamplingPolicy.read(self.sampling)
+
     def _validate_type(self):
         """Private method to check that the type string is set to layout."""
         if self._type != "layout":
@@ -423,6 +472,19 @@ class Layout(Signable):
             raise securesystemslib.exceptions.FormatError(
                 f"Invalid readme '{self.readme}', value must be a string."
             )
+
+    def _validate_sampling(self):
+        """Private method to validate an optional sampling policy."""
+        if self.sampling is None:
+            return
+
+        # Imported here to avoid a model/sampling import cycle.
+        from in_toto.sampling import SamplingPolicy  # noqa: PLC0415
+
+        if not isinstance(self.sampling, SamplingPolicy):
+            self.sampling = SamplingPolicy.read(self.sampling)
+        else:
+            self.sampling.validate()
 
     def _validate_keys(self):
         """Private method to ensure that the keys contained are right."""

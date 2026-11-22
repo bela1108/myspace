@@ -41,3 +41,55 @@ class PrefixError(Error):
 
 class InvalidMetadata(Error):  # noqa: N818
     """Indicates that the metadata is not valid."""
+
+
+class SamplingError(Error):
+    """Indicates an error in release sampling metadata or configuration."""
+
+
+class SamplingVerificationError(SamplingError):
+    """Indicates that sampling acceptance verification failed.
+
+    The optional ``result`` attribute carries the partial/successful
+    verification result, including evidence that was retained for re-review.
+    """
+
+    def __init__(self, message, result=None):
+        super().__init__(message)
+        self.result = result
+
+
+class SamplingFullSetChangedError(SamplingVerificationError):
+    """Indicates that the signed artifact full set changed after a draw.
+
+    Attributes:
+      expected_digest: Digest recorded in the draw sheet.
+      actual_digest: Digest recomputed from the current full set.
+      changed: Mapping of artifact ids to ``{"old": ..., "new": ...}``.
+      added: Artifact ids that were not present in the recorded full set.
+      removed: Artifact ids that are missing from the current full set.
+    """
+
+    def __init__(  # noqa: PLR0913
+        self,
+        message,
+        result=None,
+        expected_digest=None,
+        actual_digest=None,
+        changed=None,
+        added=None,
+        removed=None,
+    ):
+        super().__init__(message, result=result)
+        self.expected_digest = expected_digest
+        self.actual_digest = actual_digest
+        self.changed = changed or {}
+        self.added = added or []
+        self.removed = removed or []
+
+
+class SamplingCutoffError(SamplingVerificationError):
+    """Indicates that only late evidence exists for a sampled artifact.
+
+    Late evidence remains available on ``result.late`` for a later re-review.
+    """

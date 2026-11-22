@@ -13,6 +13,7 @@ api
 model
 configuration
 layout-creation-example
+sampling
 Demo Supply Chain <https://github.com/in-toto/demo>
 CONTRIBUTING
 ```

@@ -41,3 +41,28 @@ documented [in-toto#663](https://github.com/in-toto/in-toto/issues/663).
 ```{eval-rst}
 .. autofunction:: in_toto.verifylib.in_toto_verify
 ```
+
+## Release Sampling
+
+```{eval-rst}
+.. autoclass:: in_toto.sampling.SamplingPolicy
+   :members:
+   :undoc-members:
+```
+
+```{eval-rst}
+.. autoclass:: in_toto.sampling.SamplingDraw
+   :members: recompute, verify, from_dict, load, dump, to_dict
+```
+
+```{eval-rst}
+.. autofunction:: in_toto.sampling.collect_full_set
+```
+
+```{eval-rst}
+.. autofunction:: in_toto.sampling.verify_sampling_acceptance
+```
+
+```{eval-rst}
+.. autofunction:: in_toto.sampling.create_review_evidence
+```

@@ -41,6 +41,7 @@ import in_toto.models.layout
 import in_toto.models.link
 import in_toto.rulelib
 import in_toto.runlib
+import in_toto.sampling
 import in_toto.settings
 from in_toto.exceptions import (
     BadReturnValueError,
@@ -51,6 +52,11 @@ from in_toto.exceptions import (
 )
 from in_toto.formats import _check_parameter_dict, _check_public_keys
 from in_toto.models.metadata import Metadata
+
+# Convenience aliases for the optional release sampling extension.
+SamplingPolicy = in_toto.sampling.SamplingPolicy
+SamplingDraw = in_toto.sampling.SamplingDraw
+verify_sampling_acceptance = in_toto.sampling.verify_sampling_acceptance
 
 # Inherits from in_toto base logger (c.f. in_toto.log)
 LOG = logging.getLogger(__name__)
@@ -1489,6 +1495,11 @@ def in_toto_verify(  # noqa: PLR0913, PLR0917, RUF100
     step_name="",
     persist_inspection_links=True,
     inspect_timeout=in_toto.settings.LINK_CMD_EXEC_TIMEOUT,
+    sampling_review_metadata=None,
+    sampling_review_keys=None,
+    sampling_draw_sheet_path=None,
+    sampling_result_path=None,
+    sampling_policy=None,
 ):
     """Performs complete in-toto supply chain verification for a final product.
 
@@ -1501,14 +1512,16 @@ def in_toto_verify(  # noqa: PLR0913, PLR0917, RUF100
     4.  Load link metadata
     5.  Verify link signatures with keys in layout
     6.  Recurse into sublayout verification
-    7.  Soft-verify alignment of reported and expected commands. Note:
+    7.  Verify optional deterministic release sampling acceptance, if the
+        layout carries a sampling policy
+    8.  Soft-verify alignment of reported and expected commands. Note:
         verification does not fail if commands don't match, instead a warning is
         logged as per the in-toto specification --
         https://github.com/in-toto/docs/blob/master/in-toto-spec.md#431-steps
-    8.  Verify threshold artifact constraints
-    9.  Process step product and material rules
-    10. Execute inspection commands and generate inspection links
-    11. Process inspection product and material rules
+    9.  Verify threshold artifact constraints
+    10. Process step product and material rules
+    11. Execute inspection commands and generate inspection links
+    12. Process inspection product and material rules
 
     Note: in-toto's verification workflow directly uses the key for verifying
     signatures. It does not communicate with external sources of information for
@@ -1546,6 +1559,24 @@ def in_toto_verify(  # noqa: PLR0913, PLR0917, RUF100
       inspect_timeout (optional): An integer value that defaults to
           in_toto.settings.LINK_CMD_EXEC_TIMEOUT in seconds which ends up timing
           out the run command subprocess if it runs over.
+
+      sampling_review_metadata (optional): Signed in-toto Link metadata, or
+          paths to such metadata, constituting manual review evidence for the
+          optional sampling agreement. If the layout carries a sampling policy
+          and no evidence is passed, sampling verification fails.
+
+      sampling_review_keys (optional): Dictionary of public keys used to verify
+          review evidence. Defaults to the functionary keys in the layout.
+
+      sampling_draw_sheet_path (optional): If passed, the deterministic draw
+          sheet is written to this path, including on sampling failures.
+
+      sampling_result_path (optional): If passed, the complete acceptance
+          result, including late evidence retained for re-review, is written to
+          this path.
+
+      sampling_policy (optional): A sampling policy used when the layout does
+          not carry one. If both are present, they must be identical.
 
     Raises:
       securesystemslib.exceptions.FormatError: Passed parameters are malformed.
@@ -1607,6 +1638,54 @@ def in_toto_verify(  # noqa: PLR0913, PLR0917, RUF100
     chain_link_dict = verify_sublayouts(
         layout, steps_metadata, link_dir_path, inspect_timeout
     )
+
+    sampling_policy_obj = getattr(layout, "sampling", None)
+    if sampling_policy_obj is not None and sampling_policy is not None:
+        explicit_policy = in_toto.sampling.SamplingPolicy.read(sampling_policy)
+        policy_in_layout = in_toto.sampling.SamplingPolicy.read(
+            sampling_policy_obj
+        )
+        if explicit_policy.digest != policy_in_layout.digest:
+            raise securesystemslib.exceptions.FormatError(
+                "The passed sampling policy differs from the policy signed"
+                " in the layout"
+            )
+    elif sampling_policy_obj is None:
+        sampling_policy_obj = sampling_policy
+
+    sampling_arguments = any(
+        argument is not None
+        for argument in (
+            sampling_review_metadata,
+            sampling_review_keys,
+            sampling_draw_sheet_path,
+            sampling_result_path,
+            sampling_policy,
+        )
+    )
+
+    if sampling_policy_obj is not None:
+        LOG.info("Verifying release sampling acceptance...")
+        sampling_policy_obj = in_toto.sampling.SamplingPolicy.read(
+            sampling_policy_obj
+        )
+        sampling_full_set = in_toto.sampling.collect_full_set_for_policy(
+            sampling_policy_obj, chain_link_dict
+        )
+        in_toto.sampling.verify_sampling_acceptance(
+            sampling_policy_obj,
+            sampling_full_set,
+            sampling_review_metadata,
+            review_keys=sampling_review_keys or layout.keys,
+            write_draw_sheet=sampling_draw_sheet_path,
+            write_result=sampling_result_path,
+            raise_on_failure=True,
+        )
+    elif sampling_arguments:
+        raise securesystemslib.exceptions.FormatError(
+            "Sampling arguments were passed, but the layout has no sampling"
+            " policy"
+        )
 
     LOG.info("Verifying alignment of reported commands...")
     verify_all_steps_command_alignment(layout, chain_link_dict)

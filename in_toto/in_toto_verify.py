@@ -71,7 +71,9 @@ The verification includes the following checks:
   * a threshold of link metadata files exists for each step of the layout,
   * link files are signed by the authorized functionaries,
   * the materials and products for each step, as reported by the corresponding
-    link files, adhere to the artifact rules specified by the step.
+    link files, adhere to the artifact rules specified by the step,
+  * if a sampling policy is attached to the layout, signed review evidence
+    passes deterministic sampling acceptance and the release cutoff.
 
 Additionally, inspection commands defined in the layout are executed
 sequentially, followed by processing the inspections' artifact rules.
@@ -186,6 +188,37 @@ for which the public part can be found in the GPG keyring at '~/.gnupg'.
         ),
     )
 
+    parser.add_argument(
+        "--sampling-reviews",
+        dest="sampling_reviews",
+        nargs="+",
+        metavar="<path>",
+        help=(
+            "paths to signed in-toto link metadata containing manual review"
+            " evidence for a layout sampling policy."
+        ),
+    )
+
+    parser.add_argument(
+        "--sampling-draw-sheet",
+        dest="sampling_draw_sheet",
+        metavar="<path>",
+        help=(
+            "path to write the recomputable sampling draw sheet to. The sheet"
+            " is written even if sampling acceptance fails."
+        ),
+    )
+
+    parser.add_argument(
+        "--sampling-result",
+        dest="sampling_result",
+        metavar="<path>",
+        help=(
+            "path to write the full sampling acceptance result to, including"
+            " late evidence retained for re-review."
+        ),
+    )
+
     verbosity_args = parser.add_mutually_exclusive_group(required=False)
     verbosity_args.add_argument(*VERBOSE_ARGS, **VERBOSE_KWARGS)
     verbosity_args.add_argument(*QUIET_ARGS, **QUIET_KWARGS)
@@ -238,6 +271,9 @@ def main():
             layout_key_dict,
             args.link_dir,
             inspect_timeout=args.inspect_timeout,
+            sampling_review_metadata=args.sampling_reviews,
+            sampling_draw_sheet_path=args.sampling_draw_sheet,
+            sampling_result_path=args.sampling_result,
         )
 
     except Exception as e:  # noqa: BLE001
