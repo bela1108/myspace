@@ -1,0 +1,175 @@
+{
+  "case_id": "CAB-07-slot-advisory-demo",
+  "description": "Fictional control cabinet with one host number and two application slots. The second snapshot re-evidences only slot A.",
+  "cabinet": {
+    "cabinet_id": "CAB-07",
+    "host_id": "HOST-0007",
+    "name": "原料泵控制柜（虚构）",
+    "slots": [
+      {
+        "slot_id": "A",
+        "application": "进料控制 HMI",
+        "note": "slot A application owner"
+      },
+      {
+        "slot_id": "B",
+        "application": "回流控制 HMI",
+        "note": "slot B application owner"
+      }
+    ]
+  },
+  "advisory": {
+    "advisory_id": "ADV-2026-014",
+    "title": "PLC runtime and HMI vulnerable versions（虚构）",
+    "operator": "AND",
+    "description": "One host-common condition plus one slot-scoped condition for each application slot.",
+    "conditions": [
+      {
+        "condition_id": "host-runtime",
+        "scope": "host",
+        "cpe": "cpe:2.3:a:acme:plc_runtime:4.2.1:*:*:*:*:*:*:*",
+        "description": "Host-common PLC runtime 4.2.1 is vulnerable."
+      },
+      {
+        "condition_id": "slot-a-hmi",
+        "scope": "slot",
+        "slot_id": "A",
+        "cpe": "cpe:2.3:a:acme:hmi:2.1:*:*:*:*:*:*:*",
+        "description": "Slot A HMI 2.1 is vulnerable."
+      },
+      {
+        "condition_id": "slot-b-hmi",
+        "scope": "slot",
+        "slot_id": "B",
+        "cpe": "cpe:2.3:a:acme:hmi:3.0:*:*:*:*:*:*:*",
+        "description": "Slot B HMI 3.0 is vulnerable."
+      }
+    ]
+  },
+  "snapshots": [
+    {
+      "snapshot_id": "snap-2026-11-18T02:00:00+08:00",
+      "cabinet_id": "CAB-07",
+      "captured_at": "2026-11-18T02:00:00+08:00",
+      "evidence_slots": ["A", "B"],
+      "host_evidence": true,
+      "complete": true,
+      "note": "Full baseline snapshot.",
+      "components": [
+        {
+          "component_id": "rt-01",
+          "cpe": "cpe:2.3:a:acme:plc_runtime:4.2.1:*:*:*:*:*:*:*",
+          "slots": [],
+          "label": "PLC runtime 4.2.1, host-common"
+        },
+        {
+          "component_id": "hmi-a-01",
+          "cpe": "cpe:2.3:a:acme:hmi:2.1:*:*:*:*:*:*:*",
+          "slots": ["A"],
+          "label": "Feed HMI 2.1, slot A"
+        },
+        {
+          "component_id": "hmi-b-01",
+          "cpe": "cpe:2.3:a:acme:hmi:3.0:*:*:*:*:*:*:*",
+          "slots": ["B"],
+          "label": "Reflux HMI 3.0, slot B"
+        },
+        {
+          "component_id": "valve-drv-01",
+          "cpe": "cpe:2.3:a:acme:valve_driver:5.0:*:*:*:*:*:*:*",
+          "slots": ["A", "B"],
+          "label": "Shared valve driver 5.0, owned by slots A and B"
+        }
+      ]
+    },
+    {
+      "snapshot_id": "snap-2026-11-22T09:30:00+08:00",
+      "cabinet_id": "CAB-07",
+      "captured_at": "2026-11-22T09:30:00+08:00",
+      "evidence_slots": ["A"],
+      "host_evidence": true,
+      "complete": true,
+      "note": "Single-slot supplement: only slot A was re-evidenced; slot B keeps its previous evidence.",
+      "components": [
+        {
+          "component_id": "rt-01",
+          "cpe": "cpe:2.3:a:acme:plc_runtime:4.2.1:*:*:*:*:*:*:*",
+          "slots": [],
+          "label": "PLC runtime 4.2.1, host-common (unchanged)"
+        },
+        {
+          "component_id": "hmi-a-01",
+          "cpe": "cpe:2.3:a:acme:hmi:2.2:*:*:*:*:*:*:*",
+          "slots": ["A"],
+          "label": "Feed HMI 2.2, slot A, patched"
+        },
+        {
+          "component_id": "valve-drv-01",
+          "cpe": "cpe:2.3:a:acme:valve_driver:5.1:*:*:*:*:*:*:*",
+          "slots": ["A", "B"],
+          "label": "Shared valve driver 5.1, joint A/B change"
+        }
+      ]
+    }
+  ],
+  "closures": [
+    {
+      "closure_id": "CL-HOST-0001",
+      "cabinet_id": "CAB-07",
+      "advisory_id": "ADV-2026-014",
+      "slot_ids": [],
+      "recorded_at": "2026-11-19T10:00:00+08:00",
+      "source": "legacy-disposition-report",
+      "note": "Legacy report aggregated by host number. It assumed the host runtime fix also closed both HMI alarm sets.",
+      "witnesses": [
+        {
+          "component_id": "rt-01",
+          "cpe": "cpe:2.3:a:acme:plc_runtime:4.2.1:*:*:*:*:*:*:*",
+          "source_snapshot_id": "snap-2026-11-18T02:00:00+08:00",
+          "condition_id": "host-runtime",
+          "condition_scope": "host",
+          "component_slots": [],
+          "label": "PLC runtime 4.2.1, host-common"
+        },
+        {
+          "component_id": "rt-01",
+          "cpe": "cpe:2.3:a:acme:plc_runtime:4.2.1:*:*:*:*:*:*:*",
+          "source_snapshot_id": "snap-2026-11-18T02:00:00+08:00",
+          "condition_id": "slot-b-hmi",
+          "condition_scope": "slot",
+          "component_slots": [],
+          "label": "Legacy attempt to close slot B with the host runtime witness"
+        }
+      ]
+    },
+    {
+      "closure_id": "CL-A-0002",
+      "cabinet_id": "CAB-07",
+      "advisory_id": "ADV-2026-014",
+      "slot_ids": ["A"],
+      "recorded_at": "2026-11-20T16:00:00+08:00",
+      "source": "slot-a-owner",
+      "note": "Slot A-only closure. It carries A HMI witness plus the shared host runtime witness.",
+      "witnesses": [
+        {
+          "component_id": "hmi-a-01",
+          "cpe": "cpe:2.3:a:acme:hmi:2.1:*:*:*:*:*:*:*",
+          "source_snapshot_id": "snap-2026-11-18T02:00:00+08:00",
+          "condition_id": "slot-a-hmi",
+          "condition_scope": "slot",
+          "component_slots": ["A"],
+          "label": "Feed HMI 2.1, slot A"
+        },
+        {
+          "component_id": "rt-01",
+          "cpe": "cpe:2.3:a:acme:plc_runtime:4.2.1:*:*:*:*:*:*:*",
+          "source_snapshot_id": "snap-2026-11-18T02:00:00+08:00",
+          "condition_id": "host-runtime",
+          "condition_scope": "host",
+          "component_slots": [],
+          "label": "PLC runtime 4.2.1, host-common"
+        }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,12 @@
 News
 ====
 
+Unreleased
+----------
+
+* Add slot-scoped advisory adjudication with witness-carrying closure records
+  and a local two-snapshot query interface.
+
 1.3.1
 -----
 

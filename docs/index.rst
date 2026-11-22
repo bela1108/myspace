@@ -23,6 +23,7 @@ Contents:
    model
    install
    examples
+   advisory
    issues
    bugtracker
    todo

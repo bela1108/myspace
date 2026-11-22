@@ -25,6 +25,7 @@ Features
 - CPE rich comparison.
 - CPE cross-version conversion.
 - CPE Language parsing and evaluation.
+- Slot-scoped advisory adjudication with witness-carrying closure records.
 - LGPL Licensed.
 - Semantic versioning.
 - Tests.

@@ -4,6 +4,7 @@ include tox.ini .coveragerc
 recursive-include tests *.txt *.xml *.py
 recursive-include requirements *.txt
 recursive-include docs *
+recursive-include examples *.json
 
 prune docs/_build
 global-exclude *.pyc

@@ -1,0 +1,79 @@
+{
+  "case_id": "CAB-08-slot-migration-demo",
+  "description": "Fictional cabinet demonstrating a component migrating from old slot A to new slot C. The old slot closure does not transfer.",
+  "cabinet": {
+    "cabinet_id": "CAB-08",
+    "host_id": "HOST-0008",
+    "name": "成品输送控制柜（虚构）",
+    "slots": [
+      {"slot_id": "A", "application": "旧输送控制 HMI"},
+      {"slot_id": "B", "application": "旁路控制 HMI"},
+      {"slot_id": "C", "application": "新输送控制 HMI"}
+    ]
+  },
+  "advisory": {
+    "advisory_id": "ADV-2026-020",
+    "title": "Valve driver 5.0 vulnerable version（虚构）",
+    "operator": "AND",
+    "conditions": [
+      {
+        "condition_id": "driver",
+        "scope": "slot",
+        "cpe": "cpe:2.3:a:acme:valve_driver:5.0:*:*:*:*:*:*:*",
+        "description": "The slot-owned valve driver is 5.0."
+      }
+    ]
+  },
+  "snapshots": [
+    {
+      "snapshot_id": "snap-2026-11-10T01:00:00+08:00",
+      "cabinet_id": "CAB-08",
+      "captured_at": "2026-11-10T01:00:00+08:00",
+      "evidence_slots": ["A", "B", "C"],
+      "components": [
+        {
+          "component_id": "drv-01",
+          "cpe": "cpe:2.3:a:acme:valve_driver:5.0:*:*:*:*:*:*:*",
+          "slots": ["A"],
+          "label": "Valve driver 5.0 before migration"
+        }
+      ]
+    },
+    {
+      "snapshot_id": "snap-2026-11-23T01:00:00+08:00",
+      "cabinet_id": "CAB-08",
+      "captured_at": "2026-11-23T01:00:00+08:00",
+      "evidence_slots": ["A", "B", "C"],
+      "components": [
+        {
+          "component_id": "drv-01",
+          "cpe": "cpe:2.3:a:acme:valve_driver:5.0:*:*:*:*:*:*:*",
+          "slots": ["C"],
+          "label": "Valve driver 5.0 after migration to slot C"
+        }
+      ]
+    }
+  ],
+  "closures": [
+    {
+      "closure_id": "CL-A-0001",
+      "cabinet_id": "CAB-08",
+      "advisory_id": "ADV-2026-020",
+      "slot_ids": ["A"],
+      "recorded_at": "2026-11-11T08:00:00+08:00",
+      "source": "old-slot-a-owner",
+      "note": "Old slot A closure. After migration it is historical evidence only.",
+      "witnesses": [
+        {
+          "component_id": "drv-01",
+          "cpe": "cpe:2.3:a:acme:valve_driver:5.0:*:*:*:*:*:*:*",
+          "source_snapshot_id": "snap-2026-11-10T01:00:00+08:00",
+          "condition_id": "driver",
+          "condition_scope": "slot",
+          "component_slots": ["A"],
+          "label": "Valve driver 5.0 before migration"
+        }
+      ]
+    }
+  ]
+}
