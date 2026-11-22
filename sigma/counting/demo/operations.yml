@@ -1,0 +1,18 @@
+# Same small logical-operation set replayed under single-write, dual-write
+# and missing-identity collection. Five operations, three distinct users.
+operations:
+    - identity: 1001
+      timestamp: 0
+      fields: {EventID: 4672, User: alice, Hostname: wks-01}
+    - identity: 1002
+      timestamp: 30
+      fields: {EventID: 4672, User: bob, Hostname: wks-02}
+    - identity: 1003
+      timestamp: 75
+      fields: {EventID: 4672, User: alice, Hostname: wks-01}
+    - identity: 1004
+      timestamp: 120
+      fields: {EventID: 4672, User: carol, Hostname: wks-03}
+    - identity: 1005
+      timestamp: 200
+      fields: {EventID: 4672, User: alice, Hostname: wks-01}

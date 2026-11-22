@@ -1,0 +1,351 @@
+{
+  "summary": {
+    "rules": 4,
+    "determined": 3,
+    "undetermined": 1,
+    "count_based": 3,
+    "unique_value_based": 1
+  },
+  "count_based_correlations": [
+    {
+      "check": {
+        "rule": "priv_op_burst_count",
+        "title": "Privileged operation burst (count based)",
+        "location": "priv_op_burst_count",
+        "correlation_type": "event_count",
+        "counting_basis": "count",
+        "verdict": "determined",
+        "timespan_seconds": 600,
+        "threshold": {
+          "operator": "gte",
+          "count": 6
+        },
+        "branches": [
+          {
+            "branch": "app_privileged_operation",
+            "verdict": "determined",
+            "reason": "Identity provable via EventRecordID; time precision 1s within timespan.",
+            "logsource": {
+              "product": "windows",
+              "service": "security"
+            },
+            "identity_fields": [
+              "EventRecordID"
+            ],
+            "time_precision": "1s"
+          }
+        ],
+        "undetermined_branches": []
+      },
+      "replays": [
+        {
+          "rule": "priv_op_burst_count",
+          "scenario": "single_write",
+          "counting_basis": "count",
+          "verdict": "determined",
+          "operations": 5,
+          "raw_events": 5,
+          "raw_count": 5,
+          "dedup_count": 5,
+          "unique_values": null,
+          "naive_alert": false,
+          "contract_alert": false,
+          "reason": "single_write: 5 de-duplicated operation(s) vs 5 raw event(s); decisions agree."
+        },
+        {
+          "rule": "priv_op_burst_count",
+          "scenario": "dual_write",
+          "counting_basis": "count",
+          "verdict": "determined",
+          "operations": 5,
+          "raw_events": 10,
+          "raw_count": 10,
+          "dedup_count": 5,
+          "unique_values": null,
+          "naive_alert": true,
+          "contract_alert": false,
+          "reason": "dual_write: 5 de-duplicated operation(s) vs 10 raw event(s); naive and contract-aware decisions differ -> spurious alert."
+        },
+        {
+          "rule": "priv_op_burst_count",
+          "scenario": "missing_identity",
+          "counting_basis": "count",
+          "verdict": "undetermined",
+          "operations": 5,
+          "raw_events": 5,
+          "raw_count": 5,
+          "dedup_count": null,
+          "unique_values": null,
+          "naive_alert": false,
+          "contract_alert": null,
+          "reason": "Identity field(s) ['EventRecordID'] are absent; distinct operations cannot be proven apart, so de-duplication is undecidable."
+        }
+      ],
+      "threshold_changes": [
+        {
+          "scenario": "dual_write",
+          "rule": "priv_op_burst_count",
+          "counting_basis": "count",
+          "naive_alert": true,
+          "contract_alert": false
+        }
+      ]
+    },
+    {
+      "check": {
+        "rule": "priv_op_cross_source_temporal",
+        "title": "Privileged ops across two log sources (one branch without contract)",
+        "location": "priv_op_cross_source_temporal",
+        "correlation_type": "temporal",
+        "counting_basis": "count",
+        "verdict": "determined",
+        "timespan_seconds": 900,
+        "threshold": {
+          "operator": "gte",
+          "count": 2
+        },
+        "branches": [
+          {
+            "branch": "app_privileged_operation",
+            "verdict": "determined",
+            "reason": "Identity provable via EventRecordID; time precision 1s within timespan.",
+            "logsource": {
+              "product": "windows",
+              "service": "security"
+            },
+            "identity_fields": [
+              "EventRecordID"
+            ],
+            "time_precision": "1s"
+          },
+          {
+            "branch": "app_audit_operation",
+            "verdict": "determined",
+            "reason": "Identity provable via EventRecordID, Hostname; time precision 5s within timespan.",
+            "logsource": {
+              "product": "windows",
+              "service": "app-audit"
+            },
+            "identity_fields": [
+              "EventRecordID",
+              "Hostname"
+            ],
+            "time_precision": "5s"
+          }
+        ],
+        "undetermined_branches": []
+      },
+      "replays": [
+        {
+          "rule": "priv_op_cross_source_temporal",
+          "scenario": "single_write",
+          "counting_basis": "count",
+          "verdict": "determined",
+          "operations": 5,
+          "raw_events": 5,
+          "raw_count": 5,
+          "dedup_count": 5,
+          "unique_values": null,
+          "naive_alert": true,
+          "contract_alert": true,
+          "reason": "single_write: 5 de-duplicated operation(s) vs 5 raw event(s); decisions agree."
+        },
+        {
+          "rule": "priv_op_cross_source_temporal",
+          "scenario": "dual_write",
+          "counting_basis": "count",
+          "verdict": "determined",
+          "operations": 5,
+          "raw_events": 10,
+          "raw_count": 10,
+          "dedup_count": 5,
+          "unique_values": null,
+          "naive_alert": true,
+          "contract_alert": true,
+          "reason": "dual_write: 5 de-duplicated operation(s) vs 10 raw event(s); decisions agree."
+        },
+        {
+          "rule": "priv_op_cross_source_temporal",
+          "scenario": "missing_identity",
+          "counting_basis": "count",
+          "verdict": "undetermined",
+          "operations": 5,
+          "raw_events": 5,
+          "raw_count": 5,
+          "dedup_count": null,
+          "unique_values": null,
+          "naive_alert": true,
+          "contract_alert": null,
+          "reason": "Identity field(s) ['EventRecordID'] are absent; distinct operations cannot be proven apart, so de-duplication is undecidable."
+        }
+      ],
+      "threshold_changes": []
+    },
+    {
+      "check": {
+        "rule": "priv_op_with_legacy_temporal",
+        "title": "Privileged op followed by un-contracted legacy event",
+        "location": "priv_op_with_legacy_temporal",
+        "correlation_type": "temporal",
+        "counting_basis": "count",
+        "verdict": "undetermined",
+        "timespan_seconds": 900,
+        "threshold": {
+          "operator": "gte",
+          "count": 2
+        },
+        "branches": [
+          {
+            "branch": "app_privileged_operation",
+            "verdict": "determined",
+            "reason": "Identity provable via EventRecordID; time precision 1s within timespan.",
+            "logsource": {
+              "product": "windows",
+              "service": "security"
+            },
+            "identity_fields": [
+              "EventRecordID"
+            ],
+            "time_precision": "1s"
+          },
+          {
+            "branch": "app_generic_legacy",
+            "verdict": "undetermined",
+            "reason": "No counting contract declared for log source; dual-write duplicates cannot be distinguished from distinct operations.",
+            "logsource": {
+              "product": "windows",
+              "service": "generic-legacy"
+            }
+          }
+        ],
+        "undetermined_branches": [
+          "app_generic_legacy"
+        ]
+      },
+      "replays": [
+        {
+          "rule": "priv_op_with_legacy_temporal",
+          "scenario": "single_write",
+          "counting_basis": "count",
+          "verdict": "determined",
+          "operations": 5,
+          "raw_events": 5,
+          "raw_count": 5,
+          "dedup_count": 5,
+          "unique_values": null,
+          "naive_alert": true,
+          "contract_alert": true,
+          "reason": "single_write: 5 de-duplicated operation(s) vs 5 raw event(s); decisions agree."
+        },
+        {
+          "rule": "priv_op_with_legacy_temporal",
+          "scenario": "dual_write",
+          "counting_basis": "count",
+          "verdict": "determined",
+          "operations": 5,
+          "raw_events": 10,
+          "raw_count": 10,
+          "dedup_count": 5,
+          "unique_values": null,
+          "naive_alert": true,
+          "contract_alert": true,
+          "reason": "dual_write: 5 de-duplicated operation(s) vs 10 raw event(s); decisions agree."
+        },
+        {
+          "rule": "priv_op_with_legacy_temporal",
+          "scenario": "missing_identity",
+          "counting_basis": "count",
+          "verdict": "undetermined",
+          "operations": 5,
+          "raw_events": 5,
+          "raw_count": 5,
+          "dedup_count": null,
+          "unique_values": null,
+          "naive_alert": true,
+          "contract_alert": null,
+          "reason": "Identity field(s) ['EventRecordID'] are absent; distinct operations cannot be proven apart, so de-duplication is undecidable."
+        }
+      ],
+      "threshold_changes": []
+    }
+  ],
+  "unique_value_correlations": [
+    {
+      "check": {
+        "rule": "priv_op_distinct_users",
+        "title": "Distinct users using privileges (unique value based)",
+        "location": "priv_op_distinct_users",
+        "correlation_type": "value_count",
+        "counting_basis": "unique_value",
+        "verdict": "determined",
+        "timespan_seconds": 600,
+        "threshold": {
+          "operator": "gte",
+          "count": 5,
+          "field": "User"
+        },
+        "branches": [
+          {
+            "branch": "app_privileged_operation",
+            "verdict": "determined",
+            "reason": "Identity provable via EventRecordID; time precision 1s within timespan.",
+            "logsource": {
+              "product": "windows",
+              "service": "security"
+            },
+            "identity_fields": [
+              "EventRecordID"
+            ],
+            "time_precision": "1s"
+          }
+        ],
+        "undetermined_branches": []
+      },
+      "replays": [
+        {
+          "rule": "priv_op_distinct_users",
+          "scenario": "single_write",
+          "counting_basis": "unique_value",
+          "verdict": "determined",
+          "operations": 5,
+          "raw_events": 5,
+          "raw_count": 5,
+          "dedup_count": 5,
+          "unique_values": 3,
+          "naive_alert": false,
+          "contract_alert": false,
+          "reason": "single_write: 3 distinct value(s) vs 5 raw event(s); decisions agree."
+        },
+        {
+          "rule": "priv_op_distinct_users",
+          "scenario": "dual_write",
+          "counting_basis": "unique_value",
+          "verdict": "determined",
+          "operations": 5,
+          "raw_events": 10,
+          "raw_count": 10,
+          "dedup_count": 5,
+          "unique_values": 3,
+          "naive_alert": false,
+          "contract_alert": false,
+          "reason": "dual_write: 3 distinct value(s) vs 10 raw event(s); decisions agree."
+        },
+        {
+          "rule": "priv_op_distinct_users",
+          "scenario": "missing_identity",
+          "counting_basis": "unique_value",
+          "verdict": "undetermined",
+          "operations": 5,
+          "raw_events": 5,
+          "raw_count": 5,
+          "dedup_count": null,
+          "unique_values": 3,
+          "naive_alert": false,
+          "contract_alert": null,
+          "reason": "Identity field(s) ['EventRecordID'] are absent; distinct operations cannot be proven apart, so de-duplication is undecidable."
+        }
+      ],
+      "threshold_changes": []
+    }
+  ]
+}

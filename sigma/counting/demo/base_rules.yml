@@ -1,0 +1,29 @@
+title: Application privileged operation
+name: app_privileged_operation
+logsource:
+    product: windows
+    service: security
+detection:
+    selection:
+        EventID: 4672
+    condition: selection
+---
+title: Legacy application audit operation
+name: app_audit_operation
+logsource:
+    product: windows
+    service: app-audit
+detection:
+    selection:
+        EventID: 9001
+    condition: selection
+---
+title: Generic legacy application event
+name: app_generic_legacy
+logsource:
+    product: windows
+    service: generic-legacy
+detection:
+    selection:
+        EventID: 8002
+    condition: selection

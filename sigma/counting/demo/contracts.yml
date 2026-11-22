@@ -1,0 +1,22 @@
+contracts:
+    - logsource:
+          product: windows
+          service: security
+      identity_fields:
+          - EventRecordID
+      time_precision: 1s
+      equivalences:
+          - fields:
+                - RecordId
+                - EventRecordID
+            kind: rename
+            justification: Legacy collector emits the same audit record id as RecordId.
+      description: Windows Security audit log identity contract.
+    - logsource:
+          product: windows
+          service: app-audit
+      identity_fields:
+          - EventRecordID
+          - Hostname
+      time_precision: 5s
+      description: Legacy app audit records have no single event number; identity is composite.

@@ -1,0 +1,52 @@
+title: Privileged operation burst (count based)
+name: priv_op_burst_count
+correlation:
+    type: event_count
+    rules: app_privileged_operation
+    group-by:
+        - User
+    timespan: 10m
+    condition:
+        gte: 6
+---
+title: Distinct users using privileges (unique value based)
+name: priv_op_distinct_users
+correlation:
+    type: value_count
+    rules: app_privileged_operation
+    timespan: 10m
+    group-by:
+        - User
+    condition:
+        field: User
+        gte: 5
+---
+title: Privileged ops across two log sources (one branch without contract)
+name: priv_op_cross_source_temporal
+correlation:
+    type: temporal
+    rules:
+        - app_privileged_operation
+        - app_audit_operation
+    group-by:
+        - User
+    timespan: 15m
+    aliases:
+        User:
+            app_privileged_operation: User
+            app_audit_operation: AccountName
+---
+title: Privileged op followed by un-contracted legacy event
+name: priv_op_with_legacy_temporal
+correlation:
+    type: temporal
+    rules:
+        - app_privileged_operation
+        - app_generic_legacy
+    group-by:
+        - User
+    timespan: 15m
+    aliases:
+        User:
+            app_privileged_operation: User
+            app_generic_legacy: AccountName
