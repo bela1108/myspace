@@ -71,6 +71,37 @@ Sample output:
    (9.9,)
    ('Critical',)
 
+Review backend
+~~~~~~~~~~~~~~
+
+The ``cvss.review`` module adds a review layer on top of the library. It
+accepts a vector together with per-metric provenance (source trust levels:
+``unverified``, ``upstream_default``, ``confirmed``) and decides, driven by
+an explicit ``ReviewPolicy``, whether the record can be published directly
+and which evidence is still missing. Inherited environmental metrics report
+the default values that apply to them, and CVSS 3.x and CVSS 4.0 metric sets
+are explained with their own version-specific fields.
+
+.. code-block:: python
+
+    from cvss import ReviewPolicy, review_vector
+
+
+    policy = ReviewPolicy(
+        required_trust={"base": "confirmed", "environmental": "upstream_default"},
+        default_trust="unverified",
+    )
+    report = review_vector(
+        "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+        {"AV": "confirmed", "AC": "upstream_default"},
+    )
+    print(report.decision)           # "hold"
+    print(report.missing_evidence)   # metrics that still need evidence
+    print(report.explain())          # human-readable review sheet
+
+See ``review_sample.py`` for a full example reviewing two same-score
+incidents with different metric provenance.
+
 Interactive calculator
 ~~~~~~~~~~~~~~~~~~~~~~
 
