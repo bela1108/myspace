@@ -25,6 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             'lnkparse=LnkParse3.lnk_file:main',
+            'lnk-reconcile=LnkParse3.reconcile.cli:main',
         ],
     },
 )

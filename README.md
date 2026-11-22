@@ -112,6 +112,74 @@ Windows Shortcut Information:
 }
 ```
 
+## Offline drive-letter reconciliation
+
+Recovered shortcuts often record a drive letter that was later assigned to a
+different volume. A letter is not a stable identifier, so the offline
+reconciler in LnkParse3.reconcile keeps three layers apart:
+
+1. the target **as written inside the LNK** (path plus the embedded VolumeID
+   serial/label);
+2. the **historical attribution** of that letter per collection period, based
+   on per-period drive tables (periods without an observation stay empty);
+3. the **collected evidence**, matched by the stable volume serial number
+   rather than the possibly-reused letter.
+
+When one letter resolves to several volumes in the same period, every
+candidate is kept together with its source. Targets spelling the same path
+but carrying different embedded serials are surfaced as same-name groups from
+multiple sources.
+
+The historical drive tables and the evidence inventory are plain JSON:
+
+```json
+{
+    "periods": [
+        {
+            "period": "2019-collection",
+            "mappings": [
+                {
+                    "drive_letter": "E",
+                    "volume_serial": "0xAAAABBBB",
+                    "volume_label": "OLD-DISK",
+                    "source": "collector-a"
+                }
+            ]
+        }
+    ]
+}
+```
+
+```json
+{
+    "evidence": [
+        {
+            "evidence_id": "image-old",
+            "volume_serial": "AAAA-BBBB",
+            "source": "exhibit-image-1"
+        }
+    ]
+}
+```
+
+Run it against recovered LNK files (or a directory of them), or against
+pre-extracted target descriptors:
+
+```console
+lnk-reconcile recovered/ --drives drives.json --evidence evidence.json
+lnk-reconcile --targets targets.json --drives drives.json --evidence evidence.json
+```
+
+The same workflow is available from Python:
+
+```python
+from LnkParse3.reconcile import build_reconciliation
+from LnkParse3.reconcile.lnk_adapter import descriptors_from_path
+
+targets = descriptors_from_path("recovered/shortcut.lnk")
+report = build_reconciliation(targets, drive_history, evidence_inventory)
+```
+
 # Extracted data
 
 List of data in LNK structure and their current status of implementation.
