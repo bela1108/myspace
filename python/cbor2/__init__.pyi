@@ -16,6 +16,10 @@ from re import Pattern
 from typing import IO, Any, Generic, TypeAlias, final, overload
 from uuid import UUID
 
+from .session import ReadSession as ReadSession
+from .session import Receipt as Receipt
+from .session import SessionStateError as SessionStateError
+
 if sys.version_info < (3, 15):
     @final
     class frozendict(Mapping[_KT, _VT_co], Generic[_KT, _VT_co]):

@@ -17,6 +17,14 @@ Decoding
 .. autoclass:: cbor2.CBORDecoder
 .. autodecorator:: cbor2.shareable_decoder
 
+Reading sessions
+----------------
+
+.. autoclass:: cbor2.ReadSession
+    :members:
+.. autoclass:: cbor2.Receipt
+    :members:
+
 Types
 -----
 
@@ -64,3 +72,4 @@ Exceptions
 .. autoexception:: cbor2.CBOREncodeValueError
 .. autoexception:: cbor2.CBORDecodeError
 .. autoexception:: cbor2.CBORDecodeEOF
+.. autoexception:: cbor2.SessionStateError

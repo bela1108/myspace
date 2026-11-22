@@ -19,6 +19,9 @@ from ._cbor2 import loads as loads
 from ._cbor2 import shareable_decoder as shareable_decoder
 from ._cbor2 import shareable_encoder as shareable_encoder
 from ._cbor2 import undefined as undefined
+from .session import ReadSession as ReadSession
+from .session import Receipt as Receipt
+from .session import SessionStateError as SessionStateError
 
 if sys.hexversion < 51314855:
     from ._cbor2 import frozendict as frozendict
