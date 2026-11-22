@@ -1,0 +1,70 @@
+{
+  "steps": [
+    {
+      "seq": 1,
+      "doc_id": "doc-legal-001",
+      "block_id": "block-shared-001",
+      "kind": "legal_attachment",
+      "rule_version": "legal-v1",
+      "outcome": "recompute",
+      "reason": "cold",
+      "note": "legal attachment first publish (cold)",
+      "html": "<p>Hello there <strong>all</strong></p>"
+    },
+    {
+      "seq": 2,
+      "doc_id": "doc-legal-001",
+      "block_id": "block-shared-001",
+      "kind": "legal_attachment",
+      "rule_version": "legal-v1",
+      "outcome": "hit",
+      "reason": "unchanged",
+      "note": "legal attachment republished unchanged (hit)",
+      "html": "<p>Hello there <strong>all</strong></p>"
+    },
+    {
+      "seq": 3,
+      "doc_id": "doc-kb-002",
+      "block_id": "block-shared-001",
+      "kind": "knowledge_base",
+      "rule_version": "kb-v1",
+      "outcome": "recompute",
+      "reason": "cold",
+      "note": "knowledge base first publish of the shared block (cold)",
+      "html": "<p>Hello <em>there</em> all</p>"
+    },
+    {
+      "seq": 4,
+      "doc_id": "doc-legal-001",
+      "block_id": "block-shared-001",
+      "kind": "legal_attachment",
+      "rule_version": "legal-v2",
+      "outcome": "recompute",
+      "reason": "revoked",
+      "note": "legal-v1 revoked, block recomputed under legal-v2",
+      "html": "<p>Hello <em>there</em> <strong>all</strong></p>"
+    },
+    {
+      "seq": 5,
+      "doc_id": "doc-kb-002",
+      "block_id": "block-shared-001",
+      "kind": "knowledge_base",
+      "rule_version": "kb-v1",
+      "outcome": "hit",
+      "reason": "unchanged",
+      "note": "knowledge base unaffected by legal revocation (hit)",
+      "html": "<p>Hello <em>there</em> all</p>"
+    },
+    {
+      "seq": 6,
+      "doc_id": "doc-kb-002",
+      "block_id": "block-shared-001",
+      "kind": "knowledge_base",
+      "rule_version": "kb-v2",
+      "outcome": "recompute",
+      "reason": "ancestor_changed",
+      "note": "ancestor section changed kb-v1 -> kb-v2 (recompute)",
+      "html": "<p>Hello <em>there</em> <strong>all</strong></p>"
+    }
+  ]
+}

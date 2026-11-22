@@ -1,5 +1,14 @@
 from unittest import TestCase
 
+from .publish import (
+    KNOWLEDGE_BASE,
+    LEGAL_ATTACHMENT,
+    Block,
+    BlockPublishCache,
+    Document,
+    RuleRegistry,
+    Section,
+)
 from .sanitizer import Sanitizer
 
 
@@ -830,3 +839,80 @@ git commit
             ],
             sanitizer=sanitizer,
         )
+
+
+def make_registry():
+    registry = RuleRegistry()
+
+    def settings(tags):
+        return {
+            "tags": tags,
+            "empty": set(),
+            "separate": {"p"},
+            "whitespace": set(),
+            "attributes": {},
+        }
+
+    registry.register(LEGAL_ATTACHMENT, "legal-v1", settings({"p", "strong"}))
+    registry.register(LEGAL_ATTACHMENT, "legal-v2", settings({"p", "strong", "em"}))
+    registry.register(KNOWLEDGE_BASE, "kb-v1", settings({"p", "em"}))
+    registry.register(KNOWLEDGE_BASE, "kb-v2", settings({"p", "em", "strong"}))
+    return registry
+
+
+class BlockPublishCacheTestCase(TestCase):
+    def setUp(self):
+        self.registry = make_registry()
+        self.cache = BlockPublishCache(self.registry)
+        self.block = Block("shared-1", "<p>Hello <em>there</em></p>")
+
+    def document(self, kind, version, doc_id="doc-1", section_id="sec-1"):
+        return Document(doc_id, kind, Section(section_id, version))
+
+    def test_unchanged_block_is_reused(self):
+        doc = self.document(LEGAL_ATTACHMENT, "legal-v2")
+        html1, event1 = self.cache.publish(doc, self.block)
+        html2, event2 = self.cache.publish(doc, self.block)
+        self.assertEqual(html1, html2)
+        self.assertEqual((event1.outcome, event1.reason), ("recompute", "cold"))
+        self.assertEqual((event2.outcome, event2.reason), ("hit", "unchanged"))
+
+    def test_same_block_is_cached_per_kind_and_version(self):
+        legal = self.document(LEGAL_ATTACHMENT, "legal-v2")
+        kb = self.document(KNOWLEDGE_BASE, "kb-v2", doc_id="doc-2")
+        legal_html, legal_event = self.cache.publish(legal, self.block)
+        kb_html, kb_event = self.cache.publish(kb, self.block)
+        # Same source block, but different retention rules apply.
+        self.assertEqual(legal_html, "<p>Hello <em>there</em></p>")
+        self.assertEqual(kb_html, "<p>Hello <em>there</em></p>")
+        self.assertEqual(kb_event.reason, "cold")
+        strong_block = Block("shared-2", "<p>Hey <strong>you</strong></p>")
+        self.cache.publish(kb, strong_block)
+        kb2 = self.document(KNOWLEDGE_BASE, "kb-v1", doc_id="doc-3")
+        kb1_html, kb1_event = self.cache.publish(kb2, strong_block)
+        self.assertEqual(kb1_event.reason, "ancestor_changed")
+        self.assertEqual(kb1_html, "<p>Hey you</p>")
+
+    def test_revoked_version_invalidates_cache(self):
+        doc = self.document(LEGAL_ATTACHMENT, "legal-v1")
+        html1, _ = self.cache.publish(doc, self.block)
+        self.assertEqual(html1, "<p>Hello there</p>")
+        self.registry.revoke(LEGAL_ATTACHMENT, "legal-v1")
+        self.assertFalse(self.registry.is_authorized(LEGAL_ATTACHMENT, "legal-v1"))
+        # The revoked entry is gone from the cache.
+        self.assertEqual(len(self.cache._entries), 0)
+        html2, event = self.cache.publish(doc, self.block)
+        self.assertEqual((event.outcome, event.reason), ("recompute", "revoked"))
+        self.assertEqual(event.rule_version, "legal-v2")
+        self.assertEqual(html2, "<p>Hello <em>there</em></p>")
+
+    def test_ancestor_change_forces_recompute(self):
+        before = self.document(KNOWLEDGE_BASE, "kb-v1")
+        after = self.document(KNOWLEDGE_BASE, "kb-v2", section_id="sec-2")
+        self.cache.publish(before, self.block)
+        _, event = self.cache.publish(after, self.block)
+        self.assertEqual((event.outcome, event.reason), ("recompute", "ancestor_changed"))
+
+    def test_revoke_unknown_version_raises(self):
+        with self.assertRaises(LookupError):
+            self.registry.revoke(LEGAL_ATTACHMENT, "legal-v9")

@@ -5,6 +5,7 @@ from django.core import checks
 from django.core.exceptions import ImproperlyConfigured
 
 from .sanitizer import Sanitizer
+from .publish import BlockPublishCache, RuleRegistry
 
 
 def _get_sanitizer(name="default"):
@@ -20,6 +21,23 @@ def _get_sanitizer(name="default"):
 
 
 get_sanitizer = lru_cache(maxsize=None)(_get_sanitizer)
+
+
+def _get_publish_cache():
+    """
+    Build the block-level publish cache from
+    ``settings.HTML_SANITIZER_PUBLISH_RULES``, a mapping of
+    ``{document_kind: {rule_version: sanitizer_settings}}``.
+    """
+    registry = RuleRegistry()
+    rules = getattr(settings, "HTML_SANITIZER_PUBLISH_RULES", {})
+    for kind, versions in rules.items():
+        for version, sanitizer_settings in versions.items():
+            registry.register(kind, version, sanitizer_settings)
+    return BlockPublishCache(registry)
+
+
+get_publish_cache = lru_cache(maxsize=None)(_get_publish_cache)
 
 
 @checks.register()
