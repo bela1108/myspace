@@ -1,0 +1,30 @@
+{
+  "captures": [
+    {
+      "label": "light-snapshot",
+      "path": "light_snapshot.dmp",
+      "generation": 1,
+      "window": {
+        "start": "2026-06-20T23:58:20Z",
+        "end": "2026-06-21T00:01:40Z"
+      },
+      "intent": [
+        "threads",
+        "vm_counters"
+      ]
+    },
+    {
+      "label": "full-snapshot",
+      "path": "full_snapshot.dmp",
+      "generation": 2,
+      "window": {
+        "start": "2026-06-21T00:13:20Z",
+        "end": "2026-06-21T00:16:40Z"
+      },
+      "intent": [
+        "threads",
+        "vm_counters"
+      ]
+    }
+  ]
+}

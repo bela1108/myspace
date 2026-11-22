@@ -53,6 +53,7 @@ class AMinidumpFile:
 		self.misc_info = None
 		self.memory_info = None
 		self.thread_info = None
+		self.vm_counters = None
 
 	@staticmethod
 	async def parse(filename):
@@ -204,7 +205,8 @@ class AMinidumpFile:
 
 			elif dir.StreamType == MINIDUMP_STREAM_TYPE.ProcessVmCountersStream:
 				logging.debug('Found ProcessVmCountersStream @%x Size: %d' % (dir.Location.Rva, dir.Location.DataSize))
-				logging.debug('ProcessVmCountersStream parsing is not implemented (Missing documentation)')
+				self.vm_counters = await MinidumpProcessVmCounters.aparse(dir, self.file_handle)
+				continue
 
 			elif dir.StreamType == MINIDUMP_STREAM_TYPE.TokenStream:
 				logging.debug('Found TokenStream @%x Size: %d' % (dir.Location.Rva, dir.Location.DataSize))

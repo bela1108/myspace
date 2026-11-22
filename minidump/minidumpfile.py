@@ -42,6 +42,7 @@ class MinidumpFile:
 		self.misc_info:MinidumpMiscInfo = None
 		self.memory_info:MinidumpMemoryInfoList = None
 		self.thread_info:MinidumpThreadInfoList = None
+		self.vm_counters:MinidumpProcessVmCounters = None
 
 		self.peb:PEB = None
 
@@ -198,7 +199,8 @@ class MinidumpFile:
 
 			elif dir.StreamType == MINIDUMP_STREAM_TYPE.ProcessVmCountersStream:
 				logging.debug('Found ProcessVmCountersStream @%x Size: %d' % (dir.Location.Rva, dir.Location.DataSize))
-				logging.debug('ProcessVmCountersStream parsing is not implemented (Missing documentation)')
+				self.vm_counters = MinidumpProcessVmCounters.parse(dir, self.file_handle)
+				continue
 
 			elif dir.StreamType == MINIDUMP_STREAM_TYPE.TokenStream:
 				logging.debug('Found TokenStream @%x Size: %d' % (dir.Location.Rva, dir.Location.DataSize))

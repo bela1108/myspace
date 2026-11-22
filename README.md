@@ -24,6 +24,22 @@ There is and interactive command shell to get all info (modules, threads, excetp
 ```minidump.py -i <mindidump file>  ```  
 Once in the shell, all commands are documented. Use the `?` command to see all options.
 
+#### Compare
+A read-only cross-dump comparison entry for incident response. When several
+dumps share the same process number but the process was restarted between
+captures, the caller supplies the externally recorded capture window and
+process generation number per dump (JSON manifest). The tool joins the
+thread table and the VM counters table of each dump within its generation
+only - identical thread ids in different generations are reported as
+collisions, never stitched into one timeline - and reports what was meant
+to be captured, what was actually captured, and what can only be treated
+as not re-verified.
+
+```minidump-compare manifest.json [--intent threads|vm_counters] [--section missed|uncertain] [--json] [--strict]```
+
+See `tests/fixtures/manifest.json` for the manifest format and a ready-made
+"same PID, different process generation" regression scenario.
+
 # Advanced usage
 After parsing the minidump file, you can use the MinidumpFileReader and MinidumpBufferedReader objects to perform various searches/reads in the dumped process' address space.  
 Those objects will be able to read and search the VA of the dumped process and have a notion on integer sizes based on the CPU arch.

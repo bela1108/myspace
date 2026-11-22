@@ -47,6 +47,7 @@ setup(
 	entry_points={
 		'console_scripts': [
 			'minidump = minidump.__main__:run',
+			'minidump-compare = minidump.compare:run',
 		],
 	}
 )

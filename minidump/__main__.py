@@ -27,6 +27,7 @@ def run():
 	parser.add_argument('--exception', action='store_true', help='Show exception records')
 	parser.add_argument('--handles', action='store_true', help='List handles')
 	parser.add_argument('--misc', action='store_true', help='Show misc info')
+	parser.add_argument('--vmcounters', action='store_true', help='Show process VM counters')
 	parser.add_argument('--peb', action='store_true', help='Show PEB info')
 	parser.add_argument('--all', action='store_true', help='Show all info')
 	parser.add_argument('-r', '--read-addr', type=lambda x: int(x,0), help='Dump a memory region from the process\'s addres space')
@@ -88,6 +89,9 @@ def run():
 		if args.all or args.misc:
 			if mf.misc_info is not None:
 				print(str(mf.misc_info))
+		if args.all or args.vmcounters:
+			if mf.vm_counters is not None:
+				print(str(mf.vm_counters))
 		if args.all or args.header:
 			print(str(mf.header))
 		
