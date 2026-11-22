@@ -1,5 +1,14 @@
 # changelog
 
+## Unreleased
+
+ - Added `core.ParseContext`, `core.ByteSource` and locatable `ParseEvidence`
+   for retaining the original BER/DER bytes of a parse, including acceptable
+   alternate encodings, explicitly encoded defaults and uninterpreted elements
+ - Added semantic and raw-byte comparison results via `Asn1Value.compare()`,
+   `Asn1Value.value_equal()` and `Asn1Value.bytes_equal()`; an unmodified value
+   parsed through a `ParseContext` keeps its original encoding for `.dump()`
+
 ## 1.5.1
 
  - Handle RSASSA-PSS in `keys.PrivateKeyInfo.bit_size` and

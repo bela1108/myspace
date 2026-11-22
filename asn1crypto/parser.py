@@ -14,6 +14,7 @@ Other type classes are defined that help compose the types listed above.
 from __future__ import unicode_literals, division, absolute_import, print_function
 
 import sys
+import hashlib
 
 from ._types import byte_cls, chr_cls, type_name
 from .util import int_from_bytes, int_to_bytes
@@ -21,6 +22,932 @@ from .util import int_from_bytes, int_to_bytes
 _PY2 = sys.version_info <= (3,)
 _INSUFFICIENT_DATA_MESSAGE = 'Insufficient data - %s bytes requested but only %s available'
 _MAX_DEPTH = 10
+
+
+class ByteSource(object):
+    """
+    A read-only view over a contiguous range of encoded bytes.
+
+    A ByteSource never owns a mutable buffer. It stores the original byte
+    string and an offset/length pair, so values parsed from it can retain
+    exact, locatable references to their original encoding without copying
+    or normalizing it.
+    """
+
+    __slots__ = ('_buffer', '_offset', '_length', '_memoryview')
+
+    def __init__(self, data, offset=0, length=None):
+        """
+        :param data:
+            A byte string, memoryview, bytearray, or another ByteSource
+
+        :param offset:
+            The offset, relative to data, of the first byte in the view
+
+        :param length:
+            The number of bytes in the view - defaults to the remainder of data
+
+        :raises:
+            TypeError - when data is not a byte-like object
+            ValueError - when offset or length is out of range
+        """
+
+        if isinstance(data, ByteSource):
+            buffer = data._buffer
+            if offset == 0 and length is None:
+                offset = data._offset
+                length = data._length
+            else:
+                offset = data._offset + offset
+        elif isinstance(data, memoryview):
+            buffer = data.tobytes()
+        elif isinstance(data, bytearray):
+            buffer = bytes(data)
+        elif isinstance(data, byte_cls):
+            buffer = data
+        else:
+            raise TypeError('data must be a byte string, not %s' % type_name(data))
+
+        buffer_len = len(buffer)
+
+        if not isinstance(offset, int):
+            raise TypeError('offset must be an integer, not %s' % type_name(offset))
+        if length is not None and not isinstance(length, int):
+            raise TypeError('length must be an integer, not %s' % type_name(length))
+        if offset < 0 or offset > buffer_len:
+            raise ValueError('offset must be between 0 and %d, not %d' % (buffer_len, offset))
+
+        if length is None:
+            length = buffer_len - offset
+        if length < 0 or offset + length > buffer_len:
+            raise ValueError(
+                'length must describe a range within the buffer, not %d at offset %d' % (length, offset)
+            )
+
+        self._buffer = buffer
+        self._offset = offset
+        self._length = length
+
+        raw_view = memoryview(buffer)[offset:offset + length]
+        if hasattr(raw_view, 'toreadonly'):
+            raw_view = raw_view.toreadonly()
+        self._memoryview = raw_view
+
+    @property
+    def buffer(self):
+        """
+        :return:
+            The complete, immutable byte string that backs this view
+        """
+
+        return self._buffer
+
+    @property
+    def offset(self):
+        """
+        :return:
+            The absolute offset of the start of this view in .buffer
+        """
+
+        return self._offset
+
+    @property
+    def start(self):
+        """
+        :return:
+            An alias for .offset
+        """
+
+        return self._offset
+
+    @property
+    def length(self):
+        """
+        :return:
+            The number of bytes in this view
+        """
+
+        return self._length
+
+    @property
+    def end(self):
+        """
+        :return:
+            The absolute offset immediately after this view
+        """
+
+        return self._offset + self._length
+
+    @property
+    def data(self):
+        """
+        :return:
+            A byte string of the bytes in this view
+        """
+
+        return self._buffer[self._offset:self.end]
+
+    @property
+    def bytes(self):
+        """
+        :return:
+            An alias for .data
+        """
+
+        return self.data
+
+    @property
+    def raw(self):
+        """
+        :return:
+            An alias for .data
+        """
+
+        return self.data
+
+    @property
+    def raw_bytes(self):
+        """
+        :return:
+            An alias for .data
+        """
+
+        return self.data
+
+    @property
+    def value(self):
+        """
+        :return:
+            An alias for .data
+        """
+
+        return self.data
+
+    @property
+    def memoryview(self):
+        """
+        :return:
+            A read-only memoryview of this range
+        """
+
+        return self._memoryview
+
+    @property
+    def read_only(self):
+        """
+        :return:
+            True, since the view can never be modified
+        """
+
+        return True
+
+    @property
+    def readonly(self):
+        """
+        :return:
+            An alias for .read_only
+        """
+
+        return True
+
+    def view(self, offset=0, length=None):
+        """
+        Constructs a child view relative to the start of this view
+
+        :param offset:
+            The offset of the child view, relative to this view
+
+        :param length:
+            The number of bytes in the child view
+
+        :return:
+            A ByteSource object sharing the same immutable buffer
+        """
+
+        if offset < 0 or offset > self._length:
+            raise ValueError('offset must be between 0 and %d, not %d' % (self._length, offset))
+        if length is None:
+            length = self._length - offset
+        return ByteSource(self._buffer, self._offset + offset, length)
+
+    def slice(self, start=0, end=None):
+        """
+        Constructs a child view using Python slice semantics
+
+        :param start:
+            The relative start offset
+
+        :param end:
+            The relative end offset, exclusive
+
+        :return:
+            A ByteSource object
+        """
+
+        if start < 0:
+            start += self._length
+        if end is None:
+            end = self._length
+        elif end < 0:
+            end += self._length
+        return self.view(start, end - start)
+
+    def read(self, offset=0, length=None):
+        """
+        Reads bytes relative to the start of this view
+
+        :param offset:
+            The relative offset to read from
+
+        :param length:
+            The number of bytes to read
+
+        :return:
+            A byte string
+        """
+
+        if length is None:
+            length = self._length - offset
+        return self._buffer[self._offset + offset:self._offset + offset + length]
+
+    def contains(self, other):
+        """
+        :param other:
+            A ByteSource or an integer absolute offset
+
+        :return:
+            A boolean indicating if the offset or entire span is contained
+        """
+
+        if isinstance(other, int):
+            return self._offset <= other < self.end
+        if isinstance(other, ByteSource):
+            return self._offset <= other.offset and other.end <= self.end
+        if isinstance(other, ParseEvidence):
+            return self._offset <= other.offset and other.end <= self.end
+        raise TypeError('other must be an integer, ByteSource or ParseEvidence')
+
+    def overlaps(self, other):
+        """
+        :param other:
+            A ByteSource object
+
+        :return:
+            A boolean indicating if the two spans overlap
+        """
+
+        if not isinstance(other, ByteSource):
+            raise TypeError('other must be a ByteSource, not %s' % type_name(other))
+        return self._offset < other.end and other.offset < self.end
+
+    def hex(self):
+        """
+        :return:
+            A unicode hexadecimal representation of the bytes in this view
+        """
+
+        value = self.data
+        if _PY2:
+            return value.encode('hex')
+        return value.hex()
+
+    def sha256(self):
+        """
+        :return:
+            A byte string of the SHA-256 digest of this view
+        """
+
+        return hashlib.sha256(self.data).digest()
+
+    def tobytes(self):
+        """
+        :return:
+            An alias for .data
+        """
+
+        return self.data
+
+    def to_bytes(self):
+        """
+        :return:
+            An alias for .data
+        """
+
+        return self.data
+
+    def __len__(self):
+        return self._length
+
+    def __iter__(self):
+        for index in range(self._length):
+            yield self[index]
+
+    def __bytes__(self):
+        return self.data
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __unicode__(self):
+        return self.__repr__()
+
+    def __repr__(self):
+        return '<ByteSource offset=%d length=%d>' % (self._offset, self._length)
+
+    def __getitem__(self, key):
+        if isinstance(key, slice):
+            start, stop, step = key.indices(self._length)
+            if step != 1:
+                return self.data[start:stop:step]
+            return self.data[start:stop]
+        if key < 0:
+            key += self._length
+        if key < 0 or key >= self._length:
+            raise IndexError('ByteSource index out of range')
+        value = self._buffer[self._offset + key]
+        if not isinstance(value, int):
+            return ord(value)
+        return value
+
+    def __setitem__(self, key, value):
+        raise TypeError('ByteSource is read-only')
+
+    def __delitem__(self, key):
+        raise TypeError('ByteSource is read-only')
+
+    def write(self, value):
+        raise TypeError('ByteSource is read-only')
+
+    def __eq__(self, other):
+        if isinstance(other, ByteSource):
+            return self.data == other.data
+        if isinstance(other, memoryview):
+            return self.data == other.tobytes()
+        if isinstance(other, (bytes, bytearray)):
+            return self.data == bytes(other)
+        return False
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __hash__(self):
+        return hash(self.data)
+
+    def __copy__(self):
+        return self
+
+    def __deepcopy__(self, memo):
+        return ByteSource(self._buffer, self._offset, self._length)
+
+    def __reduce__(self):
+        return (ByteSource, (self._buffer, self._offset, self._length))
+
+
+# A descriptive alias for callers that want the intent to be explicit
+ReadOnlyByteSource = ByteSource
+SourceView = ByteSource
+
+
+class ParseEvidence(object):
+    """
+    A locatable record of parsing behavior that must be retained for audit
+    purposes, such as an acceptable non-DER encoding, an explicitly encoded
+    default value, or an element that was not interpreted by a schema.
+    """
+
+    __slots__ = (
+        '_kind',
+        '_reason',
+        '_source',
+        '_path',
+        '_detail',
+        '_spec',
+        '_node_type',
+        '_value',
+    )
+
+    ALTERNATE_ENCODING = 'alternate_encoding'
+    EXPLICIT_DEFAULT = 'explicit_default'
+    UNINTERPRETED = 'uninterpreted'
+
+    # Specific reasons for .ALTERNATE_ENCODING evidence
+    INDEFINITE_LENGTH = 'indefinite_length'
+    CONSTRUCTED_STRING = 'constructed_string'
+    NONMINIMAL_LENGTH = 'nonminimal_length'
+    NONMINIMAL_INTEGER = 'nonminimal_integer'
+    NONCANONICAL_BOOLEAN = 'noncanonical_boolean'
+    CANONICAL_ENCODING = 'canonical_encoding'
+
+    def __init__(self, kind, source, reason=None, path=None, detail=None, spec=None,
+                 node_type=None, value=None):
+        """
+        :param kind:
+            One of ALTERNATE_ENCODING, EXPLICIT_DEFAULT or UNINTERPRETED
+
+        :param source:
+            A ByteSource covering the exact original bytes of the evidence
+
+        :param reason:
+            An optional more-specific reason for the evidence
+
+        :param path:
+            An optional tuple of field names/indexes locating the evidence
+
+        :param detail:
+            An optional unicode string with a human-readable explanation
+
+        :param spec:
+            The ASN.1 spec class associated with the evidence, if any
+
+        :param node_type:
+            The unicode name of the parsed value class, if any
+
+        :param value:
+            The native value of the parsed element, if it could be determined
+        """
+
+        if not isinstance(source, ByteSource):
+            raise TypeError('source must be a ByteSource, not %s' % type_name(source))
+
+        self._kind = kind
+        self._reason = reason
+        self._source = source
+        self._path = tuple(path) if path is not None else ()
+        self._detail = detail
+        self._spec = spec
+        self._node_type = node_type
+        self._value = value
+
+    @property
+    def kind(self):
+        """
+        :return:
+            The evidence category
+        """
+
+        return self._kind
+
+    @property
+    def reason(self):
+        """
+        :return:
+            A more-specific reason, or None
+        """
+
+        return self._reason
+
+    @property
+    def source(self):
+        """
+        :return:
+            A ByteSource covering the original bytes
+        """
+
+        return self._source
+
+    @property
+    def span(self):
+        """
+        :return:
+            An alias for .source
+        """
+
+        return self._source
+
+    @property
+    def offset(self):
+        """
+        :return:
+            The absolute offset of the evidence in the original source
+        """
+
+        return self._source.offset
+
+    @property
+    def start(self):
+        """
+        :return:
+            An alias for .offset
+        """
+
+        return self._source.offset
+
+    @property
+    def end(self):
+        """
+        :return:
+            The absolute offset immediately after the evidence
+        """
+
+        return self._source.end
+
+    @property
+    def length(self):
+        """
+        :return:
+            The number of bytes of evidence
+        """
+
+        return self._source.length
+
+    @property
+    def data(self):
+        """
+        :return:
+            A byte string of the original evidence bytes
+        """
+
+        return self._source.data
+
+    @property
+    def raw_bytes(self):
+        """
+        :return:
+            An alias for .data
+        """
+
+        return self._source.data
+
+    @property
+    def raw(self):
+        """
+        :return:
+            An alias for .data
+        """
+
+        return self._source.data
+
+    @property
+    def encoded(self):
+        """
+        :return:
+            An alias for .data
+        """
+
+        return self._source.data
+
+    @property
+    def byte_range(self):
+        """
+        :return:
+            A 2-element tuple of (start, end)
+        """
+
+        return (self._source.offset, self._source.end)
+
+    @property
+    def path(self):
+        """
+        :return:
+            A tuple of field names and indexes locating the evidence
+        """
+
+        return self._path
+
+    @property
+    def detail(self):
+        """
+        :return:
+            A human-readable explanation, or None
+        """
+
+        return self._detail
+
+    @property
+    def description(self):
+        """
+        :return:
+            A human-readable description of the evidence
+        """
+
+        if self._detail:
+            return self._detail
+        if self._reason:
+            return '%s (%s)' % (self._kind, self._reason)
+        return self._kind
+
+    @property
+    def spec(self):
+        """
+        :return:
+            The ASN.1 spec class associated with the evidence, or None
+        """
+
+        return self._spec
+
+    @property
+    def node_type(self):
+        """
+        :return:
+            The unicode name of the parsed value class, or None
+        """
+
+        return self._node_type
+
+    @property
+    def value(self):
+        """
+        :return:
+            The native value associated with the evidence, or None
+        """
+
+        return self._value
+
+    @property
+    def category(self):
+        """
+        :return:
+            An alias for .kind
+        """
+
+        return self._kind
+
+    @property
+    def type(self):
+        """
+        :return:
+            An alias for .kind
+        """
+
+        return self._kind
+
+    @property
+    def absolute_offset(self):
+        """
+        :return:
+            An alias for .offset
+        """
+
+        return self._source.offset
+
+    @property
+    def is_alternate_encoding(self):
+        """
+        :return:
+            A boolean indicating if this is an acceptable alternate encoding
+        """
+
+        return self._kind == self.ALTERNATE_ENCODING
+
+    @property
+    def is_acceptable_alternate(self):
+        """
+        :return:
+            An alias for .is_alternate_encoding
+        """
+
+        return self.is_alternate_encoding
+
+    @property
+    def is_explicit_default(self):
+        """
+        :return:
+            A boolean indicating if the evidence is an explicit default
+        """
+
+        return self._kind == self.EXPLICIT_DEFAULT
+
+    @property
+    def is_uninterpreted(self):
+        """
+        :return:
+            A boolean indicating if the value was left uninterpreted
+        """
+
+        return self._kind == self.UNINTERPRETED
+
+    def __repr__(self):
+        return '<ParseEvidence %s%s offset=%d length=%d path=%r>' % (
+            self._kind,
+            ' (%s)' % self._reason if self._reason else '',
+            self.offset,
+            self.length,
+            self._path,
+        )
+
+
+class ComparisonResult(object):
+    """
+    The result of comparing two ASN.1 values both semantically and by their
+    original encoded bytes.
+    """
+
+    __slots__ = (
+        '_value_equal',
+        '_bytes_equal',
+        '_evidence',
+        '_left_evidence',
+        '_right_evidence',
+        '_left_bytes',
+        '_right_bytes',
+    )
+
+    def __init__(self, value_equal, bytes_equal, evidence=(), left_evidence=(),
+                 right_evidence=(), left_bytes=None, right_bytes=None):
+        self._value_equal = bool(value_equal)
+        self._bytes_equal = bool(bytes_equal)
+        self._evidence = tuple(evidence)
+        self._left_evidence = tuple(left_evidence)
+        self._right_evidence = tuple(right_evidence)
+        self._left_bytes = left_bytes
+        self._right_bytes = right_bytes
+
+    @property
+    def value_equal(self):
+        """
+        :return:
+            True if the two values are semantically equal
+        """
+
+        return self._value_equal
+
+    @property
+    def values_equal(self):
+        """
+        :return:
+            An alias for .value_equal
+        """
+
+        return self._value_equal
+
+    @property
+    def equal_value(self):
+        """
+        :return:
+            An alias for .value_equal
+        """
+
+        return self._value_equal
+
+    @property
+    def semantic_equal(self):
+        """
+        :return:
+            An alias for .value_equal
+        """
+
+        return self._value_equal
+
+    @property
+    def bytes_equal(self):
+        """
+        :return:
+            True if the original encodings are byte-for-byte identical
+        """
+
+        return self._bytes_equal
+
+    @property
+    def raw_bytes_equal(self):
+        """
+        :return:
+            An alias for .bytes_equal
+        """
+
+        return self._bytes_equal
+
+    @property
+    def raw_equal(self):
+        """
+        :return:
+            An alias for .bytes_equal
+        """
+
+        return self._bytes_equal
+
+    @property
+    def encoding_equal(self):
+        """
+        :return:
+            An alias for .bytes_equal
+        """
+
+        return self._bytes_equal
+
+    @property
+    def byte_equal(self):
+        """
+        :return:
+            An alias for .bytes_equal
+        """
+
+        return self._bytes_equal
+
+    @property
+    def equal_bytes(self):
+        """
+        :return:
+            An alias for .bytes_equal
+        """
+
+        return self._bytes_equal
+
+    @property
+    def identical(self):
+        """
+        :return:
+            An alias for .bytes_equal
+        """
+
+        return self._bytes_equal
+
+    @property
+    def evidence(self):
+        """
+        :return:
+            A tuple of all evidence retained from both sides
+        """
+
+        return self._evidence
+
+    @property
+    def left_evidence(self):
+        """
+        :return:
+            A tuple of evidence from the left value
+        """
+
+        return self._left_evidence
+
+    @property
+    def right_evidence(self):
+        """
+        :return:
+            A tuple of evidence from the right value
+        """
+
+        return self._right_evidence
+
+    @property
+    def left_bytes(self):
+        """
+        :return:
+            The original bytes of the left value, if available
+        """
+
+        return self._left_bytes
+
+    @property
+    def right_bytes(self):
+        """
+        :return:
+            The original bytes of the right value, if available
+        """
+
+        return self._right_bytes
+
+    def as_dict(self):
+        """
+        :return:
+            A dict with the two comparison results and evidence
+        """
+
+        return {
+            'value_equal': self._value_equal,
+            'bytes_equal': self._bytes_equal,
+            'evidence': self._evidence,
+        }
+
+    def __iter__(self):
+        yield self._value_equal
+        yield self._bytes_equal
+
+    def __len__(self):
+        return 2
+
+    def __getitem__(self, index):
+        if index in ('value_equal', 'values_equal', 'semantic_equal'):
+            return self._value_equal
+        if index in ('bytes_equal', 'raw_bytes_equal', 'raw_equal', 'identical'):
+            return self._bytes_equal
+        if index == 'evidence':
+            return self._evidence
+        return (self._value_equal, self._bytes_equal)[index]
+
+    def __bool__(self):
+        return self._value_equal
+
+    def __nonzero__(self):
+        return self._value_equal
+
+    def __eq__(self, other):
+        if isinstance(other, ComparisonResult):
+            return (
+                self._value_equal == other._value_equal and
+                self._bytes_equal == other._bytes_equal
+            )
+        if isinstance(other, tuple) and len(other) == 2:
+            return (self._value_equal, self._bytes_equal) == other
+        return False
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __repr__(self):
+        return '<ComparisonResult value_equal=%s bytes_equal=%s>' % (
+            self._value_equal,
+            self._bytes_equal,
+        )
 
 
 def emit(class_, method, tag, contents):

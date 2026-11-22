@@ -7,6 +7,7 @@ links to the source for the various pre-defined type classes.
 
  - [Universal Types with BER/DER Decoder and DER Encoder](universal_types.md)
  - [PEM Decoder and Encoder](pem.md)
+ - [Read-only BER byte sources and provenance](ber_byte_source.md)
 
 ## Reference
 

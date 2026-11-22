@@ -176,6 +176,7 @@ def test_classes():
     from .test_util import UtilTests
     from .test_parser import ParserTests
     from .test_core import CoreTests
+    from .test_ber_source import BERByteSourceTests
 
     return [
         AlgoTests,
@@ -191,5 +192,6 @@ def test_classes():
         UtilTests,
         ParserTests,
         X509Tests,
-        CoreTests
+        CoreTests,
+        BERByteSourceTests
     ]

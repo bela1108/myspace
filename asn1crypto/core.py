@@ -60,7 +60,15 @@ from . import _teletex_codec
 from ._errors import unwrap
 from ._ordereddict import OrderedDict
 from ._types import type_name, str_cls, byte_cls, int_types, chr_cls
-from .parser import _parse, _dump_header
+from .parser import (
+    ByteSource,
+    ComparisonResult,
+    ParseEvidence,
+    ReadOnlyByteSource,
+    SourceView,
+    _parse,
+    _dump_header,
+)
 from .util import int_to_bytes, int_from_bytes, timezone, extended_datetime, create_timezone, utc_with_dst
 
 if sys.version_info <= (3,):
@@ -112,7 +120,7 @@ _OID_RE = re.compile(r'^\d+(\.\d+)*$')
 _SETUP_CLASSES = {}
 
 
-def load(encoded_data, strict=False):
+def load(encoded_data, strict=False, context=None):
     """
     Loads a BER/DER-encoded byte string and construct a universal object based
     on the tag value:
@@ -153,6 +161,10 @@ def load(encoded_data, strict=False):
         A boolean indicating if trailing data should be forbidden - if so, a
         ValueError will be raised when trailing data exists
 
+    :param context:
+        An optional ParseContext used to retain a read-only view of the
+        original bytes and locatable parsing evidence
+
     :raises:
         ValueError - when strict is True and trailing data is present
         ValueError - when the encoded value tag a tag other than listed above
@@ -163,7 +175,7 @@ def load(encoded_data, strict=False):
         An instance of the one of the universal classes
     """
 
-    return Asn1Value.load(encoded_data, strict=strict)
+    return Asn1Value.load(encoded_data, strict=strict, context=context)
 
 
 def unpickle_helper(asn1crypto_cls, der_bytes):
@@ -209,12 +221,30 @@ class Asn1Value(object):
     # The BER/DER trailer bytes
     _trailer = b''
 
+    # The original header, contents and trailer exactly as they were parsed.
+    # These are never regenerated when a value is read, so they provide a
+    # stable view of the bytes that arrived in the parsing context.
+    _raw_header = None
+    _raw_contents = None
+    _raw_trailer = None
+    _raw_encoding = None
+
+    # The optional ParseContext and ByteSource span for this value
+    _context = None
+    _source = None
+
+    # A tuple of field names/indexes from the root of the parsed value
+    _path = ()
+
+    # Locatable evidence attached directly to this value
+    _evidence = ()
+
     # The native python representation of the value - this is not used by
     # some classes since they utilize _bytes or _unicode
     _native = None
 
     @classmethod
-    def load(cls, encoded_data, strict=False, **kwargs):
+    def load(cls, encoded_data, strict=False, context=None, **kwargs):
         """
         Loads a BER/DER-encoded byte string using the current class as the spec
 
@@ -229,6 +259,8 @@ class Asn1Value(object):
             An instance of the current class
         """
 
+        if isinstance(encoded_data, ByteSource):
+            encoded_data = encoded_data.data
         if not isinstance(encoded_data, byte_cls):
             raise TypeError('encoded_data must be a byte string, not %s' % type_name(encoded_data))
 
@@ -236,7 +268,20 @@ class Asn1Value(object):
         if cls.tag is not None:
             spec = cls
 
-        value, _ = _parse_build(encoded_data, spec=spec, spec_params=kwargs, strict=strict)
+        if context is not None and (context.source is None or context.bytes != encoded_data):
+            context.reset(encoded_data)
+
+        value, _ = _parse_build(
+            encoded_data,
+            spec=spec,
+            spec_params=kwargs,
+            strict=strict,
+            context=context,
+            source_offset=context.source.offset if context is not None else 0
+        )
+        if context is not None:
+            context._root = value
+            context._indexed = False
         return value
 
     def __init__(self, explicit=None, implicit=None, no_explicit=False, tag_type=None, class_=None, tag=None,
@@ -606,6 +651,10 @@ class Asn1Value(object):
 
         self.contents = other.contents
         self._native = copy_func(other._native)
+        for attr in ('_raw_header', '_raw_contents', '_raw_trailer', '_raw_encoding',
+                     '_context', '_source', '_path', '_evidence'):
+            if hasattr(other, attr):
+                setattr(self, attr, getattr(other, attr))
 
     def debug(self, nest_level=1):
         """
@@ -629,7 +678,317 @@ class Asn1Value(object):
             else:
                 print('%s    Native: %s' % (prefix, self.native))
 
-    def dump(self, force=False):
+    @property
+    def source(self):
+        """
+        :return:
+            A ByteSource covering the exact original encoding of this value,
+            or None if the value was not parsed in a ParseContext
+        """
+
+        return self._source
+
+    @property
+    def byte_source(self):
+        """
+        :return:
+            An alias for .source
+        """
+
+        return self._source
+
+    @property
+    def raw_bytes(self):
+        """
+        :return:
+            A byte string of the exact original encoding of this value
+        """
+
+        if self._raw_encoding is not None:
+            return self._raw_encoding
+        if self._source is not None:
+            return self._source.data
+        return self.dump()
+
+    @property
+    def raw(self):
+        """
+        :return:
+            An alias for .raw_bytes
+        """
+
+        return self.raw_bytes
+
+    @property
+    def encoded(self):
+        """
+        :return:
+            An alias for .raw_bytes
+        """
+
+        return self.raw_bytes
+
+    @property
+    def raw_encoding(self):
+        """
+        :return:
+            An alias for .raw_bytes
+        """
+
+        return self.raw_bytes
+
+    @property
+    def original_encoding(self):
+        """
+        :return:
+            An alias for .raw_bytes
+        """
+
+        return self.raw_bytes
+
+    @property
+    def original_bytes(self):
+        """
+        :return:
+            An alias for .raw_bytes
+        """
+
+        return self.raw_bytes
+
+    @property
+    def original(self):
+        """
+        :return:
+            An alias for .raw_bytes
+        """
+
+        return self.raw_bytes
+
+    @property
+    def byte_offset(self):
+        """
+        :return:
+            An alias for .offset
+        """
+
+        return self.offset
+
+    @property
+    def offset(self):
+        """
+        :return:
+            The absolute offset of this value in the original source, or None
+        """
+
+        if self._source is None:
+            return None
+        return self._source.offset
+
+    @property
+    def start(self):
+        """
+        :return:
+            An alias for .offset
+        """
+
+        return self.offset
+
+    @property
+    def end(self):
+        """
+        :return:
+            The absolute offset immediately after this value, or None
+        """
+
+        if self._source is None:
+            return None
+        return self._source.end
+
+    @property
+    def length(self):
+        """
+        :return:
+            The number of original bytes for this value, or None
+        """
+
+        if self._source is None:
+            return None
+        return self._source.length
+
+    @property
+    def byte_range(self):
+        """
+        :return:
+            A 2-element tuple of (start, end) offsets, or None
+        """
+
+        if self._source is None:
+            return None
+        return (self._source.offset, self._source.end)
+
+    @property
+    def path(self):
+        """
+        :return:
+            A tuple of field names/indexes leading from the root to this value
+        """
+
+        return self._path
+
+    @property
+    def evidence(self):
+        """
+        :return:
+            A tuple of locatable parsing evidence for this value and any
+            descendants, in ascending offset order
+        """
+
+        if self._context is None:
+            return tuple(self._evidence)
+
+        candidates = []
+        for item in self._context.evidence:
+            if self._source is None or self._source.contains(item):
+                candidates.append(item)
+        return tuple(sorted(candidates, key=lambda item: (item.offset, item.end, item.kind, item.reason or '')))
+
+    @property
+    def direct_evidence(self):
+        """
+        :return:
+            A tuple of evidence attached directly to this value
+        """
+
+        return tuple(self._evidence)
+
+    def _record_evidence(self, kind, start, end, reason=None, detail=None, value=None):
+        """
+        Records evidence in the associated ParseContext and on this value
+
+        :param kind:
+            The evidence category
+
+        :param start:
+            The absolute start offset in the original source
+
+        :param end:
+            The absolute end offset in the original source
+
+        :param reason:
+            An optional specific reason
+
+        :param detail:
+            An optional human-readable description
+
+        :param value:
+            An optional native value associated with the evidence
+
+        :return:
+            A ParseEvidence object, or None if there is no context
+        """
+
+        if self._context is None:
+            return None
+
+        evidence = self._context.record(
+            kind,
+            start,
+            end,
+            reason=reason,
+            path=self._path,
+            detail=detail,
+            spec=self.__class__,
+            node_type=type_name(self),
+            value=value,
+        )
+        if evidence is not None and evidence not in self._evidence:
+            self._evidence = tuple(self._evidence) + (evidence,)
+        return evidence
+
+    def _is_modified(self):
+        """
+        :return:
+            A boolean indicating if the in-memory value differs from the one
+            that was originally parsed
+        """
+
+        if getattr(self, '_mutated', False):
+            return True
+        if self._raw_encoding is None:
+            return True
+        if isinstance(self, (Any, Choice)):
+            return False
+        contents = self.contents
+        if contents is None:
+            return True
+        current = (self._header or b'') + contents + (self._trailer or b'')
+        return current != self._raw_encoding
+
+    def _should_preserve_bytes(self, force, preserve):
+        """
+        Determines whether .dump() should return the original encoding
+        """
+
+        if force:
+            return False
+        if preserve is None:
+            preserve = self._context is not None and self._context.preserve_encoding
+        if not preserve or self._raw_encoding is None:
+            return False
+        return not self._is_modified()
+
+    def _child_source_offset(self, index):
+        """
+        Computes the absolute source offset for a lazily built child
+
+        :param index:
+            The integer index of the child
+
+        :return:
+            An integer offset or None
+        """
+
+        offsets = getattr(self, "_child_offsets", None)
+        if offsets is None or index >= len(offsets):
+            return None
+        offset = offsets[index]
+        contents_offset = self._contents_source_offset()
+        if offset is None or contents_offset is None:
+            return None
+        return contents_offset + offset
+
+    def _contents_source_offset(self):
+        """
+        Computes the absolute source offset of this value's contents
+
+        :return:
+            An integer offset or None
+        """
+
+        if self._source is None:
+            return None
+        header = self._raw_header if self._raw_header is not None else self._header
+        if header is None:
+            return None
+        return self._source.offset + len(header)
+
+    def _child_path(self, index):
+        """
+        Computes the source path for a lazily built child
+
+        :param index:
+            The integer index of the child
+
+        :return:
+            A tuple
+        """
+
+        names = getattr(self, "_child_names", None)
+        if names is not None and index < len(names) and names[index] is not None:
+            return self._path + (names[index],)
+        return self._path + (index,)
+
+    def dump(self, force=False, preserve=None):
         """
         Encodes the value using DER
 
@@ -637,9 +996,16 @@ class Asn1Value(object):
             If the encoded contents already exist, clear them and regenerate
             to ensure they are in DER format instead of BER format
 
+        :param preserve:
+            If True, return the original parsed bytes when the value has not
+            been modified. If None, the associated ParseContext decides.
+
         :return:
             A byte string of the DER-encoded value
         """
+
+        if self._should_preserve_bytes(force, preserve):
+            return self._raw_encoding
 
         contents = self.contents
 
@@ -661,6 +1027,533 @@ class Asn1Value(object):
             self._trailer = b''
 
         return self._header + contents + self._trailer
+
+    def value_equal(self, other):
+        """
+        Compares the semantic ASN.1 value of two objects, independent of the
+        BER/DER encoding used
+
+        :param other:
+            An Asn1Value, ParseContext or byte string
+
+        :return:
+            A boolean
+        """
+
+        return self.compare(other).value_equal
+
+    def bytes_equal(self, other):
+        """
+        Compares the original encoded bytes of two objects
+
+        :param other:
+            An Asn1Value, ParseContext or byte string
+
+        :return:
+            A boolean
+        """
+
+        return self.compare(other).bytes_equal
+
+    def equals(self, other):
+        """
+        :return:
+            An alias for .value_equal()
+        """
+
+        return self.value_equal(other)
+
+    def byte_equals(self, other):
+        """
+        :return:
+            An alias for .bytes_equal()
+        """
+
+        return self.bytes_equal(other)
+
+    def value_equals(self, other):
+        """
+        :return:
+            An alias for .value_equal()
+        """
+
+        return self.value_equal(other)
+
+    def bytes_equals(self, other):
+        """
+        :return:
+            An alias for .bytes_equal()
+        """
+
+        return self.bytes_equal(other)
+
+    def raw_equal(self, other):
+        """
+        :return:
+            An alias for .bytes_equal()
+        """
+
+        return self.bytes_equal(other)
+
+    def has_same_value(self, other):
+        """
+        :return:
+            An alias for .value_equal()
+        """
+
+        return self.value_equal(other)
+
+    def has_same_bytes(self, other):
+        """
+        :return:
+            An alias for .bytes_equal()
+        """
+
+        return self.bytes_equal(other)
+
+    def compare(self, other):
+        """
+        Compares this value to another both semantically and by original bytes
+
+        :param other:
+            An Asn1Value, ParseContext or byte string
+
+        :return:
+            A ComparisonResult object
+        """
+
+        return compare(self, other)
+
+
+class ParseContext(object):
+    """
+    A parsing context that retains a read-only view of the original encoded
+    bytes and locatable evidence about how those bytes were interpreted.
+
+    Values parsed through a context expose .source (a ByteSource span),
+    .raw_bytes, and .evidence. Reading nested fields never rewrites the
+    context source or the original bytes retained by a value. By default,
+    .dump() on an unmodified value parsed through a context also returns the
+    original bytes instead of a normalized DER re-encoding.
+    """
+
+    def __init__(self, data=None, preserve_encoding=True, retain_evidence=True):
+        """
+        :param data:
+            An optional byte string, memoryview, bytearray or ByteSource
+
+        :param preserve_encoding:
+            If True, .dump() on unmodified parsed values returns the original
+            bytes. Pass force=True or preserve=False to request DER output.
+
+        :param retain_evidence:
+            If True, acceptable alternate encodings, explicit defaults and
+            uninterpreted elements are recorded as locatable evidence
+        """
+
+        self.preserve_encoding = bool(preserve_encoding)
+        self.retain_evidence = bool(retain_evidence)
+        self._source = None
+        self._root = None
+        self._evidence = []
+        self._indexed = False
+        if data is not None:
+            self.reset(data)
+
+    @property
+    def source(self):
+        """
+        :return:
+            A read-only ByteSource covering the entire original input
+        """
+
+        return self._source
+
+    @property
+    def byte_source(self):
+        """
+        :return:
+            An alias for .source
+        """
+
+        return self._source
+
+    @property
+    def original(self):
+        """
+        :return:
+            An alias for .source
+        """
+
+        return self._source
+
+    @property
+    def bytes(self):
+        """
+        :return:
+            The complete original byte string, or None
+        """
+
+        if self._source is None:
+            return None
+        return self._source.data
+
+    @property
+    def raw_bytes(self):
+        """
+        :return:
+            An alias for .bytes
+        """
+
+        return self.bytes
+
+    @property
+    def raw(self):
+        """
+        :return:
+            An alias for .bytes
+        """
+
+        return self.bytes
+
+    @property
+    def data(self):
+        """
+        :return:
+            An alias for .bytes
+        """
+
+        return self.bytes
+
+    @property
+    def raw_encoding(self):
+        """
+        :return:
+            An alias for .bytes
+        """
+
+        return self.bytes
+
+    @property
+    def original_bytes(self):
+        """
+        :return:
+            An alias for .bytes
+        """
+
+        return self.bytes
+
+    @property
+    def read_only(self):
+        """
+        :return:
+            True, since the context and its source are read-only
+        """
+
+        return True
+
+    @property
+    def readonly(self):
+        """
+        :return:
+            An alias for .read_only
+        """
+
+        return True
+
+    @property
+    def root(self):
+        """
+        :return:
+            The most recently parsed top-level value, or None
+        """
+
+        return self._root
+
+    @property
+    def value(self):
+        """
+        :return:
+            An alias for .root
+        """
+
+        return self._root
+
+    def _ensure_indexed(self):
+        """
+        Parses nested children so evidence for the whole tree is available
+        """
+
+        if self._indexed or self._root is None:
+            return
+        self._indexed = True
+        parse_children = getattr(self._root, '_parse_children', None)
+        if parse_children is not None:
+            try:
+                parse_children(recurse=True)
+            except (ValueError, TypeError):
+                pass
+
+    @property
+    def evidence(self):
+        """
+        :return:
+            A read-only tuple of all recorded ParseEvidence objects
+        """
+
+        self._ensure_indexed()
+        return tuple(sorted(
+            self._evidence,
+            key=lambda item: (item.offset, item.end, item.kind, item.reason or '')
+        ))
+
+    @property
+    def alternate_encodings(self):
+        """
+        :return:
+            A tuple of evidence for acceptable alternate encodings
+        """
+
+        return tuple(item for item in self.evidence if item.kind == ParseEvidence.ALTERNATE_ENCODING)
+
+    @property
+    def explicit_defaults(self):
+        """
+        :return:
+            A tuple of evidence for explicitly encoded default values
+        """
+
+        return tuple(item for item in self.evidence if item.kind == ParseEvidence.EXPLICIT_DEFAULT)
+
+    @property
+    def uninterpreted(self):
+        """
+        :return:
+            A tuple of evidence for elements not interpreted by a schema
+        """
+
+        return tuple(item for item in self.evidence if item.kind == ParseEvidence.UNINTERPRETED)
+
+    def reset(self, data=None):
+        """
+        Clears parsed state and optionally replaces the original source
+
+        :param data:
+            An optional byte string, memoryview, bytearray or ByteSource
+
+        :return:
+            The ParseContext object
+        """
+
+        self._root = None
+        self._evidence = []
+        self._indexed = False
+        if data is not None:
+            self._source = data if isinstance(data, ByteSource) else ByteSource(data)
+        elif self._source is not None:
+            self._source = ByteSource(
+                self._source.buffer,
+                self._source.offset,
+                self._source.length
+            )
+        return self
+
+    def span(self, offset, length=None):
+        """
+        Creates a read-only view into the original source
+
+        :param offset:
+            The absolute offset into the source
+
+        :param length:
+            The number of bytes in the span
+
+        :return:
+            A ByteSource object
+        """
+
+        if self._source is None:
+            raise ValueError('No source has been set on this ParseContext')
+        return self._source.view(offset - self._source.offset, length)
+
+    def record(self, kind, start, end, reason=None, path=None, detail=None,
+               spec=None, node_type=None, value=None):
+        """
+        Records locatable parsing evidence
+
+        :param kind:
+            One of ParseEvidence.ALTERNATE_ENCODING, EXPLICIT_DEFAULT or
+            UNINTERPRETED
+
+        :param start:
+            The absolute start offset in the original source
+
+        :param end:
+            The absolute end offset in the original source
+
+        :param reason:
+            An optional specific reason
+
+        :param path:
+            An optional tuple of field names/indexes locating the evidence
+
+        :param detail:
+            An optional human-readable description
+
+        :param spec:
+            The associated ASN.1 spec class, if any
+
+        :param node_type:
+            The associated parsed value class name, if any
+
+        :param value:
+            The associated native value, if known
+
+        :return:
+            A ParseEvidence object, or None when evidence retention is off
+        """
+
+        if not self.retain_evidence:
+            return None
+        if self._source is None:
+            return None
+        if start is None or end is None:
+            return None
+
+        span = self._source.view(start - self._source.offset, end - start)
+        key = (kind, reason, span.offset, span.end, tuple(path or ()))
+        for item in self._evidence:
+            if (item.kind, item.reason, item.offset, item.end, item.path) == key:
+                return item
+
+        evidence = ParseEvidence(
+            kind,
+            span,
+            reason=reason,
+            path=path,
+            detail=detail,
+            spec=spec,
+            node_type=node_type,
+            value=value,
+        )
+        self._evidence.append(evidence)
+        return evidence
+
+    def find_evidence(self, kind=None, reason=None, path=None, start=None, end=None):
+        """
+        Finds evidence matching the supplied criteria
+
+        :param kind:
+            An optional evidence category to match
+
+        :param reason:
+            An optional specific reason to match
+
+        :param path:
+            An optional path prefix to match
+
+        :param start:
+            An optional minimum start offset
+
+        :param end:
+            An optional maximum end offset
+
+        :return:
+            A tuple of ParseEvidence objects
+        """
+
+        matches = []
+        for item in self.evidence:
+            if kind is not None and item.kind != kind:
+                continue
+            if reason is not None and item.reason != reason:
+                continue
+            if path is not None and item.path[:len(path)] != tuple(path):
+                continue
+            if start is not None and item.offset < start:
+                continue
+            if end is not None and item.end > end:
+                continue
+            matches.append(item)
+        return tuple(matches)
+
+    def load(self, data=None, spec=None, strict=False):
+        """
+        Parses input using this context
+
+        :param data:
+            An optional byte string to replace the current source. When
+            omitted, the current source is parsed.
+
+        :param spec:
+            An optional Asn1Value class to use as the schema
+
+        :param strict:
+            A boolean indicating if trailing data should be forbidden
+
+        :return:
+            The parsed Asn1Value object
+        """
+
+        if data is not None and spec is None and isinstance(data, type) and issubclass(data, Asn1Value):
+            spec = data
+            data = None
+        if data is not None:
+            self.reset(data)
+        if self._source is None:
+            raise ValueError('No data was provided to parse')
+        value, _ = _parse_build(
+            self._source.data,
+            pointer=0,
+            spec=spec,
+            strict=strict,
+            context=self,
+            source_offset=self._source.offset,
+        )
+        self._root = value
+        self._indexed = False
+        return value
+
+    def parse(self, data=None, spec=None, strict=False):
+        """
+        An alias for .load()
+        """
+
+        return self.load(data=data, spec=spec, strict=strict)
+
+    def compare(self, other, left=None, right=None):
+        """
+        Compares two values using evidence from this context where applicable
+
+        :param other:
+            An Asn1Value, ParseContext or byte string to compare to
+
+        :param left:
+            An optional left value, defaults to .root
+
+        :param right:
+            An optional right value, defaults to other
+
+        :return:
+            A ComparisonResult object
+        """
+
+        if left is None:
+            left = self._root
+        if right is None:
+            right = other
+        return compare(left, right)
+
+    def __repr__(self):
+        source_len = len(self._source) if self._source is not None else 0
+        return '<ParseContext bytes=%d evidence=%d>' % (source_len, len(self._evidence))
+
+
+# Descriptive aliases for the parsing-context API
+ParsingContext = ParseContext
+BerParseContext = ParseContext
+Evidence = ParseEvidence
+CompareResult = ComparisonResult
 
 
 class ValueMap():
@@ -759,7 +1652,18 @@ class Constructable(object):
 
         while pointer < contents_len:
             # We pass the current class as the spec so content semantics are preserved
-            sub_value, pointer = _parse_build(self.contents, pointer, spec=self.__class__)
+            chunk_offset = None
+            contents_offset = self._contents_source_offset()
+            if contents_offset is not None:
+                chunk_offset = contents_offset + pointer
+            sub_value, pointer = _parse_build(
+                self.contents,
+                pointer,
+                spec=self.__class__,
+                context=self._context,
+                source_offset=chunk_offset if chunk_offset is not None else 0,
+                path=self._path
+            )
             if output is None:
                 output = sub_value._merge_chunks()
             else:
@@ -854,7 +1758,7 @@ class Void(Asn1Value):
 
         return None
 
-    def dump(self, force=False):
+    def dump(self, force=False, preserve=None):
         """
         Encodes the value using DER
 
@@ -966,11 +1870,17 @@ class Any(Asn1Value):
                         passed_params['explicit'] = self.explicit + passed_params['explicit']
                     else:
                         passed_params['explicit'] = self.explicit
-                contents = self._header + self.contents + self._trailer
+                if self._raw_encoding is not None:
+                    contents = self._raw_encoding
+                else:
+                    contents = self._header + self.contents + self._trailer
                 parsed_value, _ = _parse_build(
                     contents,
                     spec=spec,
-                    spec_params=passed_params
+                    spec_params=passed_params,
+                    context=self._context,
+                    source_offset=self._source.offset if self._source is not None else 0,
+                    path=self._path
                 )
                 self._parsed = (parsed_value, spec, spec_params)
 
@@ -1004,7 +1914,7 @@ class Any(Asn1Value):
         super(Any, self)._copy(other, copy_func)
         self._parsed = copy_func(other._parsed)
 
-    def dump(self, force=False):
+    def dump(self, force=False, preserve=None):
         """
         Encodes the value using DER
 
@@ -1016,10 +1926,13 @@ class Any(Asn1Value):
             A byte string of the DER-encoded value
         """
 
+        if self._should_preserve_bytes(force, preserve):
+            return self._raw_encoding
+
         if self._parsed is None:
             self.parse()
 
-        return self._parsed[0].dump(force=force)
+        return self._parsed[0].dump(force=force, preserve=preserve)
 
 
 class Choice(Asn1Value):
@@ -1058,7 +1971,7 @@ class Choice(Asn1Value):
     _name_map = None
 
     @classmethod
-    def load(cls, encoded_data, strict=False, **kwargs):
+    def load(cls, encoded_data, strict=False, context=None, **kwargs):
         """
         Loads a BER/DER-encoded byte string using the current class as the spec
 
@@ -1073,10 +1986,25 @@ class Choice(Asn1Value):
             A instance of the current class
         """
 
+        if isinstance(encoded_data, ByteSource):
+            encoded_data = encoded_data.data
         if not isinstance(encoded_data, byte_cls):
             raise TypeError('encoded_data must be a byte string, not %s' % type_name(encoded_data))
 
-        value, _ = _parse_build(encoded_data, spec=cls, spec_params=kwargs, strict=strict)
+        if context is not None and (context.source is None or context.bytes != encoded_data):
+            context.reset(encoded_data)
+
+        value, _ = _parse_build(
+            encoded_data,
+            spec=cls,
+            spec_params=kwargs,
+            strict=strict,
+            context=context,
+            source_offset=context.source.offset if context is not None else 0
+        )
+        if context is not None:
+            context._root = value
+            context._indexed = False
         return value
 
     def _setup(self):
@@ -1221,7 +2149,15 @@ class Choice(Asn1Value):
         if self._parsed is None:
             try:
                 _, spec, params = self._alternatives[self._choice]
-                self._parsed, _ = _parse_build(self._contents, spec=spec, spec_params=params)
+                parse_contents = self._raw_encoding if self._raw_encoding is not None else self._contents
+                self._parsed, _ = _parse_build(
+                    parse_contents,
+                    spec=spec,
+                    spec_params=params,
+                    context=self._context,
+                    source_offset=self._source.offset if self._source is not None else 0,
+                    path=self._path
+                )
             except (ValueError, TypeError) as e:
                 args = e.args[1:]
                 e.args = (e.args[0] + '\n    while parsing %s' % type_name(self),) + args
@@ -1337,7 +2273,7 @@ class Choice(Asn1Value):
         self._name = other._name
         self._parsed = copy_func(other._parsed)
 
-    def dump(self, force=False):
+    def dump(self, force=False, preserve=None):
         """
         Encodes the value using DER
 
@@ -1353,7 +2289,10 @@ class Choice(Asn1Value):
         if self._header is not None and self._header[-1:] == b'\x80':
             force = True
 
-        self._contents = self.chosen.dump(force=force)
+        if self._should_preserve_bytes(force, preserve):
+            return self._raw_encoding
+
+        self._contents = self.chosen.dump(force=force, preserve=preserve)
         if self._header is None or force:
             self._header = b''
             if self.explicit is not None:
@@ -1547,7 +2486,7 @@ class Concat(object):
         for child in self._children:
             child.debug(nest_level + 2)
 
-    def dump(self, force=False):
+    def dump(self, force=False, preserve=None):
         """
         Encodes the value using DER
 
@@ -1561,7 +2500,7 @@ class Concat(object):
 
         contents = b''
         for child in self._children:
-            contents += child.dump(force=force)
+            contents += child.dump(force=force, preserve=preserve)
         return contents
 
     @property
@@ -1714,7 +2653,7 @@ class Primitive(Asn1Value):
         if self._trailer != b'':
             self._trailer = b''
 
-    def dump(self, force=False):
+    def dump(self, force=False, preserve=None):
         """
         Encodes the value using DER
 
@@ -1726,6 +2665,9 @@ class Primitive(Asn1Value):
             A byte string of the DER-encoded value
         """
 
+        if self._should_preserve_bytes(force, preserve):
+            return self._raw_encoding
+
         # If the length is indefinite, force the re-encoding
         if self._header is not None and self._header[-1:] == b'\x80':
             force = True
@@ -1735,7 +2677,7 @@ class Primitive(Asn1Value):
             self.contents = None
             self.set(native)
 
-        return Asn1Value.dump(self)
+        return Asn1Value.dump(self, force=force, preserve=False)
 
     def __ne__(self, other):
         return not self == other
@@ -2877,7 +3819,7 @@ class ParsableOctetString(Constructable, Castable, Primitive):
 
         return self._parsed[0]
 
-    def dump(self, force=False):
+    def dump(self, force=False, preserve=None):
         """
         Encodes the value using DER
 
@@ -2889,19 +3831,22 @@ class ParsableOctetString(Constructable, Castable, Primitive):
             A byte string of the DER-encoded value
         """
 
+        if self._should_preserve_bytes(force, preserve):
+            return self._raw_encoding
+
         # If the length is indefinite, force the re-encoding
         if self._indefinite:
             force = True
 
         if force:
             if self._parsed is not None:
-                native = self.parsed.dump(force=force)
+                native = self.parsed.dump(force=force, preserve=False)
             else:
                 native = self.native
             self.contents = None
             self.set(native)
 
-        return Asn1Value.dump(self)
+        return Asn1Value.dump(self, force=force, preserve=False)
 
 
 class ParsableOctetBitString(ParsableOctetString):
@@ -3501,7 +4446,12 @@ class Sequence(Asn1Value):
 
         child = self.children[index]
         if child.__class__ == tuple:
-            child = self.children[index] = _build(*child)
+            child = self.children[index] = _build(
+                *child,
+                context=self._context,
+                source_offset=self._child_source_offset(index),
+                path=self._child_path(index)
+            )
         return child
 
     def __len__(self):
@@ -3892,11 +4842,15 @@ class Sequence(Asn1Value):
         """
 
         cls = self.__class__
+        self._child_offsets = []
+        self._child_names = []
         if self._contents is None:
             if self._fields:
                 self.children = [VOID] * len(self._fields)
-                for index, (_, _, params) in enumerate(self._fields):
-                    if 'default' in params:
+                for index, (name, _, params) in enumerate(self._fields):
+                    self._child_offsets.append(None)
+                    self._child_names.append(name)
+                    if "default" in params:
                         if cls._precomputed_specs[index]:
                             field_name, field_spec, value_spec, field_params, _ = cls._precomputed_specs[index]
                         else:
@@ -3911,18 +4865,22 @@ class Sequence(Asn1Value):
             field = 0
             field_len = len(self._fields)
             parts = None
+            parts_start = None
             again = child_pointer < contents_length
             while again:
                 if parts is None:
+                    parts_start = child_pointer
                     parts, child_pointer = _parse(self._contents, contents_length, pointer=child_pointer)
                 again = child_pointer < contents_length
 
+                field_name = None
                 if field < field_len:
+                    field_name = self._fields[field][0]
                     _, field_spec, value_spec, field_params, spec_override = (
                         cls._precomputed_specs[field] or self._determine_spec(field))
 
                     # If the next value is optional or default, allow it to be absent
-                    if field_params and ('optional' in field_params or 'default' in field_params):
+                    if field_params and ("optional" in field_params or "default" in field_params):
                         if self._field_ids[field] != (parts[0], parts[2]) and field_spec != Any:
 
                             # See if the value is a valid choice before assuming
@@ -3937,10 +4895,12 @@ class Sequence(Asn1Value):
                                     pass
 
                             if not choice_match:
-                                if 'optional' in field_params:
+                                if "optional" in field_params:
                                     self.children.append(VOID)
                                 else:
                                     self.children.append(field_spec(**field_params))
+                                self._child_offsets.append(None)
+                                self._child_names.append(field_name)
                                 field += 1
                                 again = True
                                 continue
@@ -3962,16 +4922,16 @@ class Sequence(Asn1Value):
                         prev_field_info = self._fields[prev_field]
                         if len(prev_field_info) < 3:
                             break
-                        if 'optional' in prev_field_info[2] or 'default' in prev_field_info[2]:
+                        if "optional" in prev_field_info[2] or "default" in prev_field_info[2]:
                             missed_fields.append(prev_field_info[0])
                         prev_field -= 1
-                    plural = 's' if len(missed_fields) > 1 else ''
-                    missed_field_names = ', '.join(missed_fields)
+                    plural = "s" if len(missed_fields) > 1 else ""
+                    missed_field_names = ", ".join(missed_fields)
                     raise ValueError(unwrap(
-                        '''
+                        """
                         Data for field %s (%s class, %s method, tag %s) does
                         not match the field definition%s of %s
-                        ''',
+                        """,
                         field + 1,
                         CLASS_NUM_TO_NAME_MAP.get(parts[0]),
                         METHOD_NUM_TO_NAME_MAP.get(parts[1]),
@@ -3982,36 +4942,84 @@ class Sequence(Asn1Value):
 
                 else:
                     child = parts
+                    field_name = str_cls(field)
+
+                child_offset = None
+                contents_offset = self._contents_source_offset()
+                if contents_offset is not None and parts_start is not None:
+                    child_offset = contents_offset + parts_start
+
+                # A field that is present even though its value equals the
+                # DEFAULT is valid BER, but not DER. Retain the exact span.
+                if field < field_len:
+                    _, default_spec, default_params = self._fields[field]
+                    if default_params and "default" in default_params and default_spec is not None:
+                        raw_child = parts[3] + parts[4] + parts[5]
+                        try:
+                            default_encoding = default_spec(**default_params).dump()
+                        except (ValueError, TypeError):
+                            default_encoding = None
+                        explicit_default = raw_child == default_encoding
+                        if not explicit_default:
+                            try:
+                                tmp_child = _build(*parts, spec=default_spec, spec_params=default_params)
+                                explicit_default = (
+                                    _canonical_der(tmp_child) ==
+                                    _canonical_der(default_spec(**default_params))
+                                )
+                            except (ValueError, TypeError):
+                                explicit_default = False
+                        if explicit_default and self._context is not None and child_offset is not None:
+                            self._context.record(
+                                ParseEvidence.EXPLICIT_DEFAULT,
+                                child_offset,
+                                child_offset + len(raw_child),
+                                reason="explicit_default",
+                                path=self._path + (field_name,),
+                                detail="Default value was explicitly encoded",
+                                spec=default_spec,
+                                node_type=field_name,
+                            )
 
                 if recurse:
-                    child = _build(*child)
+                    child = _build(
+                        *child,
+                        context=self._context,
+                        source_offset=child_offset,
+                        path=self._path + (field_name,)
+                    )
                     if isinstance(child, (Sequence, SequenceOf)):
                         child._parse_children(recurse=True)
 
                 self.children.append(child)
+                self._child_offsets.append(parts_start)
+                self._child_names.append(field_name)
                 field += 1
                 parts = None
+                parts_start = None
 
             index = len(self.children)
             while index < field_len:
                 name, field_spec, field_params = self._fields[index]
-                if 'default' in field_params:
+                if "default" in field_params:
                     self.children.append(field_spec(**field_params))
-                elif 'optional' in field_params:
+                elif "optional" in field_params:
                     self.children.append(VOID)
                 else:
                     raise ValueError(unwrap(
-                        '''
+                        """
                         Field "%s" is missing from structure
-                        ''',
+                        """,
                         name
                     ))
+                self._child_offsets.append(None)
+                self._child_names.append(name)
                 index += 1
 
         except (ValueError, TypeError) as e:
             self.children = None
             args = e.args[1:]
-            e.args = (e.args[0] + '\n    while parsing %s' % type_name(self),) + args
+            e.args = (e.args[0] + "\n    while parsing %s" % type_name(self),) + args
             raise e
 
     def spec(self, field_name):
@@ -4073,8 +5081,7 @@ class Sequence(Asn1Value):
                 self._native = OrderedDict()
                 for index, child in enumerate(self.children):
                     if child.__class__ == tuple:
-                        child = _build(*child)
-                        self.children[index] = child
+                        child = self._lazy_child(index)
                     try:
                         name = self._fields[index][0]
                     except (IndexError):
@@ -4107,6 +5114,8 @@ class Sequence(Asn1Value):
                     self.children.append(child)
                 else:
                     self.children.append(child.copy())
+            self._child_offsets = list(getattr(other, '_child_offsets', []))
+            self._child_names = list(getattr(other, '_child_names', []))
 
     def debug(self, nest_level=1):
         """
@@ -4124,7 +5133,7 @@ class Sequence(Asn1Value):
                 print('%s    Field "%s"' % (prefix, field_name))
                 child.debug(nest_level + 3)
 
-    def dump(self, force=False):
+    def dump(self, force=False, preserve=None):
         """
         Encodes the value using DER
 
@@ -4135,6 +5144,9 @@ class Sequence(Asn1Value):
         :return:
             A byte string of the DER-encoded value
         """
+
+        if self._should_preserve_bytes(force, preserve):
+            return self._raw_encoding
 
         # If the length is indefinite, force the re-encoding
         if self._header is not None and self._header[-1:] == b'\x80':
@@ -4160,7 +5172,7 @@ class Sequence(Asn1Value):
                     field_name
                 ))
 
-        return Asn1Value.dump(self)
+        return Asn1Value.dump(self, force=force, preserve=False)
 
 
 class SequenceOf(Asn1Value):
@@ -4276,7 +5288,12 @@ class SequenceOf(Asn1Value):
 
         child = self.children[index]
         if child.__class__ == tuple:
-            child = _build(*child)
+            child = _build(
+                *child,
+                context=self._context,
+                source_offset=self._child_source_offset(index),
+                path=self._child_path(index)
+            )
             self.children[index] = child
         return child
 
@@ -4507,25 +5524,40 @@ class SequenceOf(Asn1Value):
 
         try:
             self.children = []
+            self._child_offsets = []
+            self._child_names = []
             if self._contents is None:
                 return
             contents_length = len(self._contents)
             child_pointer = 0
             while child_pointer < contents_length:
+                parts_start = child_pointer
                 parts, child_pointer = _parse(self._contents, contents_length, pointer=child_pointer)
+                child_offset = None
+                contents_offset = self._contents_source_offset()
+                if contents_offset is not None:
+                    child_offset = contents_offset + parts_start
+                index = len(self.children)
                 if self._child_spec:
                     child = parts + (self._child_spec,)
                 else:
                     child = parts
                 if recurse:
-                    child = _build(*child)
+                    child = _build(
+                        *child,
+                        context=self._context,
+                        source_offset=child_offset,
+                        path=self._path + (index,)
+                    )
                     if isinstance(child, (Sequence, SequenceOf)):
                         child._parse_children(recurse=True)
                 self.children.append(child)
+                self._child_offsets.append(parts_start)
+                self._child_names.append(index)
         except (ValueError, TypeError) as e:
             self.children = None
             args = e.args[1:]
-            e.args = (e.args[0] + '\n    while parsing %s' % type_name(self),) + args
+            e.args = (e.args[0] + "\n    while parsing %s" % type_name(self),) + args
             raise e
 
     def spec(self):
@@ -4583,6 +5615,8 @@ class SequenceOf(Asn1Value):
                     self.children.append(child)
                 else:
                     self.children.append(child.copy())
+            self._child_offsets = list(getattr(other, '_child_offsets', []))
+            self._child_names = list(getattr(other, '_child_names', []))
 
     def debug(self, nest_level=1):
         """
@@ -4597,7 +5631,7 @@ class SequenceOf(Asn1Value):
         for child in self:
             child.debug(nest_level + 1)
 
-    def dump(self, force=False):
+    def dump(self, force=False, preserve=None):
         """
         Encodes the value using DER
 
@@ -4613,10 +5647,13 @@ class SequenceOf(Asn1Value):
         if self._header is not None and self._header[-1:] == b'\x80':
             force = True
 
+        if self._should_preserve_bytes(force, preserve):
+            return self._raw_encoding
+
         if force:
             self._set_contents(force=force)
 
-        return Asn1Value.dump(self)
+        return Asn1Value.dump(self, force=force, preserve=False)
 
 
 class Set(Sequence):
@@ -4674,11 +5711,15 @@ class Set(Sequence):
         """
 
         cls = self.__class__
+        self._child_offsets = []
+        self._child_names = []
         if self._contents is None:
             if self._fields:
                 self.children = [VOID] * len(self._fields)
-                for index, (_, _, params) in enumerate(self._fields):
-                    if 'default' in params:
+                for index, (name, _, params) in enumerate(self._fields):
+                    self._child_offsets.append(None)
+                    self._child_names.append(name)
+                    if "default" in params:
                         if cls._precomputed_specs[index]:
                             field_name, field_spec, value_spec, field_params, _ = cls._precomputed_specs[index]
                         else:
@@ -4688,10 +5729,12 @@ class Set(Sequence):
 
         try:
             child_map = {}
+            field_offsets = {}
             contents_length = len(self.contents)
             child_pointer = 0
             seen_field = 0
             while child_pointer < contents_length:
+                parts_start = child_pointer
                 parts, child_pointer = _parse(self.contents, contents_length, pointer=child_pointer)
 
                 id_ = (parts[0], parts[2])
@@ -4699,10 +5742,10 @@ class Set(Sequence):
                 field = self._field_ids.get(id_)
                 if field is None:
                     raise ValueError(unwrap(
-                        '''
+                        """
                         Data for field %s (%s class, %s method, tag %s) does
                         not match any of the field definitions
-                        ''',
+                        """,
                         seen_field,
                         CLASS_NUM_TO_NAME_MAP.get(parts[0]),
                         METHOD_NUM_TO_NAME_MAP.get(parts[1]),
@@ -4721,12 +5764,52 @@ class Set(Sequence):
                 else:
                     child = parts + (field_spec, field_params)
 
+                child_offset = None
+                contents_offset = self._contents_source_offset()
+                if contents_offset is not None:
+                    child_offset = contents_offset + parts_start
+
+                field_name = self._fields[field][0]
+                if field_params and "default" in field_params and field_spec is not None:
+                    raw_child = parts[3] + parts[4] + parts[5]
+                    try:
+                        default_encoding = field_spec(**field_params).dump()
+                    except (ValueError, TypeError):
+                        default_encoding = None
+                    explicit_default = raw_child == default_encoding
+                    if not explicit_default:
+                        try:
+                            tmp_child = _build(*parts, spec=field_spec, spec_params=field_params)
+                            explicit_default = (
+                                _canonical_der(tmp_child) ==
+                                _canonical_der(field_spec(**field_params))
+                            )
+                        except (ValueError, TypeError):
+                            explicit_default = False
+                    if explicit_default and self._context is not None and child_offset is not None:
+                        self._context.record(
+                            ParseEvidence.EXPLICIT_DEFAULT,
+                            child_offset,
+                            child_offset + len(raw_child),
+                            reason="explicit_default",
+                            path=self._path + (field_name,),
+                            detail="Default value was explicitly encoded",
+                            spec=field_spec,
+                            node_type=field_name,
+                        )
+
                 if recurse:
-                    child = _build(*child)
+                    child = _build(
+                        *child,
+                        context=self._context,
+                        source_offset=child_offset,
+                        path=self._path + (field_name,)
+                    )
                     if isinstance(child, (Sequence, SequenceOf)):
                         child._parse_children(recurse=True)
 
                 child_map[field] = child
+                field_offsets[field] = parts_start
                 seen_field += 1
 
             total_fields = len(self._fields)
@@ -4746,18 +5829,18 @@ class Set(Sequence):
 
                 if not field_params:
                     missing = True
-                elif 'optional' not in field_params and 'default' not in field_params:
+                elif "optional" not in field_params and "default" not in field_params:
                     missing = True
-                elif 'optional' in field_params:
+                elif "optional" in field_params:
                     child_map[index] = VOID
-                elif 'default' in field_params:
+                elif "default" in field_params:
                     child_map[index] = field_spec(**field_params)
 
                 if missing:
                     raise ValueError(unwrap(
-                        '''
+                        """
                         Missing required field "%s" from %s
-                        ''',
+                        """,
                         name,
                         type_name(self)
                     ))
@@ -4765,10 +5848,12 @@ class Set(Sequence):
             self.children = []
             for index in range(0, total_fields):
                 self.children.append(child_map[index])
+                self._child_offsets.append(field_offsets.get(index))
+                self._child_names.append(self._fields[index][0])
 
         except (ValueError, TypeError) as e:
             args = e.args[1:]
-            e.args = (e.args[0] + '\n    while parsing %s' % type_name(self),) + args
+            e.args = (e.args[0] + "\n    while parsing %s" % type_name(self),) + args
             raise e
 
     def _set_contents(self, force=False):
@@ -5435,7 +6520,313 @@ _UNIVERSAL_SPECS = {
 }
 
 
-def _build(class_, method, tag, header, contents, trailer, spec=None, spec_params=None, nested_spec=None):
+def _canonical_der(value):
+    """
+    Constructs the DER encoding of a value without modifying it.
+
+    This is used for semantic comparison and for local alternate-encoding
+    detection. It deliberately works on copies and reconstructs generic
+    containers whose child schema is unknown.
+
+    :param value:
+        An Asn1Value object
+
+    :return:
+        A byte string of the canonical DER encoding
+    """
+
+    if value is None or value is VOID:
+        return b''
+
+    if isinstance(value, Any):
+        return _canonical_der(value.parsed)
+
+    if isinstance(value, Choice):
+        return _canonical_der(value.chosen)
+
+    if isinstance(value, SequenceOf):
+        if value.children is None:
+            value._parse_children()
+        if value.children is None:
+            value.children = []
+        encodings = []
+        for index, child in enumerate(value.children):
+            if child is None or child is VOID:
+                continue
+            if child.__class__ == tuple:
+                child = value._lazy_child(index)
+            encodings.append(_canonical_der(child))
+        if isinstance(value, SetOf):
+            encodings.sort()
+        return _canonical_wrap(value, b''.join(encodings))
+
+    if isinstance(value, Sequence):
+        if value.children is None:
+            value._parse_children()
+        if value.children is None:
+            value.children = []
+        field_defs = value._fields or []
+        entries = []
+        for index, child in enumerate(value.children):
+            if child is None or child is VOID:
+                continue
+            if child.__class__ == tuple:
+                child = value._lazy_child(index)
+            encoding = _canonical_der(child)
+            if index < len(field_defs):
+                _, field_spec, params = field_defs[index]
+                if params and 'default' in params and field_spec is not None:
+                    default_encoding = _canonical_der(field_spec(**params))
+                    if encoding == default_encoding:
+                        continue
+            entries.append((child.tag if child.tag is not None else 0, encoding))
+        if isinstance(value, Set):
+            entries.sort(key=lambda item: (item[0], item[1]))
+        return _canonical_wrap(value, b''.join(item[1] for item in entries))
+
+    duplicate = copy.deepcopy(value)
+    return duplicate.dump(force=True, preserve=False)
+
+
+def _canonical_wrap(value, contents):
+    """
+    Wraps canonical contents in the identifier/length headers of a value
+
+    :param value:
+        An Asn1Value object whose class, tag and explicit tagging are used
+
+    :param contents:
+        A byte string of canonical contents
+
+    :return:
+        A byte string of a definite-length DER encoding
+    """
+
+    method = value.method
+    if isinstance(value, Constructable) and getattr(value, '_indefinite', False):
+        method = 0
+    header = _dump_header(value.class_, method, value.tag, contents)
+    if value.explicit is not None:
+        for class_, tag in value.explicit:
+            header = _dump_header(class_, 1, tag, header + contents) + header
+    return header + contents
+
+
+def _raw_value_equal(left, right):
+    """
+    Compares two byte strings as parsed ASN.1 values
+
+    :return:
+        A boolean
+    """
+
+    try:
+        return _canonical_der(left) == _canonical_der(right)
+    except (ValueError, TypeError):
+        return left.raw_bytes == right.raw_bytes
+
+
+def _record_build_evidence(value, context, class_, method, tag, header, contents,
+                           trailer, original_spec):
+    """
+    Records alternate encodings and uninterpreted elements at build time
+    """
+
+    if context is None or not context.retain_evidence:
+        return
+
+    source = value._source
+    if source is None:
+        return
+
+    if original_spec is None:
+        value._record_evidence(
+            ParseEvidence.UNINTERPRETED,
+            source.offset,
+            source.end,
+            reason='no_schema',
+            detail='Element was parsed without a schema'
+        )
+    elif original_spec is Any:
+        value._record_evidence(
+            ParseEvidence.UNINTERPRETED,
+            source.offset,
+            source.end,
+            reason='any',
+            detail='Element was retained as Any and not interpreted'
+        )
+
+    reasons = []
+    if method == 1 and trailer == b'\x00\x00' and header[-1:] == b'\x80':
+        reasons.append((ParseEvidence.INDEFINITE_LENGTH, 'Indefinite-length BER encoding'))
+
+    if method == 1 and isinstance(value, Constructable) and value.__class__.method == 0:
+        reasons.append((ParseEvidence.CONSTRUCTED_STRING, 'Constructed BER encoding of a primitive string'))
+
+    length_reason = _nonminimal_length(header)
+    if length_reason:
+        reasons.append((ParseEvidence.NONMINIMAL_LENGTH, 'Non-minimal BER length encoding'))
+
+    if isinstance(value, Integer):
+        if _nonminimal_integer(contents):
+            reasons.append((ParseEvidence.NONMINIMAL_INTEGER, 'Non-minimal INTEGER contents'))
+
+    if isinstance(value, Boolean) and contents not in (b'\x00', b'\xff'):
+        reasons.append((ParseEvidence.NONCANONICAL_BOOLEAN, 'Non-canonical BOOLEAN contents'))
+
+    for reason, detail in reasons:
+        value._record_evidence(
+            ParseEvidence.ALTERNATE_ENCODING,
+            source.offset,
+            source.end,
+            reason=reason,
+            detail=detail
+        )
+
+    if not reasons and isinstance(value, Primitive):
+        try:
+            canonical = _canonical_der(value)
+        except (ValueError, TypeError):
+            canonical = None
+        if canonical is not None and canonical != value._raw_encoding:
+            value._record_evidence(
+                ParseEvidence.ALTERNATE_ENCODING,
+                source.offset,
+                source.end,
+                reason=ParseEvidence.CANONICAL_ENCODING,
+                detail='Encoding differs from canonical DER but is acceptable'
+            )
+
+
+def _nonminimal_length(header):
+    """
+    Checks an identifier/length header for a non-minimal long-form length
+
+    :return:
+        A boolean
+    """
+
+    if not header:
+        return False
+    index = 1
+    if (header[0] & 0x1f) == 0x1f:
+        while index < len(header) and header[index] & 0x80:
+            index += 1
+        index += 1
+    if index >= len(header):
+        return False
+    length_octet = header[index]
+    if length_octet == 0x80 or not (length_octet & 0x80):
+        return False
+    length_octets = length_octet & 0x7f
+    if length_octets == 0:
+        return False
+    length_bytes = header[index + 1:index + 1 + length_octets]
+    if len(length_bytes) < length_octets:
+        return False
+    if length_bytes[:1] == b'\x00':
+        return True
+    length_value = 0
+    for length_byte in length_bytes:
+        if not isinstance(length_byte, int):
+            length_byte = ord(length_byte)
+        length_value = (length_value << 8) | length_byte
+    return length_value < 128
+
+
+def _nonminimal_integer(contents):
+    # Compare against canonical DER for semantic checks elsewhere.
+    """
+    Checks INTEGER contents for redundant leading sign octets
+
+    :return:
+        A boolean
+    """
+
+    if len(contents) < 2:
+        return False
+    first = contents[0] if isinstance(contents[0], int) else ord(contents[0])
+    second = contents[1] if isinstance(contents[1], int) else ord(contents[1])
+    if first == 0x00 and second < 0x80:
+        return True
+    if first == 0xff and second >= 0x80:
+        return True
+    return False
+
+
+def compare(left, right):
+    """
+    Compares two ASN.1 values both semantically and by original bytes.
+
+    :param left:
+        An Asn1Value object, ParseContext or byte string
+
+    :param right:
+        An Asn1Value object, ParseContext or byte string
+
+    :return:
+        A ComparisonResult object with .value_equal and .bytes_equal
+    """
+
+    left_value, left_bytes, left_context = _coerce_comparison_value(left)
+    right_value, right_bytes, right_context = _coerce_comparison_value(right)
+
+    try:
+        value_equal = _canonical_der(left_value) == _canonical_der(right_value)
+    except (ValueError, TypeError):
+        value_equal = left_bytes == right_bytes
+
+    bytes_equal = left_bytes == right_bytes
+
+    left_evidence = tuple(left_context.evidence) if left_context is not None else tuple(left_value.evidence)
+    right_evidence = tuple(right_context.evidence) if right_context is not None else tuple(right_value.evidence)
+    evidence = left_evidence + right_evidence
+
+    return ComparisonResult(
+        value_equal,
+        bytes_equal,
+        evidence=evidence,
+        left_evidence=left_evidence,
+        right_evidence=right_evidence,
+        left_bytes=left_bytes,
+        right_bytes=right_bytes,
+    )
+
+
+# Convenience aliases for comparing BER material
+compare_ber = compare
+ber_compare = compare
+
+
+def _coerce_comparison_value(value):
+    """
+    Normalizes a value, context or byte string for comparison
+
+    :return:
+        A 3-element tuple of (Asn1Value, original bytes, ParseContext or None)
+    """
+
+    if isinstance(value, ParseContext):
+        if value.root is None:
+            raise ValueError('ParseContext has not parsed a value')
+        return (value.root, value.bytes, value)
+
+    if isinstance(value, memoryview):
+        value = value.tobytes()
+
+    if isinstance(value, (bytes, bytearray)):
+        raw = bytes(value)
+        context = ParseContext(raw)
+        return (context.load(), raw, context)
+
+    if isinstance(value, Asn1Value):
+        return (value, value.raw_bytes, value._context)
+
+    raise TypeError('value must be an Asn1Value, ParseContext or byte string, not %s' % type_name(value))
+
+
+def _build(class_, method, tag, header, contents, trailer, spec=None, spec_params=None, nested_spec=None,
+           context=None, source_offset=None, path=None):
     """
     Builds an Asn1Value object generically, or using a spec with optional params
 
@@ -5472,6 +6863,16 @@ def _build(class_, method, tag, header, contents, trailer, spec=None, spec_param
         contents can be further parsed and interpreted as another Asn1Value.
         This parameter controls the spec for that sub-parsing.
 
+    :param context:
+        An optional ParseContext that retains a read-only view of the original
+        bytes and locatable evidence about the parse
+
+    :param source_offset:
+        The absolute offset of the value in the context source
+
+    :param path:
+        A tuple of field names/indexes leading from the root to this value
+
     :return:
         An object of the type spec, or if not specified, a child of Asn1Value
     """
@@ -5482,6 +6883,8 @@ def _build(class_, method, tag, header, contents, trailer, spec=None, spec_param
     if header is None:
         return VOID
 
+    raw_encoding = header + contents + (trailer or b'')
+    original_spec = spec
     header_set = False
 
     # If an explicit specification was passed in, make sure it matches
@@ -5556,6 +6959,17 @@ def _build(class_, method, tag, header, contents, trailer, spec=None, spec_param
 
             elif isinstance(value, Choice):
                 value.validate(class_, tag, contents)
+                # Attach provenance before forcing the Choice to parse so
+                # the chosen alternative inherits the same byte source.
+                if context is not None:
+                    value._context = context
+                    value._raw_encoding = raw_encoding
+                    value._path = tuple(path) if path is not None else ()
+                    if source_offset is not None:
+                        value._source = context.source.view(
+                            source_offset - context.source.offset,
+                            len(raw_encoding)
+                        )
                 try:
                     # Force parsing the Choice now
                     value.contents = header + value.contents
@@ -5657,6 +7071,34 @@ def _build(class_, method, tag, header, contents, trailer, spec=None, spec_param
     # Destroy any default value that our contents have overwritten
     value._native = None
 
+    # Retain the exact bytes that were parsed. This is deliberately separate
+    # from .contents/.dump() so that reading nested fields or forcing a DER
+    # re-encoding can never replace the archive copy of the input.
+    value._raw_header = value._header if value._header is not None else header
+    value._raw_contents = contents
+    value._raw_trailer = trailer or b''
+    value._raw_encoding = raw_encoding
+    value._path = tuple(path) if path is not None else ()
+
+    if context is not None:
+        value._context = context
+        if source_offset is not None:
+            relative_offset = source_offset - context.source.offset
+            value._source = context.source.view(relative_offset, len(raw_encoding))
+        _record_build_evidence(value, context, class_, method, tag, header, contents, trailer, original_spec)
+
+        # A Choice may have been forced to parse before the outer build
+        # attached provenance. Give the chosen alternative the same span.
+        if isinstance(value, Choice):
+            chosen = getattr(value, '_parsed', None)
+            if chosen is not None and getattr(chosen, '_context', None) is None:
+                chosen._context = context
+                chosen._path = value._path
+                if value._source is not None:
+                    chosen._source = value._source
+                if chosen._raw_encoding is None:
+                    chosen._raw_encoding = value._raw_encoding
+
     if nested_spec:
         try:
             value.parse(nested_spec)
@@ -5668,7 +7110,8 @@ def _build(class_, method, tag, header, contents, trailer, spec=None, spec_param
     return value
 
 
-def _parse_build(encoded_data, pointer=0, spec=None, spec_params=None, strict=False):
+def _parse_build(encoded_data, pointer=0, spec=None, spec_params=None, strict=False,
+                 context=None, source_offset=0, path=None):
     """
     Parses a byte string generically, or using a spec with optional params
 
@@ -5692,6 +7135,16 @@ def _parse_build(encoded_data, pointer=0, spec=None, spec_params=None, strict=Fa
         A boolean indicating if trailing data should be forbidden - if so, a
         ValueError will be raised when trailing data exists
 
+    :param context:
+        An optional ParseContext that retains a read-only view of the original
+        bytes and locatable evidence about the parse
+
+    :param source_offset:
+        The absolute offset of encoded_data in the context source
+
+    :param path:
+        A tuple of field names/indexes leading from the root to this value
+
     :return:
         A 2-element tuple:
          - 0: An object of the type spec, or if not specified, a child of Asn1Value
@@ -5703,4 +7156,14 @@ def _parse_build(encoded_data, pointer=0, spec=None, spec_params=None, strict=Fa
     if strict and new_pointer != pointer + encoded_len:
         extra_bytes = pointer + encoded_len - new_pointer
         raise ValueError('Extra data - %d bytes of trailing data were provided' % extra_bytes)
-    return (_build(*info, spec=spec, spec_params=spec_params), new_pointer)
+    return (
+        _build(
+            *info,
+            spec=spec,
+            spec_params=spec_params,
+            context=context,
+            source_offset=source_offset + pointer,
+            path=path
+        ),
+        new_pointer
+    )
