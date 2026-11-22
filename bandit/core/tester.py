@@ -8,6 +8,7 @@ import warnings
 
 from bandit.core import constants
 from bandit.core import context as b_context
+from bandit.core import coverage as b_coverage
 from bandit.core import utils
 
 warnings.formatwarning = utils.warnings_formatter
@@ -22,6 +23,10 @@ class BanditTester:
         self.debug = debug
         self.nosec_lines = nosec_lines
         self.metrics = metrics
+        # coverage tracking: rule id -> outcome for the current file,
+        # and the set of node types visited in the current file
+        self.rule_outcomes = {}
+        self.checktypes_seen = set()
 
     def run_tests(self, raw_context, checktype):
         """Runs all tests for a certain type of check, for example
@@ -41,6 +46,7 @@ class BanditTester:
         }
 
         tests = self.testset.get_tests(checktype)
+        self.checktypes_seen.add(checktype)
         for test in tests:
             name = test.__name__
             # execute test with an instance of the context class
@@ -51,6 +57,7 @@ class BanditTester:
                     result = test(context, test._config)
                 else:
                     result = test(context)
+                self._note_coverage(test, checktype)
 
                 if result is not None:
                     nosec_tests_to_skip = self._get_nosecs_from_contexts(
@@ -118,11 +125,29 @@ class BanditTester:
                         )
 
             except Exception as e:
+                self._note_coverage(
+                    test, checktype, state=b_coverage.STATE_FAILED
+                )
                 self.report_error(name, context, e)
                 if self.debug:
                     raise
         LOG.debug("Returning scores: %s", scores)
         return scores
+
+    def _note_coverage(self, test, checktype, state=None):
+        """Record rule execution outcomes for the coverage ledger.
+
+        A rule that raised on any node stays failed; otherwise running
+        to completion marks the rule completed for the current file.
+        """
+        state = state or b_coverage.STATE_COMPLETED
+        for rule_id in b_coverage.rule_ids_for_test(test, checktype):
+            current = self.rule_outcomes.get(rule_id)
+            if (
+                state == b_coverage.STATE_FAILED
+                or current != b_coverage.STATE_FAILED
+            ):
+                self.rule_outcomes[rule_id] = state
 
     def _get_nosecs_from_contexts(self, context, test_result=None):
         """Use context and optional test result to get set of tests to skip.

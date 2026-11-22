@@ -1,0 +1,36 @@
+{
+  "cells": [
+    {
+      "file": "./src/api_layer.py",
+      "rule": "B404",
+      "state": "not_applicable"
+    },
+    {
+      "file": "./src/model_layer.py",
+      "rule": "B404",
+      "state": "completed"
+    },
+    {
+      "file": "./src/api_layer.py",
+      "rule": "B608",
+      "state": "completed"
+    },
+    {
+      "file": "./src/model_layer.py",
+      "rule": "B608",
+      "state": "completed"
+    }
+  ],
+  "config_digest": "sha256:0de550caddaaf8100089631c5ca43d29fc4a9dcbed9b46dede66bea798abae23",
+  "files": {
+    "./src/api_layer.py": "sha256:9951db4380cfeebfab42ba2d62e0fec3eedb3a1823edb4163c128ffaa5e64496",
+    "./src/model_layer.py": "sha256:34cb3d2f63a7517d5f909aa9f4a92a17ebe4373e032d93694f41c99d26001e23"
+  },
+  "rules": [
+    "B404",
+    "B608"
+  ],
+  "shard_id": "full-scan",
+  "source_digest": "sha256:fccc9f292c35b630d1af12a3d9c2e934c14472045f9f2c11df4cab119b18fcf3",
+  "version": 1
+}

@@ -371,6 +371,24 @@ def main():
         default=False,
         help="exit with 0, " "even with results found",
     )
+    parser.add_argument(
+        "--coverage-out",
+        dest="coverage_out",
+        action="store",
+        default=None,
+        help="write a rule x file coverage ledger (JSON) to this file, "
+        "recording selected/completed/failed/not-applicable states "
+        "for offline merging",
+    )
+    parser.add_argument(
+        "--coverage-shard",
+        dest="coverage_shard",
+        action="store",
+        default=None,
+        help="shard identity recorded in the coverage ledger "
+        "(defaults to 'default'); shards may only fill each other's "
+        "gaps when source and config digests match",
+    )
     python_ver = sys.version.replace("\n", "")
     parser.add_argument(
         "--version",
@@ -635,6 +653,7 @@ def main():
         verbose=args.verbose,
         quiet=args.quiet,
         ignore_nosec=args.ignore_nosec,
+        coverage_shard=args.coverage_shard,
     )
 
     if args.baseline is not None:
@@ -675,6 +694,10 @@ def main():
     b_mgr.run_tests()
     LOG.debug(b_mgr.b_ma)
     LOG.debug(b_mgr.metrics)
+
+    if args.coverage_out:
+        b_mgr.coverage.save(args.coverage_out)
+        LOG.info("coverage ledger written to: %s", args.coverage_out)
 
     # trigger output of results by Bandit Manager
     sev_level = constants.RANKING[args.severity - 1]

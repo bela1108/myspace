@@ -1,0 +1,13 @@
+source digest: sha256:fc067755d39c92e173bf347d668413f15f4b24fd66094baab8208dfc2935da56
+config digest: sha256:0de550caddaaf8100089631c5ca43d29fc4a9dcbed9b46dede66bea798abae23
+rule        ./src/model_layer.py
+B404                          ok
+B608                          ok
+
+source digest: sha256:fccc9f292c35b630d1af12a3d9c2e934c14472045f9f2c11df4cab119b18fcf3
+config digest: sha256:0de550caddaaf8100089631c5ca43d29fc4a9dcbed9b46dede66bea798abae23
+rule          ./src/api_layer.py  ./src/model_layer.py
+B404                           -                    ok
+B608                        FAIL                  FAIL
+
+legend: ok=completed FAIL=failed -=not-applicable ?=selected(gap) CONFLICT=shards disagree .=no data

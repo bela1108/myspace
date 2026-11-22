@@ -16,6 +16,7 @@ import traceback
 from rich import progress
 
 from bandit.core import constants as b_constants
+from bandit.core import coverage as b_coverage
 from bandit.core import extension_loader
 from bandit.core import issue
 from bandit.core import meta_ast as b_meta_ast
@@ -41,6 +42,7 @@ class BanditManager:
         quiet=False,
         profile=None,
         ignore_nosec=False,
+        coverage_shard=None,
     ):
         """Get logger, config, AST handler, and result store ready
 
@@ -52,6 +54,8 @@ class BanditManager:
         :param quiet: Whether to only show output in the case of an error
         :param profile_name: Optional name of profile to use (from cmd line)
         :param ignore_nosec: Whether to ignore #nosec or not
+        :param coverage_shard: Optional shard identity for the coverage
+               ledger, used when merging ledgers offline
         :return:
         """
         self.debug = debug
@@ -71,6 +75,10 @@ class BanditManager:
         self.metrics = metrics.Metrics()
         self.b_ts = b_test_set.BanditTestSet(config, profile)
         self.scores = []
+        self.coverage = b_coverage.CoverageLedger(
+            shard_id=coverage_shard or "default"
+        )
+        self._coverage_rule_checks = {}
 
     def get_skipped(self):
         ret = []
@@ -266,6 +274,8 @@ class BanditManager:
         # if we have problems with a file, we'll remove it from the files_list
         # and add it to the skipped list instead
         new_files_list = list(self.files_list)
+        self._coverage_rule_checks = b_coverage.extract_rules(self.b_ts)
+        self.coverage.set_rules(self._coverage_rule_checks.keys())
         if (
             len(self.files_list) > PROGRESS_THRESHOLD
             and LOG.getEffectiveLevel() <= logging.INFO
@@ -302,6 +312,7 @@ class BanditManager:
         try:
             # parse the current file
             data = fdata.read()
+            self.coverage.begin_file(fname, b_coverage.file_digest(data))
             lines = data.splitlines()
             self.metrics.begin(fname)
             self.metrics.count_locs(lines)
@@ -363,6 +374,12 @@ class BanditManager:
         )
 
         score = res.process(data)
+        self.coverage.record_outcomes(
+            fname,
+            res.tester.rule_outcomes,
+            res.tester.checktypes_seen,
+            self._coverage_rule_checks,
+        )
         self.results.extend(res.tester.results)
         return score
 

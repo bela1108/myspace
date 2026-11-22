@@ -1,0 +1,8 @@
+scan A (model-layer): gate PASS
+scan B (full-scan): gate FAIL
+  - rule B608 failed on ./src/api_layer.py (source sha256:fccc9f292c35... config sha256:0de550caddaa...)
+  - rule B608 failed on ./src/model_layer.py (source sha256:fccc9f292c35... config sha256:0de550caddaa...)
+scan B rerun (full-scan): gate PASS
+merged A+B: gate FAIL
+  - rule B608 failed on ./src/api_layer.py (source sha256:fccc9f292c35... config sha256:0de550caddaa...)
+  - rule B608 failed on ./src/model_layer.py (source sha256:fccc9f292c35... config sha256:0de550caddaa...)
