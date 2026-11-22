@@ -21,3 +21,6 @@ tests/htmlcov/*
 
 # Sphinx documentation
 docs/_build/
+
+# Generated offline seal reconciliation artifacts
+demo_output/
