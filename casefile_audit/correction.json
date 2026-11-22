@@ -1,0 +1,24 @@
+{
+    "type": "bundle",
+    "id": "bundle--210c177a-1718-4f35-9f98-e8be6bd3a17e",
+    "objects": [
+        {
+            "type": "observed-data",
+            "spec_version": "2.1",
+            "id": "observed-data--4d8e4ee9-bcb8-5209-a0da-51262f694486",
+            "created": "2026-02-10T08:00:00.000Z",
+            "modified": "2026-03-01T09:00:00.000Z",
+            "first_observed": "2026-02-04T00:00:00Z",
+            "last_observed": "2026-02-04T01:00:00Z",
+            "number_observed": 1,
+            "objects": {
+                "0": {
+                    "type": "file",
+                    "spec_version": "2.1",
+                    "id": "file--adfce179-fe03-5554-a837-904c48463f5f",
+                    "name": "exhibit-A.evt  (corrected: first_observed 2026-02-04)"
+                }
+            }
+        }
+    ]
+}

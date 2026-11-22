@@ -1,0 +1,173 @@
+{
+    "type": "bundle",
+    "id": "bundle--0674b564-46a6-4030-bb24-b8d77a217684",
+    "objects": [
+        {
+            "type": "observed-data",
+            "spec_version": "2.1",
+            "id": "observed-data--4d8e4ee9-bcb8-5209-a0da-51262f694486",
+            "created": "2026-02-10T08:00:00.000Z",
+            "modified": "2026-02-10T08:00:00.000Z",
+            "first_observed": "2026-01-05T00:00:00Z",
+            "last_observed": "2026-01-05T01:00:00Z",
+            "number_observed": 1,
+            "objects": {
+                "0": {
+                    "type": "file",
+                    "spec_version": "2.1",
+                    "id": "file--f82445d4-cc5f-5c2f-a4b7-71fb8effcb41",
+                    "name": "exhibit-A.evt  (early record, wrong date)"
+                }
+            }
+        },
+        {
+            "type": "observed-data",
+            "spec_version": "2.1",
+            "id": "observed-data--32a42e72-2687-5808-b8be-a2ee4d5afd98",
+            "created": "2026-02-12T08:00:00.000Z",
+            "modified": "2026-02-12T08:00:00.000Z",
+            "first_observed": "2026-02-11T00:00:00Z",
+            "last_observed": "2026-02-11T01:00:00Z",
+            "number_observed": 1,
+            "objects": {
+                "0": {
+                    "type": "file",
+                    "spec_version": "2.1",
+                    "id": "file--5d28e8c2-242d-5a7b-b7b8-a63463b364f3",
+                    "name": "exhibit-B.evt"
+                }
+            }
+        },
+        {
+            "type": "observed-data",
+            "spec_version": "2.1",
+            "id": "observed-data--e0e4ddcd-4572-5ec6-a0a8-f0ef4d5505f1",
+            "created": "2026-02-15T08:00:00.000Z",
+            "modified": "2026-02-15T08:00:00.000Z",
+            "first_observed": "2026-02-14T00:00:00Z",
+            "last_observed": "2026-02-14T01:00:00Z",
+            "number_observed": 1,
+            "objects": {
+                "0": {
+                    "type": "file",
+                    "spec_version": "2.1",
+                    "id": "file--9ee39ad2-ef70-58c1-9ba8-51793c6d7a1f",
+                    "name": "exhibit-C.evt"
+                }
+            }
+        },
+        {
+            "type": "observed-data",
+            "spec_version": "2.1",
+            "id": "observed-data--8562418f-c61d-50fa-a86e-669681f007f9",
+            "created": "2026-02-20T08:00:00.000Z",
+            "modified": "2026-02-20T08:00:00.000Z",
+            "first_observed": "2026-02-19T00:00:00Z",
+            "last_observed": "2026-02-19T01:00:00Z",
+            "number_observed": 1,
+            "objects": {
+                "0": {
+                    "type": "file",
+                    "spec_version": "2.1",
+                    "id": "file--2fedbeb5-d864-57a4-a1dc-abab1a37f64d",
+                    "name": "exhibit-D.evt"
+                }
+            }
+        },
+        {
+            "type": "x-testimony",
+            "spec_version": "2.1",
+            "id": "x-testimony--cf4713fc-0338-5bf3-b292-28656164ea46",
+            "created": "2026-02-16T10:00:00.000Z",
+            "modified": "2026-02-16T10:00:00.000Z",
+            "statement": "\u8bc1\u8bcd\u7532: \u5acc\u7591\u4eba\u4e8e 1 \u6708\u521d\u51fa\u73b0\u5728\u73b0\u573a",
+            "required_independent_sources": 2,
+            "citations": [
+                {
+                    "source_ref": "observed-data--4d8e4ee9-bcb8-5209-a0da-51262f694486",
+                    "version": "2026-02-10T08:00:00Z"
+                },
+                {
+                    "source_ref": "observed-data--32a42e72-2687-5808-b8be-a2ee4d5afd98",
+                    "version": "2026-02-12T08:00:00Z"
+                }
+            ]
+        },
+        {
+            "type": "x-testimony",
+            "spec_version": "2.1",
+            "id": "x-testimony--a1ad13e7-27e0-53e4-9dca-1f902a68fcec",
+            "created": "2026-02-17T10:00:00.000Z",
+            "modified": "2026-02-17T10:00:00.000Z",
+            "statement": "\u8bc1\u8bcd\u4e59: \u540c\u4e00\u7a97\u53e3\u671f\u5185\u6709\u5f02\u5e38\u5916\u4f20\u6d41\u91cf",
+            "required_independent_sources": 2,
+            "citations": [
+                {
+                    "source_ref": "observed-data--4d8e4ee9-bcb8-5209-a0da-51262f694486",
+                    "version": "2026-02-10T08:00:00Z"
+                },
+                {
+                    "source_ref": "observed-data--32a42e72-2687-5808-b8be-a2ee4d5afd98",
+                    "version": "2026-02-12T08:00:00Z"
+                },
+                {
+                    "source_ref": "observed-data--e0e4ddcd-4572-5ec6-a0a8-f0ef4d5505f1",
+                    "version": "2026-02-15T08:00:00Z"
+                }
+            ]
+        },
+        {
+            "type": "x-testimony",
+            "spec_version": "2.1",
+            "id": "x-testimony--63f2678d-642c-5465-b00a-f894ffb80e5a",
+            "created": "2026-02-22T10:00:00.000Z",
+            "modified": "2026-02-22T10:00:00.000Z",
+            "statement": "\u8bc1\u8bcd\u4e19: \u503c\u5b88\u671f\u95f4\u95e8\u7981\u672a\u88ab\u64ac\u52a8",
+            "required_independent_sources": 2,
+            "citations": [
+                {
+                    "source_ref": "x-testimony--214a5939-a104-56ac-b132-e0e46b592b1a",
+                    "version": "2026-02-21T09:00:00Z"
+                },
+                {
+                    "source_ref": "x-testimony--af267935-7715-5324-8f51-8b24ade482c6",
+                    "version": "2026-02-21T10:00:00Z"
+                }
+            ]
+        },
+        {
+            "type": "x-testimony",
+            "spec_version": "2.1",
+            "id": "x-testimony--214a5939-a104-56ac-b132-e0e46b592b1a",
+            "created": "2026-02-21T09:00:00.000Z",
+            "modified": "2026-02-21T09:00:00.000Z",
+            "statement": "\u6765\u6e90\u9648\u8ff0 S1: \u8f6c\u8ff0\u73b0\u573a\u503c\u5b88\u8bb0\u5f55",
+            "required_independent_sources": 1,
+            "citations": [
+                {
+                    "source_ref": "observed-data--8562418f-c61d-50fa-a86e-669681f007f9",
+                    "version": "2026-02-20T08:00:00Z"
+                },
+                {
+                    "source_ref": "x-testimony--af267935-7715-5324-8f51-8b24ade482c6",
+                    "version": "2026-02-21T10:00:00Z"
+                }
+            ]
+        },
+        {
+            "type": "x-testimony",
+            "spec_version": "2.1",
+            "id": "x-testimony--af267935-7715-5324-8f51-8b24ade482c6",
+            "created": "2026-02-21T10:00:00.000Z",
+            "modified": "2026-02-21T10:00:00.000Z",
+            "statement": "\u6765\u6e90\u9648\u8ff0 S2: \u8f6c\u8ff0 S1 \u7684\u8bf4\u6cd5",
+            "required_independent_sources": 1,
+            "citations": [
+                {
+                    "source_ref": "x-testimony--214a5939-a104-56ac-b132-e0e46b592b1a",
+                    "version": "2026-02-21T09:00:00Z"
+                }
+            ]
+        }
+    ]
+}
