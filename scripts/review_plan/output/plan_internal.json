@@ -1,0 +1,69 @@
+{
+  "assignments": [
+    {
+      "candidate_id": "FND-001",
+      "filename": "src/auth/login.py",
+      "line_number": 42,
+      "reviewers": [
+        "alice",
+        "bob"
+      ],
+      "seats": [
+        "SEAT-001",
+        "SEAT-002"
+      ],
+      "type": "Basic Auth Detector"
+    },
+    {
+      "candidate_id": "FND-002",
+      "filename": "src/billing/invoice.py",
+      "line_number": 88,
+      "reviewers": [
+        "carol",
+        "erin"
+      ],
+      "seats": [
+        "SEAT-003",
+        "SEAT-004"
+      ],
+      "type": "Hex High Entropy String"
+    },
+    {
+      "candidate_id": "FND-003",
+      "filename": "tests/integration/test_payments.py",
+      "line_number": 17,
+      "reviewers": [
+        "alice",
+        "bob"
+      ],
+      "seats": [
+        "SEAT-001",
+        "SEAT-002"
+      ],
+      "type": "AWS Key Detector"
+    }
+  ],
+  "required_seats_per_finding": 2,
+  "seat_directory": {
+    "SEAT-001": "alice",
+    "SEAT-002": "bob",
+    "SEAT-003": "carol",
+    "SEAT-004": "erin"
+  },
+  "unassigned": [
+    {
+      "candidate_id": "FND-004",
+      "explanations": [
+        "bob: recent author of tests/load/test_stress.py",
+        "carol: lacks test-department clearance",
+        "dave: absent (on leave until 2026-11-30)",
+        "erin: substitute boundary: no test-department clearance"
+      ],
+      "filename": "tests/load/test_stress.py",
+      "line_number": 5,
+      "seats_filled": 1,
+      "seats_required": 2,
+      "type": "Private Key Detector"
+    }
+  ]
+}

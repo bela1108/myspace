@@ -1,0 +1,36 @@
+{
+  "seats": {
+    "SEAT-001": [
+      {
+        "candidate_id": "FND-001",
+        "evidence_alias": "EVID-365b730f1d1b"
+      },
+      {
+        "candidate_id": "FND-003",
+        "evidence_alias": "EVID-610418729730"
+      }
+    ],
+    "SEAT-002": [
+      {
+        "candidate_id": "FND-001",
+        "evidence_alias": "EVID-365b730f1d1b"
+      },
+      {
+        "candidate_id": "FND-003",
+        "evidence_alias": "EVID-610418729730"
+      }
+    ],
+    "SEAT-003": [
+      {
+        "candidate_id": "FND-002",
+        "evidence_alias": "EVID-83abf3f9258b"
+      }
+    ],
+    "SEAT-004": [
+      {
+        "candidate_id": "FND-002",
+        "evidence_alias": "EVID-83abf3f9258b"
+      }
+    ]
+  }
+}

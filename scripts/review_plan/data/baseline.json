@@ -1,0 +1,53 @@
+{
+  "version": "1.5.0",
+  "generated_at": "2026-11-22T00:00:00Z",
+  "plugins_used": [
+    {
+      "name": "BasicAuthDetector"
+    },
+    {
+      "name": "AWSKeyDetector"
+    },
+    {
+      "name": "PrivateKeyDetector"
+    },
+    {
+      "name": "HexHighEntropyString",
+      "limit": 3.0
+    }
+  ],
+  "results": {
+    "src/auth/login.py": [
+      {
+        "type": "Basic Auth Detector",
+        "line_number": 42,
+        "hashed_secret": "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90",
+        "is_verified": false
+      }
+    ],
+    "tests/integration/test_payments.py": [
+      {
+        "type": "AWS Key Detector",
+        "line_number": 17,
+        "hashed_secret": "b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a1",
+        "is_verified": false
+      }
+    ],
+    "src/billing/invoice.py": [
+      {
+        "type": "Hex High Entropy String",
+        "line_number": 88,
+        "hashed_secret": "c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2",
+        "is_verified": false
+      }
+    ],
+    "tests/load/test_stress.py": [
+      {
+        "type": "Private Key Detector",
+        "line_number": 5,
+        "hashed_secret": "d4e5f60718293a4b5c6d7e8f90a1b2b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3",
+        "is_verified": false
+      }
+    ]
+  }
+}

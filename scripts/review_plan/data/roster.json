@@ -1,0 +1,61 @@
+{
+  "required_seats_per_finding": 2,
+  "test_path_prefixes": [
+    "tests/",
+    "test_data/"
+  ],
+  "reviewers": [
+    {
+      "id": "alice",
+      "clearance": {
+        "test_paths": true
+      },
+      "recent_authored_paths": [
+        "src/billing/invoice.py"
+      ],
+      "absent": false
+    },
+    {
+      "id": "bob",
+      "clearance": {
+        "test_paths": true
+      },
+      "recent_authored_paths": [
+        "tests/load/test_stress.py"
+      ],
+      "absent": false
+    },
+    {
+      "id": "carol",
+      "clearance": {
+        "test_paths": false
+      },
+      "recent_authored_paths": [
+        "src/auth/login.py"
+      ],
+      "absent": false
+    },
+    {
+      "id": "dave",
+      "clearance": {
+        "test_paths": true
+      },
+      "recent_authored_paths": [
+        "tests/integration/test_payments.py"
+      ],
+      "absent": true,
+      "absence_note": "on leave until 2026-11-30"
+    },
+    {
+      "id": "erin",
+      "clearance": {
+        "test_paths": false
+      },
+      "recent_authored_paths": [],
+      "absent": false,
+      "substitute_for": [
+        "dave"
+      ]
+    }
+  ]
+}

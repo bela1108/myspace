@@ -1,0 +1,13 @@
+{
+  "items": [
+    {
+      "candidate_id": "FND-001",
+      "evidence_alias": "EVID-365b730f1d1b"
+    },
+    {
+      "candidate_id": "FND-003",
+      "evidence_alias": "EVID-610418729730"
+    }
+  ],
+  "seat": "SEAT-002"
+}
