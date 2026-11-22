@@ -263,3 +263,83 @@ $ detect-secrets audit --report --only-false .secret.baseline
     }
 ]
 ```
+
+## Scheduling Manual Reviews
+
+When several teams share the auditing effort, the limiting resource is usually
+local review time rather than the scanner itself. The scheduling mode turns a
+small plan into an ordered worklist:
+
+```bash
+$ detect-secrets audit --schedule plan.yaml --export schedule.json
+```
+
+The plan may be JSON or YAML:
+
+```yaml
+groups:
+  - name: appsec
+    hours: 4
+    capabilities: [general]
+  - name: oncall
+    hours: 2
+    capabilities: [general, oncall]
+
+projects:
+  - name: payments
+    allowed_groups: [appsec, oncall]
+  - name: infrastructure
+    allowed_groups: [oncall]
+    required_capabilities: [oncall]
+
+tags:
+  oncall:
+    capabilities: [oncall]
+    priority: 10
+
+candidates:
+  - id: finding-1
+    hours: 1
+    projects: [payments, infrastructure]
+    tags: [oncall]
+  - id: finding-2
+    hours: 1.5
+    projects: [payments]
+    capabilities: [general]
+```
+
+- `groups[].hours` is the local capacity of a group for one week. `weeks` (or
+  `--weeks`) multiplies that capacity when the worklist spans several weeks.
+- `groups[].capabilities` and `projects[].required_capabilities` restrict who
+  may perform a review. `tags` map candidate labels to additional required
+  capabilities and to ordering priority. A candidate tag that matches a known
+  group capability is also treated as a requirement, even without a rule.
+- `projects[].allowed_groups` is the reviewer permission list of the project.
+  If a project omits it, every group is allowed.
+- A candidate may reference several projects. Such a candidate is reviewed
+  once, so its hours are charged once, but it is scheduled only when one group
+  is authorized by **every** associated project and has every required
+  capability. Otherwise it is reported as a structural gap.
+
+The worklist maximizes covered project associations (by default, a shared
+candidate is worth one unit per project), then total priority, then minimizes
+scheduled hours, then maximizes the number of candidates. Group queues are
+ordered by candidate priority.
+
+When the worklist does not fit, the `gap` output reports
+`minimum_extra_hours`: the exact minimum additional review time needed to fit
+every structurally assignable candidate. This is not a simple
+`demand - capacity` calculation, because review tasks are indivisible and may
+leave unusable slack. `extra_by_group` shows one tightest distribution of the
+additional hours, and `maximum_group_extra` reports the largest single-group
+gap in that distribution.
+
+The exported schedule is deliberately anonymized. Each row contains only:
+
+```json
+{"task_id": "T91b72265b1f5", "order": 1, "capabilities": ["oncall"]}
+```
+
+No candidate names, project names, group names, or durations are exported.
+Use `--seed` to make the random task ids reproducible, and `--json` to include
+the gap diagnostics alongside the export.

@@ -5,6 +5,7 @@ from typing import List
 from typing import Optional
 
 from . import audit
+from .audit import schedule as audit_schedule
 from .core import baseline
 from .core import plugins
 from .core.log import log
@@ -119,7 +120,9 @@ def scan_adhoc_string(line: str) -> str:
 
 def handle_audit_action(args: argparse.Namespace) -> None:
     try:
-        if args.stats:
+        if args.schedule:
+            _handle_schedule_action(args)
+        elif args.stats:
             stats = audit.analytics.calculate_statistics_for_baseline(args.filename[0])
             if args.diff:
                 # TODO
@@ -152,3 +155,63 @@ def handle_audit_action(args: argparse.Namespace) -> None:
                 audit.audit_baseline(args.filename[0])
     except InvalidBaselineError:
         pass
+
+
+def _handle_schedule_action(args: argparse.Namespace) -> None:
+    try:
+        data = audit_schedule.load_plan_data(
+            args.filename[0] if args.filename else None,
+        )
+
+        overrides = {}
+        for name in ('work_hours', 'tags', 'permissions', 'candidates'):
+            path = getattr(args, name, None)
+            if path:
+                overrides[name] = audit_schedule.load_plan_data(path, allow_sequence=True)
+
+        if overrides:
+            data = audit_schedule.merge_plan_data(
+                data,
+                work_hours=overrides.get('work_hours'),
+                tags=overrides.get('tags'),
+                permissions=overrides.get('permissions'),
+                candidates=overrides.get('candidates'),
+            )
+
+        plan = audit_schedule.parse_plan(
+            data,
+            source=args.filename[0] if args.filename else '<command-line>',
+        )
+        if args.weeks is not None:
+            plan = audit_schedule.with_weeks(plan, args.weeks)
+
+        result = audit_schedule.build_schedule(
+            plan,
+            seed=args.seed,
+            max_nodes=args.max_nodes,
+        )
+    except (audit_schedule.ScheduleError, OSError, UnicodeError) as error:
+        log.error(str(error))
+        return
+
+    if args.export == '-':
+        print(
+            json.dumps(
+                audit_schedule.export_schedule(result),
+                indent=2,
+                sort_keys=True,
+            ),
+        )
+        return
+
+    if args.export:
+        try:
+            audit_schedule.write_export(result, args.export)
+        except OSError as error:
+            log.error(str(error))
+            return
+
+    if args.json:
+        print(json.dumps(result.to_dict(), indent=2, sort_keys=True))
+    else:
+        print(audit_schedule.render_worklist(result))
