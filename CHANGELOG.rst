@@ -7,6 +7,15 @@ Next version
 
 - Dropped support for Python < 3.10.
 - Added Python 3.14 and 3.15 to the CI matrix.
+- Added optional ``scope`` and ``mutations`` declarations for cleaning
+  callbacks using ``Processor`` or the ``element_processor`` decorator.
+  Declared callbacks run transactionally: content and structural changes are
+  checked against the declared node range, and out-of-scope changes or partial
+  failures roll the tree back and raise ``ProcessorScopeError`` or
+  ``ProcessorError`` with the callback name and node path. Plain callbacks
+  keep their previous behaviour.
+- Added ``document_preprocessors`` and ``document_postprocessors`` for
+  whole-document callbacks with the same transactional guarantees.
 
 2.7 (2026-10-25)
 ================

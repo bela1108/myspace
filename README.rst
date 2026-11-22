@@ -77,6 +77,8 @@ The default settings are::
             target_blank_noopener,
         ],
         "element_postprocessors": [],
+        "document_preprocessors": [],
+        "document_postprocessors": [],
         "is_mergeable": lambda e1, e2: True,
     }
 
@@ -131,6 +133,51 @@ allowed to have tags in ``empty`` that are not in ``tags``, that is,
 tags that are allowed to be empty but at the same time not allowed at
 all. The ``Sanitizer`` constructor raises ``TypeError`` exceptions when
 it detects inconsistencies.
+
+Scoped, transactional callbacks
+-------------------------------
+
+Plain callables keep working exactly as before. To declare which nodes a
+callback may touch, wrap it in ``Processor`` (or use the
+``element_processor`` decorator)::
+
+    from html_sanitizer import Mutation, Processor, Sanitizer
+
+    def format_clause(element):
+        element.set("data-formatted", "yes")
+        return element
+
+    sanitizer = Sanitizer({
+        "element_preprocessors": [
+            Processor(
+                format_clause,
+                scope="p[data-kind=clause]",
+                mutations={Mutation.ATTRIBUTES},
+            ),
+        ],
+    })
+
+``scope`` accepts a predicate, a tag name, a set of tag names, a small CSS
+selector subset (``"p.notice"``, ``"#main"``, ``"[data-kind=course]"``), an
+XPath expression, a mapping of conditions or explicit lxml elements. The
+matching node and its descendants are in scope by default. ``mutations`` is
+an optional set of declared changes: ``text``, ``tail``, ``attributes``,
+``tag``, ``children``, ``move``, ``parent``, ``add``, ``remove``,
+``replace``, ``content``, ``structure`` or ``all``.
+
+Declared callbacks run transactionally. The sanitizer snapshots the tree
+before the callback chain, checks every content and structural change against
+the declared scope and mutation set, and rolls the whole tree back if a
+callback raises or changes a node it did not declare. ``ProcessorScopeError``
+and ``ProcessorError`` identify the callback, the failing node path and the
+rejected mutation. A callback which accepts a second parameter also receives
+a ``ProcessingContext`` containing the live ``root``, the current ``element``
+and a ``snapshot`` deep copy of the tree from before that callback ran.
+
+Whole-document callbacks can be registered with ``document_preprocessors``
+and ``document_postprocessors``. They receive the wrapping root element and
+use the same scope, mutation and rollback rules.
+
 
 An example for an even more restricted configuration might be::
 

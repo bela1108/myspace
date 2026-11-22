@@ -1,6 +1,12 @@
 from unittest import TestCase
 
-from .sanitizer import Sanitizer
+from .sanitizer import (
+    Mutation,
+    Processor,
+    ProcessorError,
+    ProcessorScopeError,
+    Sanitizer,
+)
 
 
 default_sanitizer = Sanitizer()
@@ -828,5 +834,263 @@ git commit
                 ("<badtag>secret</badtag><p>public</p>", "<p>public</p>"),
                 ("<p>a<badtag>b<em>c</em></badtag>d</p>", "<p>ad</p>"),
             ],
+            sanitizer=sanitizer,
+        )
+
+    def test_transactional_scoped_callback_and_legacy_callback(self):
+        def format_course(element):
+            if element.tag == "p" and element.get("data-role") == "course":
+                element.text = "Formatted " + (element.text or "")
+            return element
+
+        def legacy_body(element):
+            if element.tag == "p" and element.get("data-role") == "body":
+                element.set("data-seen", "yes")
+            return element
+
+        sanitizer = Sanitizer(
+            {
+                "tags": {"p"},
+                "attributes": {"p": {"data-role", "data-seen"}},
+                "empty": set(),
+                "separate": {"p"},
+                "element_preprocessors": [
+                    Processor(
+                        format_course,
+                        scope="p[data-role=course]",
+                        mutations={Mutation.TEXT},
+                    ),
+                    legacy_body,
+                ],
+            }
+        )
+        self.run_tests(
+            [
+                (
+                    "<p data-role=body>Body</p><p data-role=course>Clause</p>",
+                    '<p data-role="body" data-seen="yes">Body</p>'
+                    '<p data-role="course">Formatted Clause</p>',
+                )
+            ],
+            sanitizer=sanitizer,
+        )
+
+    def test_transactional_middle_extension_cannot_read_half_cleaned_tree(self):
+        captured = {}
+
+        def clean_body(element):
+            if element.tag == "p" and element.get("data-role") == "body":
+                captured["root"] = element.getroottree().getroot()
+                element.text = "Body cleaned"
+            return element
+
+        def touch_course(element):
+            if element.tag == "p" and element.get("data-role") == "body":
+                sibling = element.getnext()
+                if sibling is not None:
+                    sibling.text = "Tampered"
+            return element
+
+        sanitizer = Sanitizer(
+            {
+                "tags": {"p"},
+                "attributes": {"p": {"data-role"}},
+                "empty": set(),
+                "separate": {"p"},
+                "element_preprocessors": [
+                    Processor(
+                        clean_body,
+                        scope="p[data-role=body]",
+                        mutations={"text"},
+                    ),
+                    Processor(
+                        touch_course,
+                        scope="p[data-role=body]",
+                        mutations={"text"},
+                    ),
+                ],
+            }
+        )
+
+        with self.assertRaises(ProcessorScopeError) as caught:
+            sanitizer.sanitize(
+                "<p data-role=body>Body</p><p data-role=course>Clause</p>"
+            )
+
+        self.assertIn("outside the declared scope", str(caught.exception))
+        self.assertEqual(caught.exception.path, "/div/p[2]")
+        self.assertEqual(
+            next(
+                p for p in captured["root"].iter("p") if p.get("data-role") == "course"
+            ).text,
+            "Clause",
+        )
+        self.assertEqual(
+            next(
+                p for p in captured["root"].iter("p") if p.get("data-role") == "body"
+            ).text,
+            "Body",
+        )
+
+    def test_transactional_rejects_moves_and_ancestor_replacement(self):
+        def move(element):
+            element.getparent().append(element)
+            return element
+
+        def replace_ancestor(element):
+            element.getparent().tag = "section"
+            return element
+
+        def replace_document_ancestor(element):
+            element.getparent().getparent().tag = "section"
+            return element
+
+        for callback in (move, replace_ancestor, replace_document_ancestor):
+            with self.subTest(callback=callback.__name__):
+                sanitizer = Sanitizer(
+                    {
+                        "tags": {"p"},
+                        "attributes": {"p": {"data-role"}},
+                        "empty": set(),
+                        "separate": {"p"},
+                        "element_preprocessors": [
+                            Processor(
+                                callback,
+                                scope="p[data-role=course]",
+                                mutations={"structure"},
+                            )
+                        ],
+                    }
+                )
+                with self.assertRaises(ProcessorScopeError) as caught:
+                    sanitizer.sanitize(
+                        "<p data-role=course>Clause</p><p data-role=body>Body</p>"
+                    )
+                self.assertIn("outside the declared scope", str(caught.exception))
+
+    def test_transactional_partial_failure_rolls_back_and_reports_path(self):
+        captured = {}
+
+        def explode(element):
+            captured["root"] = element.getroottree().getroot()
+            element.text = "half cleaned"
+            raise RuntimeError("boom")
+
+        sanitizer = Sanitizer(
+            {
+                "tags": {"p"},
+                "attributes": {"p": {"data-role"}},
+                "empty": set(),
+                "separate": {"p"},
+                "element_preprocessors": [
+                    Processor(
+                        explode,
+                        scope="p[data-role=course]",
+                        mutations={"text"},
+                    )
+                ],
+            }
+        )
+
+        with self.assertRaises(ProcessorError) as caught:
+            sanitizer.sanitize("<p data-role=course>Clause</p>")
+
+        self.assertIn("boom", str(caught.exception))
+        self.assertIn("/div/p[1]", str(caught.exception))
+        self.assertEqual(
+            next(
+                p for p in captured["root"].iter("p") if p.get("data-role") == "course"
+            ).text,
+            "Clause",
+        )
+
+    def test_transactional_rejects_undeclared_mutation(self):
+        def add_class(element):
+            element.set("class", "unexpected")
+            return element
+
+        sanitizer = Sanitizer(
+            {
+                "tags": {"p"},
+                "attributes": {"p": {"class"}},
+                "empty": set(),
+                "separate": {"p"},
+                "element_preprocessors": [
+                    Processor(
+                        add_class,
+                        scope="p.course",
+                        mutations={"text"},
+                    )
+                ],
+            }
+        )
+
+        with self.assertRaises(ProcessorScopeError) as caught:
+            sanitizer.sanitize("<p class=course>Clause</p>")
+
+        self.assertIn(
+            "mutation 'attributes' is not declared",
+            str(caught.exception),
+        )
+
+    def test_legacy_callback_errors_still_pass_through(self):
+        def explode(element):
+            raise KeyError("legacy boom")
+
+        sanitizer = Sanitizer({"element_preprocessors": [explode]})
+        with self.assertRaises(KeyError):
+            sanitizer.sanitize("<p>Clause</p>")
+
+    def test_transactional_allows_declared_structural_changes(self):
+        def move_child(element):
+            if element.tag == "p":
+                target = element.getnext()
+                if target is not None and len(element):
+                    target.append(element[0])
+            return element
+
+        sanitizer = Sanitizer(
+            {
+                "tags": {"p", "strong"},
+                "attributes": {},
+                "empty": set(),
+                "separate": {"p"},
+                "element_preprocessors": [
+                    Processor(
+                        move_child,
+                        scope="p",
+                        mutations={"move"},
+                    )
+                ],
+            }
+        )
+        self.run_tests(
+            [
+                (
+                    "<p><strong>a</strong></p><p>b</p>",
+                    "<p>b<strong>a</strong></p>",
+                )
+            ],
+            sanitizer=sanitizer,
+        )
+
+    def test_transactional_document_processor(self):
+        def clean_document(root):
+            root.find(".//p").text = "documented"
+            return root
+
+        sanitizer = Sanitizer(
+            {
+                "document_preprocessors": [
+                    Processor(
+                        clean_document,
+                        scope="p",
+                        mutations={"text"},
+                    )
+                ]
+            }
+        )
+        self.run_tests(
+            [("<p>Clause</p>", "<p>documented</p>")],
             sanitizer=sanitizer,
         )
