@@ -1,0 +1,20 @@
+title: Suspicious Command Execution By Lateral Tooling
+id: aaaaaaaa-bbbb-cccc-dddd-000000000003
+status: test
+logsource:
+  product: newlog
+  service: process
+detection:
+  selection:
+    CommandLine:
+      - "*psexec*"
+      - "*wmiprvse*"
+    Image: "*\\\\cmd.exe"
+  filter_null:
+    CommandLine: null
+  condition: selection and not filter_null
+fields:
+  - CommandLine
+  - Image
+falsepositives: []
+level: high

@@ -1,0 +1,37 @@
+title: File Drop By Authenticated User
+id: aaaaaaaa-bbbb-cccc-dddd-000000000004
+status: test
+logsource:
+  product: newlog
+  service: file
+detection:
+  selection:
+    UserName: svc_deploy
+    ComputerName: build-host-01
+    TargetFilename: "/var/tmp/agent.sh"
+  host_pattern:
+    ComputerName: "build-*"
+  condition: selection and host_pattern
+fields:
+  - UserName
+  - ComputerName
+  - TargetFilename
+falsepositives: []
+level: medium
+---
+title: Client IP Login Without User Context
+id: aaaaaaaa-bbbb-cccc-dddd-000000000005
+status: test
+logsource:
+  product: newlog
+  service: auth
+detection:
+  selection:
+    ClientIp: 203.0.113.9
+    ComputerName: edge-gateway
+  condition: selection
+fields:
+  - ClientIp
+  - ComputerName
+falsepositives: []
+level: low

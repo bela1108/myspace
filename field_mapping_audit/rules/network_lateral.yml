@@ -1,0 +1,36 @@
+title: Network Lateral Movement Over SMB
+id: aaaaaaaa-bbbb-cccc-dddd-000000000001
+status: test
+logsource:
+  product: newlog
+  service: network
+detection:
+  selection:
+    SourceIp:
+      - 10.0.0.1
+      - 10.0.0.2
+    DestinationIp: 192.168.10.7
+    DestinationPort: 445
+  filter_local:
+    DestinationIp|cidr: 127.0.0.0/8
+  condition: selection and not filter_local
+fields:
+  - SourceIp
+  - DestinationIp
+falsepositives: []
+level: high
+---
+title: Outbound SSH From Server
+id: aaaaaaaa-bbbb-cccc-dddd-000000000002
+status: test
+logsource:
+  product: newlog
+  service: network
+detection:
+  selection:
+    SourceIp: 198.51.100.9
+    DestinationIp: 203.0.113.4
+    DestinationPort: 22
+  condition: selection
+falsepositives: []
+level: medium
