@@ -1,4 +1,7 @@
+import re
 from unittest import TestCase
+
+import lxml.html
 
 from .sanitizer import Sanitizer
 
@@ -830,3 +833,210 @@ git commit
             ],
             sanitizer=sanitizer,
         )
+
+
+# Bounded generative checks for editor-style reserialization. Editors
+# re-serialize legal rich text fragments (tag case, attribute quoting,
+# newlines); sanitizing on save and on display must not turn those
+# serialization differences into security regressions.
+
+RESERIALIZATION_FRAGMENTS = (
+    "<p>Hello <strong>world</strong>!</p>",
+    '<p><a href="/foo" title="bar">link</a> text</p>',
+    "<p>one<br>two <em>three</em></p>",
+)
+
+RESERIALIZATION_CONFIGS = {
+    "default": {},
+    "restricted": {
+        "tags": {"p", "strong", "em", "a", "br"},
+        "attributes": {"a": ("href",)},
+        "empty": {"a", "br"},
+        "separate": {"a", "p"},
+    },
+}
+
+_TAG_PIECE_RE = re.compile(r"<[^>]+>")
+_TAG_INNER_RE = re.compile(r"<(/?)([\w-]+)(.*?)(/?)>")
+_ATTR_RE = re.compile(r'([\w-]+)="([^"]*)"')
+_UNQUOTABLE_RE = re.compile(r"[A-Za-z0-9._:/#?-]+")
+
+
+def _fragment_pieces(fragment):
+    """Split a fragment into alternating text and tag pieces."""
+    pieces = []
+    texts = _TAG_PIECE_RE.split(fragment)
+    tags = _TAG_PIECE_RE.findall(fragment)
+    for index, text in enumerate(texts):
+        if text:
+            pieces.append(("text", text))
+        if index < len(tags):
+            pieces.append(("tag", tags[index]))
+    return pieces
+
+
+def _render_tag(tag, *, case_mode, quote_mode):
+    closing, name, attrs, selfclose = _TAG_INNER_RE.match(tag).groups()
+    if case_mode in ("upper", "mixed"):
+        name = name.upper()
+    rendered_attrs = []
+    for attr_name, value in _ATTR_RE.findall(attrs):
+        rendered_name = attr_name.upper() if case_mode == "upper" else attr_name
+        if quote_mode == "none" and _UNQUOTABLE_RE.fullmatch(value):
+            rendered_attrs.append(f"{rendered_name}={value}")
+        elif quote_mode == "'":
+            rendered_attrs.append(f"{rendered_name}='{value}'")
+        else:
+            rendered_attrs.append(f'{rendered_name}="{value}"')
+    inner = " " + " ".join(rendered_attrs) if rendered_attrs else ""
+    return f"<{closing}{name}{inner}{selfclose}>"
+
+
+def _render_variant(fragment, *, case_mode, quote_mode, newline_slots):
+    pieces = _fragment_pieces(fragment)
+    rendered = []
+    for index, (kind, value) in enumerate(pieces):
+        if index in newline_slots:
+            rendered.append("\n")
+        if kind == "tag":
+            rendered.append(
+                _render_tag(value, case_mode=case_mode, quote_mode=quote_mode)
+            )
+        else:
+            rendered.append(value)
+    return "".join(rendered)
+
+
+def _iter_variants(fragment):
+    """Bounded enumeration of legal re-serializations of a fragment."""
+    pieces = _fragment_pieces(fragment)
+    slots = list(range(1, len(pieces)))
+    has_attributes = any(
+        kind == "tag" and "=" in value for kind, value in pieces
+    )
+    quote_modes = ('"', "'", "none") if has_attributes else ('"',)
+    newline_choices = [frozenset()]
+    newline_choices.extend(frozenset({slot}) for slot in slots)
+    newline_choices.append(frozenset(slots))
+    for case_mode in ("lower", "upper", "mixed"):
+        for quote_mode in quote_modes:
+            for newline_slots in newline_choices:
+                params = {
+                    "case_mode": case_mode,
+                    "quote_mode": quote_mode,
+                    "newline_slots": newline_slots,
+                }
+                yield params, _render_variant(fragment, **params)
+
+
+def _token_stream(html):
+    """Parsed element and text order, ignoring serialization whitespace."""
+    tokens = []
+
+    def add_text(text):
+        normalized = " ".join((text or "").split())
+        if normalized:
+            tokens.append(("text", normalized))
+
+    def walk(element):
+        add_text(element.text)
+        for child in element:
+            tokens.append(("tag", child.tag, tuple(sorted(child.attrib.items()))))
+            walk(child)
+            add_text(child.tail)
+
+    walk(lxml.html.fromstring(f"<div>{html}</div>"))
+    return tokens
+
+
+def _first_difference(expected, actual):
+    for index, (want, got) in enumerate(zip(expected, actual)):
+        if want != got:
+            return index, want, got
+    index = min(len(expected), len(actual))
+    want = expected[index] if index < len(expected) else None
+    got = actual[index] if index < len(actual) else None
+    return index, want, got
+
+
+def _minimize_variant(fragment, params, sanitizer, reference_tokens):
+    """Greedily simplify a failing variant while it keeps failing."""
+
+    def fails(candidate):
+        html = _render_variant(fragment, **candidate)
+        return _token_stream(sanitizer.sanitize(html)) != reference_tokens
+
+    best = dict(params)
+    for key, simpler in (("case_mode", "lower"), ("quote_mode", '"')):
+        candidate = {**best, key: simpler}
+        if fails(candidate):
+            best = candidate
+    slots = set(best["newline_slots"])
+    for slot in sorted(slots):
+        candidate = {**best, "newline_slots": frozenset(slots - {slot})}
+        if fails(candidate):
+            slots -= {slot}
+            best = candidate
+    return best
+
+
+class ReserializationTestCase(TestCase):
+    def test_reserialization_invariance(self):
+        """Re-serialized legal fragments sanitize to the same parsed output"""
+        for config_name, settings in RESERIALIZATION_CONFIGS.items():
+            sanitizer = Sanitizer(settings)
+            for fragment in RESERIALIZATION_FRAGMENTS:
+                reference = _token_stream(sanitizer.sanitize(fragment))
+                for params, variant in _iter_variants(fragment):
+                    tokens = _token_stream(sanitizer.sanitize(variant))
+                    if tokens != reference:
+                        minimal = _minimize_variant(
+                            fragment, params, sanitizer, reference
+                        )
+                        index, want, got = _first_difference(reference, tokens)
+                        self.fail(
+                            "sanitizing a re-serialized fragment changed the"
+                            " parsed element/text order"
+                            f"\n  config: {config_name} {settings!r}"
+                            "\n  minimal legal fragment:"
+                            f" {_render_variant(fragment, **minimal)!r}"
+                            f"\n  variant parameters: {minimal!r}"
+                            f"\n  element difference at token {index}:"
+                            f" expected {want!r} but got {got!r}"
+                            f"\n  expected tokens: {reference!r}"
+                            f"\n  actual tokens:   {tokens!r}"
+                            "\n  reproduce: python -m unittest"
+                            " html_sanitizer.tests.ReserializationTestCase"
+                            ".test_reserialization_invariance"
+                        )
+
+    def test_output_within_allowed_markup(self):
+        """The same input through both configs stays within each boundary"""
+        sanitizers = [
+            (name, Sanitizer(settings))
+            for name, settings in RESERIALIZATION_CONFIGS.items()
+        ]
+        for fragment in RESERIALIZATION_FRAGMENTS:
+            for _params, variant in _iter_variants(fragment):
+                for config_name, sanitizer in sanitizers:
+                    with self.subTest(config=config_name, variant=variant):
+                        tokens = _token_stream(sanitizer.sanitize(variant))
+                        for token in tokens:
+                            if token[0] != "tag":
+                                continue
+                            _, tag, attributes = token
+                            self.assertIn(
+                                tag,
+                                sanitizer.tags,
+                                f"config {config_name} emitted disallowed"
+                                f" tag <{tag}> for input {variant!r}",
+                            )
+                            allowed = sanitizer.attributes.get(tag, set())
+                            for attr_name, _value in attributes:
+                                self.assertIn(
+                                    attr_name,
+                                    allowed,
+                                    f"config {config_name} emitted disallowed"
+                                    f" attribute {attr_name} on <{tag}>"
+                                    f" for input {variant!r}",
+                                )
