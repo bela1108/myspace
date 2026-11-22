@@ -136,3 +136,11 @@ class CVSS4RHMalformedError(CVSS4Error):
     """
 
     pass
+
+
+class CVSS4PlanningError(CVSS4Error, ValueError):
+    """
+    Exception for invalid CVSS4 remediation planning input.
+    """
+
+    pass

@@ -728,6 +728,37 @@ class CVSS4(object):
             data = OrderedDict(sorted(data.items()))
         return data
 
+    def plan_actions(self, actions, **kwargs):
+        """
+        Enumerates remediation combinations in memory and returns the non-dominated plans.
+
+        This is a convenience wrapper around :class:`cvss.planner.CVSS4Planner`; the planner
+        reuses this class as the scoring kernel for every candidate combination.
+
+        Args:
+            actions: Iterable of action mappings or :class:`cvss.planner.CVSS4Action` objects.
+            **kwargs: Planner options such as ``max_actions``, ``fixed_metrics``,
+                ``release_threshold``, and ``exclusions``.
+
+        Returns:
+            (list): Non-dominated :class:`cvss.planner.CVSS4Plan` objects.
+        """
+        from .planner import CVSS4Planner
+
+        analyze = kwargs.pop("analyze", False)
+        planner = CVSS4Planner(self.vector, actions, **kwargs)
+        if analyze:
+            return planner.analyze()
+        return planner.plan()
+
+    def plan_remediations(self, actions, **kwargs):
+        """Alias for :meth:`plan_actions`."""
+        return self.plan_actions(actions, **kwargs)
+
+    def plan(self, actions, **kwargs):
+        """Alias for :meth:`plan_actions`."""
+        return self.plan_actions(actions, **kwargs)
+
     def __hash__(self):
         return hash(self.clean_vector())
 
