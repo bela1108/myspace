@@ -1,0 +1,42 @@
+{
+  "abi": {
+    "name": "lp64-server",
+    "description": "64-bit server ABI: long and pointers are 8 bytes",
+    "pointer_size": 8,
+    "pointer_alignment": 8,
+    "enum_size": 4,
+    "enum_alignment": 4,
+    "primitive_types": {
+      "_Bool": {"size": 1, "alignment": 1},
+      "signed char": {"size": 1, "alignment": 1},
+      "unsigned char": {"size": 1, "alignment": 1},
+      "short": {"size": 2, "alignment": 2},
+      "unsigned short": {"size": 2, "alignment": 2},
+      "int": {"size": 4, "alignment": 4},
+      "unsigned int": {"size": 4, "alignment": 4},
+      "long": {"size": 8, "alignment": 8},
+      "unsigned long": {"size": 8, "alignment": 8},
+      "long long": {"size": 8, "alignment": 8},
+      "unsigned long long": {"size": 8, "alignment": 8},
+      "float": {"size": 4, "alignment": 4},
+      "double": {"size": 8, "alignment": 8},
+      "long double": {"size": 16, "alignment": 16}
+    }
+  },
+  "audit": {
+    "type": "device_status_block",
+    "public_fields": [
+      "magic",
+      "revision",
+      "flags",
+      "watchdog",
+      "sequence",
+      "payload"
+    ],
+    "export_ranges": [
+      {"label": "public-header", "range": "0-9"},
+      {"label": "cross-abi-gap", "range": "10-15"},
+      {"label": "public-body", "range": "16-31"}
+    ]
+  }
+}
