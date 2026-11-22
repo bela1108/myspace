@@ -18,6 +18,41 @@ class RuleVerificationError(Error):
     """Indicates that artifact rule verification failed."""
 
 
+class ReproducibilityVerificationError(RuleVerificationError):
+    """Indicates that independent builds are not reproducible.
+
+    The exception optionally carries a list of structured
+    :class:`in_toto.reproducibility.ArtifactDifference` records.  Each record
+    names the artifact, the side on which the difference was observed and the
+    layout rule that governs the artifact.
+    """
+
+    def __init__(self, message=None, failures=None):
+        self.failures = list(failures or [])
+        self.differences = self.failures
+        self.records = self.failures
+        self.failure = self.failures[0] if self.failures else None
+        if message is None:
+            message = _format_reproducibility_failures(self.failures)
+        super().__init__(message)
+
+
+def _format_reproducibility_failures(failures):
+    """Build a human readable message for reproducibility failures."""
+    if not failures:
+        return "Independent builds are not reproducible."
+
+    lines = ["Independent builds are not reproducible:"]
+    lines.extend(f"  - {failure}" for failure in failures)
+    return "\n".join(lines)
+
+
+# Convenient spellings used by some integrations.
+ReproducibilityError = ReproducibilityVerificationError
+ReproducibilityCheckError = ReproducibilityVerificationError
+ReproducibleBuildError = ReproducibilityVerificationError
+
+
 class ThresholdVerificationError(Error):
     """Indicates that signature threshold verification failed."""
 

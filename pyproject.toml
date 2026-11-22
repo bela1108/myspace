@@ -53,6 +53,8 @@ in-toto-record = "in_toto.in_toto_record:main"
 in-toto-run = "in_toto.in_toto_run:main"
 in-toto-sign = "in_toto.in_toto_sign:main"
 in-toto-verify = "in_toto.in_toto_verify:main"
+in-toto-reproduce = "in_toto.in_toto_reproduce:main"
+in-toto-reproducibility = "in_toto.in_toto_reproduce:main"
 in-toto-match-products = "in_toto.in_toto_match_products:main"
 
 [project.urls]
@@ -146,3 +148,7 @@ allow-dict-calls-with-keyword-arguments = true
 
 [tool.ruff.lint.pylint]
 max-locals = 10
+
+[tool.pytest.ini_options]
+# Keep pytest from walking into sandbox-restricted parent directories.
+addopts = "--confcutdir=tests"

@@ -1,0 +1,30 @@
+{
+ "signatures": [
+  {
+   "keyid": "50d7e110ad65f3b2dba5c3cfc8c5ca259be9774cc26be3410044ffd4be3aa5f3",
+   "sig": "304502200919491c9b820e1e38483bfe1f69180bc17d39e98ebf20840abb1dac7cdf5ba6022100bceb9f19503c9f592d66ab0b1e7b952d22d7d1512d9974833551c27d5dd83dde"
+  }
+ ],
+ "signed": {
+  "_type": "link",
+  "byproducts": {},
+  "command": [],
+  "environment": {},
+  "materials": {},
+  "name": "build",
+  "products": {
+   "build/build.log": {
+    "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+   },
+   "build/manifest.json": {
+    "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+   },
+   "build/timings.txt": {
+    "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+   },
+   "dist/app": {
+    "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+   }
+  }
+ }
+}

@@ -58,6 +58,23 @@ Note that it is up to you to properly secure your supply chain, by authorizing, 
 
 *Rule arguments specified as `<pattern>` allow for Unix shell-style wildcards as implemented by Python's [`fnmatch`](https://docs.python.org/3/library/fnmatch.html).*
 
+### Reproducibility adjudication
+
+Two independent builds normally produce two signed link files with the same
+artifacts. Some artifacts (for example logs or files that embed the build
+time) may legitimately differ. After the ordinary layout rules pass,
+`in-toto-verify --reproducibility-link-dir <path>` (or
+`verifylib.verify_reproducibility(layout, left_link, right_link)`) compares the
+complete artifact digest dictionaries from both builds.
+
+A difference is accepted only when the artifact is declared by both links and
+the layout explains it on both sides with an `ALLOW` rule (or an explicit
+`--allow-difference` pattern). The outer digest dictionaries are retained, not
+rewritten. `REQUIRE` rules and `--require-identical` always take precedence, so
+a required intermediate artifact cannot be hidden behind a broad directory
+allow-pattern. Failures are reported with the artifact, the differing side and
+the concrete layout rule.
+
 in-toto's Artifact Rules, by default, allow artifacts to exist if they are not explicitly disallowed. As such, a `DISALLOW *` invocation is recommended as the final rule for most step definitions. To learn more about the different rule types, their guarantees and how they are applied, take a look at the [Artifact Rules](https://github.com/in-toto/docs/blob/master/in-toto-spec.md#433-artifact-rules) section of the in-toto specification.
 
 #### Carrying out software supply chain steps

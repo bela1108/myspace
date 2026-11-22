@@ -129,11 +129,13 @@ class CliTestCase(unittest.TestCase):
         self.assert_cli_sys_exit.
         """
         # subclasses of `CliTestCase` must assign the main function of the
-        # tested cli tool using `staticmethod()`
-        assert callable(self.cli_main_func)
-
-        file_path = inspect.getmodule(self.cli_main_func).__file__
-        self.file_name = os.path.basename(file_path)
+        # tested cli tool using `staticmethod()`.  The base class itself is
+        # also collected by pytest as a unittest.TestCase, but it carries no
+        # tests and intentionally has no cli_main_func.
+        if self.cli_main_func is not None:
+            assert callable(self.cli_main_func)
+            file_path = inspect.getmodule(self.cli_main_func).__file__
+            self.file_name = os.path.basename(file_path)
 
         super().__init__(*args, **kwargs)
 

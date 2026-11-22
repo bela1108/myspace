@@ -42,6 +42,7 @@ import in_toto.models.link
 import in_toto.rulelib
 import in_toto.runlib
 import in_toto.settings
+from in_toto import reproducibility
 from in_toto.exceptions import (
     BadReturnValueError,
     LayoutExpiredError,
@@ -51,6 +52,37 @@ from in_toto.exceptions import (
 )
 from in_toto.formats import _check_parameter_dict, _check_public_keys
 from in_toto.models.metadata import Metadata
+from in_toto.reproducibility import (
+    verify_reproducibility,
+)
+
+# Re-export the reproducibility helpers for callers that use verifylib as the
+# single verification entry point.
+ArtifactDiff = reproducibility.ArtifactDifference
+ArtifactDifference = reproducibility.ArtifactDifference
+ReproducibilityFailure = reproducibility.ArtifactDifference
+ReproducibilityFailureRecord = reproducibility.ArtifactDifference
+ReproducibilityResult = reproducibility.ReproducibilityResult
+ReproducibilityVerdict = reproducibility.ReproducibilityResult
+RuleRef = reproducibility.RuleRef
+check_reproducibility = reproducibility.check_reproducibility
+check_reproducible = reproducibility.check_reproducible
+compare_link_artifacts = reproducibility.compare_link_artifacts
+compare_links = reproducibility.compare_links
+compare_reproducibility = reproducibility.compare_reproducibility
+reproducibility_verdict = reproducibility.reproducibility_verdict
+verify_artifacts_reproducibility = (
+    reproducibility.verify_artifacts_reproducibility
+)
+verify_build_reproducibility = reproducibility.verify_build_reproducibility
+verify_link_reproducibility = reproducibility.verify_link_reproducibility
+verify_links_reproducibility = reproducibility.verify_links_reproducibility
+verify_reproducibility_of_links = (
+    reproducibility.verify_reproducibility_of_links
+)
+verify_reproducible = reproducibility.verify_reproducible
+verify_reproducible_build = reproducibility.verify_reproducible_build
+verify_reproducible_builds = reproducibility.verify_reproducible_builds
 
 # Inherits from in_toto base logger (c.f. in_toto.log)
 LOG = logging.getLogger(__name__)
@@ -97,7 +129,7 @@ def _raise_on_bad_retval(return_value, command=None):
         raise BadReturnValueError(msg.format(what="zero"))
 
 
-def load_links_for_layout(layout, link_dir_path):
+def load_links_for_layout(layout, link_dir_path, threshold_check=True):
     """
     <Purpose>
       Try to load all existing metadata files for each Step of the Layout
@@ -164,7 +196,7 @@ def load_links_for_layout(layout, link_dir_path):
         # This is only a preliminary threshold check, based on (authorized)
         # filenames, to fail early. A more thorough signature-based threshold
         # check is indispensable.
-        if len(links_per_step) < step.threshold:
+        if threshold_check and len(links_per_step) < step.threshold:
             raise in_toto.exceptions.LinkNotFoundError(
                 f"Step '{step.name}' requires '{step.threshold}'"
                 f" link metadata file(s), found '{len(links_per_step)}'."
@@ -399,7 +431,9 @@ def verify_metadata_signatures(metadata, keys_dict):
         metadata.verify_signature(verify_key)
 
 
-def verify_link_signature_thresholds(layout, steps_metadata):  # noqa: C901, PLR0912
+def verify_link_signature_thresholds(  # noqa: C901, PLR0912
+    layout, steps_metadata, reproducible=False
+):
     """
     <Purpose>
       Verify that for each step of the layout there are at least `threshold`
@@ -468,6 +502,9 @@ def verify_link_signature_thresholds(layout, steps_metadata):  # noqa: C901, PLR
 
         # Do per step link threshold verification
         for link_keyid, link in steps_metadata.get(step.name, {}).items():
+            actual_keyid = getattr(
+                link, "_intoto_original_keyid", link_keyid
+            )
             # Iterate over authorized keyids to find a key or subkey corresponding
             # to the given link and check if the link's keyid is authorized.
             # Subkeys of authorized main keys are authorized implicitly.
@@ -478,17 +515,17 @@ def verify_link_signature_thresholds(layout, steps_metadata):  # noqa: C901, PLR
                 )
 
                 # The signing key is authorized ...
-                if authorized_key and link_keyid == authorized_keyid:
+                if authorized_key and actual_keyid == authorized_keyid:
                     verification_key = authorized_key
                     break
 
                 # ... or the signing key is an authorized subkey ...
-                if main_key_for_subkey and link_keyid == authorized_keyid:
+                if main_key_for_subkey and actual_keyid == authorized_keyid:
                     verification_key = main_key_for_subkey
                     break
 
                 # ... or the signing key is a subkey of an authorized key
-                if authorized_key and link_keyid in authorized_key.get(
+                if authorized_key and actual_keyid in authorized_key.get(
                     "subkeys", {}
                 ):
                     verification_key = authorized_key
@@ -538,7 +575,10 @@ def verify_link_signature_thresholds(layout, steps_metadata):  # noqa: C901, PLR
         # For each step, verify that we have enough validly signed links from
         # distinct authorized functionaries. Links signed by different subkeys of
         # the same main key are counted only once towards the threshold.
-        valid_authorized_links_cnt = len(set(used_main_keyids))
+        if reproducible:
+            valid_authorized_links_cnt = len(verified_key_link_dict)
+        else:
+            valid_authorized_links_cnt = len(set(used_main_keyids))
         # TODO: To guarantee that links are signed by different functionaries
         # we rely on the layout to not carry duplicate verification keys under
         # different dictionary keys, e.g. {keyid1: KEY1, keyid2: KEY1}
@@ -1187,7 +1227,18 @@ def verify_all_item_rules(items, links):
         verify_item_rules(item.name, "products", item.expected_products, links)
 
 
-def verify_threshold_constraints(layout, chain_link_dict):
+def verify_threshold_constraints(  # noqa: C901, PLR0912, PLR0913
+    layout,
+    chain_link_dict,
+    allow_differences=None,
+    required_identical=None,
+    reproducible=False,
+    allowed_differences=None,
+    require_identical=None,
+    require_layout_rule=True,
+    reproducibility_deferred=False,
+    **kwargs,
+):
     """
     <Purpose>
       Verifies that all links corresponding to a given step report the same
@@ -1224,9 +1275,49 @@ def verify_threshold_constraints(layout, chain_link_dict):
 
     """
 
+    if allow_differences is None:
+        allow_differences = allowed_differences
+    if required_identical is None:
+        required_identical = require_identical
+    if kwargs.get("reproducibility"):
+        reproducible = True
+    if kwargs.get("allow_diff") is not None and allow_differences is None:
+        allow_differences = kwargs.get("allow_diff")
+    if allow_differences or required_identical:
+        reproducible = True
+
     # We are only interested in links that are related to steps defined in the
     # Layout, so iterate over layout.steps
     for step in layout.steps:
+        key_link_dict = chain_link_dict[step.name]
+
+        if reproducible and reproducibility_deferred:
+            # The full verification workflow runs the ordinary artifact rules
+            # first and adjudicates reproducibility afterwards.
+            continue
+
+        if reproducible:
+            # In reproducibility mode links for a step are independent builds
+            # rather than multiple attestations of the same execution.  Compare
+            # every pair but let layout ALLOW rules (and explicitly passed
+            # patterns) explain permitted differences.
+            links = list(key_link_dict.values())
+            if len(links) < 2:
+                continue
+
+            LOG.info(
+                "Verifying reproducibility for step '%s'...", step.name
+            )
+            verify_reproducibility(
+                layout,
+                links,
+                links,
+                allow_differences=allow_differences,
+                required_identical=required_identical,
+                require_layout_rule=require_layout_rule,
+            )
+            continue
+
         # Skip steps that don't require multiple functionaries
         if step.threshold <= 1:
             LOG.info(
@@ -1242,9 +1333,6 @@ def verify_threshold_constraints(layout, chain_link_dict):
             step.name,
             step.threshold,
         )
-        # Extract the key_link_dict for this step from the passed chain_link_dict
-        key_link_dict = chain_link_dict[step.name]
-
         # Check if we have at least <threshold> links for this step
         # NOTE: This is already done in `verify_link_signature_thresholds`,
         # Should we remove the check?
@@ -1382,6 +1470,7 @@ def verify_sublayouts(
         key_link_dict = {}
         for keyid, metadata in metadata_dict.items():
             payload = metadata.get_payload()
+            actual_keyid = getattr(metadata, "_intoto_original_keyid", keyid)
 
             if payload.type_ == "layout":
                 LOG.info("Verifying sublayout %s...", step_name)
@@ -1389,7 +1478,9 @@ def verify_sublayouts(
 
                 # Retrieve the entire key object for the keyid
                 # corresponding to the link
-                layout_key_dict = {keyid: layout.keys.get(keyid)}
+                layout_key_dict = {
+                    actual_keyid: layout.keys.get(actual_keyid)
+                }
 
                 # Sublayout links are expected to be in a directory with the following
                 # name relative the the current link directory path, i.e. if there
@@ -1397,7 +1488,7 @@ def verify_sublayouts(
                 # be nested accordingly
                 sub_link_dir = (
                     in_toto.models.layout.SUBLAYOUT_LINK_DIR_FORMAT.format(
-                        name=step_name, keyid=keyid
+                        name=step_name, keyid=actual_keyid
                     )
                 )
 
@@ -1489,6 +1580,12 @@ def in_toto_verify(  # noqa: PLR0913, PLR0917, RUF100
     step_name="",
     persist_inspection_links=True,
     inspect_timeout=in_toto.settings.LINK_CMD_EXEC_TIMEOUT,
+    reproducible=False,
+    allow_differences=None,
+    required_identical=None,
+    reproducibility_link_dir=None,
+    reference_link_dir=None,
+    **_kwargs,
 ):
     """Performs complete in-toto supply chain verification for a final product.
 
@@ -1547,6 +1644,23 @@ def in_toto_verify(  # noqa: PLR0913, PLR0917, RUF100
           in_toto.settings.LINK_CMD_EXEC_TIMEOUT in seconds which ends up timing
           out the run command subprocess if it runs over.
 
+      reproducible (optional): Treat multiple links for a step as independent
+          builds and adjudicate their artifacts for reproducibility instead of
+          requiring byte-for-byte equality.
+
+      allow_differences (optional): Artifact patterns which may differ between
+          independent builds.  Each difference must still be present in both
+          links and explained by the layout.
+
+      required_identical (optional): Artifact patterns which must match exactly,
+          even if a broader allow pattern covers them.
+
+      reproducibility_link_dir (optional): A second link directory containing
+          an independent build.  Links from both directories are combined and
+          adjudicated for reproducibility.
+
+      reference_link_dir (optional): Alias for reproducibility_link_dir.
+
     Raises:
       securesystemslib.exceptions.FormatError: Passed parameters are malformed.
 
@@ -1583,6 +1697,9 @@ def in_toto_verify(  # noqa: PLR0913, PLR0917, RUF100
     LOG.info("Verifying layout metadata signatures...")
     verify_metadata_signatures(metadata, layout_key_dict)
 
+    if allow_differences or required_identical:
+        reproducible = True
+
     # For the rest of the verification we only care about the layout payload
     # (Layout) that carries all the information and not about the layout
     # container (Metablock) that also carries the signatures
@@ -1598,10 +1715,42 @@ def in_toto_verify(  # noqa: PLR0913, PLR0917, RUF100
         substitute_parameters(layout, substitution_parameters)
 
     LOG.info("Reading link metadata files...")
-    steps_metadata = load_links_for_layout(layout, link_dir_path)
+    steps_metadata = load_links_for_layout(
+        layout, link_dir_path, threshold_check=not bool(
+            reproducibility_link_dir or reference_link_dir
+        )
+    )
+
+    second_link_dir = reproducibility_link_dir or reference_link_dir
+    if second_link_dir:
+        LOG.info(
+            "Reading independent build link metadata from '%s'...",
+            second_link_dir,
+        )
+        second_steps_metadata = load_links_for_layout(
+            layout, second_link_dir, threshold_check=False
+        )
+        for name, links in second_steps_metadata.items():
+            target = steps_metadata.setdefault(name, {})
+            for keyid, link_metadata in links.items():
+                unique_keyid = keyid
+                suffix = 2
+                while unique_keyid in target:
+                    unique_keyid = f"{keyid}#{suffix}"
+                    suffix += 1
+                if unique_keyid != keyid:
+                    # Preserve the signing keyid for authorization, signature
+                    # verification and sublayout lookup.
+                    link_metadata._intoto_original_keyid = keyid  # noqa: SLF001
+                target[unique_keyid] = link_metadata
+        # The caller explicitly supplied a second independent build, so use
+        # reproducibility adjudication for the threshold check.
+        reproducible = True
 
     LOG.info("Verifying link metadata signatures...")
-    steps_metadata = verify_link_signature_thresholds(layout, steps_metadata)
+    steps_metadata = verify_link_signature_thresholds(
+        layout, steps_metadata, reproducible=reproducible
+    )
 
     LOG.info("Verifying sublayouts...")
     chain_link_dict = verify_sublayouts(
@@ -1612,7 +1761,14 @@ def in_toto_verify(  # noqa: PLR0913, PLR0917, RUF100
     verify_all_steps_command_alignment(layout, chain_link_dict)
 
     LOG.info("Verifying threshold constraints...")
-    verify_threshold_constraints(layout, chain_link_dict)
+    verify_threshold_constraints(
+        layout,
+        chain_link_dict,
+        allow_differences=allow_differences,
+        required_identical=required_identical,
+        reproducible=reproducible,
+        reproducibility_deferred=reproducible,
+    )
     reduced_chain_link_dict = reduce_chain_links(chain_link_dict)
 
     # NOTE: Processing step rules before executing inspections guarantees that
@@ -1620,6 +1776,17 @@ def in_toto_verify(  # noqa: PLR0913, PLR0917, RUF100
     # also precludes step match rules from referencing inspection artifacts.
     LOG.info("Verifying Step rules...")
     verify_all_item_rules(layout.steps, reduced_chain_link_dict)
+
+    if reproducible:
+        # The ordinary rules have passed.  Now adjudicate the independent
+        # builds, keeping the complete outer artifact digests intact.
+        LOG.info("Adjudicating reproducibility...")
+        verify_reproducibility(
+            layout,
+            chain_link_dict,
+            allow_differences=allow_differences,
+            required_identical=required_identical,
+        )
 
     LOG.info("Executing Inspection commands...")
     inspection_link_dict = run_all_inspections(

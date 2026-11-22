@@ -103,6 +103,12 @@ class Layout(Signable):
         self.keys = kwargs.get("keys", {})
         self.readme = kwargs.get("readme", "")
 
+        # Optional reproducibility policy.  These are intentionally not attr
+        # fields so legacy signed layouts keep their canonical byte
+        # representation; they are available to in-memory policy checks.
+        self.reproducibility = kwargs.get("reproducibility")
+        self.reproducible = kwargs.get("reproducible")
+
         # Assign a default expiration (one month) if not expiration date is passed
         # TODO: Is one month a sensible default? In any case, we need a valid
         # expiration date in order for the layout object to validate.
@@ -497,6 +503,10 @@ class SupplyChainItem(ValidationMixin):
         self.name = kwargs.get("name")
         self.expected_materials = kwargs.get("expected_materials", [])
         self.expected_products = kwargs.get("expected_products", [])
+
+        # See Layout.reproducibility: policy is readable but not signed.
+        self.reproducibility = kwargs.get("reproducibility")
+        self.reproducible = kwargs.get("reproducible")
 
     def __repr__(self):
         """Returns an indented JSON string of the metadata object."""

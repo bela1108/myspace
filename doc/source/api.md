@@ -41,3 +41,7 @@ documented [in-toto#663](https://github.com/in-toto/in-toto/issues/663).
 ```{eval-rst}
 .. autofunction:: in_toto.verifylib.in_toto_verify
 ```
+
+```{eval-rst}
+.. autofunction:: in_toto.verifylib.verify_reproducibility
+```

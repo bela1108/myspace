@@ -1,0 +1,30 @@
+{
+ "signatures": [
+  {
+   "keyid": "2f685fa7546f1856b123223ab086b3def14c89d24eef18f49c32508c2f60e241",
+   "sig": "5b96467cb58abb74bf187b22819b41c8dbdc9e98b16b1ba9a5010ab877badcd46f9b800628ed701777565d567e2f92f409e8b4fbc9b2139f48f9efefeb1faa92b6a77179cf256fc2ac2a5fcadc79b9b253e7191d7d8fde25edeab1e0dd0bb93e97af232bc960e65d22739f44bbb082d72d931b4cc6e73a1782556c6c49358cb95cace6a2465b63e06e4217a0fb1ecf61d7c1b495f1b5b575022c189e523f16d00aa39a21de15073fafab182ca7ca38cdc5f90c089a531133794502fe273e7510f241feac4c9a5e01c92507a541882e5837a4e4d6111be745c7ac680a57830ee2dd1fea3b0f55e7422b86fdb10aa7aaa5f88cc48b18c943ff73791ed72cf91036"
+  }
+ ],
+ "signed": {
+  "_type": "link",
+  "byproducts": {},
+  "command": [],
+  "environment": {},
+  "materials": {},
+  "name": "build",
+  "products": {
+   "build/build.log": {
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+   },
+   "build/manifest.json": {
+    "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+   },
+   "build/timings.txt": {
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+   },
+   "dist/app": {
+    "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+   }
+  }
+ }
+}

@@ -1,0 +1,71 @@
+{
+ "signatures": [
+  {
+   "keyid": "2f685fa7546f1856b123223ab086b3def14c89d24eef18f49c32508c2f60e241",
+   "sig": "4c81461bca5a1827f3bbe5386b2a488c3ee093003cb7a3fc8608d770afeab66ac627408bf89cdd009178f67045397f382b8b4a02ee8bd0f6f553484346aad5ee7f110530011ca6091a8d5c53b1980156f30b6f35cb1afedc28e92d31ccc2f54b754595a478bd3beca1989099ea77a3f1623009ad4e3edc2e232ad2f3b64d7fb710d86acc7fcd5542554248848eafbc982055b838ea2db18ebc22af8a25a7f5f2b7d473d6ea8897d0b3ed174670fce485bafaa21956343e283431ddc9576c00790440896b79297bd2aefc57a39d2aea21fb2fefc6551be9d594fb33827e791e602bac9a9be9d82851830ef2079a90ca286e482a7c3b1dbd7bec731843b3256579"
+  }
+ ],
+ "signed": {
+  "_type": "layout",
+  "expires": "2026-12-22T09:13:19Z",
+  "inspect": [],
+  "keys": {
+   "2f685fa7546f1856b123223ab086b3def14c89d24eef18f49c32508c2f60e241": {
+    "keyid": "2f685fa7546f1856b123223ab086b3def14c89d24eef18f49c32508c2f60e241",
+    "keytype": "rsa",
+    "keyval": {
+     "public": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwhX6rioiL/cX5Ys32InF\nU52H8tL14QeX0tacZdb+AwcH6nIh97h3RSHvGD7Xy6uaMRmGldAnSVYwJHqoJ5j2\nynVzU/RFpr+6n8Ps0QFg5GmlEqZboFjLbS0bsRQcXXnqJNsVLEPT3ULvu1rFRbWz\nAMFjNtNNk5W/u0GEzXn3D03jIdhD8IKAdrTRf0VMD9TRCXLdMmEU2vkf1NVUnOTb\n/dRX5QA8TtBylVnouZknbavQ0J/pPlHLfxUgsKzodwDlJmbPG9BWwXqQCmP0DgOG\nNIZ1X281MOBaGbkNVEuntNjCSaQxQjfALVVU5NAfal2cwMINtqaoc7Wa+TWvpFEI\nWwIDAQAB\n-----END PUBLIC KEY-----\n"
+    },
+    "scheme": "rsassa-pss-sha256"
+   },
+   "50d7e110ad65f3b2dba5c3cfc8c5ca259be9774cc26be3410044ffd4be3aa5f3": {
+    "keyid": "50d7e110ad65f3b2dba5c3cfc8c5ca259be9774cc26be3410044ffd4be3aa5f3",
+    "keytype": "ecdsa",
+    "keyval": {
+     "public": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEcLYSZyFGeKdWNt5dWFbnv6N9NyHC\noUNLcG6GZIxLwN8Q8MUdHdOOxGkDnyBRSJpIZ/r/oDECSTwfCYhdogweLA==\n-----END PUBLIC KEY-----\n"
+    },
+    "scheme": "ecdsa-sha2-nistp256"
+   }
+  },
+  "readme": "Independent builds with timestamp-bearing artifacts",
+  "steps": [
+   {
+    "_type": "step",
+    "expected_command": [],
+    "expected_materials": [],
+    "expected_products": [
+     [
+      "REQUIRE",
+      "build/manifest.json"
+     ],
+     [
+      "ALLOW",
+      "build/*.log"
+     ],
+     [
+      "ALLOW",
+      "build/*.txt"
+     ],
+     [
+      "ALLOW",
+      "build/manifest.json"
+     ],
+     [
+      "ALLOW",
+      "dist/app"
+     ],
+     [
+      "DISALLOW",
+      "*"
+     ]
+    ],
+    "name": "build",
+    "pubkeys": [
+     "2f685fa7546f1856b123223ab086b3def14c89d24eef18f49c32508c2f60e241",
+     "50d7e110ad65f3b2dba5c3cfc8c5ca259be9774cc26be3410044ffd4be3aa5f3"
+    ],
+    "threshold": 2
+   }
+  ]
+ }
+}

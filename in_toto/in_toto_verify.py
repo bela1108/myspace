@@ -175,6 +175,53 @@ for which the public part can be found in the GPG keyring at '~/.gnupg'.
 
     parser.add_argument(*GPG_HOME_ARGS, **GPG_HOME_KWARGS)
     parser.add_argument(
+        "--reproducibility-link-dir",
+        dest="reproducibility_link_dir",
+        type=str,
+        metavar="<path>",
+        help=(
+            "path to a second directory containing links for an independent "
+            "build.  Links from both directories are adjudicated for "
+            "reproducibility after the regular layout rules pass."
+        ),
+    )
+
+    parser.add_argument(
+        "--reproducible",
+        action="store_true",
+        help=(
+            "treat multiple links for a step as independent builds and "
+            "adjudicate allowed artifact differences instead of requiring "
+            "byte-for-byte equality.  Differences must be explained by the "
+            "layout (ALLOW rules) and are reported with artifact, side and "
+            "rule."
+        ),
+    )
+
+    parser.add_argument(
+        "--allow-difference",
+        dest="allow_differences",
+        action="append",
+        metavar="<pattern>",
+        help=(
+            "artifact pattern that may differ between independent builds. "
+            "May be passed multiple times.  The difference must still be "
+            "declared by both links and explained by the layout."
+        ),
+    )
+
+    parser.add_argument(
+        "--require-identical",
+        dest="required_identical",
+        action="append",
+        metavar="<pattern>",
+        help=(
+            "artifact pattern that must match exactly, overriding a broader "
+            "allow-difference pattern.  May be passed multiple times."
+        ),
+    )
+
+    parser.add_argument(
         "--inspection-timeout",
         dest="inspect_timeout",
         type=int,
@@ -238,6 +285,10 @@ def main():
             layout_key_dict,
             args.link_dir,
             inspect_timeout=args.inspect_timeout,
+            reproducible=args.reproducible,
+            allow_differences=args.allow_differences,
+            required_identical=args.required_identical,
+            reproducibility_link_dir=args.reproducibility_link_dir,
         )
 
     except Exception as e:  # noqa: BLE001
