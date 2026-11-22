@@ -1,0 +1,48 @@
+p = "correlator/evtx_writer.py"
+lines = open(p).read().splitlines()
+NL = chr(10)
+m = [
+    "    def render(self) -> bytes:",
+    "        self._collect_names()",
+    "        measured = self._measure_records()",
+    "        strings_blob = self.names.layout(CHUNK_HEADER_SIZE)",
+    "        records_start = CHUNK_HEADER_SIZE + len(strings_blob)",
+    "        records = bytearray()",
+    "        template_offsets = []",
+    "        for record_num, timestamp, root in self._roots:",
+    "            payload = bytearray(self.builder.record_payload(root))",
+    "            record_abs = records_start + len(records)",
+    "            instance_rel = record_abs + 0x18 + 4",
+    "            template_rel = instance_rel + 10",
+    "            struct.pack_into(\"<I\", payload, 4 + 6, template_rel)",
+    "            template_offsets.append(template_rel)",
+    "            records += build_record(record_num, timestamp, bytes(payload))",
+    "        data = bytes(records)",
+    "        if len(data) != measured:",
+    "            raise RuntimeError(\"record size measurement mismatch\")",
+    "        next_record_offset = records_start + len(data)",
+    "        if next_record_offset > CHUNK_SIZE:",
+    "            raise ValueError(\"chunk capacity exceeded\")",
+    "        header = bytearray(0x200)",
+    "        header[0x80:0x180] = self.names.bucket_table()",
+    "        first = self._roots[0][0] if self._roots else 0",
+    "        last = self._roots[-1][0] if self._roots else 0",
+    "        header[0:8] = b\"ElfChnk\" + bytes(1)",
+    "        struct.pack_into(\"<QQQQ\", header, 0x08, first, last, first, last)",
+    "        struct.pack_into(\"<I\", header, 0x28, 0x80)",
+    "        struct.pack_into(\"<I\", header, 0x2C, 0)",
+    "        struct.pack_into(\"<I\", header, 0x30, next_record_offset)",
+    "        checksum_region = bytes(strings_blob) + data",
+    "        struct.pack_into(\"<I\", header, 0x34, crc32(checksum_region))",
+    "        for slot, toff in enumerate(template_offsets[:32]):",
+    "            struct.pack_into(\"<I\", header, 0x180 + slot * 4, toff)",
+    "        chunk = bytearray(header) + bytearray(strings_blob) + bytearray(data)",
+    "        if len(chunk) < CHUNK_SIZE:",
+    "            chunk += bytes(CHUNK_SIZE - len(chunk))",
+    "        struct.pack_into(\"<I\", chunk, 0x7C, crc32(bytes(chunk[0:0x78]) + bytes(chunk[0x80:0x200])))",
+    "        return bytes(chunk)",
+    "",
+]
+new = lines[:219] + m + lines[256:]
+open(p, "w").write(NL.join(new) + NL)
+print("render rewritten: strings-first layout")
