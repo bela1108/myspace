@@ -157,6 +157,7 @@ DEFAULT_SETTINGS = {
     "add_nofollow": False,
     "autolink": False,
     "embedded_hosts": set(),
+    "ignored_text_patterns": (),
     "sanitize_href": sanitize_href,
     "element_preprocessors": [
         # convert span elements into em/strong if a matching style rule
@@ -193,6 +194,7 @@ class Sanitizer:
         self.separate = coerce_to_set(self.separate)
         self.whitespace = coerce_to_set(self.whitespace)
         self.embedded_hosts = coerce_to_set(self.embedded_hosts)
+        self.ignored_text_patterns = tuple(self.ignored_text_patterns)
         # Preserving whitespace inside tags which are removed later would
         # leak unnormalized whitespace into the output.
         self.preserve_whitespace = coerce_to_set(self.preserve_whitespace) & self.tags
@@ -206,8 +208,15 @@ class Sanitizer:
         else:
             re_whitespace = r"\s"
 
-        self.only_whitespace_re = re.compile(rf"^{re_whitespace}*$")
         self.whitespace_re = re.compile(rf"{re_whitespace}+")
+        re_only_whitespace = re_whitespace
+        if self.ignored_text_patterns:
+            re_ignored = "|".join(
+                f"(?:{pattern})" for pattern in self.ignored_text_patterns
+            )
+            re_only_whitespace = rf"(?:{re_whitespace}|{re_ignored})"
+
+        self.only_whitespace_re = re.compile(rf"^{re_only_whitespace}*$")
 
         # Validate the settings.
         if not self.tags:
