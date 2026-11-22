@@ -60,5 +60,9 @@ class Signable(ValidationMixin):
         """The UTF-8 encoded canonical JSON byte representation of the dictionary
         representation of the instance."""
         return securesystemslib.formats.encode_canonical(
-            attr.asdict(self)
+            self.to_dict()
         ).encode("UTF-8")
+
+    def to_dict(self):
+        """Return the JSON-serializable dictionary representation of self."""
+        return attr.asdict(self)

@@ -61,6 +61,7 @@ from in_toto.resolver import (
     OSTreeResolver,
     Resolver,
 )
+from in_toto.resolver.evidence import EvidenceReport
 
 # Inherits from in_toto base logger (c.f. in_toto.log)
 LOG = logging.getLogger(__name__)
@@ -73,6 +74,8 @@ def record_artifacts_as_dict(  # noqa: PLR0913, PLR0917, RUF100
     follow_symlink_dirs=False,
     normalize_line_endings=False,
     lstrip_paths=None,
+    return_evidence=False,
+    resolver=None,
 ):
     """
     <Purpose>
@@ -148,12 +151,50 @@ def record_artifacts_as_dict(  # noqa: PLR0913, PLR0917, RUF100
 
     <Returns>
       A dictionary with file paths as keys and the files' hashes as values.
+      If ``return_evidence`` is true, a ``(hashes, report)`` tuple is returned
+      instead, where ``report`` is an ``EvidenceReport`` describing the source
+      and before/after identity of every recorded artifact.
 
     """
-    artifact_hashes = {}
-
     if not artifacts:
-        return artifact_hashes
+        report = EvidenceReport()
+        return (report.hashes, report) if return_evidence else report.hashes
+
+    report = record_artifacts_with_evidence(
+        artifacts,
+        exclude_patterns=exclude_patterns,
+        base_path=base_path,
+        follow_symlink_dirs=follow_symlink_dirs,
+        normalize_line_endings=normalize_line_endings,
+        lstrip_paths=lstrip_paths,
+        resolver=resolver,
+    )
+    return (report.hashes, report) if return_evidence else report.hashes
+
+
+def record_artifacts_with_evidence(  # noqa: PLR0913
+    artifacts,
+    exclude_patterns=None,
+    base_path=None,
+    follow_symlink_dirs=False,
+    normalize_line_endings=False,
+    lstrip_paths=None,
+    resolver=None,
+):
+    """Record artifacts and return a consistency report.
+
+    This is the evidence-aware counterpart of :func:`record_artifacts_as_dict`.
+    Every entry contains the digest, the source that was read, and the source
+    identities observed before and after the read. Entries produced by
+    resolvers that cannot observe identities are marked ``unverified`` rather
+    than being silently treated as stable.
+
+    An optional ``resolver`` instance (or mapping of URI scheme to resolver)
+    can be passed to use a caller-controlled resolver instead of the global
+    registry. This is useful for local and test resolvers.
+    """
+    if not artifacts:
+        return EvidenceReport()
 
     if not base_path:
         base_path = in_toto.settings.ARTIFACT_BASE_PATH
@@ -161,9 +202,82 @@ def record_artifacts_as_dict(  # noqa: PLR0913, PLR0917, RUF100
     if not exclude_patterns:
         exclude_patterns = in_toto.settings.ARTIFACT_EXCLUDE_PATTERNS
 
-    # Configure resolver with resolver specific arguments
-    # FIXME: This should happen closer to the user boundary, where
-    # resolver-specific config arguments are passed and global state is managed.
+    if resolver is not None:
+        return _report_with_resolver(artifacts, resolver)
+
+    _configure_resolvers(
+        exclude_patterns=exclude_patterns,
+        base_path=base_path,
+        follow_symlink_dirs=follow_symlink_dirs,
+        normalize_line_endings=normalize_line_endings,
+        lstrip_paths=lstrip_paths,
+    )
+
+    try:
+        # Aggregate artifacts per resolver so path mangling and duplicate
+        # prefix checks keep working on the same batch as before.
+        resolver_for_uris = defaultdict(list)
+        for artifact in artifacts:
+            resolver = Resolver.for_uri(artifact)
+            resolver_for_uris[resolver].append(artifact)
+
+        return _report_for_resolvers(resolver_for_uris)
+
+    finally:
+        # Clear resolvers to not preserve global state change beyond this
+        # function. FIXME: This also clears resolvers registered elsewhere.
+        RESOLVER_FOR_URI_SCHEME.clear()
+
+
+def _report_with_resolver(artifacts, resolver):
+    """Build a report using caller-supplied resolver(s)."""
+    if isinstance(resolver, dict):
+        resolver_for_uris = defaultdict(list)
+        for artifact in artifacts:
+            scheme, match, _ = artifact.partition(":")
+            if not match or scheme not in resolver:
+                scheme = FileResolver.SCHEME
+            resolver_for_uris[resolver[scheme]].append(artifact)
+    else:
+        resolver_for_uris = defaultdict(list)
+        resolver_for_uris[resolver].extend(artifacts)
+
+    return _report_for_resolvers(resolver_for_uris)
+
+
+def _report_for_resolvers(resolver_for_uris):
+    """Collect evidence from a mapping of resolver to URI batch."""
+    report = EvidenceReport()
+    for artifact_resolver, uris in resolver_for_uris.items():
+        scheme = getattr(artifact_resolver, "scheme", None)
+        if scheme is None:
+            scheme = getattr(artifact_resolver, "SCHEME", None)
+        if scheme is None:
+            scheme = artifact_resolver.__class__.__name__
+
+        resolve = getattr(artifact_resolver, "resolve", None)
+        if resolve is None:
+            resolve = artifact_resolver.hash_artifacts_with_evidence
+        result = resolve(uris)
+        resolver_report = EvidenceReport.from_dict(
+            result, resolver=scheme
+        )
+        for entry in resolver_report.entries:
+            if entry.resolver is None:
+                entry.resolver = scheme
+        report.extend(resolver_report)
+
+    return report
+
+
+def _configure_resolvers(
+    exclude_patterns=None,
+    base_path=None,
+    follow_symlink_dirs=False,
+    normalize_line_endings=False,
+    lstrip_paths=None,
+):
+    """Register built-in resolvers for one artifact recording call."""
     RESOLVER_FOR_URI_SCHEME[FileResolver.SCHEME] = FileResolver(
         exclude_patterns,
         base_path,
@@ -171,11 +285,7 @@ def record_artifacts_as_dict(  # noqa: PLR0913, PLR0917, RUF100
         normalize_line_endings,
         lstrip_paths,
     )
-
-    # Configure resolver for OSTree
     RESOLVER_FOR_URI_SCHEME[OSTreeResolver.SCHEME] = OSTreeResolver(base_path)
-
-    # Configure resolver for hashing directories as a single entry
     RESOLVER_FOR_URI_SCHEME[DirectoryResolver.SCHEME] = DirectoryResolver(
         exclude_patterns=exclude_patterns,
         follow_symlink_dirs=follow_symlink_dirs,
@@ -183,25 +293,11 @@ def record_artifacts_as_dict(  # noqa: PLR0913, PLR0917, RUF100
         lstrip_paths=lstrip_paths,
     )
 
-    # Aggregate artifacts per resolver
-    resolver_for_uris = defaultdict(list)
-    for artifact in artifacts:
-        resolver = Resolver.for_uri(artifact)
-        resolver_for_uris[resolver].append(artifact)
 
-    # Hash artifacts in a batch per resolver
-    # FIXME: The behavior may change if we hash each artifact individually,
-    # because the left-prefix duplicate check in FileResolver only works for the
-    # artifacts hashed in one batch.
-    for resolver, uris in resolver_for_uris.items():
-        artifact_hashes.update(resolver.hash_artifacts(uris))
-
-    # Clear resolvers to not preserve global state change beyond this function.
-    # FIXME: This also clears resolver registered elsewhere. For now we
-    # assume that we only modify RESOLVER_FOR_URI_SCHEME in this function.
-    RESOLVER_FOR_URI_SCHEME.clear()
-
-    return artifact_hashes
+# Public aliases for the report-returning recording interface.
+record_artifacts_as_report = record_artifacts_with_evidence
+record_materials_report = record_artifacts_with_evidence
+resolve_artifacts = record_artifacts_with_evidence
 
 
 def _subprocess_run_duplicate_streams(cmd, timeout):
@@ -422,6 +518,7 @@ def in_toto_run(  # noqa: C901, PLR0912, PLR0913, PLR0914, PLR0915, PLR0917, RUF
     use_dsse=False,
     timeout=in_toto.settings.LINK_CMD_EXEC_TIMEOUT,
     signer=None,
+    record_evidence=True,
 ):
     """Performs a supply chain step or inspection generating link metadata.
 
@@ -489,6 +586,10 @@ def in_toto_run(  # noqa: C901, PLR0912, PLR0913, PLR0914, PLR0915, PLR0917, RUF
     signer (optional): A securesystemslib Signer instance used to
         sign the resulting link metadata.
 
+    record_evidence (optional): Record source identities before and after
+        reading materials, so consumers can distinguish consistent snapshots
+        from sources that changed while they were read. Defaults to True.
+
   Raises:
     securesystemslib.exceptions.FormatError: Passed arguments are malformed.
 
@@ -542,14 +643,26 @@ def in_toto_run(  # noqa: C901, PLR0912, PLR0913, PLR0914, PLR0915, PLR0917, RUF
     if material_list:
         LOG.info("Recording materials '%s'...", ", ".join(material_list))
 
-    materials_dict = record_artifacts_as_dict(
-        material_list,
-        exclude_patterns=exclude_patterns,
-        base_path=base_path,
-        follow_symlink_dirs=True,
-        normalize_line_endings=normalize_line_endings,
-        lstrip_paths=lstrip_paths,
-    )
+    if record_evidence:
+        materials_report = record_artifacts_with_evidence(
+            material_list,
+            exclude_patterns=exclude_patterns,
+            base_path=base_path,
+            follow_symlink_dirs=True,
+            normalize_line_endings=normalize_line_endings,
+            lstrip_paths=lstrip_paths,
+        )
+        materials_dict = materials_report.hashes
+    else:
+        materials_report = None
+        materials_dict = record_artifacts_as_dict(
+            material_list,
+            exclude_patterns=exclude_patterns,
+            base_path=base_path,
+            follow_symlink_dirs=True,
+            normalize_line_endings=normalize_line_endings,
+            lstrip_paths=lstrip_paths,
+        )
 
     if link_cmd_args:
         _check_str_list(link_cmd_args)
@@ -583,6 +696,11 @@ def in_toto_run(  # noqa: C901, PLR0912, PLR0913, PLR0914, PLR0915, PLR0917, RUF
         command=link_cmd_args,
         byproducts=byproducts,
         environment=environment,
+        materials_evidence=(
+            materials_report.to_dict()
+            if materials_report is not None and materials_report.entries
+            else None
+        ),
     )
 
     if use_dsse:
@@ -619,7 +737,7 @@ def in_toto_run(  # noqa: C901, PLR0912, PLR0913, PLR0914, PLR0915, PLR0917, RUF
     return link_metadata
 
 
-def in_toto_record_start(  # noqa: PLR0913, PLR0917, RUF100
+def in_toto_record_start(  # noqa: C901, PLR0912, PLR0913, PLR0917, RUF100
     step_name,
     material_list,
     gpg_keyid=None,
@@ -632,6 +750,7 @@ def in_toto_record_start(  # noqa: PLR0913, PLR0917, RUF100
     lstrip_paths=None,
     use_dsse=False,
     signer=None,
+    record_evidence=True,
 ):
     """Generates preliminary link metadata.
 
@@ -682,6 +801,9 @@ def in_toto_record_start(  # noqa: PLR0913, PLR0917, RUF100
 
     signer (optional): A securesystemslib Signer instance used to
         sign the resulting link metadata.
+
+    record_evidence (optional): Record source identities before and after
+        reading materials. Defaults to True.
 
   Raises:
     securesystemslib.exceptions.FormatError: Passed arguments are malformed.
@@ -735,14 +857,26 @@ def in_toto_record_start(  # noqa: PLR0913, PLR0917, RUF100
     if material_list:
         LOG.info("Recording materials '%s'...", ", ".join(material_list))
 
-    materials_dict = record_artifacts_as_dict(
-        material_list,
-        exclude_patterns=exclude_patterns,
-        base_path=base_path,
-        follow_symlink_dirs=True,
-        normalize_line_endings=normalize_line_endings,
-        lstrip_paths=lstrip_paths,
-    )
+    if record_evidence:
+        materials_report = record_artifacts_with_evidence(
+            material_list,
+            exclude_patterns=exclude_patterns,
+            base_path=base_path,
+            follow_symlink_dirs=True,
+            normalize_line_endings=normalize_line_endings,
+            lstrip_paths=lstrip_paths,
+        )
+        materials_dict = materials_report.hashes
+    else:
+        materials_report = None
+        materials_dict = record_artifacts_as_dict(
+            material_list,
+            exclude_patterns=exclude_patterns,
+            base_path=base_path,
+            follow_symlink_dirs=True,
+            normalize_line_endings=normalize_line_endings,
+            lstrip_paths=lstrip_paths,
+        )
 
     LOG.info("Creating preliminary link metadata...")
     environment = {}
@@ -756,6 +890,11 @@ def in_toto_record_start(  # noqa: PLR0913, PLR0917, RUF100
         command=[],
         byproducts={},
         environment=environment,
+        materials_evidence=(
+            materials_report.to_dict()
+            if materials_report is not None and materials_report.entries
+            else None
+        ),
     )
 
     if use_dsse:

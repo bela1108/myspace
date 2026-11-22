@@ -140,6 +140,29 @@ class Metadata:
         """Returns ``Link`` or ``Layout``."""
         raise NotImplementedError  # pragma: no cover
 
+    @property
+    def materials_report(self):
+        """Return the payload's material consistency report, if any."""
+        try:
+            return self.get_materials_report()
+        except ValueError:
+            return None
+
+    def get_materials_report(self):
+        """Return material evidence from a link payload.
+
+        Raises:
+            ValueError: The payload is not a link or has no material report.
+        """
+        payload = self.get_payload()
+        if hasattr(payload, "get_materials_report"):
+            return payload.get_materials_report()
+        raise ValueError("metadata payload does not support material evidence")
+
+    def check_materials_consistency(self):
+        """Return whether material evidence proves a stable snapshot."""
+        return self.get_materials_report().consistent
+
 
 class Envelope(SSlibEnvelope, Metadata):
     """DSSE Envelope for in-toto payloads."""
@@ -166,7 +189,7 @@ class Envelope(SSlibEnvelope, Metadata):
 
         # Serialize the signable object to JSON bytes without canonicalization
         json_bytes = json.dumps(
-            attr.asdict(signable),
+            signable.to_dict(),
             sort_keys=True,
         ).encode("utf-8")
 
@@ -249,7 +272,7 @@ class Metablock(Metadata, ValidationMixin):
         separators = (",", ":") if self.compact_json else (",", ": ")
 
         return json.dumps(
-            {"signatures": self.signatures, "signed": attr.asdict(self.signed)},
+            {"signatures": self.signatures, "signed": self.signed.to_dict()},
             indent=indent,
             separators=separators,
             sort_keys=True,
@@ -294,7 +317,7 @@ class Metablock(Metadata, ValidationMixin):
 
         return {
             "signatures": self.signatures,
-            "signed": attr.asdict(self.signed),
+            "signed": self.signed.to_dict(),
         }
 
     @property

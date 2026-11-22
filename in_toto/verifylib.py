@@ -44,6 +44,7 @@ import in_toto.runlib
 import in_toto.settings
 from in_toto.exceptions import (
     BadReturnValueError,
+    EvidenceConsistencyError,
     LayoutExpiredError,
     RuleVerificationError,
     SignatureVerificationError,
@@ -56,6 +57,47 @@ from in_toto.models.metadata import Metadata
 LOG = logging.getLogger(__name__)
 
 RULE_TRACE = {}
+
+
+def verify_materials_consistency(link, require_proof=False):
+    """Check that material evidence does not describe a mixed snapshot.
+
+    Arguments:
+      link: A ``Link`` object with recorded materials.
+      require_proof: If true, also reject ``unverified`` legacy entries that
+          cannot prove their source stayed stable during the read.
+
+    Raises:
+      EvidenceConsistencyError: The report is mixed, or proof is required and
+          unavailable.
+
+    Returns:
+      The normalized ``EvidenceReport``.
+    """
+    report = link.get_materials_report()
+    inconsistent = report.mixed_snapshot or (
+        require_proof and not report.consistent
+    )
+    if not inconsistent:
+        return report
+
+    affected = ", ".join(
+        f"{entry.name} ({entry.resolver})"
+        for entry in report.affected_entries
+    )
+    if not affected:
+        affected = ", ".join(
+            f"{entry.name} ({entry.resolver})"
+            for entry in report.entries
+            if not entry.is_consistent
+        )
+    raise EvidenceConsistencyError(
+        "material evidence does not describe one consistent snapshot"
+        + (f": {affected}" if affected else "")
+    )
+
+
+verify_evidence_consistency = verify_materials_consistency
 
 
 def _raise_on_bad_retval(return_value, command=None):

@@ -36,6 +36,28 @@ documented [in-toto#663](https://github.com/in-toto/in-toto/issues/663).
 
 ```
 
+### Material Resolution Evidence
+
+Material recording can return an ``EvidenceReport`` that keeps the digest, the
+source that was read, and the source identity observed before and after the
+read. Entries that cannot prove a stable source are marked ``unverified``;
+entries whose source changed during the read are marked ``changed`` and can be
+looked up together with the resolver that produced them.
+
+```{eval-rst}
+.. autofunction:: in_toto.runlib.record_artifacts_with_evidence
+```
+
+```{eval-rst}
+.. autoclass:: in_toto.resolver.evidence.EvidenceReport
+   :members:
+```
+
+```{eval-rst}
+.. autoclass:: in_toto.resolver.evidence.EvidenceEntry
+   :members:
+```
+
 ## Supply Chain Verification
 
 ```{eval-rst}

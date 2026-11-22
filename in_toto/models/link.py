@@ -20,11 +20,14 @@
   step of the supply chain is performed.
 """
 
+import contextlib
+
 import attr
 import securesystemslib.formats
 
 from in_toto.formats import _check_hash_dict
 from in_toto.models.common import Signable
+from in_toto.resolver.evidence import EvidenceReport, report_from_hashes
 
 FILENAME_FORMAT = "{step_name}.{keyid:.8}.link"
 FILENAME_FORMAT_SHORT = "{step_name}.link"
@@ -88,6 +91,7 @@ class Link(Signable):
     byproducts = attr.ib()
     command = attr.ib()
     environment = attr.ib()
+    materials_evidence = attr.ib()
 
     def __init__(self, **kwargs):
         super().__init__()
@@ -99,6 +103,28 @@ class Link(Signable):
         self.byproducts = kwargs.get("byproducts", {})
         self.command = kwargs.get("command", [])
         self.environment = kwargs.get("environment", {})
+
+        evidence = kwargs.get("materials_evidence")
+        if evidence is None:
+            for alias in (
+                "material_evidence",
+                "materials_report",
+                "evidence",
+                "evidence_report",
+            ):
+                if alias in kwargs:
+                    evidence = kwargs[alias]
+                    break
+
+        if isinstance(evidence, EvidenceReport) or (
+            hasattr(evidence, "to_dict") and not isinstance(evidence, dict)
+        ):
+            evidence = evidence.to_dict()
+        elif isinstance(evidence, (dict, list, tuple)):
+            with contextlib.suppress(TypeError, ValueError, KeyError):
+                evidence = EvidenceReport.from_dict(evidence).to_dict()
+
+        self.materials_evidence = evidence
 
         self.validate()
 
@@ -174,3 +200,105 @@ class Link(Signable):
             raise securesystemslib.exceptions.FormatError(
                 f"Invalid Link: field `environment` must be of type dict, got: {type(self.environment)}"
             )
+
+    def _validate_materials_evidence(self):
+        """Check that optional material consistency evidence is well formed."""
+        if self.materials_evidence is None:
+            return
+
+        if not isinstance(self.materials_evidence, (dict, list)):
+            raise securesystemslib.exceptions.FormatError(
+                "Invalid Link: field `materials_evidence` must be a dict or "
+                f"list, got: {type(self.materials_evidence)}"
+            )
+
+        try:
+            EvidenceReport.from_dict(self.materials_evidence)
+        except (TypeError, ValueError, KeyError) as exc:
+            raise securesystemslib.exceptions.FormatError(
+                "Invalid Link: field `materials_evidence` is malformed"
+            ) from exc
+
+    def to_dict(self):
+        """Return the JSON-serializable dictionary representation.
+
+        The optional evidence field is omitted when absent so links written by
+        older in-toto versions keep their exact representation.
+        """
+        data = attr.asdict(self)
+        if data.get("materials_evidence") is None:
+            data.pop("materials_evidence", None)
+        return data
+
+    @property
+    def materials_report(self):
+        """Return a consistency report for the recorded materials."""
+        return self.get_materials_report()
+
+    @property
+    def evidence(self):
+        """Alias for the serialized material evidence."""
+        return self.materials_evidence
+
+    def get_materials_evidence(self):
+        """Return the raw material evidence attached to this link."""
+        return self.materials_evidence
+
+    def get_materials_report(self):
+        """Return material evidence as an :class:`EvidenceReport`.
+
+        Links created before evidence recording existed are still readable.
+        Their materials are returned as ``unverified`` entries, because the
+        digest alone cannot prove that the source was stable while it was read.
+        """
+        if self.materials_evidence:
+            return EvidenceReport.from_dict(self.materials_evidence)
+
+        return report_from_hashes(
+            self.materials,
+            resolver=self._infer_material_resolver,
+            source=lambda name: name,
+        )
+
+    def get_evidence_report(self):
+        """Alias for :meth:`get_materials_report`."""
+        return self.get_materials_report()
+
+    def check_materials_consistency(self):
+        """Return whether recorded material evidence proves a stable snapshot."""
+        return self.get_materials_report().consistent
+
+    def get_affected_materials(self):
+        """Return ``(name, resolver)`` pairs for mixed-snapshot materials."""
+        return [
+            (entry.name, entry.resolver)
+            for entry in self.get_materials_report().affected_entries
+        ]
+
+    @property
+    def affected_materials(self):
+        """Affected material entries as ``(name, resolver)`` pairs."""
+        return self.get_affected_materials()
+
+    def verify_materials_consistency(self):
+        """Raise if material evidence is missing or describes mixed snapshots."""
+        report = self.get_materials_report()
+        if not report.consistent:
+            details = ", ".join(
+                f"{entry.name} ({entry.resolver})"
+                for entry in report.affected_entries
+            )
+            raise ValueError(
+                "material evidence does not prove one consistent snapshot"
+                + (f": {details}" if details else "")
+            )
+        return report
+
+    @staticmethod
+    def _infer_material_resolver(name):
+        """Infer a resolver identifier for legacy material entries."""
+        if name.startswith("ostree:"):
+            return "ostree"
+        if name.startswith("dir:"):
+            return "dir"
+        return "file"

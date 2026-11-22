@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Added
+* Material resolution evidence with per-artifact digest, source, before/after
+  identity, and resolver attribution. Consistent, changed, and unverified
+  records are exposed through `EvidenceReport` and can be serialized with links
+  without changing the representation of legacy links.
+
 ## v3.1.0
 
 This release includes version bumpbs, as well as upgraded debian support , and
