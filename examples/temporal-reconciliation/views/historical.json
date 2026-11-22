@@ -1,0 +1,90 @@
+{
+  "as_of": "2026-11-23T23:59:59.999999Z",
+  "as_of_date": "2026-11-23",
+  "comparison": null,
+  "kind": "pip-audit-temporal-reconciliation-views",
+  "schema_version": 1,
+  "views": [
+    {
+      "as_of": "2026-11-23T23:59:59.999999Z",
+      "as_of_date": "2026-11-23",
+      "audience": "external",
+      "environments": {
+        "prod": {
+          "artifacts": {
+            "demo-lib": "1.3.0",
+            "other-lib": "2.0.0"
+          },
+          "closures": [
+            {
+              "advisory_id": "EXAMPLE-2026-0001",
+              "artifact": "demo-lib",
+              "as_of": "2026-11-14T23:59:59.999999Z",
+              "closed_at": "2026-11-14T12:00:00Z",
+              "closure_id": "INC-2026-1114-prod",
+              "current_reason": null,
+              "current_reason_redacted": true,
+              "current_redaction": "license",
+              "current_status": "not_affected",
+              "decision_reason": null,
+              "decision_reason_redacted": true,
+              "decision_redaction": "license",
+              "decision_status": "not_affected",
+              "environment": "prod",
+              "evidence": "advisory snapshot 2026-11-14",
+              "preserved": true,
+              "reopen_required": false
+            }
+          ],
+          "drift": [],
+          "findings": [],
+          "work": []
+        },
+        "staging": {
+          "artifacts": {
+            "demo-lib": "1.1.0",
+            "other-lib": "2.0.0"
+          },
+          "closures": [
+            {
+              "advisory_id": "EXAMPLE-2026-0001",
+              "artifact": "demo-lib",
+              "as_of": "2026-11-14T23:59:59.999999Z",
+              "closed_at": "2026-11-14T12:00:00Z",
+              "closure_id": "INC-2026-1114-staging",
+              "current_reason": null,
+              "current_reason_redacted": true,
+              "current_redaction": "license",
+              "current_status": "not_affected",
+              "decision_reason": null,
+              "decision_reason_redacted": true,
+              "decision_redaction": "license",
+              "decision_status": "not_affected",
+              "environment": "staging",
+              "evidence": "advisory snapshot 2026-11-14",
+              "preserved": true,
+              "reopen_required": false
+            }
+          ],
+          "drift": [],
+          "findings": [],
+          "work": []
+        }
+      },
+      "kind": "pip-audit-temporal-reconciliation",
+      "label": "earlier",
+      "redactions": 4,
+      "reopen_environments": [],
+      "schema_version": 1,
+      "summary": {
+        "closure_count": 2,
+        "finding_count": 0,
+        "investigate_count": 0,
+        "redactions": 4,
+        "reopen_count": 0,
+        "reopen_environments": []
+      },
+      "visible_at": "2026-11-15T10:00:00Z"
+    }
+  ]
+}

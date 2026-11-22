@@ -1,0 +1,14 @@
+{
+  "id": "EXAMPLE-2026-0001",
+  "snapshot_version": "2026-11-14",
+  "published": "2026-11-14T00:00:00Z",
+  "modified": "2026-11-14T08:00:00Z",
+  "effective_at": "2026-11-14T00:00:00Z",
+  "retrieved_at": "2026-11-14T08:00:00Z",
+  "status": "not_affected",
+  "summary": "Initial vendor record. The affected artifact scope is still being verified.",
+  "details": "No PyPI artifact versions were listed as affected in this snapshot.",
+  "license": "LicenseRef-Example-Internal",
+  "visibility": "internal",
+  "affected": []
+}

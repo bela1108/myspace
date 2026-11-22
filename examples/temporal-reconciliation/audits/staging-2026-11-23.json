@@ -1,0 +1,9 @@
+{
+  "dependencies": [
+    {"name": "demo-lib", "version": "1.1.0", "vulns": [
+      {"id": "EXAMPLE-2026-0001", "fix_versions": ["1.2.0"], "aliases": []}
+    ]},
+    {"name": "other-lib", "version": "2.0.0", "vulns": []}
+  ],
+  "fixes": []
+}

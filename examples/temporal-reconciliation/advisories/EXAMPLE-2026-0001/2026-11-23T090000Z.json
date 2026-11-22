@@ -1,0 +1,21 @@
+{
+  "id": "EXAMPLE-2026-0001",
+  "snapshot_version": "2026-11-23",
+  "published": "2026-11-23T09:00:00Z",
+  "modified": "2026-11-23T09:00:00Z",
+  "effective_at": "2026-11-20T00:00:00Z",
+  "retrieved_at": "2026-11-23T09:00:00Z",
+  "status": "affected",
+  "summary": "Vendor supplement: demo-lib versions 1.0.0 through 1.1.x are affected.",
+  "details": "The correction is effective from 2026-11-20 even though it was obtained on 2026-11-23.",
+  "license": "LicenseRef-Example-Internal",
+  "visibility": "internal",
+  "affected": [
+    {
+      "package": {"name": "demo-lib", "ecosystem": "PyPI"},
+      "ranges": [
+        {"type": "ECOSYSTEM", "events": [{"introduced": "1.0.0"}, {"fixed": "1.2.0"}]}
+      ]
+    }
+  ]
+}

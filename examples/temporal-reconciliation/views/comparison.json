@@ -1,0 +1,43 @@
+{
+  "as_of": "2026-11-23T23:59:59.999999Z",
+  "as_of_date": "2026-11-23",
+  "changes": [
+    {
+      "action": "reopen",
+      "advisory_id": "EXAMPLE-2026-0001",
+      "after": "affected",
+      "artifact": "demo-lib",
+      "before": "not_affected",
+      "environment": "staging"
+    }
+  ],
+  "kind": "pip-audit-temporal-reconciliation-comparison",
+  "reopen": [
+    {
+      "action": "reopen",
+      "advisory_id": "EXAMPLE-2026-0001",
+      "artifact": "demo-lib",
+      "effective_at": "2026-11-20T00:00:00Z",
+      "environment": "staging",
+      "previous_closure": "INC-2026-1114-staging",
+      "reason": null,
+      "reason_redacted": true,
+      "redaction": "license",
+      "retrieved_at": "2026-11-23T09:00:00Z",
+      "source": "examples/temporal-reconciliation/advisories/EXAMPLE-2026-0001/2026-11-23T090000Z.json",
+      "status": "affected"
+    }
+  ],
+  "same_as_of": true,
+  "schema_version": 1,
+  "views": [
+    {
+      "label": "earlier",
+      "visible_at": "2026-11-15T10:00:00Z"
+    },
+    {
+      "label": "later",
+      "visible_at": "2026-11-23T10:00:00Z"
+    }
+  ]
+}

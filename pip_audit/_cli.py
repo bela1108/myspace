@@ -442,6 +442,11 @@ def audit() -> None:  # pragma: no cover
     """
     The primary entrypoint for `pip-audit`.
     """
+    if len(sys.argv) > 1 and sys.argv[1] == "reconcile":
+        from pip_audit._reconcile_cli import main as reconcile_main
+
+        sys.exit(reconcile_main(sys.argv[2:]))
+
     parser = _parser()
     args = _parse_args(parser)
 

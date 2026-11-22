@@ -8,6 +8,14 @@ All versions prior to 0.0.9 are untracked.
 
 ## [Unreleased]
 
+### Added
+
+* Added `pip-audit reconcile`, a bitemporal reconciliation command for offline
+  `pip-audit` results, lockfiles, and versioned advisory snapshots. It keeps
+  historical closures immutable, honors separate effective and retrieval
+  times, redacts license-restricted reasons for external audiences, and emits
+  two comparable views for the same `as_of` date.
+
 ### Fixed
 
 * Editable requirements skipped with `--skip-editable` no longer require a hash

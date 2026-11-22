@@ -267,6 +267,81 @@ an audit (or fix) step is actually performed.
   out the fix behavior (i.e., which dependencies would be upgraded or skipped)
   that *would have been performed*.
 
+### Temporal advisory reconciliation
+
+Advisory data changes after it is first published. A vendor can initially
+state that a package version is not affected, then later supplement the
+affected artifact range. Re-auditing today would change the answer, but it
+must not rewrite an on-call closure that was correct with the evidence
+available at the time.
+
+`pip-audit reconcile` keeps the two timelines separate:
+
+* `effective_at` is the policy-approved valid time of an advisory statement.
+* `retrieved_at` is the time the statement was actually obtained.
+
+A reviewer supplies one `--as-of` date and two `--visible-at` instants. Each
+view selects only snapshots that were effective by the date and retrieved by
+the visibility instant. The earlier view explains why a closure was valid;
+the later view lists the work that must be reopened now.
+
+The evidence bundle references saved `pip-audit --format=json` results,
+lockfiles, versioned advisory snapshots, and an immutable closure ledger:
+
+```json
+{
+  "environments": [
+    {
+      "name": "staging",
+      "lockfile": "locks/staging.pylock.toml",
+      "lockfile_retrieved_at": "2026-11-15T08:00:00Z",
+      "offline_results": [
+        {"path": "audits/staging-2026-11-15.json", "retrieved_at": "2026-11-15T08:05:00Z"},
+        {"path": "audits/staging-2026-11-23.json", "retrieved_at": "2026-11-23T09:05:00Z"}
+      ]
+    }
+  ],
+  "advisory_snapshots": ["advisories/EXAMPLE-2026-0001"],
+  "closures": [
+    {
+      "closure_id": "INC-2026-1114-staging",
+      "environment": "staging",
+      "advisory_id": "EXAMPLE-2026-0001",
+      "closed_at": "2026-11-14T12:00:00Z",
+      "as_of": "2026-11-14",
+      "artifact": "demo-lib",
+      "reason": {
+        "text": "The snapshot available at closure time did not list this artifact.",
+        "visibility": "internal",
+        "license": "LicenseRef-Example-Internal"
+      }
+    }
+  ]
+}
+```
+
+Generate the two comparable views and their comparison:
+
+```console
+$ pip-audit reconcile examples/temporal-reconciliation/bundle.json \
+    --as-of 2026-11-23 \
+    --visible-at 2026-11-15T10:00:00Z \
+    --visible-at 2026-11-23T10:00:00Z \
+    --audience external \
+    --write-views /tmp/reconciliation
+```
+
+`--write-views` writes `view-1.json`, `view-2.json`, `comparison.json`, and
+`review.md`. Both JSON views use the same schema and the same `as_of` value,
+so they can be diffed directly. Closures are preserved as inputs: a duplicate
+closure ID with different content is rejected instead of overwriting history.
+
+Reasons can carry a license and a visibility. The default `--audience external`
+redacts reasons whose license is not redistributable, and records the redaction
+as a null reason with `reason_redacted: true`. Use `--audience internal` for
+an internal reviewer view. Add `--fail-on-reopen` to make the command exit
+with status `2` when the later view requires a closure to be reopened.
+
 ## Examples
 
 Audit dependencies for the current Python environment:

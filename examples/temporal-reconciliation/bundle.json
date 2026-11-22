@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "license_policy": {
+    "internal_only_licenses": ["LicenseRef-Example-Internal"]
+  },
+  "environments": [
+    {
+      "name": "prod",
+      "lockfile": "locks/prod.pylock.toml",
+      "lockfile_retrieved_at": "2026-11-15T08:00:00Z",
+      "offline_results": [
+        {"path": "audits/prod-2026-11-15.json", "retrieved_at": "2026-11-15T08:05:00Z"},
+        {"path": "audits/prod-2026-11-23.json", "retrieved_at": "2026-11-23T09:05:00Z"}
+      ]
+    },
+    {
+      "name": "staging",
+      "lockfile": "locks/staging.pylock.toml",
+      "lockfile_retrieved_at": "2026-11-15T08:00:00Z",
+      "offline_results": [
+        {"path": "audits/staging-2026-11-15.json", "retrieved_at": "2026-11-15T08:05:00Z"},
+        {"path": "audits/staging-2026-11-23.json", "retrieved_at": "2026-11-23T09:05:00Z"}
+      ]
+    }
+  ],
+  "advisory_snapshots": [
+    "advisories/EXAMPLE-2026-0001/2026-11-14T080000Z.json",
+    "advisories/EXAMPLE-2026-0001/2026-11-23T090000Z.json"
+  ],
+  "closures": [
+    {
+      "closure_id": "INC-2026-1114-prod",
+      "environment": "prod",
+      "advisory_id": "EXAMPLE-2026-0001",
+      "closed_at": "2026-11-14T12:00:00Z",
+      "as_of": "2026-11-14",
+      "artifact": "demo-lib",
+      "reason": {
+        "text": "The vendor snapshot available on the closure date did not list demo-lib versions as affected.",
+        "visibility": "internal",
+        "license": "LicenseRef-Example-Internal"
+      },
+      "evidence": "advisory snapshot 2026-11-14"
+    },
+    {
+      "closure_id": "INC-2026-1114-staging",
+      "environment": "staging",
+      "advisory_id": "EXAMPLE-2026-0001",
+      "closed_at": "2026-11-14T12:00:00Z",
+      "as_of": "2026-11-14",
+      "artifact": "demo-lib",
+      "reason": {
+        "text": "The vendor snapshot available on the closure date did not list demo-lib versions as affected.",
+        "visibility": "internal",
+        "license": "LicenseRef-Example-Internal"
+      },
+      "evidence": "advisory snapshot 2026-11-14"
+    }
+  ]
+}
