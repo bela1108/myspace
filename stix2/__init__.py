@@ -13,6 +13,7 @@
    pattern_visitor
    patterns
    properties
+   provenance
    serialization
    utils
    v20
@@ -54,6 +55,11 @@ from .patterns import (
     QualifiedObservationExpression, ReferenceObjectPathComponent,
     RepeatQualifier, StartStopQualifier, StringConstant, TimestampConstant,
     WithinQualifier,
+)
+from .provenance import (
+    CUSTODIAN_VIEW, PUBLIC_VIEW, IndependenceChecker, IndependenceReport,
+    ProvenanceEdge, ProvenanceResult, ReferenceGap, SourceComponent,
+    check_independence, check_source_independence,
 )
 from .registry import _collect_stix2_mappings
 from .v21 import *  # This import will always be the latest STIX 2.X version

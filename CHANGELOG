@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+Unreleased
+----------
+
+* Add ``stix2.provenance`` for local source-independence checks over
+  observations, self-declared citations, and caller-registered collection
+  relations.  The public view redacts custodian-only observations and reports
+  only a lower bound.
+
 3.0.1 2021-09-24
 
 * #513 Fixes check for reference properties to apply to all custom objects, not
