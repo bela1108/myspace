@@ -7,6 +7,10 @@ This library adheres to `Semantic Versioning 2.0 <http://semver.org/>`_.
 
 **6.3.0** (2026-11-13)
 
+- Added offline handoff checks for CBOR packages whose public indexes contain local and
+  cross-package references. The checker uses the normal decoder, keeps local ids scoped by
+  package, reports missing and unlicensed evidence separately, and emits a provenance-sorted
+  checklist.
 - Added the ``--format=json`` CLI option to encode JSON files or standard input as binary CBOR
   (`#222 <https://github.com/agronholm/cbor2/issues/222>`_; PR by @Aschenbath)
 - Improved encoder performance significantly

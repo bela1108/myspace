@@ -17,6 +17,23 @@ Decoding
 .. autoclass:: cbor2.CBORDecoder
 .. autodecorator:: cbor2.shareable_decoder
 
+Offline package handoff
+-----------------------
+
+.. autofunction:: cbor2.audit_handoff
+.. autofunction:: cbor2.audit_claims
+.. autofunction:: cbor2.resolve_references
+.. autofunction:: cbor2.scan_references
+.. autofunction:: cbor2.withdraw_package
+.. autoclass:: cbor2.PackageRef
+.. autoclass:: cbor2.EvidenceLicense
+.. autoclass:: cbor2.HandoffReport
+.. autoclass:: cbor2.ChecklistItem
+.. autoclass:: cbor2.Reference
+.. autoclass:: cbor2.ReferenceKind
+.. autoclass:: cbor2.ReferenceStatus
+.. autoexception:: cbor2.HandoffFormatError
+
 Types
 -----
 

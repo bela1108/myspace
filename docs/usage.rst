@@ -121,6 +121,67 @@ instead encodes a reference to the nth sufficiently long string already encoded.
 .. warning:: Support for string referencing is rare in other CBOR implementations, so think
     carefully whether you want to enable it.
 
+Offline handoff checks across packages
+--------------------------------------
+
+A case file can be split into several CBOR packages. Each package may publish an
+index whose entries contain either content or references to content held elsewhere.
+:func:`audit_handoff` decodes the packages with the normal :func:`loads` entry point
+and follows the references needed by one claim::
+
+    import cbor2
+
+    packages = {
+        "case-a": cbor2.dumps({
+            "package": "case-a",
+            "index": {
+                "finding": {
+                    "content": "The reviewed finding",
+                    "references": [
+                        {"entry": "local-exhibit"},
+                        {"package": "case-b", "entry": "annex-7"},
+                    ],
+                },
+                "local-exhibit": {"content": "A locally held exhibit"},
+            },
+        }),
+        "case-b": cbor2.dumps({
+            "package": "case-b",
+            "index": {"annex-7": {"content": "The annex"}},
+        }),
+    }
+
+    report = cbor2.audit_handoff(
+        packages,
+        {"package": "case-a", "entry": "finding"},
+        license={"case-a": True, "case-b": True},
+    )
+    assert report.sufficient
+
+    for item in report.checklist:
+        print(item.source, "->", item.target, item.status)
+
+Local entry numbers are always qualified by their package. Thus ``case-a#7`` and
+``case-b#7`` are different references. References may be expressed as mappings such as
+``{"package": "case-b", "entry": 7}``, as strings such as ``case-b#7``, or with the
+synthetic tags :data:`LOCAL_REFERENCE_TAG` and :data:`CROSS_PACKAGE_REFERENCE_TAG`.
+
+The ``license`` argument is the caller-declared evidence scope. It accepts a mapping from
+package id to ``True`` (all entries), ``False`` (nothing), or a collection or mapping of
+allowed entry ids. The result distinguishes three failure modes:
+
+* :attr:`ReferenceStatus.MISSING` means the package was handed over but the entry is not
+  in its public index (or has no reviewable content and no reference).
+* :attr:`ReferenceStatus.NOT_AUTHORIZED` means the entry exists but is outside the
+  declared evidence license. The checker does not inspect or follow it.
+* :attr:`ReferenceStatus.PACKAGE_MISSING` means the package itself was not handed over or
+  was withdrawn.
+
+``report.checklist`` is sorted by reference provenance: source package, source entry,
+reference kind (local before cross-package), then target. Auditing several claims is
+independent; :func:`withdraw_package` returns a copy, so withdrawing a package does not
+change the result for any claim that did not rely on it.
+
 Decoder support for semantic tags
 ---------------------------------
 
