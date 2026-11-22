@@ -1,4 +1,8 @@
+import random
+from collections import Counter
 from unittest import TestCase
+
+import lxml.html
 
 from .sanitizer import Sanitizer
 
@@ -830,3 +834,245 @@ git commit
             ],
             sanitizer=sanitizer,
         )
+
+
+class TightenedPolicyRegressionTestCase(TestCase):
+    """
+    Generative regression proving that the tightened (new site) content
+    policy grants strictly fewer permissions than the legacy (old site)
+    policy before release.
+
+    Both policies sanitize the same generated fragment and the resulting
+    trees are compared through a one-way "tightened <= legacy" relation
+    on extracted evidence streams -- never by string equality of the two
+    HTML outputs. Lists may be reorganized by the sanitizer (items are
+    compared as a flattened document-order stream, ignoring nesting) and
+    surviving descriptive attributes (``title``) are compared as a
+    multiset of (name, value) pairs.
+    """
+
+    LEGACY_SETTINGS = {
+        "tags": {"p", "ul", "ol", "li", "strong", "em"},
+        "attributes": {"p": ("title",), "li": ("title",)},
+        "empty": set(),
+        "separate": {"p", "li"},
+        "whitespace": set(),
+    }
+    TIGHTENED_SETTINGS = {
+        "tags": {"p", "ul", "li", "strong"},
+        "attributes": {"p": ("title",)},
+        "empty": set(),
+        "separate": {"p", "li"},
+        "whitespace": set(),
+    }
+
+    MAX_FRAGMENTS = 160
+    WORDS = ("alpha", "beta", "gamma", "delta")
+    NOTES = ("note-a", "note-b")
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.legacy_sanitizer = Sanitizer(cls.LEGACY_SETTINGS)
+        cls.tightened_sanitizer = Sanitizer(cls.TIGHTENED_SETTINGS)
+
+    # Fragment generation: plain paragraphs, lists, emphasis marks and
+    # legal descriptive attributes only. Small and bounded by
+    # MAX_FRAGMENTS, deterministic through a fixed seed.
+
+    def _note(self, rng):
+        return rng.choice([None, None, *self.NOTES])
+
+    def _inline(self, rng):
+        words = rng.sample(self.WORDS, 3)
+        variant = rng.randint(0, 2)
+        if variant == 0:
+            return [("text", words[0])]
+        tag = "strong" if variant == 1 else "em"
+        return [("text", words[0]), (tag, words[1]), ("text", words[2])]
+
+    def _block(self, rng):
+        if rng.random() < 0.5:
+            return ("p", self._note(rng), self._inline(rng))
+        return (
+            rng.choice(["ul", "ol"]),
+            None,
+            [(self._note(rng), self._inline(rng)) for _ in range(rng.randint(1, 3))],
+        )
+
+    def generate_fragments(self):
+        rng = random.Random(20261123)
+        return [
+            [self._block(rng) for _ in range(rng.randint(1, 2))]
+            for _ in range(self.MAX_FRAGMENTS)
+        ]
+
+    @staticmethod
+    def render_inline(inline):
+        return " ".join(
+            word if kind == "text" else f"<{kind}>{word}</{kind}>"
+            for kind, word in inline
+        )
+
+    @classmethod
+    def render(cls, spec):
+        out = []
+        for tag, note, body in spec:
+            if tag == "p":
+                attr = f' title="{note}"' if note else ""
+                out.append(f"<p{attr}>{cls.render_inline(body)}</p>")
+            else:
+                items = "".join(
+                    f'<li{f" title={chr(34)}{item_note}{chr(34)}" if item_note else ""}>'
+                    f"{cls.render_inline(inline)}</li>"
+                    for item_note, inline in body
+                )
+                out.append(f"<{tag}>{items}</{tag}>")
+        return "".join(out)
+
+    # Evidence extraction and the one-way relation.
+
+    @staticmethod
+    def evidence(html):
+        tree = lxml.html.fromstring(f"<div>{html}</div>")
+        words = []
+        for text in tree.itertext():
+            words.extend(text.split())
+        emphasis = [
+            (el.tag, " ".join(el.text_content().split()))
+            for el in tree.iter()
+            if el.tag in {"strong", "em"}
+        ]
+        # List reorganization rule: nesting is ignored, items are
+        # compared as a flattened document-order stream.
+        items = [" ".join(el.text_content().split()) for el in tree.iter("li")]
+        # Descriptive text rule: surviving titles are compared as a
+        # multiset of (name, value) pairs, independent of position.
+        notes = Counter(
+            (key, " ".join(value.split()))
+            for el in tree.iter()
+            for key, value in el.attrib.items()
+            if key == "title"
+        )
+        return words, emphasis, items, notes
+
+    @staticmethod
+    def subsequence_gap(needle, haystack):
+        pos = 0
+        for item in needle:
+            while pos < len(haystack) and haystack[pos] != item:
+                pos += 1
+            if pos >= len(haystack):
+                return item
+            pos += 1
+        return None
+
+    def one_way_failures(self, tightened_html, legacy_html):
+        """Return the one-way relations (tightened <= legacy) which fail."""
+        new_words, new_emphasis, new_items, new_notes = self.evidence(tightened_html)
+        old_words, old_emphasis, old_items, old_notes = self.evidence(legacy_html)
+        failures = []
+        gap = self.subsequence_gap(new_words, old_words)
+        if gap is not None:
+            failures.append(
+                f"words: {gap!r} occurs in the tightened output but not in"
+                " the legacy output's word stream"
+            )
+        gap = self.subsequence_gap(new_emphasis, old_emphasis)
+        if gap is not None:
+            failures.append(
+                f"emphasis: {gap!r} is kept by the tightened policy but has"
+                " no matching segment in the legacy output"
+            )
+        gap = self.subsequence_gap(new_items, old_items)
+        if gap is not None:
+            failures.append(
+                f"list-items: {gap!r} is a list item under the tightened"
+                " policy but is absent from the (possibly reorganized)"
+                " legacy list stream"
+            )
+        extra = new_notes - old_notes
+        if extra:
+            failures.append(
+                f"notes: descriptive attribute(s) {sorted(extra)!r} survive"
+                " under the tightened policy but not under the legacy policy"
+            )
+        return failures
+
+    # Shrinking: reduce a failing fragment to a minimal editor snippet
+    # which still violates a one-way relation.
+
+    def _simplifications(self, spec):
+        for i, block in enumerate(spec):
+            yield spec[:i] + spec[i + 1 :]
+            tag, note, body = block
+            if note is not None:
+                yield spec[:i] + [(tag, None, body)] + spec[i + 1 :]
+            if tag == "p":
+                for j, (kind, word) in enumerate(body):
+                    if kind != "text":
+                        inline = body[:j] + [("text", word)] + body[j + 1 :]
+                        yield spec[:i] + [(tag, note, inline)] + spec[i + 1 :]
+            else:
+                for j, (item_note, inline) in enumerate(body):
+                    yield spec[:i] + [(tag, note, body[:j] + body[j + 1 :])] + spec[
+                        i + 1 :
+                    ]
+                    if item_note is not None:
+                        items = body[:j] + [(None, inline)] + body[j + 1 :]
+                        yield spec[:i] + [(tag, note, items)] + spec[i + 1 :]
+                    for k, (kind, word) in enumerate(inline):
+                        if kind != "text":
+                            new_inline = inline[:k] + [("text", word)] + inline[k + 1 :]
+                            items = body[:j] + [(item_note, new_inline)] + body[j + 1 :]
+                            yield spec[:i] + [(tag, note, items)] + spec[i + 1 :]
+
+    def _failures_for(self, spec):
+        fragment = self.render(spec)
+        return self.one_way_failures(
+            self.tightened_sanitizer.sanitize(fragment),
+            self.legacy_sanitizer.sanitize(fragment),
+        )
+
+    def shrink(self, spec):
+        current, failures = spec, self._failures_for(spec)
+        while failures:
+            for candidate in self._simplifications(current):
+                candidate_failures = self._failures_for(candidate)
+                if candidate_failures:
+                    current, failures = candidate, candidate_failures
+                    break
+            else:
+                return current, failures
+        return current, failures
+
+    # Tests.
+
+    def test_policies_are_explicitly_comparable(self):
+        self.assertLess(
+            self.TIGHTENED_SETTINGS["tags"], self.LEGACY_SETTINGS["tags"]
+        )
+        for tag, attributes in self.TIGHTENED_SETTINGS["attributes"].items():
+            self.assertLessEqual(
+                set(attributes),
+                set(self.LEGACY_SETTINGS["attributes"].get(tag, ())),
+            )
+
+    def test_tightened_policy_grants_less(self):
+        fragments = self.generate_fragments()
+        self.assertLessEqual(len(fragments), self.MAX_FRAGMENTS)
+        for spec in fragments:
+            fragment = self.render(spec)
+            with self.subTest(fragment=fragment):
+                failures = self._failures_for(spec)
+                if failures:
+                    minimal, minimal_failures = self.shrink(spec)
+                    self.fail(
+                        "Tightened policy grants permissions the legacy"
+                        " policy does not have.\nMinimal editor fragment:\n"
+                        f"  {self.render(minimal)}\n"
+                        "Unprovable one-way relation(s):\n  "
+                        + "\n  ".join(minimal_failures)
+                        + f"\nLegacy output:    {self.legacy_sanitizer.sanitize(self.render(minimal))}"
+                        f"\nTightened output: {self.tightened_sanitizer.sanitize(self.render(minimal))}"
+                    )
