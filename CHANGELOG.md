@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Two-collection access-control (security descriptor) comparison** in the new regipy/security_evidence.py module
+  - compare_access_control(first_hive, second_hive, sid_profiles=...) compares the sk security-key evidence of every key between two offline collections of the same hive and classifies each key as permission_changed, equivalent_repoint, unchanged or uncollectable. A re-point at a different descriptor whose owner/group/DACL/SACL semantics are identical is explicitly distinguished from a real permission change
+  - Caller-supplied, non-sensitive SIDProfile summaries annotate trustees and optionally assert the exact access mask each SID should hold; SIDs without a profile are reported as unverified rather than guessed, and mask mismatches are surfaced per key
+  - collect_key_security_evidence() plus the new NKRecord.get_security_evidence()/get_security_key_record() retain the raw descriptor bytes, SK reference count and exact in-hive NK/SK cell offsets. The reference-difference table jumps back to the key and descriptor positions inside either collection and keeps per-key conclusions even when many keys share one descriptor
+  - The Rust wrapper registry_rs.NKRecord exposes best-effort evidence from its parsed ACLs; raw descriptor bytes and cell locations remain Python-backend-only and are reported as unknown instead of fabricated
+  - Added a synthetic hive builder (regipy_tests/synthetic_hive.py) and tests covering shared descriptors, an equivalent re-point control case, a genuine permission change and unparseable/missing evidence
+
 ## [6.5.2] - 2026-10-17
 
 ### Fixed

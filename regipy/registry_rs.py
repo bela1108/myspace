@@ -156,6 +156,37 @@ class NKRecord:
         except regipy_rs.ParsingError as ex:
             raise RegistryParsingException(str(ex))
 
+    def get_security_key_record(self):
+        # The Rust core does not expose the raw SK cell. Raising the same
+        # exception type as the Python parser keeps access-control evidence
+        # collection working: the row is marked uncollectable instead of
+        # aborting the comparison.
+        raise RegistryParsingException("Raw security key record is not exposed by the Rust backend")
+
+    def get_security_evidence(self):
+        """Best-effort evidence from the Rust backend.
+
+        The Rust core exposes parsed owner/group/ACL semantics but neither the
+        raw descriptor bytes nor the NK/SK cell locations. Semantic comparison
+        therefore still works, while byte-identity checks and jump-back offsets
+        are reported as unknown rather than fabricated.
+        """
+        from regipy.security_evidence import SecurityKeyEvidence
+
+        info = self.get_security_key_info()
+        security_key_offset = int(self.header["security_key_offset"])
+        return SecurityKeyEvidence(
+            sk_offset=security_key_offset,
+            sk_cell_offset=-1,
+            sk_file_offset=-1,
+            reference_count=-1,
+            descriptor_bytes=b"",
+            owner=info["owner"],
+            group=info["group"],
+            dacl=info["dacl"],
+            sacl=info["sacl"],
+        )
+
     def __repr__(self):
         return repr(self._nk)
 

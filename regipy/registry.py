@@ -387,6 +387,11 @@ class NKRecord:
         stream.seek(cell.offset)
         self.header = CM_KEY_NODE.parse_stream(stream)  # type: ignore[union-attr]
         self._stream = stream
+        # Offset of the NK cell (pointing at its size field) relative to the
+        # start of the hive bins data. Every in-hive reference stored in an NK
+        # record uses the same coordinate system, so this is the exact location
+        # of the key inside a collected hive file.
+        self.cell_offset = cell.offset - REGF_HEADER_SIZE
 
         # Sometimes the key names are ASCII and sometimes UTF-16 little endian
         if self.header.flags.KEY_COMP_NAME:
@@ -730,6 +735,55 @@ class NKRecord:
                 "dacl": dacl_aces,
                 "sacl": sacl_aces,
             }
+
+    def get_security_key_record(self):
+        """
+        Parse the raw SK (security key) record referenced by this NK record.
+
+        The NK ``security_key_offset`` field points at the 4-byte reserved field
+        immediately preceding the ``sk`` signature; the cell size field sits
+        four bytes earlier again. Returns the parsed construct container, which
+        includes the security descriptor bytes.
+        :raises RegistryParsingException: If the SK cell cannot be parsed.
+        """
+        try:
+            self._stream.seek(REGF_HEADER_SIZE + self.header.security_key_offset)
+            return SECURITY_KEY_v1_1.parse_stream(self._stream)  # type: ignore[union-attr]
+        except (ConstError, StreamError) as ex:
+            raise RegistryParsingException(
+                f"Could not parse security key record at offset {self.header.security_key_offset} for key {self.name}: {ex}"
+            )
+
+    def get_security_evidence(self):
+        """
+        Collect the access-control evidence for this key.
+
+        Unlike :meth:`get_security_key_info`, this also retains the exact
+        in-hive locations of both the NK cell and the referenced SK cell, the
+        SK reference count and the raw security descriptor bytes, so callers
+        can tell an actual permission change from a mere re-pointing at another
+        descriptor with identical semantics.
+        :return: A :class:`regipy.security_evidence.SecurityKeyEvidence`.
+        :raises RegistryParsingException: If the referenced SK cell is missing
+                 or unparseable (i.e. the evidence was not collectable).
+        """
+        from regipy.security_evidence import SecurityKeyEvidence
+
+        security_key_offset = int(self.header.security_key_offset)
+        security_key = self.get_security_key_record()
+        descriptor_bytes = bytes(security_key.security_descriptor)
+        info = self.get_security_key_info()
+        return SecurityKeyEvidence(
+            sk_offset=security_key_offset,
+            sk_cell_offset=security_key_offset - 4,
+            sk_file_offset=REGF_HEADER_SIZE + security_key_offset - 4,
+            reference_count=int(security_key.reference_count),
+            descriptor_bytes=descriptor_bytes,
+            owner=info["owner"],
+            group=info["group"],
+            dacl=info["dacl"],
+            sacl=info["sacl"],
+        )
 
     def get_class_name(self) -> str:
         """
