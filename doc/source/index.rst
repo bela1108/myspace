@@ -13,6 +13,7 @@ Using and Extending Bandit
 
    start
    config
+   export_combinations
    integrations
    plugins/index
    blacklists/index
