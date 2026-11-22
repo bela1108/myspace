@@ -42,6 +42,8 @@ Dlint uses a simple, folder-based hierarchy written in [Markdown](https://en.wik
 * [`DUO136` `BadXmlsecModuleAttributeUseLinter` insecure "xmlsec" attribute use](https://github.com/dlint-py/dlint/blob/master/docs/linters/DUO136.md)
 * [`DUO137` `BadItsDangerousKwargUseLinter` insecure "itsdangerous" use allowing empty signing](https://github.com/dlint-py/dlint/blob/master/docs/linters/DUO137.md)
 * [`DUO138` `BadReCatastrophicUseLinter` catastrophic "re" usage - denial-of-service possible](https://github.com/dlint-py/dlint/blob/master/docs/linters/DUO138.md)
+* [`DUO139` `GeneratorAuditUseLinter` generator is never consumed, ending audit is never confirmed](https://github.com/dlint-py/dlint/blob/master/docs/linters/DUO139.md)
+* [`DUO140` `GeneratorAuditUseLinter` consumer cannot confirm ending audit or has an unknown contract](https://github.com/dlint-py/dlint/blob/master/docs/linters/DUO140.md)
 
 # FAQs
 

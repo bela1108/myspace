@@ -221,3 +221,63 @@ def same_modules(s1, s2):
         len(modules1) <= len(modules2)
         and all(m1 == m2 for (m1, m2) in zip(modules1, modules2))
     )
+
+
+def call_name(call):
+    """Return the name of a direct call as written in source.
+
+    E.g. "audit_start" for ``audit_start()`` or "audit.end" for
+    ``audit.end()``. Returns an empty string for calls whose function is
+    neither a name nor an attribute, e.g. ``factory()()``.
+    """
+    if isinstance(call.func, ast.Name):
+        return call.func.id
+    elif isinstance(call.func, ast.Attribute):
+        return call.func.attr
+    else:
+        return ''
+
+
+def function_is_generator(function):
+    """Return whether the function's own body contains a yield statement.
+
+    Nested function definitions are skipped because their yields belong to a
+    different scope.
+    """
+    results = []
+
+    def yield_callback(inner_node):
+        if isinstance(inner_node, (ast.Yield, ast.YieldFrom)):
+            results.append(inner_node)
+
+    walk_callback_same_scope(function, yield_callback)
+
+    return bool(results)
+
+
+def node_is_in_finally(node, parent_map):
+    """Return whether the node is lexically nested in a ``finally`` block."""
+    current = parent_map.get(node)
+
+    while current is not None:
+        if isinstance(current, ast.Try) and current.finalbody:
+            child = node
+            while child is not None and child is not current:
+                if child in current.finalbody:
+                    return True
+                child = parent_map.get(child)
+        node = current
+        current = parent_map.get(current)
+
+    return False
+
+
+def build_parent_map(tree_node):
+    """Map every child node to its direct AST parent."""
+    parent_map = {}
+
+    for parent in ast.walk(tree_node):
+        for child in ast.iter_child_nodes(parent):
+            parent_map[child] = parent
+
+    return parent_map
