@@ -62,6 +62,8 @@ evtx_info = "evtx_scripts.evtx_info:main"
 evtx_record_structure = "evtx_scripts.evtx_record_structure:main"
 evtx_structure = "evtx_scripts.evtx_structure:main"
 evtx_templates = "evtx_scripts.evtx_templates:main"
+evtx_timeline = "evtx_scripts.evtx_timeline:main"
+evtx_timeline_diagnostic = "evtx_scripts.evtx_timeline_diagnostic:main"
 
 [tool.black]
 line-length = 120

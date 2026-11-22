@@ -128,6 +128,23 @@ class Evtx(object):
     def get_file_header(self):
         return self._fh
 
+    def diagnose_timeline(self, collection=None, numbering_rules=None, **kwargs):
+        """Run the offline timeline diagnostic against this EVTX file.
+
+        The implementation lives in :mod:`Evtx.Timeline` and is imported
+        lazily so the core parser has no dependency on the diagnostic module.
+        """
+        from .Timeline import diagnose_timeline as _diagnose_timeline
+
+        return _diagnose_timeline(
+            self._filename,
+            collection=collection,
+            numbering_rules=numbering_rules,
+            **kwargs,
+        )
+
+    timeline = diagnose_timeline
+
 
 class FileHeader(Block):
     def __init__(self, buf, offset):

@@ -19,4 +19,7 @@ __all__ = [
     "BinaryParser",
     "Nodes",
     "Views",
+    "Timeline",
+    "Diagnostics",
+    "TimelineDiagnostic",
 ]

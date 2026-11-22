@@ -42,6 +42,79 @@ Note the length of the `evtx_dump.py` script: its only 20 lines.  Now, review th
 Working with python-evtx is really easy!
 
 
+Offline timeline diagnostics
+----------------------------
+`Evtx.Timeline` adds an offline diagnostic for timelines that contain both a
+host-clock rollback and damage in the original EVTX file.  It keeps three
+ordering sources separate rather than normalizing them into one guessed time:
+
+- `original-record`: physical record order, record numbers, chunk boundaries,
+  bad-record/bad-chunk gaps, and the timestamps stored in the records.
+- `event-time`: the parseable `System/TimeCreated@SystemTime` values.  A
+  backward step is reported as a clock rollback and is *not* rewritten.
+- `collection`: a receipt/acknowledgement manifest supplied by the collector:
+  receipt sequence, receipt time, block/record identifiers, and explicit loss
+  markers.
+
+The command-line diagnostic is available as `evtx_timeline` (and
+`evtx_timeline_diagnostic`):
+
+    evtx_timeline HOST.evtx \
+        --collection collection-receipts.json \
+        --numbering "4624=EventRecordID,scope=file" \
+        --numbering "4688=EventData/SequenceNumber" \
+        --output timeline.json
+
+The result contains `records`, `discontinuities`, `time_inversions`,
+`clock_rollbacks`, `timeline`, and `constraints`.  Every timeline entry has a
+`basis` (`original-record` or `collection`), a `bases` list, and an `evidence`
+list.  Missing chunks, unparseable records, and explicit collection losses are
+retained as discontinuity entries; the scanner searches for the next plausible
+8-byte-aligned record rather than silently discarding the rest of a chunk.
+
+A collection manifest may be JSON, JSONL, or CSV.  For example:
+
+    {
+      "block_size": 65536,
+      "receipts": [
+        {"receipt_sequence": 1, "record_number": 12049, "received_at": "2026-11-21T10:00:00Z"},
+        {"receipt_sequence": 2, "record_number": 12050, "received_at": "2026-11-21T10:00:01Z"},
+        {"receipt_sequence": 4, "record_number": 12052, "received_at": "2026-11-21T10:00:03Z"},
+        {"receipt_sequence": 5, "status": "missing", "block_index": 7}
+      ],
+      "missing_blocks": [8, 9]
+    }
+
+Per-EventID numbering is never inferred.  The caller must provide explicit
+rules.  `scope: "event-id"` means each EventID has an independent counter;
+`scope: "file"` means the field is one file-wide counter shared by all records.
+The field can be a record pseudo-field (`record_number`, `EventRecordID`) or a
+simple XML path such as `EventData/SequenceNumber` or
+`EventData/Data[@Name='SequenceNumber']`.
+
+    {
+      "rules": [
+        {"event_id": 4624, "field": "EventRecordID", "scope": "file"},
+        {"event_id": 4688, "field": "EventData/SequenceNumber", "scope": "event-id"}
+      ]
+    }
+
+From Python:
+
+    from Evtx.Timeline import diagnose_timeline
+
+    result = diagnose_timeline(
+        "HOST.evtx",
+        collection="collection-receipts.json",
+        numbering_rules=[
+            {"event_id": 4624, "field": "EventRecordID", "scope": "file"},
+        ],
+    )
+    print(result.summary)
+    for entry in result.timeline:
+        print(entry.position, entry.kind, entry.bases, entry.detail)
+
+
 Installation
 ------------
 Updates to python-evtx are pushed to PyPi, so you can install the module using `pip`.  For example:
