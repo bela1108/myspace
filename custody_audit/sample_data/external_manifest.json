@@ -1,0 +1,59 @@
+{
+  "manifest_id": "EXT-MANIFEST-2017-009",
+  "evtx_files": [
+    "security_short.evtx",
+    "dns_short.evtx"
+  ],
+  "entries": [
+    {
+      "evtx_file": "security_short.evtx",
+      "first_record": 1,
+      "last_record": 1,
+      "mode": "full",
+      "record_count": 1,
+      "record_sha256": [
+        "7c91eecc69346ed5fa531897eb150ff80916aae276f86306e52cfb41cc5c45a1"
+      ],
+      "file_sha256": "becab64455866f8fae5583fbaa5dab901115e4397ea7abe14f37ad732d5d7eb9",
+      "handover_due": "2017-12-31T23:59:59+08:00"
+    },
+    {
+      "evtx_file": "dns_short.evtx",
+      "first_record": 1,
+      "last_record": 1,
+      "mode": "summary",
+      "record_count": 1,
+      "record_sha256": [
+        "50c669db2e39eb5532cbd6c661bb61c127eb70bee9617ccaeb041262e25acf6e"
+      ],
+      "file_sha256": "56884d5665a02dd4f26de67eabfad751843eff06f3fdeee7ea57a9911baa090b",
+      "handover_due": "2017-12-31T23:59:59+08:00"
+    },
+    {
+      "evtx_file": "dns_short.evtx",
+      "first_record": 2,
+      "last_record": 3,
+      "mode": "full",
+      "record_count": 2,
+      "record_sha256": [
+        "81efa4cc06eb15a4142419ff73678fc245b409d42ffbd201ef36754838e07fe6",
+        "360bfd20a6f76a91eb1b0f3b6f3bb97deeee8cbd57b488515d7931e40af3efdd"
+      ],
+      "file_sha256": "56884d5665a02dd4f26de67eabfad751843eff06f3fdeee7ea57a9911baa090b",
+      "handover_due": "2017-12-31T23:59:59+08:00"
+    },
+    {
+      "evtx_file": "dns_short.evtx",
+      "first_record": 4,
+      "last_record": 5,
+      "mode": "full",
+      "record_count": 2,
+      "record_sha256": [
+        "0ff2a91270173a08d5a30a30efa87597f8b939bfdf4422a077dc85ff8ad6dcf3",
+        "cbe802264a65357c553ac8298bed2aa79dae02909c53ed7e90692167c0dcd0e8"
+      ],
+      "file_sha256": "56884d5665a02dd4f26de67eabfad751843eff06f3fdeee7ea57a9911baa090b",
+      "handover_due": "2017-12-31T23:59:59+08:00"
+    }
+  ]
+}

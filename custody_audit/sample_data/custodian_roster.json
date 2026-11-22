@@ -1,0 +1,32 @@
+{
+  "custodians": [
+    {
+      "custodian_id": "C001",
+      "display_name": "张调查（前任保管人）",
+      "permissions": [
+        "evtx.full_review"
+      ],
+      "responsibility_start": "2017-01-01T00:00:00+08:00",
+      "responsibility_end": "2017-06-30T23:59:59+08:00"
+    },
+    {
+      "custodian_id": "C002",
+      "display_name": "李长期（长期保管人）",
+      "permissions": [
+        "evtx.full_review",
+        "evtx.summary"
+      ],
+      "responsibility_start": "2017-07-01T00:00:00+08:00",
+      "responsibility_end": null
+    },
+    {
+      "custodian_id": "C003",
+      "display_name": "王归档（摘要保管人）",
+      "permissions": [
+        "evtx.summary"
+      ],
+      "responsibility_start": "2017-07-01T00:00:00+08:00",
+      "responsibility_end": null
+    }
+  ]
+}

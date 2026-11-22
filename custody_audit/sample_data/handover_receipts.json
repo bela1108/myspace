@@ -1,0 +1,48 @@
+{
+  "receipts": [
+    {
+      "receipt_id": "R-01",
+      "receipt_type": "shift_change",
+      "evtx_file": "security_short.evtx",
+      "first_record": 1,
+      "last_record": 1,
+      "mode": "full",
+      "signer_id": "C002",
+      "signed_at": "2017-07-03T09:30:00+08:00",
+      "predecessor_id": "C001"
+    },
+    {
+      "receipt_id": "R-02",
+      "receipt_type": "shift_change",
+      "evtx_file": "dns_short.evtx",
+      "first_record": 1,
+      "last_record": 1,
+      "mode": "summary",
+      "signer_id": "C003",
+      "signed_at": "2017-07-03T10:00:00+08:00",
+      "predecessor_id": "C001"
+    },
+    {
+      "receipt_id": "R-03",
+      "receipt_type": "retroactive",
+      "evtx_file": "dns_short.evtx",
+      "first_record": 2,
+      "last_record": 3,
+      "mode": "full",
+      "signer_id": "C001",
+      "signed_at": "2017-08-15T14:00:00+08:00",
+      "predecessor_id": "C001"
+    },
+    {
+      "receipt_id": "R-04",
+      "receipt_type": "retroactive",
+      "evtx_file": "dns_short.evtx",
+      "first_record": 4,
+      "last_record": 5,
+      "mode": "full",
+      "signer_id": "C002",
+      "signed_at": "2017-08-16T09:00:00+08:00",
+      "predecessor_id": "C001"
+    }
+  ]
+}
