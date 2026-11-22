@@ -16,6 +16,7 @@ from regipy.plugins.utils import run_relevant_plugins
 from regipy.recovery import apply_transaction_logs
 from regipy.regdiff import compare_hives
 from regipy.registry import RegistryHive
+from regipy.review import review_hive
 from regipy.utils import _setup_logging, calculate_xor32_checksum
 
 logger = logging.getLogger(__name__)
@@ -382,3 +383,114 @@ def parse_transaction_log(hive_path, primary_log_path, secondary_log_path, outpu
             f"Recovered {recovered_dirty_pages_count} dirty pages. Restored hive is at {restored_hive_path}",
             fg="green",
         )
+
+
+@click.command(name="regipy-review")
+@click.argument(
+    "hive_path",
+    type=click.Path(exists=True, dir_okay=False, resolve_path=True),
+    required=True,
+)
+@click.option(
+    "--rule-set",
+    "rule_set_paths",
+    type=click.Path(exists=True, dir_okay=False, resolve_path=True),
+    multiple=True,
+    required=True,
+    help="Path to an interpretation rule set JSON file. May be supplied more than once.",
+)
+@click.option(
+    "--plugin-results",
+    type=click.Path(exists=True, dir_okay=False, resolve_path=True),
+    required=False,
+    help="Optional JSON produced by regipy-plugins-run, reused as provenance for the review.",
+)
+@click.option(
+    "--prior-claim",
+    "prior_claims",
+    multiple=True,
+    help="A historical finding as SUBJECT=CONCLUSION, for example smb_signing=enabled.",
+)
+@click.option(
+    "-o",
+    "--output-path",
+    type=click.Path(exists=False, dir_okay=False, resolve_path=True),
+    required=False,
+    help="Write the review report to this path instead of stdout.",
+)
+@click.option("-t", "--hive-type", type=click.STRING, required=False, help="Specify a hive type if auto-detection fails.")
+@click.option(
+    "-r",
+    "--partial-hive-path",
+    type=click.STRING,
+    required=False,
+    help="The path from which a partial hive actually starts.",
+)
+@click.option(
+    "--no-run-plugins",
+    is_flag=True,
+    default=False,
+    help="Do not run referenced plugins; only use --plugin-results (or raw key evidence).",
+)
+@click.option(
+    "--fail-on-pending",
+    is_flag=True,
+    default=False,
+    help="Exit with status 2 when any reviewed subject is not confirmed.",
+)
+@click.option("-v", "--verbose", is_flag=True, default=False, help="Verbosity")
+@click.pass_context
+def review(
+    ctx,
+    hive_path,
+    rule_set_paths,
+    plugin_results,
+    prior_claims,
+    output_path,
+    hive_type,
+    partial_hive_path,
+    no_run_plugins,
+    fail_on_pending,
+    verbose,
+):
+    """Review a hive against caller-supplied interpretation rule sets."""
+    _setup_logging(verbose=verbose)
+    registry_hive = RegistryHive(hive_path, hive_type=hive_type, partial_hive_path=partial_hive_path)
+
+    parsed_plugin_results = None
+    if plugin_results:
+        with open(plugin_results, encoding="utf-8") as handle:
+            parsed_plugin_results = json.load(handle)
+
+    parsed_prior_claims = {}
+    for claim in prior_claims:
+        subject, separator, conclusion = claim.partition("=")
+        if not separator or not subject.strip() or not conclusion.strip():
+            raise click.BadParameter(f"Expected SUBJECT=CONCLUSION, got {claim!r}", param_hint="--prior-claim")
+        parsed_prior_claims[subject.strip()] = conclusion.strip()
+
+    report = review_hive(
+        registry_hive,
+        list(rule_set_paths),
+        plugin_results=parsed_plugin_results,
+        prior_claims=parsed_prior_claims or None,
+        run_plugins=not no_run_plugins,
+    )
+    if report.get("hive", {}).get("path") is None:
+        report["hive"]["path"] = str(hive_path)
+
+    rendered = json.dumps(report, indent=4)
+    if output_path:
+        with open(output_path, "w", encoding="utf-8") as handle:
+            handle.write(rendered)
+            handle.write("\n")
+        click.secho(
+            f"Reviewed {len(report['results'])} subjects; "
+            f"{len(report['confirmed'])} confirmed, {len(report['pending'])} pending.",
+            fg="green",
+        )
+    else:
+        click.echo(rendered)
+
+    if fail_on_pending and report["pending"]:
+        ctx.exit(2)

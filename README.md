@@ -170,6 +170,24 @@ Example output:
 [2019-02-11 19:49:18.825328] INFO: regipy.cli: Detected 2 differences
 ```
 
+## Review ambiguous findings with caller-supplied interpretations
+
+A value can mean different things in different Windows configurations. The
+opt-in review layer reads one hive against two or more caller-supplied rule
+sets, keeps plugin/raw-entry provenance, and leaves unconfirmed items
+`pending` instead of defaulting them to "enabled".
+
+```bash
+regipy-review SYSTEM \
+  --rule-set examples/review/smb_signing_legacy.json \
+  --rule-set examples/review/smb_signing_domain_server.json \
+  --prior-claim smb_signing=enabled
+```
+
+See [docs/REVIEW.md](docs/REVIEW.md) and the [SMB signing example](examples/review/README.md)
+for the rule schema, provenance fields, and the two assumptions that can make a
+single "enabled" finding disputed.
+
 ## Recover a registry hive, using transaction logs
 
 ```bash

@@ -1,0 +1,54 @@
+{
+  "name": "domain_server",
+  "description": "Alternative interpretation: on a domain-joined host, the server-side SMB signing parameters decide whether signing is enabled.",
+  "source": "investigator:domain-server-scope",
+  "plugins": [
+    "services",
+    "host_domain_name"
+  ],
+  "assumptions": {
+    "scope": "Domain membership makes the LanmanServer Parameters key authoritative for host SMB signing.",
+    "sufficiency": "Server SMB signing is enabled only when both EnableSecuritySignature and RequireSecuritySignature are 1."
+  },
+  "rules": [
+    {
+      "id": "domain.server_signing_disabled",
+      "subject": "smb_signing",
+      "conclusion": "disabled",
+      "description": "A domain-joined host whose server signing flags are both 0 is not an 'SMB signing is enabled' host.",
+      "conditions": [
+        {
+          "id": "domain.is_domain_joined",
+          "path": "\\CurrentControlSet\\Services\\Tcpip\\Parameters",
+          "value": "Domain",
+          "op": "non_empty",
+          "assumption": "scope",
+          "evidence": {
+            "plugin": "host_domain_name",
+            "entry_index": "current",
+            "field": "domain"
+          }
+        },
+        {
+          "id": "domain.server_enable_signature",
+          "path": "\\CurrentControlSet\\Services\\LanmanServer\\Parameters",
+          "value": "EnableSecuritySignature",
+          "op": "eq",
+          "expected": 0,
+          "assumptions": [
+            "scope",
+            "sufficiency"
+          ]
+        },
+        {
+          "id": "domain.server_require_signature",
+          "path": "\\CurrentControlSet\\Services\\LanmanServer\\Parameters",
+          "value": "RequireSecuritySignature",
+          "op": "eq",
+          "expected": 0,
+          "assumption": "sufficiency"
+        }
+      ]
+    }
+  ]
+}

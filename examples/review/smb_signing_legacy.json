@@ -1,0 +1,33 @@
+{
+  "name": "legacy_endpoint",
+  "description": "Historical one-line interpretation: a client-side SMB signing flag is treated as a machine-wide 'enabled' result.",
+  "source": "historical_report:smb-signing-v1",
+  "plugins": [
+    "services"
+  ],
+  "assumptions": {
+    "scope": "The LanmanWorkstation Parameters key describes SMB signing for the whole host.",
+    "sufficiency": "EnableSecuritySignature=1 is sufficient to call SMB signing enabled."
+  },
+  "rules": [
+    {
+      "id": "legacy.workstation_enable_signature",
+      "subject": "smb_signing",
+      "conclusion": "enabled",
+      "description": "Workstation EnableSecuritySignature=1 is reported as 'SMB signing enabled'.",
+      "conditions": [
+        {
+          "id": "legacy.workstation.signature_flag",
+          "path": "\\CurrentControlSet\\Services\\LanmanWorkstation\\Parameters",
+          "value": "EnableSecuritySignature",
+          "op": "eq",
+          "expected": 1,
+          "assumptions": [
+            "scope",
+            "sufficiency"
+          ]
+        }
+      ]
+    }
+  ]
+}
