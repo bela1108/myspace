@@ -11,6 +11,7 @@ from . import helpers  # noqa F401
 from .bad_commands_use import BadCommandsUseLinter
 from .bad_compile_use import BadCompileUseLinter
 from .bad_cryptography_module_attribute_use import BadCryptographyModuleAttributeUseLinter
+from .bad_deferred_desensitize_use import BadDeferredDesensitizeUseLinter
 from .bad_defusedxml_use import BadDefusedxmlUseLinter
 from .bad_dl_use import BadDlUseLinter
 from .bad_duo_client_use import BadDuoClientUseLinter
@@ -52,6 +53,7 @@ ALL = (
     BadCommandsUseLinter,
     BadCompileUseLinter,
     BadCryptographyModuleAttributeUseLinter,
+    BadDeferredDesensitizeUseLinter,
     BadDefusedxmlUseLinter,
     BadDlUseLinter,
     BadDuoClientUseLinter,
