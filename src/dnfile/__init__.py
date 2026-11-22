@@ -666,3 +666,60 @@ class ClrStreamFactory(object):
             return None
         else:
             return s
+
+
+# ----------------------------------------------------------------------
+# Read-only managed ABI audit convenience API (implemented in dnfile.abi).
+# ----------------------------------------------------------------------
+def audit_abi(*args, **kwargs):
+    """Audit two managed assemblies; see dnfile.abi.audit_abi."""
+    from .abi import audit_abi as _audit_abi
+
+    return _audit_abi(*args, **kwargs)
+
+
+def compare_assemblies(*args, **kwargs):
+    from .abi import compare_assemblies as _compare_assemblies
+
+    return _compare_assemblies(*args, **kwargs)
+
+
+def check_abi(*args, **kwargs):
+    from .abi import check_abi as _check_abi
+
+    return _check_abi(*args, **kwargs)
+
+
+def __getattr__(name):
+    if name in {
+        "AbiStatus",
+        "Status",
+        "AbiReport",
+        "AuditReport",
+        "AuditResult",
+        "AbiResult",
+        "EntryPoint",
+        "EntrySpec",
+        "AbiAuditor",
+        "AbiAudit",
+        "AbiChecker",
+        "AbiCompatibilityChecker",
+        "MissingReference",
+        "SignatureInfo",
+        "TypeRefInfo",
+        "compare_abi",
+        "diff_abi",
+        "abi_diff",
+        "compare_api",
+        "check_public_api",
+        "audit_compatibility",
+        "check_compatibility",
+        "compare_versions",
+        "analyze_abi",
+        "audit_assembly_pair",
+        "compare_managed_assemblies",
+    }:
+        from . import abi as _abi
+
+        return getattr(_abi, name)
+    raise AttributeError(name)

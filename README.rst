@@ -93,6 +93,36 @@ attribute of a dnPE object.
                     res_hash.add(hashlib.sha256(entry.data).hexdigest())
 
 
+ABI accountability check
+------------------------
+
+dnfile.abi performs a read-only comparison of the externally visible
+surface of two managed assemblies.  It compares type/member identity by
+metadata name and decoded signature, never by a metadata table RID, so moving
+rows in TypeDef/MethodDef/Field is not reported as an interface
+change.
+
+.. code-block:: python
+
+    import dnfile.abi
+
+    report = dnfile.abi.audit_abi(
+        "old.dll",
+        "new.dll",
+        entrypoints=["Example.Widget::Render", "Example.Widget::Color"],
+        approved_sources=["System.Runtime.dll"],
+    )
+    print(report.summary)
+    for result in report:
+        print(result.status.value, result.name, result.reason)
+
+Each result is supported, changed, or unresolved.  Inherited
+members are followed through local base types and through approved source
+assemblies.  A signature or inherited-member lookup that crosses an assembly
+which was not supplied as approved evidence is reported as unresolved
+instead of being guessed.  The command line entry point is dnfile-abi or
+python -m dnfile.abi.
+
 TODO
 ----
 

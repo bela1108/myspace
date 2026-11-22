@@ -21,6 +21,9 @@ dependencies = [
 ]
 dynamic = ["version", "readme"]
 
+[project.scripts]
+dnfile-abi = "dnfile.abi:main"
+
 [project.urls]
 repository = "https://github.com/malwarefrank/dnfile"
 
