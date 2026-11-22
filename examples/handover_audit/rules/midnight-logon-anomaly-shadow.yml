@@ -1,0 +1,15 @@
+title: Midnight Logon Anomaly
+name: midnight-logon-anomaly
+id: 22222222-2222-4222-8222-222222222222
+status: experimental
+level: high
+tags:
+  - attack.t1078
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 4625
+    TargetUserName: admin
+  condition: selection

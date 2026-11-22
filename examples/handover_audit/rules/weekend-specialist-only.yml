@@ -1,0 +1,12 @@
+title: Weekend Specialist Only
+name: weekend-specialist-only
+id: 44444444-4444-4444-8444-444444444444
+status: experimental
+level: critical
+logsource:
+  product: windows
+  category: process_creation
+detection:
+  selection:
+    CommandLine: rare-tool
+  condition: selection

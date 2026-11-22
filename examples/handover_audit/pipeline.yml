@@ -1,0 +1,12 @@
+name: midnight-handover
+priority: 10
+transformations:
+  - id: normalize-logon-fields
+    type: field_name_mapping
+    mapping:
+      UserName: user.name
+      ComputerName: host.name
+  - id: legacy-edr-enrich
+    type: field_name_mapping
+    mapping:
+      ParentImage: process.parent.executable

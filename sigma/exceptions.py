@@ -419,3 +419,15 @@ class ExceptionOnUsage:
         )
         warnings.warn(deprecation_message, DeprecationWarning)
         raise object.__getattribute__(self, "exception")
+
+
+class SigmaHandoverError(SigmaError):
+    """Base class for offline shift handover audit errors."""
+
+
+class SigmaHandoverConfigurationError(SigmaHandoverError):
+    """Invalid shift, substitute, selector, or branch configuration."""
+
+
+class SigmaHandoverIdentityError(SigmaHandoverError):
+    """Rule identity cannot be represented safely for permission decisions."""

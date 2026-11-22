@@ -1,0 +1,12 @@
+title: Legacy EDR Heartbeat
+name: legacy-edr-heartbeat
+id: 33333333-3333-4333-8333-333333333333
+status: stable
+level: medium
+logsource:
+  product: windows
+  category: process_creation
+detection:
+  selection:
+    ParentImage: C:\\Windows\\System32\\legacy-agent.exe
+  condition: selection
