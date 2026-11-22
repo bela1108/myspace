@@ -1280,6 +1280,46 @@ class ImplMapRow(MDTableRow):
         "ImportScope_Index": ("ImportScope", "ModuleRef"),
     }
 
+    @property
+    def import_name(self):
+        return self.ImportName
+
+    @property
+    def module_ref_row(self):
+        scope = getattr(self, "ImportScope", None)
+        try:
+            return scope.row if scope is not None else None
+        except (IndexError, TypeError):
+            return None
+
+    @property
+    def module_name(self):
+        row = self.module_ref_row
+        return getattr(row, "Name", None) if row is not None else None
+
+    @property
+    def dll_name(self):
+        return self.module_name
+
+    @property
+    def target(self):
+        forwarded = getattr(self, "MemberForwarded", None)
+        try:
+            return forwarded.row if forwarded is not None else None
+        except (IndexError, TypeError):
+            return None
+
+    @property
+    def calling_convention(self):
+        call_conv = getattr(self.struct, "MappingFlags", 0) & enums.CorPinvokeMap.pmCallConvMask
+        return {
+            enums.CorPinvokeCallConv.pmCallConvWinapi: "winapi",
+            enums.CorPinvokeCallConv.pmCallConvCdecl: "cdecl",
+            enums.CorPinvokeCallConv.pmCallConvStdcall: "stdcall",
+            enums.CorPinvokeCallConv.pmCallConvThiscall: "thiscall",
+            enums.CorPinvokeCallConv.pmCallConvFastcall: "fastcall",
+        }.get(call_conv, "notspecified")
+
     def _compute_format(self):
         member_size = self._clr_coded_index_struct_size(
             codedindex.MemberForwarded.tag_bits,
@@ -1303,6 +1343,17 @@ class ImplMap(ClrMetaDataTable[ImplMapRow]):
     number = 28
 
     _row_class = ImplMapRow
+
+    @property
+    def pinvoke_entries(self):
+        return self._mdtables.pinvoke_entries
+
+    def get_pinvoke_entries(self):
+        return self.pinvoke_entries
+
+    def pinvoke_inventory(self):
+        from . import pinvoke
+        return pinvoke.PInvokeInventory(self.pinvoke_entries)
 
 
 #### FieldRva Table

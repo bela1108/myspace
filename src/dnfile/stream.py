@@ -687,3 +687,28 @@ class MetaDataTables(base.ClrStream):
         # raise warning/error
         if deferred_exceptions:
             raise deferred_exceptions[0]
+
+    @property
+    def pinvoke_entries(self):
+        """All static P/Invoke entries declared by this metadata stream."""
+        from . import pinvoke
+        return pinvoke.collect_pinvoke_entries(self)
+
+    @property
+    def pinvoke_imports(self):
+        return self.pinvoke_entries
+
+    @property
+    def pinvoke(self):
+        from . import pinvoke
+        return pinvoke.PInvokeInventory(self.pinvoke_entries)
+
+    def get_pinvoke_entries(self):
+        return self.pinvoke_entries
+
+    def list_pinvoke_entries(self):
+        return self.pinvoke_entries
+
+    def pinvoke_inventory(self):
+        from . import pinvoke
+        return pinvoke.PInvokeInventory(self.pinvoke_entries)

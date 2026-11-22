@@ -773,6 +773,7 @@ class ClrMetaDataTable(Generic[RowType]):
         # default value
         self.rva: int = 0
         self.file_offset = 0
+        self._mdtables = mdtables
 
         num_rows = tables_rowcounts[self.number]
         if num_rows is None:

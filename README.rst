@@ -93,6 +93,39 @@ attribute of a dnPE object.
                     res_hash.add(hashlib.sha256(entry.data).hexdigest())
 
 
+P/Invoke Inventory
+------------------
+
+The ImplMap table is a static map from managed methods and fields to native
+entry points.  Use pinvoke_entries (or the dnfile.pinvoke module) to
+resolve each row through ModuleRef and its MemberForwarded target.
+No native DLL is loaded or required during this lookup.
+
+.. code-block:: python
+
+    import dnfile
+
+    pe = dnfile.dnPE(FILEPATH)
+    for entry in pe.pinvoke_entries:
+        print(
+            entry.dll_name,
+            entry.import_name,
+            entry.calling_convention,
+            entry.managed_member,
+            entry.impl_map_row_number,
+            entry.impl_map_file_offset,
+        )
+
+Every ImplMap row is returned, so duplicate names with different calling
+conventions are preserved.  entry.resolved, entry.missing_target,
+entry.missing_module, entry.raw_member_forwarded and
+entry.raw_import_scope make malformed or incomplete declarations
+traceable to their original metadata rows.  entry.to_dict() produces a
+JSON-friendly record, and dnfile.build_pinvoke_inventory(pe) provides
+lookup helpers such as by_import_name(), by_module() and
+duplicates().
+
+
 TODO
 ----
 

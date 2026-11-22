@@ -25,7 +25,32 @@ from typing import Dict, List, Optional
 from pefile import PE as _PE
 from pefile import DIRECTORY_ENTRY, MAX_SYMBOL_EXPORT_COUNT, Dump, Structure, DataContainer, PEFormatError
 
-from . import base, enums, errors, stream, resource
+from . import base, enums, errors, stream, resource, pinvoke
+from .pinvoke import (
+    CallingConvention,
+    PInvokeDeclaration,
+    PInvokeEntry,
+    PInvokeImport,
+    PInvokeInfo,
+    PInvokeInventory,
+    PInvokeList,
+    PInvokeMapping,
+    PInvokeRecord,
+    PInvokeTable,
+    build_pinvoke_inventory,
+    collect_pinvoke_entries,
+    get_pinvoke_entries,
+    get_pinvoke_imports,
+    get_pinvoke_inventory,
+    get_pinvoke_list,
+    iter_pinvoke_entries,
+    iter_pinvoke_imports,
+    list_pinvoke_entries,
+    list_pinvoke_imports,
+    pinvoke_entries,
+    pinvoke_imports,
+    pinvoke_list,
+)
 
 logger = logging.getLogger(__name__)
 CLR_METADATA_SIGNATURE = 0x424A5342
@@ -143,6 +168,33 @@ class dnPE(_PE):
         result = _copymod.deepcopy(super().get_warnings())
         result.extend(self._warnings)
         return result
+
+    @property
+    def pinvoke_entries(self) -> List[PInvokeEntry]:
+        """Static P/Invoke declarations, or an empty list for native files."""
+        if not getattr(self, "net", None):
+            return PInvokeList()
+        return self.net.pinvoke_entries
+
+    @property
+    def pinvoke_imports(self) -> List[PInvokeEntry]:
+        return self.pinvoke_entries
+
+    @property
+    def pinvoke(self) -> PInvokeInventory:
+        return PInvokeInventory(self.pinvoke_entries)
+
+    def get_pinvoke_entries(self) -> List[PInvokeEntry]:
+        return self.pinvoke_entries
+
+    def get_pinvoke_imports(self) -> List[PInvokeEntry]:
+        return self.pinvoke_entries
+
+    def list_pinvoke_entries(self) -> List[PInvokeEntry]:
+        return self.pinvoke_entries
+
+    def pinvoke_inventory(self) -> PInvokeInventory:
+        return PInvokeInventory(self.pinvoke_entries)
 
     def __parse__(self, fname, data, fast_load):
         super().__parse__(fname, data, fast_load)
@@ -458,6 +510,35 @@ class ClrData(DataContainer):
             self._init_resources(getattr(self, "_pe"))
             assert self._resources is not None
         return self._resources
+
+    @property
+    def pinvoke_entries(self) -> List[PInvokeEntry]:
+        """All ImplMap rows, resolved without loading any native module."""
+        return collect_pinvoke_entries(self)
+
+    @property
+    def pinvoke_imports(self) -> List[PInvokeEntry]:
+        return self.pinvoke_entries
+
+    @property
+    def pinvokes(self) -> List[PInvokeEntry]:
+        return self.pinvoke_entries
+
+    @property
+    def pinvoke(self) -> PInvokeInventory:
+        return PInvokeInventory(self.pinvoke_entries)
+
+    def get_pinvoke_entries(self) -> List[PInvokeEntry]:
+        return self.pinvoke_entries
+
+    def get_pinvoke_imports(self) -> List[PInvokeEntry]:
+        return self.pinvoke_entries
+
+    def list_pinvoke_entries(self) -> List[PInvokeEntry]:
+        return self.pinvoke_entries
+
+    def pinvoke_inventory(self) -> PInvokeInventory:
+        return PInvokeInventory(self.pinvoke_entries)
 
     # Structure description from:
     # http://www.ntcore.com/files/dotnetformat.htm
