@@ -4,6 +4,7 @@
    :toctree: pattern
 
    compare
+   impact
    transform
 
 |
@@ -12,6 +13,10 @@
 from ... import pattern_visitor
 from ...version import DEFAULT_VERSION
 from .compare.observation import observation_expression_cmp
+from .impact import (
+    ImpactResult, ImpactStatus, SyntheticEvent, UnsupportedImpactPattern,
+    compare_pattern_impact, matches_event_sequence,
+)
 from .transform import ChainTransformer, SettleTransformer
 from .transform.observation import (
     AbsorptionTransformer, DNFTransformer, FlattenTransformer,
