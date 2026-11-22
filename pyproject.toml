@@ -34,6 +34,7 @@ Issues = "https://github.com/plyara/plyara/issues"
 
 [project.scripts]
 plyara = "plyara.command_line:main"
+license-audit = "license_audit.cli:main"
 
 [project.optional-dependencies]
 tests = ['pycodestyle', 'pydocstyle', 'pyflakes', 'coverage']

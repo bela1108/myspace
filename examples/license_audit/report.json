@@ -1,0 +1,207 @@
+{
+  "frozen_version": "v3.1",
+  "books": [
+    "book_alpha.yar",
+    "book_beta.yar",
+    "book_gamma.yar"
+  ],
+  "summary": {
+    "foldable": 1,
+    "keep_duplicate": 1,
+    "violation": 2,
+    "single": 3
+  },
+  "errors": [],
+  "dossiers": [
+    {
+      "logic_hash": "v1_sha256_09cdb34fac69df989df343bf216eeffec1eaabd6ce844d749ad7159c566758c4",
+      "receipt_text": "Ransom note corpus licensed via vendor portal VP-44.",
+      "verdict": "violation",
+      "reasons": [
+        "scope external_publication outside approved scope ['internal_detection'] for authorization AUTH-0004"
+      ],
+      "receipts": [
+        {
+          "rule_name": "RansomNote_Beta",
+          "book": "book_beta.yar",
+          "authorization_id": "AUTH-0004",
+          "sample_id": "SAM-4004",
+          "scope": "external_publication",
+          "location": "examples/license_audit/books/book_beta.yar:38-47"
+        }
+      ],
+      "keep_receipts": [
+        "examples/license_audit/books/book_beta.yar:38-47"
+      ],
+      "folded_receipts": [],
+      "trace": [
+        "[book_beta.yar] RansomNote_Beta auth=AUTH-0004 sample=SAM-4004 scope=external_publication -> examples/license_audit/books/book_beta.yar:38-47"
+      ]
+    },
+    {
+      "logic_hash": "v1_sha256_18e613814898599983510113b1d4e69a07d9c74125fc5ea3d5f56a7c2846ef79",
+      "receipt_text": "Backdoor sample license, case partner exchange PX-09.",
+      "verdict": "violation",
+      "reasons": [
+        "rule BackdoorStr drifted: frozen v1_sha256_08e613814898599983510113b1d4e69a07d9c74125fc5ea3d5f56a7c2846ef79 but parsed v1_sha256_18e613814898599983510113b1d4e69a07d9c74125fc5ea3d5f56a7c2846ef79"
+      ],
+      "receipts": [
+        {
+          "rule_name": "BackdoorStr",
+          "book": "book_gamma.yar",
+          "authorization_id": "AUTH-0005",
+          "sample_id": "SAM-5005",
+          "scope": "internal_detection",
+          "location": "examples/license_audit/books/book_gamma.yar:26-35"
+        }
+      ],
+      "keep_receipts": [
+        "examples/license_audit/books/book_gamma.yar:26-35"
+      ],
+      "folded_receipts": [],
+      "trace": [
+        "[book_gamma.yar] BackdoorStr auth=AUTH-0005 sample=SAM-5005 scope=internal_detection -> examples/license_audit/books/book_gamma.yar:26-35"
+      ]
+    },
+    {
+      "logic_hash": "v1_sha256_75deed22fa6721cfb4933edb5431c8b7d5849559f09556fa7b51f28ab07d637d",
+      "receipt_text": "Loader artifacts licensed under the incident-sharing MOU.",
+      "verdict": "keep_duplicate",
+      "reasons": [
+        "identical receipt wording originates from distinct authorizations ['AUTH-0003', 'AUTH-0099']; folding would merge separate sample grants"
+      ],
+      "receipts": [
+        {
+          "rule_name": "LoaderSig_Beta",
+          "book": "book_beta.yar",
+          "authorization_id": "AUTH-0003",
+          "sample_id": "SAM-3003",
+          "scope": "internal_detection",
+          "location": "examples/license_audit/books/book_beta.yar:27-36"
+        },
+        {
+          "rule_name": "LoaderSig_Gamma",
+          "book": "book_gamma.yar",
+          "authorization_id": "AUTH-0099",
+          "sample_id": "SAM-3099",
+          "scope": "internal_detection",
+          "location": "examples/license_audit/books/book_gamma.yar:15-24"
+        }
+      ],
+      "keep_receipts": [
+        "examples/license_audit/books/book_beta.yar:27-36",
+        "examples/license_audit/books/book_gamma.yar:15-24"
+      ],
+      "folded_receipts": [],
+      "trace": [
+        "[book_beta.yar] LoaderSig_Beta auth=AUTH-0003 sample=SAM-3003 scope=internal_detection -> examples/license_audit/books/book_beta.yar:27-36",
+        "[book_gamma.yar] LoaderSig_Gamma auth=AUTH-0099 sample=SAM-3099 scope=internal_detection -> examples/license_audit/books/book_gamma.yar:15-24"
+      ]
+    },
+    {
+      "logic_hash": "v1_sha256_9021a26749156740d434708c100b8d8005bd7ff5b2dc2dbe4e4d368f28aba574",
+      "receipt_text": "Vendor sample-sharing authorization, ref VND-226.",
+      "verdict": "single",
+      "reasons": [],
+      "receipts": [
+        {
+          "rule_name": "BetaStealer",
+          "book": "book_beta.yar",
+          "authorization_id": "AUTH-0002",
+          "sample_id": "SAM-2002",
+          "scope": "internal_detection",
+          "location": "examples/license_audit/books/book_beta.yar:15-25"
+        }
+      ],
+      "keep_receipts": [
+        "examples/license_audit/books/book_beta.yar:15-25"
+      ],
+      "folded_receipts": [],
+      "trace": [
+        "[book_beta.yar] BetaStealer auth=AUTH-0002 sample=SAM-2002 scope=internal_detection -> examples/license_audit/books/book_beta.yar:15-25"
+      ]
+    },
+    {
+      "logic_hash": "v1_sha256_d0a967e90f6a5b950f2610829951987dce45e67a86505e6a474775802bd679a5",
+      "receipt_text": "Sample source license recorded: shared threat-intel feed.",
+      "verdict": "foldable",
+      "reasons": [
+        "all 2 receipts resolve to the same concrete authorization AZ-7741 and identical sample, scope and frozen logic hash"
+      ],
+      "receipts": [
+        {
+          "rule_name": "BankerStr_Beta",
+          "book": "book_beta.yar",
+          "authorization_id": "AZ-7741",
+          "sample_id": "SP-1001",
+          "scope": "internal_detection",
+          "location": "examples/license_audit/books/book_beta.yar:3-13"
+        },
+        {
+          "rule_name": "BankerStr_Gamma",
+          "book": "book_gamma.yar",
+          "authorization_id": "AZ-7741",
+          "sample_id": "SP-1001",
+          "scope": "internal_detection",
+          "location": "examples/license_audit/books/book_gamma.yar:3-13"
+        }
+      ],
+      "keep_receipts": [
+        "examples/license_audit/books/book_beta.yar:3-13"
+      ],
+      "folded_receipts": [
+        "examples/license_audit/books/book_gamma.yar:3-13"
+      ],
+      "trace": [
+        "[book_beta.yar] BankerStr_Beta auth=AZ-7741 sample=SP-1001 scope=internal_detection -> examples/license_audit/books/book_beta.yar:3-13",
+        "[book_gamma.yar] BankerStr_Gamma auth=AZ-7741 sample=SP-1001 scope=internal_detection -> examples/license_audit/books/book_gamma.yar:3-13"
+      ]
+    },
+    {
+      "logic_hash": "v1_sha256_d135f55274b2ac5cff2437ee7f77918cfd16f753e3ff8ff0d9c99bc94fabeb79",
+      "receipt_text": "Alpha vendor shared this sample for internal detection use only.",
+      "verdict": "single",
+      "reasons": [],
+      "receipts": [
+        {
+          "rule_name": "AlphaTextIndicator",
+          "book": "book_alpha.yar",
+          "authorization_id": "AUTH-7001",
+          "sample_id": "SAMPLE-AA-01",
+          "scope": "internal_detection",
+          "location": "examples/license_audit/books/book_alpha.yar:4-13"
+        }
+      ],
+      "keep_receipts": [
+        "examples/license_audit/books/book_alpha.yar:4-13"
+      ],
+      "folded_receipts": [],
+      "trace": [
+        "[book_alpha.yar] AlphaTextIndicator auth=AUTH-7001 sample=SAMPLE-AA-01 scope=internal_detection -> examples/license_audit/books/book_alpha.yar:4-13"
+      ]
+    },
+    {
+      "logic_hash": "v1_sha256_db0897e2f76c7d8a7f325d493a1dd5ed87ff1e90033732af8975345bfc501483",
+      "receipt_text": "Shared campaign string licensed from the alpha exchange.",
+      "verdict": "single",
+      "reasons": [],
+      "receipts": [
+        {
+          "rule_name": "CampaignSharedText",
+          "book": "book_alpha.yar",
+          "authorization_id": "AUTH-8100",
+          "sample_id": "SAMPLE-BB-01",
+          "scope": "internal_detection",
+          "location": "examples/license_audit/books/book_alpha.yar:15-24"
+        }
+      ],
+      "keep_receipts": [
+        "examples/license_audit/books/book_alpha.yar:15-24"
+      ],
+      "folded_receipts": [],
+      "trace": [
+        "[book_alpha.yar] CampaignSharedText auth=AUTH-8100 sample=SAMPLE-BB-01 scope=internal_detection -> examples/license_audit/books/book_alpha.yar:15-24"
+      ]
+    }
+  ]
+}

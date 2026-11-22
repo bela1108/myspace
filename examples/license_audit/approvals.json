@@ -1,0 +1,60 @@
+{
+  "authorizations": {
+    "AZ-7741": {
+      "sample_id": "SP-1001",
+      "allowed_scopes": [
+        "internal_detection"
+      ],
+      "source_record": "MOU-AZ-7741"
+    },
+    "AUTH-0002": {
+      "sample_id": "SAM-2002",
+      "allowed_scopes": [
+        "internal_detection"
+      ],
+      "source_record": "VND-226"
+    },
+    "AUTH-0003": {
+      "sample_id": "SAM-3003",
+      "allowed_scopes": [
+        "internal_detection"
+      ],
+      "source_record": "MOU-LOADER-03"
+    },
+    "AUTH-0099": {
+      "sample_id": "SAM-3099",
+      "allowed_scopes": [
+        "internal_detection"
+      ],
+      "source_record": "MOU-LOADER-99"
+    },
+    "AUTH-0004": {
+      "sample_id": "SAM-4004",
+      "allowed_scopes": [
+        "internal_detection"
+      ],
+      "source_record": "VP-44"
+    },
+    "AUTH-0005": {
+      "sample_id": "SAM-5005",
+      "allowed_scopes": [
+        "internal_detection"
+      ],
+      "source_record": "PX-09"
+    },
+    "AUTH-7001": {
+      "sample_id": "SAMPLE-AA-01",
+      "allowed_scopes": [
+        "internal_detection"
+      ],
+      "source_record": "ALPHA-MOU-7001"
+    },
+    "AUTH-8100": {
+      "sample_id": "SAMPLE-BB-01",
+      "allowed_scopes": [
+        "internal_detection"
+      ],
+      "source_record": "ALPHA-EX-8100"
+    }
+  }
+}

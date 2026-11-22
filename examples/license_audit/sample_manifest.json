@@ -1,0 +1,44 @@
+{
+  "samples": {
+    "SP-1001": {
+      "authorization_id": "AZ-7741",
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "source": "shared threat-intel feed"
+    },
+    "SAM-2002": {
+      "authorization_id": "AUTH-0002",
+      "sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "source": "vendor VND-226"
+    },
+    "SAM-3003": {
+      "authorization_id": "AUTH-0003",
+      "sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "source": "incident-sharing MOU"
+    },
+    "SAM-3099": {
+      "authorization_id": "AUTH-0099",
+      "sha256": "3399339933993399339933993399339933993399339933993399339933993399",
+      "source": "partner MOU archive"
+    },
+    "SAM-4004": {
+      "authorization_id": "AUTH-0004",
+      "sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+      "source": "vendor portal VP-44"
+    },
+    "SAM-5005": {
+      "authorization_id": "AUTH-0005",
+      "sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+      "source": "case partner PX-09"
+    },
+    "SAMPLE-AA-01": {
+      "authorization_id": "AUTH-7001",
+      "sha256": "aa01aa01aa01aa01aa01aa01aa01aa01aa01aa01aa01aa01aa01aa01aa01aa01",
+      "source": "alpha vendor portal"
+    },
+    "SAMPLE-BB-01": {
+      "authorization_id": "AUTH-8100",
+      "sha256": "bb01bb01bb01bb01bb01bb01bb01bb01bb01bb01bb01bb01bb01bb01bb01bb01",
+      "source": "alpha threat exchange"
+    }
+  }
+}
