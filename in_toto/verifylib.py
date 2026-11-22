@@ -50,6 +50,10 @@ from in_toto.exceptions import (
     ThresholdVerificationError,
 )
 from in_toto.formats import _check_parameter_dict, _check_public_keys
+from in_toto.material_migration import (
+    first_deciding_rule,
+    review_material_migration,
+)
 from in_toto.models.metadata import Metadata
 
 # Inherits from in_toto base logger (c.f. in_toto.log)
