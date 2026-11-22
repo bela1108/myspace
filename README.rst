@@ -56,6 +56,67 @@ Simple file type checking
     if __name__ == '__main__':
         main()
 
+Capability manifests and offline audits
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Every matcher is a handler with a version.  ``filetype.capabilities()``
+returns a manifest keyed by ``handler@version``:
+
+.. code-block:: python
+
+    import filetype
+
+    manifest = filetype.capabilities()
+    capability = manifest['Jpeg@1']
+    print(capability.mime, capability.extension, capability.checkable)
+
+The manifest keeps every handler, including formats that share a MIME type.
+Use ``manifest.by_mime`` or ``manifest.lookup(mime=...)`` to see all of them.
+Lifecycle metadata can be overridden when a handler is retired, disabled or
+degraded:
+
+.. code-block:: python
+
+    manifest = filetype.capabilities(overrides={
+        'Jpeg@1': {'available': False, 'status': 'retired'},
+    })
+
+Saved determinations can be checked for change impact without reading the
+attachments again.  Pass the stored MIME/extension, the old handler version,
+and optionally a small header sample or evidence captured at save time:
+
+.. code-block:: python
+
+    report = filetype.audit([
+        {
+            'handler': 'Jpeg',
+            'version': 1,
+            'mime': 'image/jpeg',
+            'extension': 'jpg',
+            'header': b'\xff\xd8\xff\xe0...',
+        },
+    ], capabilities=manifest)
+
+    for result in report:
+        print(result.status, result.checkable)
+
+The audit never opens an attachment path.  When an available replacement
+handler recognises a stored header as a different type, the result is marked
+``changed`` and keeps both the previous and current evidence.  A retired or
+disabled handler yields ``degraded`` with ``checkable=False``; a MIME that maps
+to several formats without a dispatch hint yields ``ambiguous``.  Ledgers that
+already carry both ``previous`` and ``current`` records are accepted as well.
+If the old ledger claimed a format was checkable but the deployed handler is
+retired, the result also sets ``stale=True``.
+
+The same operations are available from the command line.  ``--capabilities``
+prints the manifest as JSON, while ``--audit`` reads a saved JSON ledger:
+
+.. code-block:: shell
+
+    filetype --capabilities > capabilities.json
+    filetype --audit ledger.json --manifest capabilities.json
+
 Supported types
 ---------------
 
