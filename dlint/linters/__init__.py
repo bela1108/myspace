@@ -28,6 +28,7 @@ from .bad_popen2_use import BadPopen2UseLinter
 from .bad_random_generator_use import BadRandomGeneratorUseLinter
 from .bad_re_catastrophic_use import BadReCatastrophicUseLinter
 from .bad_requests_use import BadRequestsUseLinter
+from .bad_review_marker_use import BadReviewMarkerUseLinter
 from .bad_shelve_use import BadShelveUseLinter
 from .bad_subprocess_use import BadSubprocessUseLinter
 from .bad_ssl_module_attribute_use import BadSSLModuleAttributeUseLinter
@@ -69,6 +70,7 @@ ALL = (
     BadRandomGeneratorUseLinter,
     BadReCatastrophicUseLinter,
     BadRequestsUseLinter,
+    BadReviewMarkerUseLinter,
     BadShelveUseLinter,
     BadSSLModuleAttributeUseLinter,
     BadSysUseLinter,
