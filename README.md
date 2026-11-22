@@ -83,3 +83,20 @@ See the [LICENSE][license_file] file for the full license.
 [link_slack]: https://cyclonedx.org/slack/invite
 [link_discussion]: https://groups.io/g/CycloneDX
 [link_twitter]: https://twitter.com/CycloneDX_Spec
+
+## Timeline audit
+
+The library includes an offline audit for evidence taken from BOMs at different
+lifecycle stages:
+
+```console
+python -m cyclonedx.timeline stage-a.json stage-b.xml \
+    --claim "phase:delivery before phase:installation"
+```
+
+It combines BOM lifecycle/component evidence with caller-supplied ordering
+claims, keeps date-only timestamps as whole-day intervals, reports every legal
+order when the evidence is ambiguous, and returns a minimal set of contradictory
+claims when the conjunction is unsatisfiable. Evidence IDs are content-derived
+and stable across input load order. See `docs/timeline-audit.md` for the input
+format, selectors, and JSON report schema.
