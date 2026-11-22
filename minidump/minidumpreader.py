@@ -106,6 +106,26 @@ class MinidumpBufferedReader:
 	def get_reader(self):
 		return self.reader
 
+	def get_evidence_view(self, ranges=None, ticket=None, policy=None,
+			page_size=0x1000, **kwargs):
+		return self.reader.get_evidence_view(
+			ranges=ranges,
+			ticket=ticket,
+			policy=policy,
+			page_size=page_size,
+			**kwargs
+		)
+
+	def get_evidence_reader(self, ranges=None, ticket=None, policy=None,
+			page_size=0x1000, **kwargs):
+		return self.get_evidence_view(
+			ranges=ranges,
+			ticket=ticket,
+			policy=policy,
+			page_size=page_size,
+			**kwargs
+		).get_reader()
+
 	def seek(self, offset, whence = 0):
 		"""
 		Changes the current address to an offset of offset. The whence parameter controls from which position should we count the offsets.
@@ -274,7 +294,7 @@ class MinidumpBufferedReader:
 
 class MinidumpFileReader:
 	def __init__(self, minidumpfile):
-		self.modules = minidumpfile.modules.modules
+		self.modules = minidumpfile.modules.modules if minidumpfile.modules is not None else []
 		self.unloaded_modules = []
 		if minidumpfile.unloaded_modules is not None:
 			self.unloaded_modules = minidumpfile.unloaded_modules.modules
@@ -295,15 +315,17 @@ class MinidumpFileReader:
 		#reader params
 		self.sizeof_long = 4
 		self.unpack_long = '<L'
-		if minidumpfile.sysinfo.ProcessorArchitecture in [PROCESSOR_ARCHITECTURE.AMD64, PROCESSOR_ARCHITECTURE.AARCH64]:
+		arch = getattr(minidumpfile.sysinfo, "ProcessorArchitecture", None) if minidumpfile.sysinfo is not None else None
+		if arch in [PROCESSOR_ARCHITECTURE.AMD64, PROCESSOR_ARCHITECTURE.AARCH64]:
 			self.sizeof_ptr = 8
 			self.unpack_ptr = '<Q'
-		elif self.sysinfo.ProcessorArchitecture in [PROCESSOR_ARCHITECTURE.INTEL,
+		elif arch in [PROCESSOR_ARCHITECTURE.INTEL,
 				PROCESSOR_ARCHITECTURE.ARM]:
 			self.sizeof_ptr = 4
 			self.unpack_ptr = '<L'
 		else:
-			raise Exception('Unknown processor architecture %s! Please fix and submit PR!' % self.sysinfo.ProcessorArchitecture)
+			self.sizeof_ptr = 8
+			self.unpack_ptr = '<Q'
 
 	def get_handler(self):
 		return self.file_handle
@@ -313,6 +335,45 @@ class MinidumpFileReader:
 
 	def get_buffered_reader(self, segment_chunk_size = 10*1024):
 		return MinidumpBufferedReader(self, segment_chunk_size = segment_chunk_size)
+
+	def get_evidence_view(self, ranges=None, ticket=None, policy=None,
+			page_size=0x1000, **kwargs):
+		"""Build a restricted evidence view using this reader's source."""
+		from minidump.evidence import build_evidence_view
+
+		return build_evidence_view(
+			self,
+			ranges=ranges,
+			ticket=ticket,
+			policy=policy,
+			page_size=page_size,
+			**kwargs
+		)
+
+	def get_evidence_reader(self, ranges=None, ticket=None, policy=None,
+			page_size=0x1000, **kwargs):
+		"""Return an evidence-policy constrained memory reader."""
+		return self.get_evidence_view(
+			ranges=ranges,
+			ticket=ticket,
+			policy=policy,
+			page_size=page_size,
+			**kwargs
+		).get_reader()
+
+	def authorize(self, ranges=None, ticket=None, policy=None, page_size=0x1000,
+			**kwargs):
+		"""Alias for :meth:`get_evidence_view`."""
+		return self.get_evidence_view(
+			ranges=ranges,
+			ticket=ticket,
+			policy=policy,
+			page_size=page_size,
+			**kwargs
+		)
+
+	restricted_reader = get_evidence_reader
+	authorized_reader = get_evidence_reader
 
 	def get_module_by_name(self, module_name):
 		for mod in self.modules:

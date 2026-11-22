@@ -76,8 +76,83 @@ class MinidumpFile:
 		mf._parse()
 		return mf
 
-	def get_reader(self):
+	def get_reader(self, policy=None, authorization=None, evidence_policy=None,
+			access_policy=None, ranges=None, ticket=None, page_size=0x1000,
+			**kwargs):
+		"""
+		Return a memory reader.
+
+		Without an authorization argument this is the regular unrestricted
+		``MinidumpFileReader``.  Supplying a policy/ticket/ranges returns a
+		restricted reader backed by an :class:`EvidenceView`, so callers that
+		already use ``reader.read`` do not need a separate code path.
+		"""
+		chosen_policy = policy
+		if chosen_policy is None:
+			chosen_policy = authorization
+		if chosen_policy is None:
+			chosen_policy = evidence_policy
+		if chosen_policy is None:
+			chosen_policy = access_policy
+		if chosen_policy is None and ranges is not None:
+			chosen_policy = ranges
+		if chosen_policy is None:
+			for key in (
+				"authorized_ranges",
+				"allowed_ranges",
+				"approved_ranges",
+				"segments",
+			):
+				if key in kwargs:
+					chosen_policy = kwargs[key]
+					break
+		if chosen_policy is not None or kwargs.get("evidence") is True:
+			return self.get_evidence_reader(
+				policy=chosen_policy,
+				ticket=ticket,
+				page_size=page_size,
+				**kwargs
+			)
 		return MinidumpFileReader(self)
+
+	def get_evidence_view(self, ranges=None, ticket=None, policy=None,
+			page_size=0x1000, **kwargs):
+		"""Build a restricted, handoff-ready view over this dump."""
+		from minidump.evidence import build_evidence_view
+
+		return build_evidence_view(
+			self,
+			ranges=ranges,
+			ticket=ticket,
+			policy=policy,
+			page_size=page_size,
+			**kwargs
+		)
+
+	def get_evidence_reader(self, ranges=None, ticket=None, policy=None,
+			page_size=0x1000, **kwargs):
+		"""Return a memory reader constrained by an evidence policy."""
+		return self.get_evidence_view(
+			ranges=ranges,
+			ticket=ticket,
+			policy=policy,
+			page_size=page_size,
+			**kwargs
+		).get_reader()
+
+	def restricted_reader(self, ranges=None, ticket=None, policy=None,
+			page_size=0x1000, **kwargs):
+		"""Alias for :meth:`get_evidence_reader`."""
+		return self.get_evidence_reader(
+			ranges=ranges,
+			ticket=ticket,
+			policy=policy,
+			page_size=page_size,
+			**kwargs
+		)
+
+	authorized_reader = restricted_reader
+	evidence_view = get_evidence_view
 
 	def _parse(self):
 		self.__parse_header()
@@ -229,7 +304,7 @@ class MinidumpFile:
 				thread.ContextObject = WOW64_CONTEXT.parse(self.file_handle)
 
 	def __parse_peb(self):
-		if not self.sysinfo or not self.threads:
+		if not self.sysinfo or not self.threads or not self.modules:
 			return
 		
 		self.peb = PEB.from_minidump(self)
@@ -242,8 +317,9 @@ class MinidumpFile:
 		t += str(self.sysinfo)
 		for dir in self.directories:
 			t += str(dir) + '\n'
-		for mod in self.modules.modules:
-			t += str(mod) + '\n'
+		if self.modules is not None:
+			for mod in self.modules.modules:
+				t += str(mod) + '\n'
 		if self.memory_segments is not None:
 			for segment in self.memory_segments.memory_segments:
 				t+= str(segment) + '\n'
