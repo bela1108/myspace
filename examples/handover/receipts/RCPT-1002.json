@@ -1,0 +1,9 @@
+{
+  "receipt_id": "RCPT-1002",
+  "target": "HERON-09",
+  "materials": [
+    "version_confirmation"
+  ],
+  "received_at": "2026-11-21T10:15:00Z",
+  "vendor": "Northwind Remediation"
+}

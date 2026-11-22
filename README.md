@@ -33,6 +33,7 @@ with support from Google, and is currently maintained under the
   * [Exit codes](#exit-codes)
   * [Dry runs](#dry-runs)
 * [Examples](#examples)
+* [Offline remediation handovers](#offline-remediation-handovers)
 * [Troubleshooting](#troubleshooting)
 * [Tips and Tricks](#tips-and-tricks)
 * [Security model](#security-model)
@@ -412,6 +413,37 @@ Name  Version ID             Fix Versions Applied Fix
 flask 0.5     PYSEC-2019-179 1.0          Successfully upgraded flask (0.5 => 1.0)
 flask 0.5     PYSEC-2018-66  0.12.3       Successfully upgraded flask (0.5 => 1.0)
 ```
+
+## Offline remediation handovers
+
+When remediation is performed by another team or an outsourced party, the
+audit result, the original plan, and the vendor's receipts need a common,
+reviewable artifact. `pip-audit-handover` turns those offline inputs into a
+disclosure-safe package that an approver can reconcile item by item:
+
+```console
+$ pip-audit-handover \
+    --plan examples/handover/remediation-plan.json \
+    --audit examples/handover/pip-audit-offline.json \
+    --receipt examples/handover/receipts/RCPT-1001.json \
+    --receipt examples/handover/receipts/RCPT-1002.json \
+    --receipt examples/handover/receipts/RCPT-1003.json \
+    --output-dir examples/handover \
+    --generated-at 2026-11-22T00:00:00Z \
+    --signer project-release-approver
+```
+
+Vendor aliases are resolved through the original plan, duplicate receipts add
+no new evidence, and every partial handover reports the materials still
+missing. Index URLs and internal filesystem paths are omitted or redacted,
+while SHA-256 bindings and stable target identities keep the package
+auditable. See [docs/handover.md](docs/handover.md) for the input schemas,
+close-out rules, and sign-off verification steps.
+
+The checked-in pair of inputs (remediation plan plus offline audit) and three
+receipts form the small acceptance fixture: two plan items, one duplicate
+receipt, one closed item, and one item left `in_progress` because
+`hash_manifest` and `vendor_attestation` are still missing.
 
 ## Troubleshooting
 

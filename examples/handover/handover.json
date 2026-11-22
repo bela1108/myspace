@@ -1,0 +1,332 @@
+{
+  "schema_version": "pip-audit-handover/1",
+  "package_id": "HO-8EF266C692A1",
+  "plan_id": "RP-2026-11",
+  "status": "in_progress",
+  "status_reason": "incomplete_evidence",
+  "complete": false,
+  "policy": {
+    "external_index_addresses": "omitted",
+    "internal_paths": "redacted",
+    "reconciliation": "per_plan_item",
+    "duplicate_receipts": "deduplicated",
+    "bindings": "sha256"
+  },
+  "bindings": {
+    "plan": {
+      "plan_id": "RP-2026-11",
+      "title": "Dependency remediation plan for release 2026.11",
+      "raw_sha256": "cd81f55d024d7fca89224aaf78d90e009026c462b6f1fd334ecdbc4e3cd12445",
+      "canonical_sha256": "517d515daa6a90238c39bb73ba5c03c8bb3251e3d60f537dc5b209b5b4997754"
+    },
+    "audit": {
+      "source": "pip-audit-offline",
+      "raw_sha256": "dc64f08d9229ad62ec27534f53d128869347c2f17c8e52c23c4fe4a80f99723e",
+      "canonical_sha256": "97d4469fefe7628aed4421965ef4397d67b12d8b36627fe0224a4fe31f52a7c1",
+      "audit_conflicts": [],
+      "skipped": []
+    },
+    "receipts": [
+      {
+        "receipt_id": "RCPT-1001",
+        "raw_sha256": "eb840fd005a5c720b90ed348700f4dae4e4f5b8401de1b2f994574645b005fb6",
+        "canonical_sha256": "796084082e755644480b0d029274795ab77d39ccad88de0583c4d659a75f672a"
+      },
+      {
+        "receipt_id": "RCPT-1002",
+        "raw_sha256": "353bfc03fd7a956c5369b5cc1b5c7640de5e9973425df03f2f226c070b0db4bc",
+        "canonical_sha256": "031ad9b1907ddc7c938726691017945bad22c4b38a86ee4ce2b4616f886ba858"
+      },
+      {
+        "receipt_id": "RCPT-1003",
+        "raw_sha256": "8ecb664cc558ed0cac92af76fb66cfe51da2fadb6b60712c41fb37ff50cf8bfa",
+        "canonical_sha256": "cded25782b846c110a3566a7de2acc68fd2bdb4aed7462242de2fa4f724b30e8"
+      }
+    ]
+  },
+  "summary": {
+    "item_count": 2,
+    "closed_items": 1,
+    "in_progress_items": 1,
+    "receipt_count": 3,
+    "duplicate_receipts": 1,
+    "unmatched_receipts": 0,
+    "missing_material_count": 2
+  },
+  "targets": [
+    {
+      "target_id": "urllib3@2.2.2",
+      "disclosure_id": "TGT-A30DFCA28FE0",
+      "package": "urllib3",
+      "display_name": "urllib3",
+      "version": "2.2.2",
+      "aliases": [
+        "KITE-17",
+        "KITE-31"
+      ]
+    },
+    {
+      "target_id": "jinja2@3.1.4",
+      "disclosure_id": "TGT-EB59176EB406",
+      "package": "jinja2",
+      "display_name": "jinja2",
+      "version": "3.1.4",
+      "aliases": [
+        "HERON-09",
+        "HERON-22"
+      ]
+    }
+  ],
+  "environment": {
+    "source": "pip-audit-offline",
+    "confirmed_versions": {
+      "urllib3": "2.2.2",
+      "jinja2": "3.1.4"
+    }
+  },
+  "receipts": [
+    {
+      "receipt_id": "RCPT-1001",
+      "matched_item_id": "RMD-001",
+      "materials": [
+        "vendor_attestation",
+        "version_confirmation"
+      ],
+      "version": null,
+      "received_at": "2026-11-20T09:30:00Z",
+      "vendor": "Northwind Remediation",
+      "sha256": "796084082e755644480b0d029274795ab77d39ccad88de0583c4d659a75f672a",
+      "duplicate": false,
+      "duplicate_of": null,
+      "conflict": false,
+      "unmatched_reason": null
+    },
+    {
+      "receipt_id": "RCPT-1002",
+      "matched_item_id": "RMD-002",
+      "materials": [
+        "version_confirmation"
+      ],
+      "version": null,
+      "received_at": "2026-11-21T10:15:00Z",
+      "vendor": "Northwind Remediation",
+      "sha256": "031ad9b1907ddc7c938726691017945bad22c4b38a86ee4ce2b4616f886ba858",
+      "duplicate": false,
+      "duplicate_of": null,
+      "conflict": false,
+      "unmatched_reason": null
+    },
+    {
+      "receipt_id": "RCPT-1003",
+      "matched_item_id": "RMD-002",
+      "materials": [
+        "version_confirmation"
+      ],
+      "version": null,
+      "received_at": "2026-11-21T16:45:00Z",
+      "vendor": "Northwind Remediation",
+      "sha256": "cded25782b846c110a3566a7de2acc68fd2bdb4aed7462242de2fa4f724b30e8",
+      "duplicate": true,
+      "duplicate_of": "RCPT-1002",
+      "conflict": false,
+      "unmatched_reason": null
+    }
+  ],
+  "items": [
+    {
+      "plan_item_id": "RMD-001",
+      "target": {
+        "target_id": "urllib3@2.2.2",
+        "disclosure_id": "TGT-A30DFCA28FE0",
+        "package": "urllib3",
+        "display_name": "urllib3",
+        "version": "2.2.2",
+        "aliases": [
+          "KITE-17",
+          "KITE-31"
+        ]
+      },
+      "required_materials": {
+        "environment_version": 1,
+        "vendor_attestation": 1,
+        "version_confirmation": 1
+      },
+      "received_materials": {
+        "environment_version": [
+          "environment"
+        ],
+        "vendor_attestation": [
+          "RCPT-1001"
+        ],
+        "version_confirmation": [
+          "RCPT-1001"
+        ]
+      },
+      "missing_materials": [],
+      "environment": {
+        "confirmed": true,
+        "version": "2.2.2",
+        "target_version": "2.2.2",
+        "match": "exact",
+        "source": "pip-audit-offline",
+        "evidence_sha256": "fbc5cbd2186ab62eb82ed9c66323cc71c637b8f1affd743c3efe11321168655e",
+        "vulnerabilities": []
+      },
+      "receipts": [
+        {
+          "receipt_id": "RCPT-1001",
+          "materials": [
+            "vendor_attestation",
+            "version_confirmation"
+          ],
+          "version": null,
+          "received_at": "2026-11-20T09:30:00Z",
+          "vendor": "Northwind Remediation",
+          "sha256": "796084082e755644480b0d029274795ab77d39ccad88de0583c4d659a75f672a"
+        }
+      ],
+      "duplicate_receipts": [],
+      "conflicts": [],
+      "status": "closed",
+      "closeout": {
+        "eligible": true,
+        "closed": true,
+        "blocked_by": [],
+        "reason": "all_required_evidence_present"
+      },
+      "reconciliation_sha256": "478d3c3ceca84950ed42dfd5d851a18023afca867d7e1b36e19d9e504ec688c5"
+    },
+    {
+      "plan_item_id": "RMD-002",
+      "target": {
+        "target_id": "jinja2@3.1.4",
+        "disclosure_id": "TGT-EB59176EB406",
+        "package": "jinja2",
+        "display_name": "jinja2",
+        "version": "3.1.4",
+        "aliases": [
+          "HERON-09",
+          "HERON-22"
+        ]
+      },
+      "required_materials": {
+        "environment_version": 1,
+        "hash_manifest": 1,
+        "vendor_attestation": 1,
+        "version_confirmation": 1
+      },
+      "received_materials": {
+        "environment_version": [
+          "environment"
+        ],
+        "hash_manifest": [],
+        "vendor_attestation": [],
+        "version_confirmation": [
+          "RCPT-1002"
+        ]
+      },
+      "missing_materials": [
+        "hash_manifest",
+        "vendor_attestation"
+      ],
+      "environment": {
+        "confirmed": true,
+        "version": "3.1.4",
+        "target_version": "3.1.4",
+        "match": "exact",
+        "source": "pip-audit-offline",
+        "evidence_sha256": "b5b48cdc5d98103e54f2f5b9614f68ae18fb14e87f08d7fd87e0cafc6190b239",
+        "vulnerabilities": []
+      },
+      "receipts": [
+        {
+          "receipt_id": "RCPT-1002",
+          "materials": [
+            "version_confirmation"
+          ],
+          "version": null,
+          "received_at": "2026-11-21T10:15:00Z",
+          "vendor": "Northwind Remediation",
+          "sha256": "031ad9b1907ddc7c938726691017945bad22c4b38a86ee4ce2b4616f886ba858"
+        }
+      ],
+      "duplicate_receipts": [
+        {
+          "receipt_id": "RCPT-1003",
+          "duplicate_of": "RCPT-1002",
+          "reason": "same_item_same_material_set"
+        }
+      ],
+      "conflicts": [],
+      "status": "in_progress",
+      "closeout": {
+        "eligible": false,
+        "closed": false,
+        "blocked_by": [
+          "missing_material:hash_manifest",
+          "missing_material:vendor_attestation"
+        ],
+        "reason": "incomplete_evidence"
+      },
+      "reconciliation_sha256": "ef37d37fc46b1f0f6b88984995c11cfd726c045096322cd9ea38ca89db55867f"
+    }
+  ],
+  "missing_materials": {
+    "RMD-001": [],
+    "RMD-002": [
+      "hash_manifest",
+      "vendor_attestation"
+    ]
+  },
+  "pending_missing_materials": {
+    "RMD-002": [
+      "hash_manifest",
+      "vendor_attestation"
+    ]
+  },
+  "next_actions": [
+    {
+      "item_id": "RMD-002",
+      "target_id": "jinja2@3.1.4",
+      "missing_materials": [
+        "hash_manifest",
+        "vendor_attestation"
+      ],
+      "action": "request_missing_materials"
+    }
+  ],
+  "duplicates": [
+    {
+      "receipt_id": "RCPT-1003",
+      "duplicate_of": "RCPT-1002",
+      "reason": "same_item_same_material_set"
+    }
+  ],
+  "unmatched_receipts": [],
+  "conflicts": [],
+  "generated_at": "2026-11-22T00:00:00Z",
+  "redactions": {
+    "count": 0,
+    "kinds": {},
+    "policy": {
+      "external_index_addresses": "omitted",
+      "internal_paths": "redacted"
+    }
+  },
+  "signoff": {
+    "ready": false,
+    "ready_items": [
+      "RMD-001"
+    ],
+    "pending_items": [
+      "RMD-002"
+    ],
+    "payload_sha256": "9ec9433f476234026e98d4e741520558c715f0e653e592ab2b004302916392ff",
+    "signature": {
+      "method": "sha256",
+      "value": "9ec9433f476234026e98d4e741520558c715f0e653e592ab2b004302916392ff",
+      "signer": "project-release-approver"
+    },
+    "instructions": "Remove the 'signoff' member and hash the canonical JSON (sorted keys, compact separators) to verify payload_sha256."
+  }
+}

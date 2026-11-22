@@ -1,0 +1,10 @@
+{
+  "receipt_id": "RCPT-1001",
+  "item_id": "KITE-17",
+  "materials": [
+    "version_confirmation",
+    "vendor_attestation"
+  ],
+  "received_at": "2026-11-20T09:30:00Z",
+  "vendor": "Northwind Remediation"
+}

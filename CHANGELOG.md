@@ -8,6 +8,13 @@ All versions prior to 0.0.9 are untracked.
 
 ## [Unreleased]
 
+### Added
+
+* `pip-audit-handover` builds disclosure-safe, signable handover packages from
+  an offline `pip-audit` JSON result, the original remediation plan, and vendor
+  receipts. It resolves rotating aliases, deduplicates repeat receipts, and
+  reports missing materials for partial handovers.
+
 ### Fixed
 
 * Editable requirements skipped with `--skip-editable` no longer require a hash

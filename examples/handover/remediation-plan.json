@@ -1,0 +1,29 @@
+{
+  "plan_id": "RP-2026-11",
+  "title": "Dependency remediation plan for release 2026.11",
+  "items": [
+    {
+      "item_id": "RMD-001",
+      "package": "urllib3",
+      "target_version": "2.2.2",
+      "aliases": ["KITE-17", "KITE-31"],
+      "required_materials": [
+        "version_confirmation",
+        "vendor_attestation"
+      ],
+      "advisories": ["CVE-2024-37891"]
+    },
+    {
+      "item_id": "RMD-002",
+      "package": "jinja2",
+      "target_version": "3.1.4",
+      "aliases": ["HERON-09", "HERON-22"],
+      "required_materials": [
+        "version_confirmation",
+        "vendor_attestation",
+        "hash_manifest"
+      ],
+      "advisories": ["CVE-2024-34064"]
+    }
+  ]
+}

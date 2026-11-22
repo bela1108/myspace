@@ -1,0 +1,15 @@
+{
+  "dependencies": [
+    {
+      "name": "urllib3",
+      "version": "2.2.2",
+      "vulns": []
+    },
+    {
+      "name": "jinja2",
+      "version": "3.1.4",
+      "vulns": []
+    }
+  ],
+  "fixes": []
+}
