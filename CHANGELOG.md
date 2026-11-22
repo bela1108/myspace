@@ -8,6 +8,15 @@ All versions prior to 0.0.9 are untracked.
 
 ## [Unreleased]
 
+### Added
+
+* Added an offline landing-verification step
+  (`python -m pip_audit._reconcile`) that reconciles an existing audit report
+  with per-target install manifests and build-cache mappings. Markers and
+  extras are expanded against the declared release scope, missing mappings are
+  reported separately, and artifact identity is kept distinct from package
+  name.
+
 ### Fixed
 
 * Editable requirements skipped with `--skip-editable` no longer require a hash

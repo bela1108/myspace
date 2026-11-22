@@ -1,0 +1,28 @@
+{
+  "packages": [
+    {
+      "name": "attrs",
+      "version": "25.1.0"
+    },
+    {
+      "name": "cattrs",
+      "version": "24.1.2"
+    },
+    {
+      "name": "numpy",
+      "version": "2.2.3",
+      "filename": "numpy-2.2.3-cp312-cp312-macosx_10_9_x86_64.whl",
+      "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+    },
+    {
+      "name": "uvloop",
+      "version": "0.21.0"
+    },
+    {
+      "name": "cryptography",
+      "version": "42.0.8",
+      "filename": "cryptography-42.0.8-cp39-abi3-macosx_10_12_x86_64.whl",
+      "sha256": "4444444444444444444444444444444444444444444444444444444444444444"
+    }
+  ]
+}

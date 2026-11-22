@@ -1,0 +1,76 @@
+{
+  "targets": [
+    {
+      "name": "macos-arm64",
+      "kind": "desktop",
+      "architecture": "arm64",
+      "platform": "darwin",
+      "extras": [],
+      "markers": {
+        "sys_platform": "darwin",
+        "platform_machine": "arm64",
+        "python_version": "3.12",
+        "python_full_version": "3.12.4",
+        "os_name": "posix"
+      }
+    },
+    {
+      "name": "windows-amd64",
+      "kind": "desktop",
+      "architecture": "amd64",
+      "platform": "win32",
+      "extras": [],
+      "markers": {
+        "sys_platform": "win32",
+        "platform_machine": "AMD64",
+        "python_version": "3.12",
+        "python_full_version": "3.12.4",
+        "os_name": "nt"
+      }
+    },
+    {
+      "name": "linux-x86_64",
+      "kind": "desktop",
+      "architecture": "x86_64",
+      "platform": "linux",
+      "extras": [
+        "gpu"
+      ],
+      "markers": {
+        "sys_platform": "linux",
+        "platform_machine": "x86_64",
+        "python_version": "3.12",
+        "python_full_version": "3.12.4",
+        "os_name": "posix"
+      }
+    },
+    {
+      "name": "macos-x86_64",
+      "kind": "desktop",
+      "architecture": "x86_64",
+      "platform": "darwin",
+      "extras": [],
+      "markers": {
+        "sys_platform": "darwin",
+        "platform_machine": "x86_64",
+        "python_version": "3.12",
+        "python_full_version": "3.12.4",
+        "os_name": "posix"
+      }
+    },
+    {
+      "name": "offline-linux-arm64",
+      "kind": "offline",
+      "architecture": "aarch64",
+      "platform": "linux",
+      "extras": [],
+      "markers": {
+        "sys_platform": "linux",
+        "platform_machine": "aarch64",
+        "python_version": "3.12",
+        "python_full_version": "3.12.4",
+        "os_name": "posix"
+      }
+    }
+  ]
+}

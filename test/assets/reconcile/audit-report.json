@@ -1,0 +1,117 @@
+{
+  "dependencies": [
+    {
+      "name": "attrs",
+      "version": "25.1.0"
+    },
+    {
+      "name": "cattrs",
+      "version": "24.1.2"
+    },
+    {
+      "name": "numpy",
+      "version": "2.2.3",
+      "marker": "sys_platform == \"darwin\" and platform_machine == \"arm64\"",
+      "artifact": {
+        "filename": "numpy-2.2.3-cp312-cp312-macosx_11_0_arm64.whl",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "name": "numpy",
+      "version": "2.2.3",
+      "marker": "sys_platform == \"win32\"",
+      "artifact": {
+        "filename": "numpy-2.2.3-cp312-cp312-win_amd64.whl",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "name": "numpy",
+      "version": "2.2.3",
+      "marker": "sys_platform == \"linux\" and platform_machine == \"x86_64\"",
+      "artifact": {
+        "filename": "numpy-2.2.3-cp312-cp312-manylinux_2_17_x86_64.whl",
+        "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    },
+    {
+      "name": "numpy",
+      "version": "2.2.3",
+      "marker": "sys_platform == \"linux\" and platform_machine == \"aarch64\"",
+      "artifact": {
+        "filename": "numpy-2.2.3-cp312-cp312-manylinux_2_17_aarch64.whl",
+        "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      }
+    },
+    {
+      "name": "numpy",
+      "version": "2.2.3",
+      "marker": "sys_platform == \"darwin\" and platform_machine == \"x86_64\"",
+      "artifact": {
+        "filename": "numpy-2.2.3-cp312-cp312-macosx_10_9_x86_64.whl",
+        "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      }
+    },
+    {
+      "name": "uvloop",
+      "version": "0.21.0",
+      "marker": "sys_platform != \"win32\""
+    },
+    {
+      "name": "pywin32",
+      "version": "306",
+      "marker": "sys_platform == \"win32\""
+    },
+    {
+      "name": "cuda-bindings",
+      "version": "12.4.0",
+      "marker": "extra == \"gpu\""
+    },
+    {
+      "name": "cryptography",
+      "version": "42.0.8",
+      "marker": "sys_platform == \"linux\" and platform_machine == \"x86_64\"",
+      "artifact": {
+        "filename": "cryptography-42.0.8-cp39-abi3-manylinux_2_28_x86_64.whl",
+        "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "vulns": [
+        {
+          "id": "CVE-2024-0001",
+          "aliases": [
+            "GHSA-test-0001"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "cryptography",
+      "version": "42.0.8",
+      "marker": "sys_platform == \"win32\"",
+      "artifact": {
+        "filename": "cryptography-42.0.8-cp39-abi3-win_amd64.whl",
+        "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+      }
+    },
+    {
+      "name": "cryptography",
+      "version": "42.0.8",
+      "marker": "sys_platform == \"darwin\" and platform_machine == \"arm64\"",
+      "artifact": {
+        "filename": "cryptography-42.0.8-cp39-abi3-macosx_11_0_arm64.whl",
+        "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    },
+    {
+      "name": "cryptography",
+      "version": "42.0.8",
+      "marker": "sys_platform == \"darwin\" and platform_machine == \"x86_64\"",
+      "artifact": {
+        "filename": "cryptography-42.0.8-cp39-abi3-macosx_10_12_x86_64.whl",
+        "sha256": "4444444444444444444444444444444444444444444444444444444444444444"
+      }
+    }
+  ],
+  "fixes": []
+}

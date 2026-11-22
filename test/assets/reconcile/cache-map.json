@@ -1,0 +1,102 @@
+{
+  "macos-arm64": {
+    "attrs": {
+      "version": "25.1.0"
+    },
+    "cattrs": {
+      "version": "24.1.2"
+    },
+    "numpy": {
+      "version": "2.1.0",
+      "artifact": {
+        "filename": "numpy-2.1.0-cp312-cp312-macosx_11_0_arm64.whl",
+        "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      }
+    },
+    "uvloop": {
+      "version": "0.21.0"
+    },
+    "cryptography": {
+      "version": "42.0.8",
+      "artifact": {
+        "filename": "cryptography-42.0.8-cp39-abi3-macosx_11_0_arm64.whl",
+        "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    }
+  },
+  "windows-amd64": {
+    "cattrs": {
+      "version": "24.1.2"
+    },
+    "numpy": {
+      "version": "2.2.3",
+      "artifact": {
+        "filename": "numpy-2.2.3-cp312-cp312-win_amd64.whl",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    "pywin32": {
+      "version": "306"
+    },
+    "cryptography": {
+      "version": "42.0.8",
+      "artifact": {
+        "filename": "cryptography-42.0.8-cp39-abi3-win_amd64.whl",
+        "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+      }
+    }
+  },
+  "linux-x86_64": {
+    "attrs": {
+      "version": "25.1.0"
+    },
+    "cattrs": {
+      "version": "24.1.2"
+    },
+    "numpy": {
+      "version": "2.2.3",
+      "artifact": {
+        "filename": "numpy-2.2.3-cp312-cp312-manylinux_2_17_x86_64.whl",
+        "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    },
+    "uvloop": {
+      "version": "0.21.0"
+    },
+    "cuda-bindings": {
+      "version": "12.4.0"
+    },
+    "cryptography": {
+      "version": "42.0.8",
+      "artifact": {
+        "filename": "cryptography-42.0.8-cp39-abi3-manylinux_2_28_x86_64.whl",
+        "sha256": "8888888888888888888888888888888888888888888888888888888888888888"
+      }
+    }
+  },
+  "offline-linux-arm64": {
+    "attrs": {
+      "version": "25.1.0"
+    },
+    "cattrs": {
+      "version": "24.1.2"
+    },
+    "numpy": {
+      "version": "2.2.2",
+      "artifact": {
+        "filename": "numpy-2.2.2-cp312-cp312-manylinux_2_17_aarch64.whl",
+        "sha256": "9999999999999999999999999999999999999999999999999999999999999999"
+      }
+    },
+    "uvloop": {
+      "version": "0.21.0"
+    },
+    "cryptography": {
+      "version": "42.0.8",
+      "artifact": {
+        "filename": "cryptography-42.0.8-cp39-abi3-manylinux_2_28_aarch64.whl",
+        "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      }
+    }
+  }
+}

@@ -307,6 +307,38 @@ No known vulnerabilities found
 `pip-audit` searches the provided path for various Python "project" files.
 At the moment, only `pyproject.toml` and `pylock.*.toml` are supported.
 
+### Landing verification for multi-target releases
+
+When one audited lock file feeds several installation targets, audit output
+alone does not prove which artifact landed on each target. Run the offline
+landing check after the audit, with one installed-package manifest per target
+and a simple build-cache mapping:
+
+```console
+$ python -m pip_audit._reconcile \
+    --audit audit.json \
+    --scope release-scope.json \
+    --manifest macos-arm64=manifests/macos-arm64.json \
+    --manifest windows-amd64=manifests/windows-amd64.json \
+    --manifest offline-linux-arm64= \
+    --cache-map cache-map.json
+```
+
+The scope declares each target marker environment, architecture and enabled
+extras. Markers are evaluated against those declarations rather than the host.
+Missing cache mappings are listed separately from missing install manifests.
+Audit entries are matched by package name, version and artifact identity, so
+same-name distributions with different wheels are never merged. Pass
+`--json` for a structured report; the text report lists desktop architectures
+on an old build cache, desktop targets with a non-audited cache artifact, and
+every target without an install manifest together with the audit basis to
+recheck.
+
+Plain `pip-audit` JSON is accepted. If the report still carries lock metadata,
+each dependency may also include `marker`, `extras` and `artifact` fields, and
+the target scope may live in the audit report, in `--scope`, or under a
+`scope` key beside the cache mapping.
+
 Audit dependencies when there are vulnerabilities present:
 
 ```console

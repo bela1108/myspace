@@ -1,0 +1,28 @@
+{
+  "packages": [
+    {
+      "name": "attrs",
+      "version": "25.1.0"
+    },
+    {
+      "name": "cattrs",
+      "version": "24.1.2"
+    },
+    {
+      "name": "numpy",
+      "version": "2.2.3",
+      "filename": "numpy-2.2.3-cp312-cp312-win_amd64.whl",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    {
+      "name": "pywin32",
+      "version": "306"
+    },
+    {
+      "name": "cryptography",
+      "version": "42.0.8",
+      "filename": "cryptography-42.0.8-cp39-abi3-win_amd64.whl",
+      "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+    }
+  ]
+}
