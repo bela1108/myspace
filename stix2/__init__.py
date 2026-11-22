@@ -18,6 +18,7 @@
    v20
    v21
    versioning
+   visibility
    workbench
 
 """
@@ -59,5 +60,10 @@ from .registry import _collect_stix2_mappings
 from .v21 import *  # This import will always be the latest STIX 2.X version
 from .version import DEFAULT_VERSION, __version__
 from .versioning import new_version, revoke
+from .visibility import (
+    PUBLIC_CASE, BundleView, DistributionPolicy, LocalBundleSummary,
+    ObjectAssignment, Page, PolicyAudit, PolicyChangeNotice, PolicySwitch,
+    PublicCase, SubjectGrant, audit_policy_change, local_summary,
+)
 
 _collect_stix2_mappings()
