@@ -1,0 +1,134 @@
+{
+  "disclosure": {
+    "index_addresses_included": false,
+    "local_paths_included": false,
+    "policy": "identity-version-and-evidence-only"
+  },
+  "environment": {
+    "confirmation_source": "environment-snapshot",
+    "sha256": "f47678daf2fd2904e85dc8d442488e8af97299c68e9e7681abef26439b25a8d3"
+  },
+  "handover_id": "HO-F5BACA7D8FE7147B",
+  "items": [
+    {
+      "already_supplied_materials": [
+        "environment_confirmation",
+        "fixed_version",
+        "vulnerability_recheck"
+      ],
+      "audit_observation": {
+        "status": "clean-at-target",
+        "version": "2.32.4",
+        "vulnerability_ids": []
+      },
+      "environment_confirmation": {
+        "source": "environment-snapshot",
+        "status": "confirmed",
+        "target_match": true,
+        "version": "2.32.4"
+      },
+      "item_sha256": "157550ee46da77b7f511f1533a1deca1fadb62eb74bc808a2eeb912ccaed8a6d",
+      "missing_materials": [],
+      "plan_item_id": "REM-001",
+      "receipt_names": [
+        "ha-79e00bff1ecf388213dd"
+      ],
+      "required_materials": [
+        "environment_confirmation",
+        "receipt_acknowledgement",
+        "fixed_version",
+        "vulnerability_recheck"
+      ],
+      "target": {
+        "ecosystem": "pypi",
+        "identity": "pypi:requests@2.32.4",
+        "name": "requests",
+        "version": "2.32.4"
+      },
+      "vulnerabilities": [
+        "CVE-2024-35195"
+      ]
+    },
+    {
+      "already_supplied_materials": [
+        "environment_confirmation"
+      ],
+      "audit_observation": {
+        "status": "target-vulnerabilities-observed",
+        "version": "3.1.4",
+        "vulnerability_ids": [
+          "CVE-2024-34064"
+        ]
+      },
+      "environment_confirmation": {
+        "source": "environment-snapshot",
+        "status": "confirmed",
+        "target_match": false,
+        "version": "3.1.4"
+      },
+      "item_sha256": "5a3ae09bd348982e9919e721abda08168fc9a4ebe679a4017861ca2722836583",
+      "missing_materials": [
+        "fixed_version",
+        "vulnerability_recheck"
+      ],
+      "plan_item_id": "REM-002",
+      "receipt_names": [
+        "ha-92be2db9f316412e5d86"
+      ],
+      "required_materials": [
+        "environment_confirmation",
+        "receipt_acknowledgement",
+        "fixed_version",
+        "vulnerability_recheck"
+      ],
+      "target": {
+        "ecosystem": "pypi",
+        "identity": "pypi:jinja2@3.1.5",
+        "name": "jinja2",
+        "version": "3.1.5"
+      },
+      "vulnerabilities": [
+        "CVE-2024-34064"
+      ]
+    }
+  ],
+  "kind": "pip-audit-handover",
+  "missing_materials": [
+    {
+      "materials": [
+        "fixed_version",
+        "vulnerability_recheck"
+      ],
+      "plan_item_id": "REM-002"
+    }
+  ],
+  "offline_audit": {
+    "format": "pip-audit-json",
+    "sha256": "74bb2d8be8bdcda8faf89a53350d3e7ba6241f2966f02f8c9923ccaa7d24836b"
+  },
+  "package_sha256": "0d7bee17f2304b13a75dd164e4dbe46e8c3fc205835126cc590c6fd8aa3e4183",
+  "plan": {
+    "item_count": 2,
+    "normalized_sha256": "73339e53b0c4d4467b969713f193511a8f53b0e1f8dc9e408bfafbfe2562e251",
+    "plan_id": "REM-2026-11-DEMO",
+    "sha256": "f3231da1c87e79b8ebc7fbe517bb239d689bccceda884007339a3837f4723b8b"
+  },
+  "receipt_contract": {
+    "acknowledgement_material": "receipt_acknowledgement",
+    "binding_field": "handover_sha256",
+    "closure_rule": "all-required-materials-and-version-match",
+    "duplicate_rule": "same-item-is-idempotent",
+    "evidence_field": "evidence",
+    "name_only_receipt": true,
+    "rotated_name_field": "name",
+    "version_field": "confirmed_version"
+  },
+  "schema_version": 1,
+  "status": "ready",
+  "summary": {
+    "environment_confirmed": 2,
+    "environment_missing": 0,
+    "evidence_pending": 1,
+    "items": 2
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "handover_id": "HO-F5BACA7D8FE7147B",
+  "handover_sha256": "0d7bee17f2304b13a75dd164e4dbe46e8c3fc205835126cc590c6fd8aa3e4183",
+  "items": [
+    {
+      "duplicate_lines": 1,
+      "missing_materials": [],
+      "plan_item_id": "REM-001",
+      "receipt_ids": [
+        "RCV-DEMO-001",
+        "RCV-DEMO-002"
+      ],
+      "receipt_names": [
+        "ha-79e00bff1ecf388213dd"
+      ],
+      "received_materials": [
+        "environment_confirmation",
+        "fixed_version",
+        "vulnerability_recheck",
+        "receipt_acknowledgement"
+      ],
+      "required_materials": [
+        "environment_confirmation",
+        "receipt_acknowledgement",
+        "fixed_version",
+        "vulnerability_recheck"
+      ],
+      "state": "closed",
+      "target": {
+        "ecosystem": "pypi",
+        "identity": "pypi:requests@2.32.4",
+        "name": "requests",
+        "version": "2.32.4"
+      },
+      "unique_receipt_lines": 1,
+      "vulnerabilities": [
+        "CVE-2024-35195"
+      ]
+    },
+    {
+      "duplicate_lines": 0,
+      "missing_materials": [
+        "fixed_version",
+        "vulnerability_recheck"
+      ],
+      "plan_item_id": "REM-002",
+      "receipt_ids": [
+        "RCV-DEMO-003"
+      ],
+      "receipt_names": [
+        "ha-92be2db9f316412e5d86"
+      ],
+      "received_materials": [
+        "environment_confirmation",
+        "receipt_acknowledgement"
+      ],
+      "required_materials": [
+        "environment_confirmation",
+        "receipt_acknowledgement",
+        "fixed_version",
+        "vulnerability_recheck"
+      ],
+      "state": "in_progress",
+      "target": {
+        "ecosystem": "pypi",
+        "identity": "pypi:jinja2@3.1.5",
+        "name": "jinja2",
+        "version": "3.1.5"
+      },
+      "unique_receipt_lines": 1,
+      "vulnerabilities": [
+        "CVE-2024-34064"
+      ]
+    }
+  ],
+  "kind": "pip-audit-handover-state",
+  "plan_sha256": "f3231da1c87e79b8ebc7fbe517bb239d689bccceda884007339a3837f4723b8b",
+  "receipts": [
+    {
+      "duplicate_items": [],
+      "item_count": 1,
+      "receipt_id": "RCV-DEMO-001",
+      "receipt_sha256": "75d5226833c977dd06a75b4b09cfc311863f775210badcc17176f20da75c917e",
+      "status": "partial"
+    },
+    {
+      "duplicate_items": [
+        "ha-79e00bff1ecf388213dd"
+      ],
+      "item_count": 1,
+      "receipt_id": "RCV-DEMO-002",
+      "receipt_sha256": "b5b6fb9a5e5dfee9351369a8b38b6fe1090431df3c5c115752317c307bf5495c",
+      "status": "partial"
+    },
+    {
+      "duplicate_items": [],
+      "item_count": 1,
+      "receipt_id": "RCV-DEMO-003",
+      "receipt_sha256": "9943ecb7c1374c4eb7420666bcbd877b7094b0c3d36fa611cfcf6d0c219715fb",
+      "status": "partial"
+    }
+  ],
+  "schema_version": 1,
+  "status": "in_progress",
+  "summary": {
+    "closed": 1,
+    "in_progress": 1,
+    "items": 2,
+    "missing_materials": [
+      {
+        "materials": [
+          "fixed_version",
+          "vulnerability_recheck"
+        ],
+        "plan_item_id": "REM-002"
+      }
+    ]
+  }
+}

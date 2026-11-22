@@ -1,0 +1,50 @@
+{
+  "duplicate": false,
+  "duplicate_items": [
+    "ha-79e00bff1ecf388213dd"
+  ],
+  "handover_id": "HO-F5BACA7D8FE7147B",
+  "items": [
+    {
+      "duplicate": true,
+      "mismatches": [],
+      "missing_materials": [],
+      "plan_item_id": "REM-001",
+      "receipt_name": "ha-79e00bff1ecf388213dd",
+      "state": "closed",
+      "supplied_materials": [
+        "receipt_acknowledgement"
+      ],
+      "target_identity": "pypi:requests@2.32.4"
+    }
+  ],
+  "missing_materials": [
+    {
+      "materials": [
+        "receipt_acknowledgement",
+        "fixed_version",
+        "vulnerability_recheck"
+      ],
+      "plan_item_id": "REM-002"
+    }
+  ],
+  "receipt_id": "RCV-DEMO-002",
+  "receipt_sha256": "b5b6fb9a5e5dfee9351369a8b38b6fe1090431df3c5c115752317c307bf5495c",
+  "state_status": "in_progress",
+  "status": "partial",
+  "summary": {
+    "closed": 1,
+    "in_progress": 1,
+    "items": 2,
+    "missing_materials": [
+      {
+        "materials": [
+          "receipt_acknowledgement",
+          "fixed_version",
+          "vulnerability_recheck"
+        ],
+        "plan_item_id": "REM-002"
+      }
+    ]
+  }
+}

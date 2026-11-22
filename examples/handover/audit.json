@@ -1,0 +1,34 @@
+{
+  "dependencies": [
+    {
+      "name": "requests",
+      "version": "2.32.4",
+      "vulns": [],
+      "download_url": "https://files.internal.example/requests.whl"
+    },
+    {
+      "name": "jinja2",
+      "version": "3.1.4",
+      "vulns": [
+        {
+          "id": "CVE-2024-34064",
+          "fix_versions": [
+            "3.1.5"
+          ],
+          "aliases": [],
+          "description": "see https://security.internal.example/advisory/CVE-2024-34064"
+        }
+      ],
+      "download_url": "https://files.internal.example/jinja2.whl"
+    }
+  ],
+  "fixes": [
+    {
+      "name": "requests",
+      "old_version": "2.31.0",
+      "new_version": "2.32.4",
+      "path": "/srv/app/requests",
+      "index_url": "https://mirror.internal.example/simple"
+    }
+  ]
+}

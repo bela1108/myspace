@@ -1,0 +1,15 @@
+{
+  "captured": "offline-snapshot",
+  "source_path": "/srv/app/requirements.txt",
+  "index_url": "https://mirror.internal.example/simple",
+  "packages": [
+    {
+      "name": "requests",
+      "version": "2.32.4"
+    },
+    {
+      "name": "jinja2",
+      "version": "3.1.4"
+    }
+  ]
+}

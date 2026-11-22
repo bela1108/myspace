@@ -8,6 +8,13 @@ All versions prior to 0.0.9 are untracked.
 
 ## [Unreleased]
 
+### Added
+
+* Added `pip-audit-handover`, an offline, disclosure-safe handover workflow for
+  remediation plans. Packages bind plan, audit, and environment inputs by
+  digest, use rotated receipt names, and close items only when all required
+  evidence is present. Duplicate items and replay receipts are idempotent.
+
 ### Fixed
 
 * Editable requirements skipped with `--skip-editable` no longer require a hash

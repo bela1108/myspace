@@ -1,0 +1,23 @@
+{
+  "plan_id": "REM-2026-11-DEMO",
+  "source": {
+    "index_url": "https://mirror.internal.example/simple",
+    "path": "/srv/remediation/plan.json"
+  },
+  "items": [
+    {
+      "item_id": "REM-001",
+      "package": "requests",
+      "target_version": "2.32.4",
+      "vulnerability_ids": ["CVE-2024-35195"],
+      "required_evidence": ["fixed_version", "vulnerability_recheck"]
+    },
+    {
+      "item_id": "REM-002",
+      "package": "jinja2",
+      "target_version": "3.1.5",
+      "vulnerability_ids": ["CVE-2024-34064"],
+      "required_evidence": ["fixed_version", "vulnerability_recheck"]
+    }
+  ]
+}

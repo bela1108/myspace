@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "kind": "pip-audit-handover-receipt",
+  "receipt_id": "RCV-DEMO-001",
+  "handover_id": "HO-F5BACA7D8FE7147B",
+  "handover_sha256": "0d7bee17f2304b13a75dd164e4dbe46e8c3fc205835126cc590c6fd8aa3e4183",
+  "items": [
+    {
+      "name": "ha-79e00bff1ecf388213dd"
+    }
+  ]
+}

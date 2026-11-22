@@ -29,6 +29,7 @@ with support from Google, and is currently maintained under the
   * [GitHub Actions](#github-actions)
   * [`pre-commit` support](#pre-commit-support)
 * [Usage](#usage)
+  * [Signable handover packages](#signable-handover-packages)
   * [Environment variables](#environment-variables)
   * [Exit codes](#exit-codes)
   * [Dry runs](#dry-runs)
@@ -228,6 +229,53 @@ options:
                         `--no-deps` flag has been provided (default: False)
 ```
 <!-- @end-pip-audit-help@ -->
+
+### Signable handover packages
+
+When remediation is performed by an external party, keep the offline audit
+result on the approval side and disclose only the identities and versions that
+are needed to reconcile each remediation item. The `pip-audit-handover`
+companion command builds that package from a remediation plan, a `pip-audit -f
+json` result, and an optional environment snapshot:
+
+```console
+$ pip-audit-handover build \
+    --plan remediation-plan.json \
+    --audit pip-audit.json \
+    --environment environment.json \
+    --output handover.json
+$ pip-audit-handover verify --package handover.json
+$ pip-audit-handover receive \
+    --package handover.json \
+    --receipt receipt-01.json \
+    --state state.json \
+    --output report-01.json
+```
+
+The package binds the exact input bytes of the remediation plan, offline audit,
+and environment snapshot by SHA-256. It carries canonical target identities,
+target versions, the versions confirmed in the environment, vulnerability IDs,
+and a stable rotated receipt name for each item. Index URLs, artifact URLs,
+descriptions, local paths, and other source fields are not copied into the
+package. Package `status` is `ready` when every plan item has an
+environment-confirmed version; `missing_materials` separately lists evidence
+that still has to be supplied before an item can close.
+
+Receipts may use only the rotated names: a name is enough when the package
+already binds a matching environment version and a clean target-version audit
+observation. A receipt may also include `confirmed_version`, a clean
+`vulnerability_recheck`, and an optional `artifact_sha256` for cases where that
+evidence must be supplied with the return. Closure is based on required
+materials, not on receipt counts: a duplicate item line is recorded as a
+duplicate and does not add a second occurrence, while a partial receipt returns
+the exact missing materials and leaves the item in progress. Replaying a receipt
+ID leaves state unchanged.
+
+A complete small example is under `examples/handover/`: one package, three
+receipts, and the final state after reconciliation. The first item closes, the
+second receipt is a repeated item, and the third leaves one item in progress
+because the environment version and clean target audit observation for that item
+are still missing.
 
 ### Environment variables
 
