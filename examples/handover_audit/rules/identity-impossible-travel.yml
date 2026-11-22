@@ -1,0 +1,12 @@
+title: Impossible Travel Sign-in
+id: 44444444-4444-4444-8444-444444444444
+status: test
+description: Identity rule whose handler is unavailable and whose substitute approval expired.
+logsource:
+  product: azure
+  service: signinlogs
+detection:
+  selection:
+    riskLevelDuringSignIn: high
+  condition: selection
+level: high

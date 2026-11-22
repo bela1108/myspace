@@ -11,5 +11,6 @@ These guides provide step-by-step instructions for common tasks with pySigma.
    sigma_policy
    processing_pipelines
    rule_validation
+   handover_audit
    plugin_system
    matching

@@ -1,0 +1,14 @@
+title: Cloud Administrator Role Granted
+id: 33333333-3333-4333-8333-333333333333
+status: test
+description: Cloud rule covered by an active, explicitly approved substitute.
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    eventName:
+      - AttachRolePolicy
+      - PutRolePolicy
+  condition: selection
+level: medium

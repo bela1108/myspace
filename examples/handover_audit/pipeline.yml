@@ -1,0 +1,35 @@
+name: handover-release-branches
+priority: 20
+transformations:
+  - id: endpoint-primary-release
+    type: set_custom_attribute
+    attribute: release_branch
+    value: endpoint-primary
+    rule_conditions:
+      - type: logsource
+        product: windows
+        category: process_creation
+  - id: endpoint-mirror-release
+    type: set_custom_attribute
+    attribute: release_branch
+    value: endpoint-mirror
+    rule_conditions:
+      - type: logsource
+        product: linux
+        category: process_creation
+  - id: cloud-release
+    type: set_custom_attribute
+    attribute: release_branch
+    value: cloud
+    rule_conditions:
+      - type: logsource
+        product: aws
+        service: cloudtrail
+  - id: identity-release
+    type: set_custom_attribute
+    attribute: release_branch
+    value: identity
+    rule_conditions:
+      - type: logsource
+        product: azure
+        service: signinlogs

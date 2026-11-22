@@ -208,6 +208,12 @@ class SigmaTransformationError(SigmaError):
     pass
 
 
+class SigmaAuditError(SigmaError):
+    """Error in offline handover audit configuration or evaluation."""
+
+    pass
+
+
 class SigmaTypeError(SigmaModifierError):
     """Sigma modifier not applicable on value type"""
 

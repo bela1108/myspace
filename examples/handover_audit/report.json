@@ -1,0 +1,302 @@
+{
+  "shift_id": "shift-night-2026-11-23",
+  "audit_time": "2026-11-23T02:10:00+08:00",
+  "summary": {
+    "shift_id": "shift-night-2026-11-23",
+    "audit_time": "2026-11-23T02:10:00+08:00",
+    "rule_count": 4,
+    "status_counts": {
+      "notifiable": 1,
+      "actionable": 2,
+      "no_substitute": 1
+    },
+    "release_basis_count": 2,
+    "reference_only_count": 1,
+    "escalation_required_count": 1,
+    "countersign_required_count": 1
+  },
+  "warnings": [
+    "Title 'Suspicious PowerShell Encoded Command' is shared by 2 rule UUIDs; permissions and chains remain separate.",
+    "Approved substitution RFC-2026-1122-09 for role 'identity-commander' is outside its validity window at audit time."
+  ],
+  "same_title_groups": {
+    "Suspicious PowerShell Encoded Command": [
+      "11111111-1111-4111-8111-111111111111",
+      "22222222-2222-4222-8222-222222222222"
+    ]
+  },
+  "same_name_groups": {},
+  "chains": [
+    {
+      "chain_id": "chain-11111111-1111-4111-8111-111111111111",
+      "rule": {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "title": "Suspicious PowerShell Encoded Command",
+        "name": null
+      },
+      "status": "actionable",
+      "notifiable": false,
+      "actionable": true,
+      "no_substitute": false,
+      "can_notify": true,
+      "can_handle": true,
+      "has_substitute": false,
+      "release_basis": true,
+      "reference_only": false,
+      "escalation_required": false,
+      "notify": [
+        {
+          "role": "security-analyst",
+          "person": "bob",
+          "responsibility": "notify",
+          "source": "primary",
+          "substitute_role": null,
+          "approval_ref": null,
+          "approved_by": null
+        },
+        {
+          "role": "endpoint-commander",
+          "person": "alice",
+          "responsibility": "notify",
+          "source": "primary",
+          "substitute_role": null,
+          "approval_ref": null,
+          "approved_by": null
+        }
+      ],
+      "handle": [
+        {
+          "role": "endpoint-commander",
+          "person": "alice",
+          "responsibility": "handle",
+          "source": "primary",
+          "substitute_role": null,
+          "approval_ref": null,
+          "approved_by": null
+        }
+      ],
+      "open_branches": [
+        {
+          "id": "endpoint-primary-release",
+          "processing_item_id": "endpoint-primary-release",
+          "owner_role": "endpoint-commander"
+        }
+      ],
+      "closed_branches": [],
+      "countersign_roles": [],
+      "uncovered_handle_roles": [],
+      "same_title_ids": [
+        "11111111-1111-4111-8111-111111111111",
+        "22222222-2222-4222-8222-222222222222"
+      ],
+      "reason_codes": [
+        "release_ready",
+        "same_title_identity"
+      ],
+      "reasons": [
+        "Notification and handling paths are covered and all required branches are open.",
+        "Other rule identities share this title; permissions were evaluated separately by UUID."
+      ],
+      "pipeline": "handover-release-branches",
+      "audit_time": "2026-11-23T02:10:00+08:00"
+    },
+    {
+      "chain_id": "chain-22222222-2222-4222-8222-222222222222",
+      "rule": {
+        "id": "22222222-2222-4222-8222-222222222222",
+        "title": "Suspicious PowerShell Encoded Command",
+        "name": null
+      },
+      "status": "notifiable",
+      "notifiable": true,
+      "actionable": false,
+      "no_substitute": false,
+      "can_notify": true,
+      "can_handle": false,
+      "has_substitute": false,
+      "release_basis": false,
+      "reference_only": true,
+      "escalation_required": false,
+      "notify": [
+        {
+          "role": "security-analyst",
+          "person": "bob",
+          "responsibility": "notify",
+          "source": "primary",
+          "substitute_role": null,
+          "approval_ref": null,
+          "approved_by": null
+        },
+        {
+          "role": "endpoint-commander",
+          "person": "alice",
+          "responsibility": "notify",
+          "source": "primary",
+          "substitute_role": null,
+          "approval_ref": null,
+          "approved_by": null
+        }
+      ],
+      "handle": [
+        {
+          "role": "endpoint-commander",
+          "person": "alice",
+          "responsibility": "handle",
+          "source": "primary",
+          "substitute_role": null,
+          "approval_ref": null,
+          "approved_by": null
+        }
+      ],
+      "open_branches": [],
+      "closed_branches": [
+        {
+          "id": "endpoint-mirror-release",
+          "processing_item_id": "endpoint-mirror-release",
+          "owner_role": "endpoint-commander",
+          "reason": "temporarily_disabled",
+          "required": true,
+          "countersign_role": "deputy-endpoint-lead"
+        }
+      ],
+      "countersign_roles": [
+        "deputy-endpoint-lead"
+      ],
+      "uncovered_handle_roles": [],
+      "same_title_ids": [
+        "11111111-1111-4111-8111-111111111111",
+        "22222222-2222-4222-8222-222222222222"
+      ],
+      "reason_codes": [
+        "branch_closed",
+        "reference_only",
+        "same_title_identity"
+      ],
+      "reasons": [
+        "Branch 'endpoint-mirror-release' is closed (temporarily_disabled); countersign role: deputy-endpoint-lead.",
+        "Notify-only chain; it must not be used as an on-call release basis.",
+        "Other rule identities share this title; permissions were evaluated separately by UUID."
+      ],
+      "pipeline": "handover-release-branches",
+      "audit_time": "2026-11-23T02:10:00+08:00"
+    },
+    {
+      "chain_id": "chain-33333333-3333-4333-8333-333333333333",
+      "rule": {
+        "id": "33333333-3333-4333-8333-333333333333",
+        "title": "Cloud Administrator Role Granted",
+        "name": null
+      },
+      "status": "actionable",
+      "notifiable": false,
+      "actionable": true,
+      "no_substitute": false,
+      "can_notify": true,
+      "can_handle": true,
+      "has_substitute": true,
+      "release_basis": true,
+      "reference_only": false,
+      "escalation_required": false,
+      "notify": [
+        {
+          "role": "security-analyst",
+          "person": "bob",
+          "responsibility": "notify",
+          "source": "primary",
+          "substitute_role": null,
+          "approval_ref": null,
+          "approved_by": null
+        }
+      ],
+      "handle": [
+        {
+          "role": "cloud-commander",
+          "person": "frank",
+          "responsibility": "handle",
+          "source": "approved_substitute",
+          "substitute_role": "cloud-commander",
+          "approval_ref": "RFC-2026-1122-01",
+          "approved_by": "soc-manager"
+        }
+      ],
+      "open_branches": [
+        {
+          "id": "cloud-release",
+          "processing_item_id": "cloud-release",
+          "owner_role": "cloud-commander"
+        }
+      ],
+      "closed_branches": [],
+      "countersign_roles": [],
+      "uncovered_handle_roles": [],
+      "same_title_ids": [
+        "33333333-3333-4333-8333-333333333333"
+      ],
+      "reason_codes": [
+        "approved_substitute",
+        "release_ready"
+      ],
+      "reasons": [
+        "Approved substitute frank covers role 'cloud-commander' under RFC-2026-1122-01.",
+        "Notification and handling paths are covered and all required branches are open."
+      ],
+      "pipeline": "handover-release-branches",
+      "audit_time": "2026-11-23T02:10:00+08:00"
+    },
+    {
+      "chain_id": "chain-44444444-4444-4444-8444-444444444444",
+      "rule": {
+        "id": "44444444-4444-4444-8444-444444444444",
+        "title": "Impossible Travel Sign-in",
+        "name": null
+      },
+      "status": "no_substitute",
+      "notifiable": false,
+      "actionable": false,
+      "no_substitute": true,
+      "can_notify": true,
+      "can_handle": false,
+      "has_substitute": false,
+      "release_basis": false,
+      "reference_only": false,
+      "escalation_required": true,
+      "notify": [
+        {
+          "role": "security-analyst",
+          "person": "bob",
+          "responsibility": "notify",
+          "source": "primary",
+          "substitute_role": null,
+          "approval_ref": null,
+          "approved_by": null
+        }
+      ],
+      "handle": [],
+      "open_branches": [
+        {
+          "id": "identity-release",
+          "processing_item_id": "identity-release",
+          "owner_role": "identity-commander"
+        }
+      ],
+      "closed_branches": [],
+      "countersign_roles": [],
+      "uncovered_handle_roles": [
+        "identity-commander"
+      ],
+      "same_title_ids": [
+        "44444444-4444-4444-8444-444444444444"
+      ],
+      "reason_codes": [
+        "no_approved_substitute",
+        "escalation_required"
+      ],
+      "reasons": [
+        "Handling duty is unavailable and no active approved substitute exists for role(s): identity-commander.",
+        "Release is blocked by incomplete duty coverage; escalate before release."
+      ],
+      "pipeline": "handover-release-branches",
+      "audit_time": "2026-11-23T02:10:00+08:00"
+    }
+  ]
+}
