@@ -17,6 +17,7 @@ syntax. Then the template is passed data to render the final document.
 
     intro
     api
+    compliance
     sandbox
     nativetypes
     templates

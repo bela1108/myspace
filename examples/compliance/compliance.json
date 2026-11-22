@@ -1,0 +1,8 @@
+{
+  "managed_sections": [
+    {"name": "incident", "blocks": ["incident"]}
+  ],
+  "marker": {"kind": "template", "value": "_host_notice.html"},
+  "templates": ["templates/incident.html"],
+  "search_paths": ["templates"]
+}

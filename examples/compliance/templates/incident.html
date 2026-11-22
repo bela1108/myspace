@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block incident %}
+  <section data-managed="incident">
+    <h1>{{ title }}</h1>
+    {% for item in items %}
+      <p>{{ item }}</p>
+    {% endfor %}
+    {% if items %}
+      {% include "_host_notice.html" %}
+    {% endif %}
+  </section>
+{% endblock %}

@@ -1,0 +1,11 @@
+<!doctype html>
+<html>
+  <body>
+    {% block incident %}
+      <section data-managed="incident">
+        {{ incident_body }}
+      </section>
+      {% include "_host_notice.html" %}
+    {% endblock %}
+  </body>
+</html>

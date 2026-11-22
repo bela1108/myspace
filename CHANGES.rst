@@ -13,6 +13,8 @@ Unreleased
 -   Use modern packaging metadata with ``pyproject.toml`` instead of ``setup.cfg``.
     :pr:`1793`
 -   Use ``flit_core`` instead of ``setuptools`` as build backend.
+-   Add ``jinja2.compliance``, a static reviewer for managed-section marker
+    requirements, including reachable empty-loop paths and layout overrides.
 
 
 Version 3.1.6
