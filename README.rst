@@ -71,6 +71,14 @@ Sample output:
    (9.9,)
    ('Critical',)
 
+Offline inquiry planning
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use enumerate_scenarios and plan_inquiries in cvss/inquiry.py. See
+tests/test_inquiry.py for the minimax audit and exhaustive optimality check.
+The planner minimizes the worst unresolved leaf first, then the worst inquiry
+cost on a path; an exhausted budget reports the outcomes and evidence missing.
+
 Interactive calculator
 ~~~~~~~~~~~~~~~~~~~~~~
 

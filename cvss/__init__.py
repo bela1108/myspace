@@ -6,6 +6,18 @@ from .cvss2 import CVSS2
 from .cvss3 import CVSS3
 from .cvss4 import CVSS4
 from .exceptions import CVSS2Error, CVSS3Error, CVSS4Error, CVSSError
+from .inquiry import (
+    OUTCOME_HOLD,
+    OUTCOME_NORMAL,
+    InquiryError,
+    InquiryPlan,
+    InquiryPlanner,
+    InquiryQuestion,
+    Scenario,
+    build_decision_tree,
+    enumerate_scenarios,
+    plan_inquiries,
+)
 from .interactive import ask_interactively
 
 __version__ = "3.6"
