@@ -39,7 +39,10 @@ pip install LnkParse3
 Can be used as a package or as a command line tool. It accepts several arguments, including setting the output format to JSON or a more human-readable form. For all parameters, see the program description below.
 
 ```
-usage: lnkparse [-h] [-t] [-j] [-c CP] [-a] FILE
+usage: lnkparse [-h] [-t] [-j] [-c CP] [-a]
+                [--system-snapshot FILE] [--user-snapshot FILE]
+                [--snapshot-precedence {system_first,user_first}]
+                FILE
 
 Windows Shortcut file (LNK) parser
 
@@ -52,6 +55,15 @@ optional arguments:
   -j, --json            print output in JSON
   -c CP, --codepage CP  set codepage of ASCII strings
   -a, --all             print all extracted data (i.e. offsets and sizes)
+  --system-snapshot FILE
+                        JSON file with system (machine-wide) environment
+                        variables captured at acquisition time
+  --user-snapshot FILE
+                        JSON file with user-specific environment variables
+                        captured at acquisition time
+  --snapshot-precedence {system_first,user_first}
+                        which snapshot wins when both define the same variable
+                        with different values (default: system_first)
 ```
 
 ## CLI tool
@@ -110,6 +122,85 @@ Windows Shortcut Information:
     },
 	...more data...
 }
+```
+
+## Historical context resolution
+
+LNK files often keep paths with environment variable placeholders, for example
+`C:\Users\%USERNAME%\AppData\...`, both in StringData and in the
+EnvironmentVariableDataBlock. Expanding such placeholders with the environment
+of the forensic workstation silently rewrites the evidence, so unrelated
+shortcuts can appear to point at the examiner home directory.
+
+LnkParse3 therefore expands placeholders only against variable snapshots
+captured from the source machine at acquisition time. The live process
+environment (`os.environ`) is never consulted, and without an explicit context
+the parser keeps behaving exactly as before.
+
+### Snapshot inputs
+
+Two independent snapshots are accepted:
+
+- `system_variables` - machine-wide variables (for example the `HKLM`
+  environment / system context)
+- `user_variables` - user-specific variables (for example the `HKCU`
+  environment / user profile context)
+
+When the same variable is defined differently in both snapshots, the declared
+`precedence` rule decides which value is used and the decision is recorded:
+
+- `system_first` (default) - the system snapshot wins
+- `user_first` - the user snapshot wins
+
+### Resolution record
+
+Every resolved text keeps the original string (`raw`) alongside the expanded
+candidate and a `certainty` level:
+
+- `resolved` - every placeholder was found in the snapshots
+- `partially_resolved` - some placeholders are missing; unknown references are
+  preserved verbatim in `expanded`
+- `unresolved` - no placeholder could be resolved; the raw text is unchanged
+- `no_placeholders` - the text contained no `%VARIABLE%` references
+
+Each placeholder records the variable name, the applied value and its provenance
+(`system`, `user` or `unresolved`), so it is always clear which snapshot a path
+component came from.
+
+### Python API
+
+```python
+from LnkParse3.historical_context import HistoricalContext
+import LnkParse3
+
+context = HistoricalContext(
+    system_variables={"USERNAME": "alice", "WINDIR": "C:\\Windows"},
+    user_variables={"USERNAME": "profile-bob"},
+    precedence="system_first",
+)
+with open("shortcut.lnk", "rb") as indata:
+    lnk = LnkParse3.lnk_file(indata, historical_context=context)
+
+report = lnk.historical_report()
+```
+
+A plain mapping with the keys `system_variables`, `user_variables` and
+`precedence` may be passed directly instead of a `HistoricalContext` instance.
+The report is also embedded in `get_json()` / `print_json()` under the
+`historical_context` key, split into `string_data`,
+`environment_variable_data_block` and concrete `candidates`, plus a
+`conflicts` list describing every snapshot disagreement and how it was
+resolved.
+
+### CLI
+
+Snapshots are JSON files containing simple name/value objects:
+
+```console
+$ lnkparse -j shortcut.lnk \
+    --system-snapshot system_env.json \
+    --user-snapshot user_env.json \
+    --snapshot-precedence system_first
 ```
 
 # Extracted data

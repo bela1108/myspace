@@ -14,6 +14,8 @@ from subprocess import list2cmdline
 import yaml
 
 from LnkParse3.extra_data import ExtraData
+from LnkParse3.historical_context import build_historical_report
+from LnkParse3.historical_context import HistoricalContext
 from LnkParse3.info_factory import InfoFactory
 from LnkParse3.lnk_header import LnkHeader
 from LnkParse3.lnk_info import LnkInfo
@@ -22,7 +24,14 @@ from LnkParse3.string_data import StringData
 
 
 class LnkFile:
-    def __init__(self, fhandle=None, indata=None, cp=None, allow_terminal_blocks=True):
+    def __init__(
+        self,
+        fhandle=None,
+        indata=None,
+        cp=None,
+        allow_terminal_blocks=True,
+        historical_context=None,
+    ):
         if fhandle:
             self.indata = fhandle.read()
         elif indata:
@@ -30,8 +39,36 @@ class LnkFile:
 
         self.cp = cp
         self.allow_terminal_blocks = allow_terminal_blocks
+        self.historical_context = self._coerce_historical_context(historical_context)
 
         self.process()
+
+    @staticmethod
+    def _coerce_historical_context(historical_context):
+        if historical_context is None:
+            return None
+        if isinstance(historical_context, HistoricalContext):
+            return historical_context
+        if isinstance(historical_context, dict):
+            return HistoricalContext(
+                system_variables=historical_context.get("system_variables"),
+                user_variables=historical_context.get("user_variables"),
+                precedence=historical_context.get("precedence", "system_first"),
+            )
+        raise TypeError(
+            "historical_context must be a HistoricalContext instance, a dict "
+            "of snapshot parameters, or None"
+        )
+
+    def historical_report(self):
+        """Resolve placeholder paths using the supplied acquisition snapshots.
+
+        Returns ``None`` when no historical context was provided. The live
+        machine environment is never used as a fallback.
+        """
+        if self.historical_context is None:
+            return None
+        return build_historical_report(self, self.historical_context)
 
     def has_relative_path(self):
         return bool("HasRelativePath" in self.header.link_flags())
@@ -315,6 +352,10 @@ class LnkFile:
         res["data"] = self.string_data.as_dict()
         res["extra"] = self.extras.as_dict()
 
+        historical_report = self.historical_report()
+        if historical_report is not None:
+            res["historical_context"] = historical_report
+
         if not get_all:
             res["header"].pop("header_size", None)
             res["header"].pop("reserved0", None)
@@ -370,16 +411,63 @@ def main():
         action="store_true",
         help="print all extracted data (i.e. offsets and sizes)",
     )
+    arg_parser.add_argument(
+        "--system-snapshot",
+        metavar="FILE",
+        help=(
+            "JSON file with system (machine-wide) environment variables captured "
+            "at acquisition time; used for historical path resolution"
+        ),
+    )
+    arg_parser.add_argument(
+        "--user-snapshot",
+        metavar="FILE",
+        help=(
+            "JSON file with user-specific environment variables captured at "
+            "acquisition time; used for historical path resolution"
+        ),
+    )
+    arg_parser.add_argument(
+        "--snapshot-precedence",
+        choices=("system_first", "user_first"),
+        default="system_first",
+        help=(
+            "which snapshot wins when both define the same variable with "
+            "different values (default: system_first)"
+        ),
+    )
     args = arg_parser.parse_args()
 
+    historical_context = None
+    if args.system_snapshot or args.user_snapshot:
+        historical_context = {
+            "system_variables": _load_snapshot(args.system_snapshot),
+            "user_variables": _load_snapshot(args.user_snapshot),
+            "precedence": args.snapshot_precedence,
+        }
+
     with open(args.file, "rb") as file:
-        lnk = LnkFile(fhandle=file, cp=args.cp)
+        lnk = LnkFile(
+            fhandle=file,
+            cp=args.cp,
+            historical_context=historical_context,
+        )
         if args.target:
             lnk.print_shortcut_target(pjson=args.json)
         elif args.json:
             lnk.print_json(args.print_all)
         else:
             lnk.print_lnk_file(args.print_all)
+
+
+def _load_snapshot(path):
+    if not path:
+        return None
+    with open(path, encoding="utf-8") as snapshot_file:
+        snapshot = json.load(snapshot_file)
+    if not isinstance(snapshot, dict):
+        raise ValueError(f"snapshot {path!r} must contain a JSON object of name/value pairs")
+    return snapshot
 
 
 if __name__ == "__main__":

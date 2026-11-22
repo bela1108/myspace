@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) since v1.0.0.
 
 ## [Unreleased]
+### Added
+- Optional historical context resolution: `%VARIABLE%` placeholders in StringData and the EnvironmentVariableDataBlock are expanded only from caller-supplied system/user snapshots captured at acquisition time, with per-placeholder provenance, certainty levels, conflict reporting and a declared precedence rule. The live machine environment is never used.
 
 ## [1.6.0] - 2026-02-27
 ### Added
