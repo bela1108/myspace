@@ -39,6 +39,19 @@ def parse_mru_value(data: bytes) -> Optional[str]:
     return None
 
 
+def parse_mru_order(data: bytes) -> list[int]:
+    """Parse MRUListEx into an ordered list of value indices."""
+    order = []
+    if not data:
+        return order
+    for i in range(0, len(data) - 4, 4):
+        index = int.from_bytes(data[i : i + 4], "little", signed=True)
+        if index == -1:
+            break
+        order.append(index)
+    return order
+
+
 class RecentDocsPlugin(Plugin):
     """
     Parses Recently opened documents from NTUSER.DAT
@@ -66,6 +79,27 @@ class RecentDocsPlugin(Plugin):
             subkey_path = f"{RECENT_DOCS_PATH}\\{subkey.name}"
             self._process_recent_docs_key(subkey, subkey_path, extension=subkey.name)
 
+    def snapshot_key_paths(self):
+        """Return the RecentDocs keys whose values should be compared across snapshots."""
+        paths = [RECENT_DOCS_PATH]
+        try:
+            key = self.registry_hive.get_key(RECENT_DOCS_PATH)
+        except RegistryKeyNotFoundException:
+            return paths
+        for subkey in key.iter_subkeys():
+            name = getattr(subkey, "name", None)
+            if name:
+                paths.append(RECENT_DOCS_PATH + chr(92) + name)
+        return paths
+
+    def decode_snapshot_value(self, key_path, value_name, value):
+        raw = getattr(value, "value", None)
+        if value_name == "MRUListEx" and isinstance(raw, bytes):
+            return {"mru_order": parse_mru_order(raw)}
+        if value_name.isdigit() and isinstance(raw, bytes):
+            return parse_mru_value(raw)
+        return None
+
     def _process_recent_docs_key(self, key, key_path: str, extension: Optional[str] = None):
         """Process a RecentDocs key and extract document entries"""
         entry: dict[str, Any] = {
@@ -78,7 +112,13 @@ class RecentDocsPlugin(Plugin):
         mru_list = None
         mru_values = {}
 
-        for value in key.iter_values():
+        # MRU payloads are REG_BINARY.  iter_values() returns a trimmed hex
+        # string by default, so ask for the raw value before parsing.
+        try:
+            values = key.iter_values(trim_values=False)
+        except TypeError:
+            values = key.iter_values()
+        for value in values:
             if value.name == "MRUListEx":
                 # MRUListEx contains the order of recently accessed items
                 # It's an array of DWORDs representing indices

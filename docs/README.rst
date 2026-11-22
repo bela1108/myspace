@@ -102,6 +102,16 @@ To include unvalidated plugins (which may return incomplete or inaccurate data):
 
 Unvalidated plugins will log a warning when executed. Use them at your own discretion.
 
+Historical snapshot evidence
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Registry values have no timestamps, so a key ``LastWrite`` must not be used as
+the time of an individual RecentDocs or TypedPaths value. Use
+``regipy.snapshots.compare_snapshots`` (or ``regipy-snapshot-timeline``) to
+build per-value evidence timelines, intervals, deletion/recreation breakpoints,
+and key-only change controls across multiple acquisitions. See
+``docs/SNAPSHOT_EVIDENCE.md`` for the full schema and semantics. Single-hive
+plugin queries still work.
+
 Available Plugins
 ^^^^^^^^^^^^^^^^^
 

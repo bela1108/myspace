@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Historical snapshot evidence for forensic plugins** - `regipy.snapshots`
+  compares ordered hive acquisitions and emits per-value content timelines,
+  observation intervals, key-clock evidence, deletion/recreation breakpoints,
+  and key-only change controls. `RecentDocs` and `TypedPaths` are supported
+  through the new opt-in `snapshot_key_paths()` / `decode_snapshot_value()`
+  plugin hooks.
+  - Key `LastWrite` is reported as key-level clock evidence and is never used
+    as a per-value timestamp.
+  - A key that is absent in an intervening snapshot starts a new key instance;
+    values are never merged across that breakpoint.
+  - A key clock change with byte-identical values is recorded as a
+    `key_only_change` control that does not prove a child value change.
+  - Added `regipy-snapshot-timeline` CLI command.
+  - Single-hive plugin `run()` entry points and output shapes remain available.
+
+### Fixed
+
+- `RecentDocs` now reads raw `REG_BINARY` MRU payloads rather than the
+  trimmed hex representation, so the single-hive plugin query produces its
+  document entries instead of returning an empty list.
+
 ## [6.5.2] - 2026-10-17
 
 ### Fixed

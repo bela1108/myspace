@@ -21,7 +21,7 @@ class Plugin:
         self.as_json = as_json
         self.trim_values = trim_values
 
-        self.partial_hive_path = registry_hive.partial_hive_path
+        self.partial_hive_path = getattr(registry_hive, "partial_hive_path", None)
 
         # This variable should always hold the final result - in order to use it in anomaly detection and timeline gen.
         # Can be either a list of dicts (most plugins) or a dict (some plugins that organize by key path)
@@ -33,6 +33,49 @@ class Plugin:
         :return:
         """
         return self.registry_hive.hive_type == self.COMPATIBLE_HIVE
+
+    def snapshot_key_paths(self):
+        """
+        Registry key paths whose key clock and values should be tracked when
+        this plugin is used with :func:`regipy.snapshots.compare_snapshots`.
+
+        Plugins that support historical snapshot comparisons override this.
+        """
+        return []
+
+    def decode_snapshot_value(self, key_path, value_name, value):
+        """
+        Optionally decode a raw registry value for snapshot evidence output.
+
+        The returned object must be JSON serializable.  Returning ``None``
+        keeps the default raw-value representation.
+        """
+        return None
+
+    @classmethod
+    def compare_snapshots(cls, snapshots, as_json=True, **kwargs):
+        """
+        Build historical per-value evidence for this plugin across snapshots.
+
+        This is opt-in: the regular ``run()`` behavior and output of a single
+        hive are unchanged.
+        """
+        from regipy.snapshots import compare_snapshots
+
+        return compare_snapshots(snapshots, plugins=[cls], as_json=as_json, **kwargs)
+
+    def run_with_snapshots(self, snapshots, as_json=None, **kwargs):
+        """Run this plugin's snapshot comparison and store the result in ``entries``."""
+        if as_json is None:
+            as_json = self.as_json
+        self.entries = type(self).compare_snapshots(snapshots, as_json=as_json, **kwargs)
+        return self.entries
+
+    def get_snapshot_evidence(self, snapshots, as_json=None, **kwargs):
+        """Alias for :meth:`run_with_snapshots` that does not overwrite ``entries``."""
+        if as_json is None:
+            as_json = self.as_json
+        return type(self).compare_snapshots(snapshots, as_json=as_json, **kwargs)
 
     def run(self):
         """

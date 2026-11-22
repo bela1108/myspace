@@ -12,3 +12,18 @@ Adding a new plugin is very straight forward:
    * Feel free to use/add any utility function to `regipy/utils.py` 
    * Import your class in `regipy/plugins/__init__.py`
 3. Add a [validation case](../README.md#validation-cases). This is mandatory and replaces the old regipy tests.
+
+## Historical snapshot comparison
+
+Plugins that expose registry values whose key clock must not be confused with a
+per-value timestamp can support `regipy.snapshots`:
+
+- Override `snapshot_key_paths()` to return the key paths to compare.
+- Optionally override `decode_snapshot_value(key_path, value_name, value)` to
+  add a JSON-serializable decoded form (for example, the document name parsed
+  from a RecentDocs MRU blob).
+- Call `PluginClass.compare_snapshots(snapshots)` or
+  `regipy.snapshots.compare_snapshots(snapshots, plugins=[PluginClass])`.
+
+`run()` remains the single-hive entry point and its output shape is not changed
+by snapshot support. See `docs/SNAPSHOT_EVIDENCE.md`.

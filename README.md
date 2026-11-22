@@ -89,6 +89,29 @@ behavior) are in [regipy-rs/BENCHMARKS.md](regipy-rs/BENCHMARKS.md);
 The pure-Python parser remains the default and is unaffected when the Rust
 backend is not installed.
 
+## Historical snapshot evidence
+
+A key `LastWrite` is a key-level clock, not a timestamp for each value. When
+merging multiple hive acquisitions, use the opt-in snapshot comparison API to
+keep key-clock evidence and per-value content evidence separate:
+
+```python
+from regipy.snapshots import Snapshot, compare_snapshots
+
+result = compare_snapshots([
+    Snapshot.from_hive(hive_2023_01, timestamp="2023-01-01T00:00:00Z"),
+    Snapshot.from_hive(hive_2023_02, timestamp="2023-02-01T00:00:00Z"),
+])
+```
+
+`RecentDocs` and `TypedPaths` are supported out of the box. The output contains
+per-value timelines and intervals, deletion/recreation breakpoints, and
+`key_only_changes` controls that prove only the parent key changed. See
+[docs/SNAPSHOT_EVIDENCE.md](docs/SNAPSHOT_EVIDENCE.md).
+
+The regular single-hive plugin query still works with the same output shape.
+
+
 ## CLI
 
 #### Parse the header

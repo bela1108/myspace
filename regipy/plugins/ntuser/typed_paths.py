@@ -17,6 +17,14 @@ class TypedPathsPlugin(Plugin):
     DESCRIPTION = "Retrieve the typed Paths from the history"
     COMPATIBLE_HIVE = NTUSER_HIVE_TYPE
 
+    def snapshot_key_paths(self):
+        """Return the TypedPaths key for historical snapshot comparison."""
+        return [TYPED_PATHS_KEY_PATH]
+
+    def decode_snapshot_value(self, key_path, value_name, value):
+        raw = getattr(value, "value", None)
+        return raw if isinstance(raw, str) else None
+
     def run(self):
         try:
             subkey = self.registry_hive.get_key(TYPED_PATHS_KEY_PATH)

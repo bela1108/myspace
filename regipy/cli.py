@@ -16,6 +16,7 @@ from regipy.plugins.utils import run_relevant_plugins
 from regipy.recovery import apply_transaction_logs
 from regipy.regdiff import compare_hives
 from regipy.registry import RegistryHive
+from regipy.snapshots import Snapshot, compare_snapshots
 from regipy.utils import _setup_logging, calculate_xor32_checksum
 
 logger = logging.getLogger(__name__)
@@ -285,6 +286,91 @@ def run_plugins(hive_path, output_path, plugins, hive_type, partial_hive_path, v
         print(json.dumps(plugin_results, indent=4))
     click.secho(
         f"Finished: {len(plugin_results)}/{len(PLUGINS)} plugins matched the hive type",
+        fg="green",
+    )
+
+
+@click.command(name="snapshot-timeline")
+@click.argument("snapshots", nargs=-1, required=True)
+@click.option(
+    "-p",
+    "--plugins",
+    type=click.STRING,
+    required=False,
+    help="Comma separated plugin names, or all. Defaults to recentdocs,typed_paths when no --key-path is given.",
+)
+@click.option("-r", "--key-path", "key_paths", multiple=True, help="Additional registry key path to compare.")
+@click.option(
+    "-o",
+    "output_path",
+    type=click.Path(exists=False, dir_okay=False, resolve_path=True),
+    required=False,
+    help="Output path for the snapshot evidence JSON.",
+)
+@click.option("--sort/--no-sort", default=True, help="Sort snapshots by their observation timestamp.")
+@click.option("-v", "--verbose", is_flag=True, default=False, help="Verbosity")
+def snapshot_timeline(snapshots, plugins, key_paths, output_path, sort, verbose):
+    """Compare historical hive snapshots and emit per-value evidence timelines.
+
+    Each SNAPSHOT is either a hive path or a hive path followed by @ and an
+    ISO-8601 observation timestamp, for example:
+
+        regipy-snapshot-timeline ntuser-2020.dat@2020-01-01T00:00:00Z ntuser-2021.dat@2021-01-01T00:00:00Z
+
+    If no timestamp is supplied, the hive header timestamp is used and marked
+    as such in the output.
+    """
+    _setup_logging(verbose=verbose)
+
+    parsed_snapshots = []
+    for spec in snapshots:
+        if "@" in spec:
+            hive_path, timestamp = spec.rsplit("@", 1)
+        else:
+            hive_path, timestamp = spec, None
+        if not os.path.exists(hive_path):
+            raise click.BadParameter(f"Snapshot hive does not exist: {hive_path}")
+        parsed_snapshots.append(Snapshot.from_path(hive_path, timestamp=timestamp))
+
+    plugin_classes = None
+    if plugins:
+        if plugins.strip().lower() == "all":
+            plugin_classes = list(PLUGINS)
+        else:
+            requested = {name.strip() for name in plugins.split(",") if name.strip()}
+            known = {plugin.NAME for plugin in PLUGINS}
+            invalid = requested - known
+            if invalid:
+                click.secho("Invalid plugin names given: " + ", ".join(sorted(invalid)), fg="red")
+                return
+            plugin_classes = [plugin for plugin in PLUGINS if plugin.NAME in requested]
+    elif key_paths:
+        plugin_classes = []
+    # else: let compare_snapshots use its recentdocs/typed_paths default.
+
+    result = compare_snapshots(
+        parsed_snapshots,
+        plugins=plugin_classes,
+        key_paths=list(key_paths) or None,
+        as_json=True,
+        sort=sort,
+    )
+
+    rendered = json.dumps(result, indent=4)
+    if output_path:
+        try:
+            with open(output_path, "w") as output_file:
+                output_file.write(rendered)
+        except OSError as e:
+            logger.error(f"Failed to write output file {output_path}: {e}")
+            return
+    else:
+        click.secho(rendered)
+
+    snapshot_count = len(result["snapshots"])
+    value_count = len(result["value_timelines"])
+    click.secho(
+        f"Compared {snapshot_count} snapshots, produced {value_count} value timelines",
         fg="green",
     )
 
