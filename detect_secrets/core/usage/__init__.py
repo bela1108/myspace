@@ -5,6 +5,7 @@ from typing import List
 from typing import Optional
 
 from . import audit
+from . import probe
 from . import baseline
 from . import filters
 from . import plugins
@@ -83,6 +84,10 @@ class ParserBuilder:
 
         audit.add_audit_action(subparser)
         self._post_processors.append(audit.parse_args)
+
+        probe_parser = probe.add_probe_action(subparser)
+        self.add_plugin_options(probe_parser, action_filter='probe')
+        self._post_processors.append(probe.parse_args)
         return self
 
     def add_pre_commit_arguments(self) -> 'ParserBuilder':

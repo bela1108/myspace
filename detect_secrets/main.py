@@ -1,6 +1,8 @@
 import argparse
 import json
 import sys
+from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 
@@ -14,6 +16,10 @@ from .core.scan import scan_line
 from .core.secrets_collection import SecretsCollection
 from .core.usage import ParserBuilder
 from .exceptions import InvalidBaselineError
+from .exceptions import InvalidFile
+from .probe import compare_against_baseline
+from .probe import ProbeManifest
+from .probe import run_probe
 from .settings import get_plugins
 from .settings import get_settings
 
@@ -30,6 +36,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         handle_scan_action(args)
     elif args.action == 'audit':
         handle_audit_action(args)
+    elif args.action == 'probe':
+        return handle_probe_action(args)
 
     return 0
 
@@ -152,3 +160,49 @@ def handle_audit_action(args: argparse.Namespace) -> None:
                 audit.audit_baseline(args.filename[0])
     except InvalidBaselineError:
         pass
+
+
+def handle_probe_action(args: argparse.Namespace) -> int:
+    try:
+        manifest = ProbeManifest.load_from_file(args.manifest)
+    except InvalidFile as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+
+    report = run_probe(manifest.samples)
+
+    baseline_comparison = None
+    if args.reference_baseline:
+        baseline_comparison = compare_against_baseline(
+            manifest.samples,
+            args.reference_baseline,
+        )
+
+    if args.json:
+        payload = report.json()
+        if baseline_comparison is not None:
+            payload['baseline-reference'] = baseline_comparison
+        print(json.dumps(payload, indent=2))
+    else:
+        print(str(report))
+        if baseline_comparison is not None:
+            print(_format_baseline_reference(baseline_comparison))
+
+    return 0 if report.all_healthy else 1
+
+
+def _format_baseline_reference(comparison: Dict[str, Any]) -> str:
+    divider = '-' * 60
+    lines = [
+        divider,
+        f'Reference only (not used for the release verdict): {comparison["baseline"]}',
+    ]
+    for sample in comparison['samples']:
+        if sample['found-in-baseline']:
+            observed = ', '.join(sample['baseline-plugins'])
+            lines.append(f'  {sample["id"]}: baseline flagged {observed}')
+        else:
+            lines.append(
+                f'  {sample["id"]}: no matching identity in old baseline',
+            )
+    return chr(10).join(lines)
