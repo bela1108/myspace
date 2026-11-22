@@ -17,6 +17,32 @@ Decoding
 .. autoclass:: cbor2.CBORDecoder
 .. autodecorator:: cbor2.shareable_decoder
 
+Multi-bundle references
+-----------------------
+
+.. autofunction:: cbor2.load_bundle
+.. autofunction:: cbor2.loads_bundle
+.. autofunction:: cbor2.parse_bundle
+.. autofunction:: cbor2.dumps_bundle
+.. autofunction:: cbor2.dump_bundle
+.. autofunction:: cbor2.public_index
+.. autofunction:: cbor2.handover_check
+.. autofunction:: cbor2.resolve_reference
+.. autofunction:: cbor2.build_checklist
+.. autofunction:: cbor2.reference_tag_hook
+.. autofunction:: cbor2.reference_semantic_decoders
+.. autodata:: cbor2.LOCAL_REF_TAG
+.. autodata:: cbor2.CROSS_REF_TAG
+.. autoclass:: cbor2.Bundle
+.. autoclass:: cbor2.EntryDescriptor
+.. autoclass:: cbor2.Reference
+.. autoclass:: cbor2.ReferenceKind
+.. autoclass:: cbor2.ReferenceStatus
+.. autoclass:: cbor2.EvidencePermissions
+.. autoclass:: cbor2.ChecklistItem
+.. autoclass:: cbor2.Conclusion
+.. autoclass:: cbor2.AuditReport
+
 Types
 -----
 

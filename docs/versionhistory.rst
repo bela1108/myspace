@@ -5,6 +5,13 @@ Version history
 
 This library adheres to `Semantic Versioning 2.0 <http://semver.org/>`_.
 
+**Unreleased**
+
+- Added caller-side multi-bundle reference auditing: public bundle indexes, local and
+  cross-bundle references, permission-bounded reference closure, distinct missing/forbidden
+  statuses, provenance-ordered checklists and an offline handover check built on the normal
+  :func:`load` / :func:`loads` entry points
+
 **6.3.0** (2026-11-13)
 
 - Added the ``--format=json`` CLI option to encode JSON files or standard input as binary CBOR

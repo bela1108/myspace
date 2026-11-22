@@ -229,6 +229,89 @@ in a :class:`CBORTag` object like so::
 
 This will be ignored on decode and the original data content will be returned.
 
+Multi-bundle references and handover checks
+-------------------------------------------
+
+Case files are sometimes split across several CBOR *bundles*.  Each bundle can
+publish an index without publishing the entry contents it names, and an entry
+may refer to another entry in its own bundle or in a different bundle.  The
+:mod:`cbor2.bundles` module (also importable as :mod:`cbor2.bundle`,
+:mod:`cbor2.references` or :mod:`cbor2.handover`) resolves those references
+offline using the normal :func:`load` / :func:`loads` decoding entry points.
+
+A bundle document has this shape::
+
+    {
+        "bundle": "A",
+        "index": {
+            0: {"refs": [{"local": 1}, {"bundle": "B", "id": 7}]},
+            1: {"content": "A-one"},
+        },
+        "entries": {0: {"claim": "A-zero"}, 1: "A-one"},
+    }
+
+The ``index`` is the publicly shareable part.  ``entries`` is optional and may
+be omitted from a delivered package.  Local numbers are always scoped to their
+bundle: ``("A", 0)`` and ``("B", 0)`` are different entries even when both
+bundles use the number ``0``.
+
+References may be written as ``{"local": 1}``, ``{"bundle": "B", "id": 7}``,
+``{"$ref": ...}``, ``{"cross": ["B", 7]}`` or ``"B:7"``.  The equivalent
+semantic tags :data:`LOCAL_REF_TAG` and :data:`CROSS_REF_TAG` are recognized by
+:func:`load_bundle` and :func:`loads_bundle`.  An entry whose content is kept in
+another package can say so with ``{"home": "B"}`` or
+``{"stored_in": {"bundle": "B", "id": 7}}``.
+
+Use :func:`handover_check` to check whether the packages a recipient actually
+holds are sufficient to review a claim::
+
+    from cbor2 import handover_check
+
+    report = handover_check(
+        [package_a, package_b, package_c],
+        ("A", 0),
+        permissions={"A", "B"},       # or {"A": {0, 1}, "B": "*"}
+    )
+    if not report.complete:
+        for item in report.checklist():  # ordered by reference provenance
+            print(item.provenance, item.target, item.status, item.reason)
+
+The permission argument is the caller-declared evidence boundary.  It may be a
+collection of fully approved bundle names or a mapping from bundle name to
+``"*"``, an entry-number collection, or ``False``.  With a mapping, bundles
+not mentioned are not approved unless the mapping contains a ``"*"`` entry.
+
+Each reference resolves to one of three states:
+
+``RESOLVED``
+    The entry content is present in an approved package.
+``MISSING``
+    The package or entry is not present, the entry has no supplied content, or
+    the package was withdrawn.  This includes a public index entry whose
+    actual content was not handed over.
+``FORBIDDEN``
+    The package is present but the entry lies outside the caller's evidence
+    permission.  Forbidden content is never included in the report.
+
+``AuditReport.items`` (and :meth:`AuditReport.checklist`) is sorted by reference
+provenance: the bundle and entry containing each reference, then its position
+inside that entry.  The public index of an entry whose content is missing is
+still inspectable, so its declared outgoing references can be audited without
+reading the entry content.  A forbidden entry is a closure boundary: the report
+records the denial but does not expand that entry's references.
+
+Removing an unrelated package does not change the conclusion for a claim: pass
+its name in ``withdrawn`` (or omit it from ``packages``) and all claims that do
+not depend on it retain their previous checklist and status.
+
+For a command-line handover check::
+
+    python -m cbor2.bundles --claim A:0 --permit A --permit B \
+        --withdraw C a.cbor b.cbor c.cbor
+
+The command prints a JSON report with the provenance-ordered checklist and
+exits with status 0 when the claim is fully reviewable, or 1 otherwise.
+
 Use Cases
 ---------
 
