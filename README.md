@@ -14,6 +14,7 @@ pip install dpkt
 
 ### Examples and Documentation
 - [Main Docs for DPKT](https://kbandla.github.io/dpkt)
+- [Read-only capture direction audit](docs/capture_direction_audit.md)
 
 
 
