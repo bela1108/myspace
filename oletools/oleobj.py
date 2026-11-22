@@ -50,6 +50,7 @@ import os
 import re
 import sys
 import io
+import json
 from zipfile import is_zipfile
 import random
 
@@ -376,6 +377,9 @@ class OleNativeStream(object):
         self.unknown_long_2 = None
         self.temp_path = None
         self.actual_size = None
+        # offset of the embedded payload within the OLENativeStream data.
+        # This is None when the stream was parsed in streaming mode.
+        self.data_offset = None
         self.data = None
         self.package = package
         self.is_link = None
@@ -420,6 +424,7 @@ class OleNativeStream(object):
         # size of the rest of the data
         try:
             self.actual_size, index = read_uint32(data, index)
+            self.data_offset = index
             if self.data_is_stream:
                 self.data = data
             else:
@@ -833,7 +838,8 @@ def find_customUI(xml_parser):
             yield customui_onload
 
 
-def process_file(filename, data, output_dir=None):
+def process_file(filename, data, output_dir=None, manifest=None,
+                 disclosure_level=None):
     """ find embedded objects in given file
 
     if data is given (from xglob for encrypted zip files), then filename is
@@ -842,7 +848,30 @@ def process_file(filename, data, output_dir=None):
 
     If output_dir is given and does not exist, it is created. If it is not
     given, data is saved to same directory as the input file.
+
+    If manifest is an ExtractionManifest (or any object providing add_file),
+    the embedded objects are also recorded in that manifest without changing
+    the normal extraction behaviour. If manifest is a filename, a read-only
+    JSON manifest is written to that path.
     """
+    if manifest is not None:
+        from oletools.olemanifest import ExtractionManifest
+        if isinstance(manifest, ExtractionManifest):
+            manifest.add_file(filename, disclosure_level=disclosure_level,
+                              data=data)
+        elif hasattr(manifest, 'add_file'):
+            manifest.add_file(filename, disclosure_level=disclosure_level,
+                              data=data)
+        else:
+            manifest_path = os.fspath(manifest)
+            if os.path.isfile(manifest_path):
+                manifest_data = ExtractionManifest.load(manifest_path)
+            else:
+                manifest_data = ExtractionManifest()
+            manifest_data.add_file(
+                filename, disclosure_level=disclosure_level, data=data)
+            manifest_data.save(manifest_path)
+
     # sanitize filename, leave space for embedded filename part
     sane_fname = sanitize_filename(filename, max_len=MAX_FILENAME_LENGTH-5) or\
         'NONAME'
@@ -967,11 +996,14 @@ def main(cmd_line_args=None):
     """
     # print banner with version
     ensure_stdout_handles_unicode()
-    print('oleobj %s - http://decalage.info/oletools' % __version__)
-    print('THIS IS WORK IN PROGRESS - Check updates regularly!')
-    print('Please report any issue at '
-          'https://github.com/decalage2/oletools/issues')
-    print('')
+    banner_args = (sys.argv[1:] if cmd_line_args is None
+                   else list(cmd_line_args))
+    if '--manifest-only' not in banner_args:
+        print('oleobj %s - http://decalage.info/oletools' % __version__)
+        print('THIS IS WORK IN PROGRESS - Check updates regularly!')
+        print('Please report any issue at '
+              'https://github.com/decalage2/oletools/issues')
+        print('')
 
     usage = 'usage: %(prog)s [options] <filename> [filename2 ...]'
     parser = argparse.ArgumentParser(usage=usage)
@@ -999,6 +1031,29 @@ def main(cmd_line_args=None):
                              '(default=%(default)s)')
     parser.add_argument('input', nargs='*', type=existing_file, metavar='FILE',
                         help='Office files to parse (same as -i)')
+
+    # read-only extraction manifest options
+    parser.add_argument('-m', '--manifest', '--manifest-out',
+                        '--manifest-file', dest='manifest',
+                        default=None,
+                        help='write a read-only JSON extraction manifest to '
+                             'this file (use "-" for stdout).')
+    parser.add_argument('--manifest-only', action='store_true',
+                        help='build the manifest without dumping embedded '
+                             'objects to disk.')
+    parser.add_argument('--disclosure', '--disclosure-level', '--level',
+                        dest='disclosure', default='unspecified',
+                        help='disclosure level recorded for every input '
+                             '(default: unspecified).')
+    parser.add_argument('--disclosure-map', dest='disclosure_map',
+                        default=None,
+                        help='JSON file mapping parent paths to disclosure '
+                             'levels, or a list of {path, '
+                             'disclosure_level} objects.')
+    parser.add_argument('--blob-dir', '--blob-store', dest='blob_dir',
+                        default=None,
+                        help='optional persistent content-addressed blob '
+                             'directory for manifest payloads.')
 
     # options for compatibility with ripOLE
     parser.add_argument('-i', '--more-input', type=str, metavar='FILE',
@@ -1034,6 +1089,27 @@ def main(cmd_line_args=None):
     any_err_dumping = False
     any_did_dump = False
 
+    manifest = None
+    disclosure_map = {}
+    if options.manifest is not None or options.manifest_only:
+        from oletools.olemanifest import ExtractionManifest
+        manifest = ExtractionManifest(root=options.blob_dir)
+        if options.disclosure_map:
+            with open(options.disclosure_map, 'r', encoding='utf-8') as handle:
+                raw_map = json.load(handle)
+            if isinstance(raw_map, dict):
+                for parent, level in raw_map.items():
+                    disclosure_map[parent] = level
+                    disclosure_map[os.path.basename(parent)] = level
+            else:
+                for item in raw_map:
+                    parent = item.get('path') or item.get('filename')
+                    level = (item.get('disclosure_level')
+                             if 'disclosure_level' in item
+                             else item.get('disclosure'))
+                    disclosure_map[parent] = level
+                    disclosure_map[os.path.basename(parent)] = level
+
     for container, filename, data in \
             xglob.iter_files(options.input, recursive=options.recursive,
                              zip_password=options.zip_password,
@@ -1041,11 +1117,28 @@ def main(cmd_line_args=None):
         # ignore directory names stored in zip files:
         if container and filename.endswith('/'):
             continue
+        if manifest is not None:
+            level = disclosure_map.get(
+                filename, disclosure_map.get(os.path.basename(filename),
+                                             options.disclosure))
+            manifest.add_file(filename, disclosure_level=level, data=data)
+        if options.manifest_only:
+            continue
         err_stream, err_dumping, did_dump = \
             process_file(filename, data, options.output_dir)
         any_err_stream |= err_stream
         any_err_dumping |= err_dumping
         any_did_dump |= did_dump
+
+    if manifest is not None:
+        manifest.freeze()
+        manifest_json = manifest.to_json()
+        if options.manifest == '-':
+            print(manifest_json)
+        elif options.manifest:
+            manifest.save(options.manifest)
+        else:
+            print(manifest_json)
 
     # assemble return value
     return_val = RETURN_NO_DUMP
@@ -1056,6 +1149,27 @@ def main(cmd_line_args=None):
     if any_err_dumping:
         return_val += RETURN_ERR_DUMP
     return return_val
+
+
+# Public extraction-manifest API (implemented in oletools.olemanifest).
+# Imported here as well so existing users of oleobj do not need a second
+# import when they want to build a manifest.
+from oletools.olemanifest import (  # noqa: E402  pylint: disable=wrong-import-position
+    BlobStore,
+    ContentBlob,
+    ExtractionManifest,
+    Entry,
+    Manifest,
+    ManifestEntry,
+    build_manifest,
+    build_extraction_manifest,
+    create_manifest,
+    extract_manifest,
+    make_manifest,
+    make_extraction_manifest,
+    normalize_disclosure_level,
+    read_only_manifest,
+)
 
 
 if __name__ == '__main__':
