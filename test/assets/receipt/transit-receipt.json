@@ -1,0 +1,56 @@
+{
+  "source_id": "transit-receipt",
+  "stage": "transit_receipt",
+  "entries": [
+    {
+      "name": "numpy",
+      "version": "1.26.0",
+      "filename": "numpy-1.26.0-cp312-cp312-manylinux_2_17_x86_64.whl",
+      "digests": {
+        "sha256": "aaaa1111bbbb2222cccc3333dddd4444eeee5555ffff66660000111122223333aa"
+      },
+      "provided_by": "transit-scanner-1",
+      "received_at": "2026-11-21T09:00:00Z"
+    },
+    {
+      "name": "numpy",
+      "version": "1.26.0",
+      "filename": "numpy-1.26.0-cp312-cp312-macosx_11_0_arm64.whl",
+      "digests": {
+        "sha256": "0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f"
+      },
+      "provided_by": "transit-scanner-1",
+      "received_at": "2026-11-21T09:05:00Z"
+    },
+    {
+      "name": "requests",
+      "version": "2.31.0",
+      "filename": "requests-2.31.0-py3-none-any.whl",
+      "digests": {
+        "sha256": "dddd4444eeee5555ffff66660000111122223333444455556666777788889999dd"
+      },
+      "provided_by": "transit-scanner-2",
+      "received_at": "2026-11-21T09:15:00Z"
+    },
+    {
+      "name": "urllib3",
+      "version": "2.1.0",
+      "filename": "urllib3-2.1.0-py3-none-any.whl",
+      "digests": {
+        "sha256": "ffff666600001111222233334444555566667777888899990000111122223333ff"
+      },
+      "provided_by": "transit-scanner-2",
+      "received_at": "2026-11-21T09:20:00Z"
+    },
+    {
+      "name": "idna",
+      "version": "3.6",
+      "filename": "idna-3.6-py3-none-any.whl",
+      "digests": {
+        "sha256": "1212121212121212121212121212121212121212121212121212121212121212"
+      },
+      "provided_by": "transit-scanner-2",
+      "received_at": "2026-11-21T09:25:00Z"
+    }
+  ]
+}

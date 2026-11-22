@@ -1,0 +1,56 @@
+{
+  "source": {
+    "name": "security-audit-plan",
+    "provider": "security-group",
+    "document_id": "PLAN-2026-11",
+    "produced_at": "2026-11-20T09:00:00+08:00"
+  },
+  "entries": [
+    {
+      "name": "requests",
+      "version": "2.31.0",
+      "filename": "requests-2.31.0-py3-none-any.whl",
+      "digest_alg": "sha256",
+      "digest": "dddd4444eeee5555ffff66660000111122223333444455556666777788889999dd"
+    },
+    {
+      "name": "numpy",
+      "version": "1.26.0",
+      "filename": "numpy-1.26.0-cp312-cp312-macosx_11_0_arm64.whl",
+      "digest_alg": "sha256",
+      "digest": "bbbb2222cccc3333dddd4444eeee5555ffff6666000011112222333344445555bb"
+    },
+    {
+      "name": "numpy",
+      "version": "1.26.0",
+      "filename": "numpy-1.26.0-cp312-cp312-manylinux_2_17_x86_64.whl",
+      "digest_alg": "sha256",
+      "digest": "aaaa1111bbbb2222cccc3333dddd4444eeee5555ffff66660000111122223333aa"
+    },
+    {
+      "name": "flask",
+      "version": "3.0.0",
+      "filename": "flask-3.0.0-py3-none-any.whl",
+      "digest_alg": "sha256",
+      "digest": "9999000011112222333344445555666677778888999900001111222233334444ff"
+    },
+    {
+      "name": "urllib3",
+      "version": "2.1.0"
+    },
+    {
+      "name": "charset-normalizer",
+      "version": "3.3.2",
+      "filename": "charset_normalizer-3.3.2-py3-none-any.whl",
+      "digest_alg": "sha256",
+      "digest": "d44444444444444444444444444444444444444444444444444444444444444"
+    },
+    {
+      "name": "certifi",
+      "version": "2024.2.2",
+      "filename": "certifi-2024.2.2-py3-none-any.whl",
+      "digest_alg": "sha256",
+      "digest": "e55555555555555555555555555555555555555555555555555555555555555"
+    }
+  ]
+}

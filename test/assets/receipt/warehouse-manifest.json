@@ -1,0 +1,46 @@
+{
+  "source_id": "warehouse-manifest",
+  "stage": "warehouse_manifest",
+  "entries": [
+    {
+      "name": "numpy",
+      "version": "1.26.0",
+      "filename": "numpy-1.26.0-cp312-cp312-manylinux_2_17_x86_64.whl",
+      "digests": {"sha256": "aaaa1111bbbb2222cccc3333dddd4444eeee5555ffff66660000111122223333aa"},
+      "provided_by": "warehouse-bot",
+      "received_at": "2026-11-20T08:00:00Z"
+    },
+    {
+      "name": "numpy",
+      "version": "1.26.0",
+      "filename": "numpy-1.26.0-cp312-cp312-macosx_11_0_arm64.whl",
+      "digests": {"sha256": "bbbb2222cccc3333dddd4444eeee5555ffff6666000011112222333344445555bb"},
+      "provided_by": "warehouse-bot",
+      "received_at": "2026-11-20T08:05:00Z"
+    },
+    {
+      "name": "flask",
+      "version": "3.0.0",
+      "filename": "flask-3.0.0-py3-none-any.whl",
+      "digests": {"sha256": "cccc3333dddd4444eeee5555ffff666600001111222233334444555566667777cc"},
+      "provided_by": "warehouse-bot",
+      "received_at": "2026-11-20T08:10:00Z"
+    },
+    {
+      "name": "requests",
+      "version": "2.31.0",
+      "filename": "requests-2.31.0-py3-none-any.whl",
+      "digests": {"sha256": "dddd4444eeee5555ffff66660000111122223333444455556666777788889999dd"},
+      "provided_by": "warehouse-bot",
+      "received_at": "2026-11-20T08:15:00Z"
+    },
+    {
+      "name": "packaging",
+      "version": "23.2",
+      "filename": "packaging-23.2-py3-none-any.whl",
+      "digests": {"sha256": "eeee5555ffff6666000011112222333344445555666677778888999900001111ee"},
+      "provided_by": "warehouse-bot",
+      "received_at": "2026-11-20T08:20:00Z"
+    }
+  ]
+}
