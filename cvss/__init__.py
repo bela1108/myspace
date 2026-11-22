@@ -2,6 +2,20 @@
 # Author: Stanislav Kontar, Red Hat Product Security
 # License: LGPLv3+
 
+from .contract import (
+    DECISION_INDETERMINATE,
+    DECISION_RELEASE,
+    DECISION_STOP,
+    INDETERMINATE,
+    RELEASE,
+    STOP,
+    CVSSContract,
+    CVSSContractError,
+    ReleaseContract,
+    evaluate_release,
+    evaluate_releases,
+    partition_releases,
+)
 from .cvss2 import CVSS2
 from .cvss3 import CVSS3
 from .cvss4 import CVSS4

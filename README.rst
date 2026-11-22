@@ -86,6 +86,35 @@ For help on the calculator options run:
 
     $ cvss_calculator --help
 
+Offline release contract checks
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The scoring API keeps the historical one-decimal display precision.  When a
+release decision depends on whether a score crosses a business threshold, use
+``ReleaseContract`` to make the evidence explicit.  The threshold is always
+supplied by the caller because it is not part of CVSS.
+
+.. code-block:: python
+
+    from cvss import ReleaseContract
+
+    contract = ReleaseContract(threshold="8.0", precision=1)
+
+    material = {
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:L/UI:R/S:U/C:H/I:H/A:H",
+        "baseScore": 8.0,
+    }
+    result = contract.evaluate(material)
+    print(result["decision"])       # stop
+    print(result["display_score"])  # 8.0, historical display precision retained
+
+A complete vector is rescored locally and is authoritative.  A record with only
+a display score is treated as an interval implied by its precision and rounding
+rule.  If the vector or the rounding rule is missing, ``possible_range`` is
+returned; the decision is ``indeterminate`` when that range crosses the
+threshold.  Results are plain JSON-serialisable dictionaries, so they can be
+stored and replayed by an offline audit job.
+
 Testing
 -------
 
