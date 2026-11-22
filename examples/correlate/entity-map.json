@@ -1,0 +1,1417 @@
+{
+  "old": {
+    "path": "examples/correlate/samples/old/Correlate.Sample.dll",
+    "assembly": "Correlate.Sample"
+  },
+  "new": {
+    "path": "examples/correlate/samples/new/Correlate.Sample.dll",
+    "assembly": "Correlate.Sample"
+  },
+  "summary": {
+    "ambiguous_same_name": 2,
+    "renumbered_only": 14,
+    "signature_changed": 2,
+    "unchanged": 3,
+    "unmatched_new": 0
+  },
+  "matches": [
+    {
+      "group_id": "MAP-0001",
+      "source": {
+        "kind": "type",
+        "token": "0x02000002",
+        "name": "StableService",
+        "namespace": "Contoso.Incident",
+        "declaring_type": null,
+        "full_name": "Contoso.Incident.StableService"
+      },
+      "status": "renumbered_only",
+      "score": 1.0,
+      "review_required": false,
+      "comparisons": {
+        "namespace_equal": true,
+        "declaring_type_equal": true,
+        "signature_equal": true,
+        "locals_equal": null,
+        "generic_constraints_equal": true,
+        "semantic_equal": true,
+        "projection_equal": true,
+        "token_equal": false
+      },
+      "notes": [
+        "namespace=equal",
+        "declaring type=equal",
+        "signature=equal",
+        "local declarations=unknown",
+        "generic constraints=equal",
+        "structural projection=equal",
+        "metadata token=changed"
+      ],
+      "target": {
+        "kind": "type",
+        "token": "0x02000005",
+        "name": "StableService",
+        "namespace": "Contoso.Incident",
+        "declaring_type": null,
+        "full_name": "Contoso.Incident.StableService"
+      },
+      "candidates": [
+        {
+          "kind": "type",
+          "token": "0x02000005",
+          "name": "StableService",
+          "namespace": "Contoso.Incident",
+          "declaring_type": null,
+          "full_name": "Contoso.Incident.StableService",
+          "score": 1.0,
+          "token_equal": false,
+          "semantic_equal": true,
+          "projection_equal": true,
+          "comparisons": {
+            "namespace_equal": true,
+            "declaring_type_equal": true,
+            "signature_equal": true,
+            "locals_equal": null,
+            "generic_constraints_equal": true,
+            "semantic_equal": true,
+            "projection_equal": true,
+            "token_equal": false
+          }
+        }
+      ]
+    },
+    {
+      "group_id": "MAP-0002",
+      "source": {
+        "kind": "type",
+        "token": "0x02000003",
+        "name": "Outer",
+        "namespace": "Contoso.Incident",
+        "declaring_type": null,
+        "full_name": "Contoso.Incident.Outer"
+      },
+      "status": "unchanged",
+      "score": 1.0,
+      "review_required": false,
+      "comparisons": {
+        "namespace_equal": true,
+        "declaring_type_equal": true,
+        "signature_equal": true,
+        "locals_equal": null,
+        "generic_constraints_equal": true,
+        "semantic_equal": true,
+        "projection_equal": true,
+        "token_equal": true
+      },
+      "notes": [
+        "namespace=equal",
+        "declaring type=equal",
+        "signature=equal",
+        "local declarations=unknown",
+        "generic constraints=equal",
+        "structural projection=equal",
+        "metadata token=equal"
+      ],
+      "target": {
+        "kind": "type",
+        "token": "0x02000003",
+        "name": "Outer",
+        "namespace": "Contoso.Incident",
+        "declaring_type": null,
+        "full_name": "Contoso.Incident.Outer"
+      },
+      "candidates": [
+        {
+          "kind": "type",
+          "token": "0x02000003",
+          "name": "Outer",
+          "namespace": "Contoso.Incident",
+          "declaring_type": null,
+          "full_name": "Contoso.Incident.Outer",
+          "score": 1.0,
+          "token_equal": true,
+          "semantic_equal": true,
+          "projection_equal": true,
+          "comparisons": {
+            "namespace_equal": true,
+            "declaring_type_equal": true,
+            "signature_equal": true,
+            "locals_equal": null,
+            "generic_constraints_equal": true,
+            "semantic_equal": true,
+            "projection_equal": true,
+            "token_equal": true
+          }
+        }
+      ]
+    },
+    {
+      "group_id": "MAP-0003",
+      "source": {
+        "kind": "type",
+        "token": "0x02000004",
+        "name": "GenericBox",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.Outer",
+        "full_name": "Contoso.Incident.Outer+GenericBox"
+      },
+      "status": "renumbered_only",
+      "score": 1.0,
+      "review_required": false,
+      "comparisons": {
+        "namespace_equal": true,
+        "declaring_type_equal": true,
+        "signature_equal": true,
+        "locals_equal": null,
+        "generic_constraints_equal": true,
+        "semantic_equal": true,
+        "projection_equal": true,
+        "token_equal": false
+      },
+      "notes": [
+        "namespace=equal",
+        "declaring type=equal",
+        "signature=equal",
+        "local declarations=unknown",
+        "generic constraints=equal",
+        "structural projection=equal",
+        "metadata token=changed"
+      ],
+      "target": {
+        "kind": "type",
+        "token": "0x02000006",
+        "name": "GenericBox",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.Outer",
+        "full_name": "Contoso.Incident.Outer+GenericBox"
+      },
+      "candidates": [
+        {
+          "kind": "type",
+          "token": "0x02000006",
+          "name": "GenericBox",
+          "namespace": "Contoso.Incident",
+          "declaring_type": "Contoso.Incident.Outer",
+          "full_name": "Contoso.Incident.Outer+GenericBox",
+          "score": 1.0,
+          "token_equal": false,
+          "semantic_equal": true,
+          "projection_equal": true,
+          "comparisons": {
+            "namespace_equal": true,
+            "declaring_type_equal": true,
+            "signature_equal": true,
+            "locals_equal": null,
+            "generic_constraints_equal": true,
+            "semantic_equal": true,
+            "projection_equal": true,
+            "token_equal": false
+          }
+        }
+      ]
+    },
+    {
+      "group_id": "MAP-0004",
+      "source": {
+        "kind": "type",
+        "token": "0x02000005",
+        "name": "LegacyApi",
+        "namespace": "Contoso.Incident",
+        "declaring_type": null,
+        "full_name": "Contoso.Incident.LegacyApi"
+      },
+      "status": "signature_changed",
+      "score": 0.4,
+      "review_required": false,
+      "comparisons": {
+        "namespace_equal": true,
+        "declaring_type_equal": true,
+        "signature_equal": true,
+        "locals_equal": null,
+        "generic_constraints_equal": true,
+        "semantic_equal": false,
+        "projection_equal": false,
+        "token_equal": false
+      },
+      "notes": [
+        "namespace=equal",
+        "declaring type=equal",
+        "signature=equal",
+        "local declarations=unknown",
+        "generic constraints=equal",
+        "structural projection=changed",
+        "metadata token=changed"
+      ],
+      "target": {
+        "kind": "type",
+        "token": "0x02000002",
+        "name": "LegacyApi",
+        "namespace": "Contoso.Incident",
+        "declaring_type": null,
+        "full_name": "Contoso.Incident.LegacyApi"
+      },
+      "candidates": [
+        {
+          "kind": "type",
+          "token": "0x02000002",
+          "name": "LegacyApi",
+          "namespace": "Contoso.Incident",
+          "declaring_type": null,
+          "full_name": "Contoso.Incident.LegacyApi",
+          "score": 0.4,
+          "token_equal": false,
+          "semantic_equal": false,
+          "projection_equal": false,
+          "comparisons": {
+            "namespace_equal": true,
+            "declaring_type_equal": true,
+            "signature_equal": true,
+            "locals_equal": null,
+            "generic_constraints_equal": true,
+            "semantic_equal": false,
+            "projection_equal": false,
+            "token_equal": false
+          }
+        }
+      ]
+    },
+    {
+      "group_id": "MAP-0005",
+      "source": {
+        "kind": "type",
+        "token": "0x02000006",
+        "name": "Ambiguous",
+        "namespace": "Contoso.Incident",
+        "declaring_type": null,
+        "full_name": "Contoso.Incident.Ambiguous"
+      },
+      "status": "renumbered_only",
+      "score": 1.0,
+      "review_required": false,
+      "comparisons": {
+        "namespace_equal": true,
+        "declaring_type_equal": true,
+        "signature_equal": true,
+        "locals_equal": null,
+        "generic_constraints_equal": true,
+        "semantic_equal": true,
+        "projection_equal": true,
+        "token_equal": false
+      },
+      "notes": [
+        "namespace=equal",
+        "declaring type=equal",
+        "signature=equal",
+        "local declarations=unknown",
+        "generic constraints=equal",
+        "structural projection=equal",
+        "metadata token=changed"
+      ],
+      "target": {
+        "kind": "type",
+        "token": "0x02000004",
+        "name": "Ambiguous",
+        "namespace": "Contoso.Incident",
+        "declaring_type": null,
+        "full_name": "Contoso.Incident.Ambiguous"
+      },
+      "candidates": [
+        {
+          "kind": "type",
+          "token": "0x02000004",
+          "name": "Ambiguous",
+          "namespace": "Contoso.Incident",
+          "declaring_type": null,
+          "full_name": "Contoso.Incident.Ambiguous",
+          "score": 1.0,
+          "token_equal": false,
+          "semantic_equal": true,
+          "projection_equal": true,
+          "comparisons": {
+            "namespace_equal": true,
+            "declaring_type_equal": true,
+            "signature_equal": true,
+            "locals_equal": null,
+            "generic_constraints_equal": true,
+            "semantic_equal": true,
+            "projection_equal": true,
+            "token_equal": false
+          }
+        }
+      ]
+    },
+    {
+      "group_id": "MAP-0006",
+      "source": {
+        "kind": "field",
+        "token": "0x04000001",
+        "name": "_cache",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.StableService",
+        "full_name": "field:Contoso.Incident.StableService::_cache"
+      },
+      "status": "renumbered_only",
+      "score": 1.0,
+      "review_required": false,
+      "comparisons": {
+        "namespace_equal": true,
+        "declaring_type_equal": true,
+        "signature_equal": true,
+        "locals_equal": null,
+        "generic_constraints_equal": true,
+        "semantic_equal": true,
+        "projection_equal": true,
+        "token_equal": false
+      },
+      "notes": [
+        "namespace=equal",
+        "declaring type=equal",
+        "signature=equal",
+        "local declarations=unknown",
+        "generic constraints=equal",
+        "structural projection=equal",
+        "metadata token=changed"
+      ],
+      "target": {
+        "kind": "field",
+        "token": "0x04000002",
+        "name": "_cache",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.StableService",
+        "full_name": "field:Contoso.Incident.StableService::_cache"
+      },
+      "candidates": [
+        {
+          "kind": "field",
+          "token": "0x04000002",
+          "name": "_cache",
+          "namespace": "Contoso.Incident",
+          "declaring_type": "Contoso.Incident.StableService",
+          "full_name": "field:Contoso.Incident.StableService::_cache",
+          "score": 1.0,
+          "token_equal": false,
+          "semantic_equal": true,
+          "projection_equal": true,
+          "comparisons": {
+            "namespace_equal": true,
+            "declaring_type_equal": true,
+            "signature_equal": true,
+            "locals_equal": null,
+            "generic_constraints_equal": true,
+            "semantic_equal": true,
+            "projection_equal": true,
+            "token_equal": false
+          }
+        }
+      ]
+    },
+    {
+      "group_id": "MAP-0007",
+      "source": {
+        "kind": "field",
+        "token": "0x04000002",
+        "name": "VersionTag",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.StableService",
+        "full_name": "field:Contoso.Incident.StableService::VersionTag"
+      },
+      "status": "renumbered_only",
+      "score": 1.0,
+      "review_required": false,
+      "comparisons": {
+        "namespace_equal": true,
+        "declaring_type_equal": true,
+        "signature_equal": true,
+        "locals_equal": null,
+        "generic_constraints_equal": true,
+        "semantic_equal": true,
+        "projection_equal": true,
+        "token_equal": false
+      },
+      "notes": [
+        "namespace=equal",
+        "declaring type=equal",
+        "signature=equal",
+        "local declarations=unknown",
+        "generic constraints=equal",
+        "structural projection=equal",
+        "metadata token=changed"
+      ],
+      "target": {
+        "kind": "field",
+        "token": "0x04000003",
+        "name": "VersionTag",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.StableService",
+        "full_name": "field:Contoso.Incident.StableService::VersionTag"
+      },
+      "candidates": [
+        {
+          "kind": "field",
+          "token": "0x04000003",
+          "name": "VersionTag",
+          "namespace": "Contoso.Incident",
+          "declaring_type": "Contoso.Incident.StableService",
+          "full_name": "field:Contoso.Incident.StableService::VersionTag",
+          "score": 1.0,
+          "token_equal": false,
+          "semantic_equal": true,
+          "projection_equal": true,
+          "comparisons": {
+            "namespace_equal": true,
+            "declaring_type_equal": true,
+            "signature_equal": true,
+            "locals_equal": null,
+            "generic_constraints_equal": true,
+            "semantic_equal": true,
+            "projection_equal": true,
+            "token_equal": false
+          }
+        }
+      ]
+    },
+    {
+      "group_id": "MAP-0008",
+      "source": {
+        "kind": "field",
+        "token": "0x04000003",
+        "name": "BoxOfInt",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.Outer",
+        "full_name": "field:Contoso.Incident.Outer::BoxOfInt"
+      },
+      "status": "renumbered_only",
+      "score": 1.0,
+      "review_required": false,
+      "comparisons": {
+        "namespace_equal": true,
+        "declaring_type_equal": true,
+        "signature_equal": true,
+        "locals_equal": null,
+        "generic_constraints_equal": true,
+        "semantic_equal": true,
+        "projection_equal": true,
+        "token_equal": false
+      },
+      "notes": [
+        "namespace=equal",
+        "declaring type=equal",
+        "signature=equal",
+        "local declarations=unknown",
+        "generic constraints=equal",
+        "structural projection=equal",
+        "metadata token=changed"
+      ],
+      "target": {
+        "kind": "field",
+        "token": "0x04000001",
+        "name": "BoxOfInt",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.Outer",
+        "full_name": "field:Contoso.Incident.Outer::BoxOfInt"
+      },
+      "candidates": [
+        {
+          "kind": "field",
+          "token": "0x04000001",
+          "name": "BoxOfInt",
+          "namespace": "Contoso.Incident",
+          "declaring_type": "Contoso.Incident.Outer",
+          "full_name": "field:Contoso.Incident.Outer::BoxOfInt",
+          "score": 1.0,
+          "token_equal": false,
+          "semantic_equal": true,
+          "projection_equal": true,
+          "comparisons": {
+            "namespace_equal": true,
+            "declaring_type_equal": true,
+            "signature_equal": true,
+            "locals_equal": null,
+            "generic_constraints_equal": true,
+            "semantic_equal": true,
+            "projection_equal": true,
+            "token_equal": false
+          }
+        }
+      ]
+    },
+    {
+      "group_id": "MAP-0009",
+      "source": {
+        "kind": "field",
+        "token": "0x04000004",
+        "name": "Value",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.Outer+GenericBox",
+        "full_name": "field:Contoso.Incident.Outer+GenericBox::Value"
+      },
+      "status": "unchanged",
+      "score": 1.0,
+      "review_required": false,
+      "comparisons": {
+        "namespace_equal": true,
+        "declaring_type_equal": true,
+        "signature_equal": true,
+        "locals_equal": null,
+        "generic_constraints_equal": true,
+        "semantic_equal": true,
+        "projection_equal": true,
+        "token_equal": true
+      },
+      "notes": [
+        "namespace=equal",
+        "declaring type=equal",
+        "signature=equal",
+        "local declarations=unknown",
+        "generic constraints=equal",
+        "structural projection=equal",
+        "metadata token=equal"
+      ],
+      "target": {
+        "kind": "field",
+        "token": "0x04000004",
+        "name": "Value",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.Outer+GenericBox",
+        "full_name": "field:Contoso.Incident.Outer+GenericBox::Value"
+      },
+      "candidates": [
+        {
+          "kind": "field",
+          "token": "0x04000004",
+          "name": "Value",
+          "namespace": "Contoso.Incident",
+          "declaring_type": "Contoso.Incident.Outer+GenericBox",
+          "full_name": "field:Contoso.Incident.Outer+GenericBox::Value",
+          "score": 1.0,
+          "token_equal": true,
+          "semantic_equal": true,
+          "projection_equal": true,
+          "comparisons": {
+            "namespace_equal": true,
+            "declaring_type_equal": true,
+            "signature_equal": true,
+            "locals_equal": null,
+            "generic_constraints_equal": true,
+            "semantic_equal": true,
+            "projection_equal": true,
+            "token_equal": true
+          }
+        }
+      ]
+    },
+    {
+      "group_id": "MAP-0010",
+      "source": {
+        "kind": "method",
+        "token": "0x06000001",
+        "name": ".ctor",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.StableService",
+        "full_name": "method:Contoso.Incident.StableService::.ctor#0"
+      },
+      "status": "renumbered_only",
+      "score": 1.0,
+      "review_required": false,
+      "comparisons": {
+        "namespace_equal": true,
+        "declaring_type_equal": true,
+        "signature_equal": true,
+        "locals_equal": true,
+        "generic_constraints_equal": true,
+        "semantic_equal": true,
+        "projection_equal": true,
+        "token_equal": false
+      },
+      "notes": [
+        "namespace=equal",
+        "declaring type=equal",
+        "signature=equal",
+        "local declarations=equal",
+        "generic constraints=equal",
+        "structural projection=equal",
+        "metadata token=changed"
+      ],
+      "target": {
+        "kind": "method",
+        "token": "0x06000007",
+        "name": ".ctor",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.StableService",
+        "full_name": "method:Contoso.Incident.StableService::.ctor#0"
+      },
+      "candidates": [
+        {
+          "kind": "method",
+          "token": "0x06000007",
+          "name": ".ctor",
+          "namespace": "Contoso.Incident",
+          "declaring_type": "Contoso.Incident.StableService",
+          "full_name": "method:Contoso.Incident.StableService::.ctor#0",
+          "score": 1.0,
+          "token_equal": false,
+          "semantic_equal": true,
+          "projection_equal": true,
+          "comparisons": {
+            "namespace_equal": true,
+            "declaring_type_equal": true,
+            "signature_equal": true,
+            "locals_equal": true,
+            "generic_constraints_equal": true,
+            "semantic_equal": true,
+            "projection_equal": true,
+            "token_equal": false
+          }
+        }
+      ]
+    },
+    {
+      "group_id": "MAP-0011",
+      "source": {
+        "kind": "method",
+        "token": "0x06000002",
+        "name": "Compute",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.StableService",
+        "full_name": "method:Contoso.Incident.StableService::Compute#0"
+      },
+      "status": "renumbered_only",
+      "score": 1.0,
+      "review_required": false,
+      "comparisons": {
+        "namespace_equal": true,
+        "declaring_type_equal": true,
+        "signature_equal": true,
+        "locals_equal": true,
+        "generic_constraints_equal": true,
+        "semantic_equal": true,
+        "projection_equal": true,
+        "token_equal": false
+      },
+      "notes": [
+        "namespace=equal",
+        "declaring type=equal",
+        "signature=equal",
+        "local declarations=equal",
+        "generic constraints=equal",
+        "structural projection=equal",
+        "metadata token=changed"
+      ],
+      "target": {
+        "kind": "method",
+        "token": "0x06000008",
+        "name": "Compute",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.StableService",
+        "full_name": "method:Contoso.Incident.StableService::Compute#0"
+      },
+      "candidates": [
+        {
+          "kind": "method",
+          "token": "0x06000008",
+          "name": "Compute",
+          "namespace": "Contoso.Incident",
+          "declaring_type": "Contoso.Incident.StableService",
+          "full_name": "method:Contoso.Incident.StableService::Compute#0",
+          "score": 1.0,
+          "token_equal": false,
+          "semantic_equal": true,
+          "projection_equal": true,
+          "comparisons": {
+            "namespace_equal": true,
+            "declaring_type_equal": true,
+            "signature_equal": true,
+            "locals_equal": true,
+            "generic_constraints_equal": true,
+            "semantic_equal": true,
+            "projection_equal": true,
+            "token_equal": false
+          }
+        }
+      ]
+    },
+    {
+      "group_id": "MAP-0012",
+      "source": {
+        "kind": "method",
+        "token": "0x06000003",
+        "name": "get_Status",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.StableService",
+        "full_name": "method:Contoso.Incident.StableService::get_Status#0"
+      },
+      "status": "renumbered_only",
+      "score": 1.0,
+      "review_required": false,
+      "comparisons": {
+        "namespace_equal": true,
+        "declaring_type_equal": true,
+        "signature_equal": true,
+        "locals_equal": true,
+        "generic_constraints_equal": true,
+        "semantic_equal": true,
+        "projection_equal": true,
+        "token_equal": false
+      },
+      "notes": [
+        "namespace=equal",
+        "declaring type=equal",
+        "signature=equal",
+        "local declarations=equal",
+        "generic constraints=equal",
+        "structural projection=equal",
+        "metadata token=changed"
+      ],
+      "target": {
+        "kind": "method",
+        "token": "0x06000009",
+        "name": "get_Status",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.StableService",
+        "full_name": "method:Contoso.Incident.StableService::get_Status#0"
+      },
+      "candidates": [
+        {
+          "kind": "method",
+          "token": "0x06000009",
+          "name": "get_Status",
+          "namespace": "Contoso.Incident",
+          "declaring_type": "Contoso.Incident.StableService",
+          "full_name": "method:Contoso.Incident.StableService::get_Status#0",
+          "score": 1.0,
+          "token_equal": false,
+          "semantic_equal": true,
+          "projection_equal": true,
+          "comparisons": {
+            "namespace_equal": true,
+            "declaring_type_equal": true,
+            "signature_equal": true,
+            "locals_equal": true,
+            "generic_constraints_equal": true,
+            "semantic_equal": true,
+            "projection_equal": true,
+            "token_equal": false
+          }
+        }
+      ]
+    },
+    {
+      "group_id": "MAP-0013",
+      "source": {
+        "kind": "method",
+        "token": "0x06000004",
+        "name": ".ctor",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.Outer",
+        "full_name": "method:Contoso.Incident.Outer::.ctor#0"
+      },
+      "status": "unchanged",
+      "score": 1.0,
+      "review_required": false,
+      "comparisons": {
+        "namespace_equal": true,
+        "declaring_type_equal": true,
+        "signature_equal": true,
+        "locals_equal": true,
+        "generic_constraints_equal": true,
+        "semantic_equal": true,
+        "projection_equal": true,
+        "token_equal": true
+      },
+      "notes": [
+        "namespace=equal",
+        "declaring type=equal",
+        "signature=equal",
+        "local declarations=equal",
+        "generic constraints=equal",
+        "structural projection=equal",
+        "metadata token=equal"
+      ],
+      "target": {
+        "kind": "method",
+        "token": "0x06000004",
+        "name": ".ctor",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.Outer",
+        "full_name": "method:Contoso.Incident.Outer::.ctor#0"
+      },
+      "candidates": [
+        {
+          "kind": "method",
+          "token": "0x06000004",
+          "name": ".ctor",
+          "namespace": "Contoso.Incident",
+          "declaring_type": "Contoso.Incident.Outer",
+          "full_name": "method:Contoso.Incident.Outer::.ctor#0",
+          "score": 1.0,
+          "token_equal": true,
+          "semantic_equal": true,
+          "projection_equal": true,
+          "comparisons": {
+            "namespace_equal": true,
+            "declaring_type_equal": true,
+            "signature_equal": true,
+            "locals_equal": true,
+            "generic_constraints_equal": true,
+            "semantic_equal": true,
+            "projection_equal": true,
+            "token_equal": true
+          }
+        }
+      ]
+    },
+    {
+      "group_id": "MAP-0014",
+      "source": {
+        "kind": "method",
+        "token": "0x06000005",
+        "name": "Map",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.Outer+GenericBox",
+        "full_name": "method:Contoso.Incident.Outer+GenericBox::Map#1"
+      },
+      "status": "renumbered_only",
+      "score": 1.0,
+      "review_required": false,
+      "comparisons": {
+        "namespace_equal": true,
+        "declaring_type_equal": true,
+        "signature_equal": true,
+        "locals_equal": true,
+        "generic_constraints_equal": true,
+        "semantic_equal": true,
+        "projection_equal": true,
+        "token_equal": false
+      },
+      "notes": [
+        "namespace=equal",
+        "declaring type=equal",
+        "signature=equal",
+        "local declarations=equal",
+        "generic constraints=equal",
+        "structural projection=equal",
+        "metadata token=changed"
+      ],
+      "target": {
+        "kind": "method",
+        "token": "0x0600000A",
+        "name": "Map",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.Outer+GenericBox",
+        "full_name": "method:Contoso.Incident.Outer+GenericBox::Map#1"
+      },
+      "candidates": [
+        {
+          "kind": "method",
+          "token": "0x0600000A",
+          "name": "Map",
+          "namespace": "Contoso.Incident",
+          "declaring_type": "Contoso.Incident.Outer+GenericBox",
+          "full_name": "method:Contoso.Incident.Outer+GenericBox::Map#1",
+          "score": 1.0,
+          "token_equal": false,
+          "semantic_equal": true,
+          "projection_equal": true,
+          "comparisons": {
+            "namespace_equal": true,
+            "declaring_type_equal": true,
+            "signature_equal": true,
+            "locals_equal": true,
+            "generic_constraints_equal": true,
+            "semantic_equal": true,
+            "projection_equal": true,
+            "token_equal": false
+          }
+        }
+      ]
+    },
+    {
+      "group_id": "MAP-0015",
+      "source": {
+        "kind": "method",
+        "token": "0x06000006",
+        "name": ".ctor",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.LegacyApi",
+        "full_name": "method:Contoso.Incident.LegacyApi::.ctor#0"
+      },
+      "status": "renumbered_only",
+      "score": 1.0,
+      "review_required": false,
+      "comparisons": {
+        "namespace_equal": true,
+        "declaring_type_equal": true,
+        "signature_equal": true,
+        "locals_equal": true,
+        "generic_constraints_equal": true,
+        "semantic_equal": true,
+        "projection_equal": true,
+        "token_equal": false
+      },
+      "notes": [
+        "namespace=equal",
+        "declaring type=equal",
+        "signature=equal",
+        "local declarations=equal",
+        "generic constraints=equal",
+        "structural projection=equal",
+        "metadata token=changed"
+      ],
+      "target": {
+        "kind": "method",
+        "token": "0x06000001",
+        "name": ".ctor",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.LegacyApi",
+        "full_name": "method:Contoso.Incident.LegacyApi::.ctor#0"
+      },
+      "candidates": [
+        {
+          "kind": "method",
+          "token": "0x06000001",
+          "name": ".ctor",
+          "namespace": "Contoso.Incident",
+          "declaring_type": "Contoso.Incident.LegacyApi",
+          "full_name": "method:Contoso.Incident.LegacyApi::.ctor#0",
+          "score": 1.0,
+          "token_equal": false,
+          "semantic_equal": true,
+          "projection_equal": true,
+          "comparisons": {
+            "namespace_equal": true,
+            "declaring_type_equal": true,
+            "signature_equal": true,
+            "locals_equal": true,
+            "generic_constraints_equal": true,
+            "semantic_equal": true,
+            "projection_equal": true,
+            "token_equal": false
+          }
+        }
+      ]
+    },
+    {
+      "group_id": "MAP-0016",
+      "source": {
+        "kind": "method",
+        "token": "0x06000007",
+        "name": "Process",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.LegacyApi",
+        "full_name": "method:Contoso.Incident.LegacyApi::Process#0"
+      },
+      "status": "signature_changed",
+      "score": 0.25,
+      "review_required": false,
+      "comparisons": {
+        "namespace_equal": true,
+        "declaring_type_equal": true,
+        "signature_equal": false,
+        "locals_equal": false,
+        "generic_constraints_equal": true,
+        "semantic_equal": false,
+        "projection_equal": false,
+        "token_equal": false
+      },
+      "notes": [
+        "namespace=equal",
+        "declaring type=equal",
+        "signature=changed",
+        "local declarations=changed",
+        "generic constraints=equal",
+        "structural projection=changed",
+        "metadata token=changed"
+      ],
+      "target": {
+        "kind": "method",
+        "token": "0x06000002",
+        "name": "Process",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.LegacyApi",
+        "full_name": "method:Contoso.Incident.LegacyApi::Process#0"
+      },
+      "candidates": [
+        {
+          "kind": "method",
+          "token": "0x06000002",
+          "name": "Process",
+          "namespace": "Contoso.Incident",
+          "declaring_type": "Contoso.Incident.LegacyApi",
+          "full_name": "method:Contoso.Incident.LegacyApi::Process#0",
+          "score": 0.25,
+          "token_equal": false,
+          "semantic_equal": false,
+          "projection_equal": false,
+          "comparisons": {
+            "namespace_equal": true,
+            "declaring_type_equal": true,
+            "signature_equal": false,
+            "locals_equal": false,
+            "generic_constraints_equal": true,
+            "semantic_equal": false,
+            "projection_equal": false,
+            "token_equal": false
+          }
+        }
+      ]
+    },
+    {
+      "group_id": "MAP-0017",
+      "source": {
+        "kind": "method",
+        "token": "0x06000008",
+        "name": "get_ErrorCode",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.LegacyApi",
+        "full_name": "method:Contoso.Incident.LegacyApi::get_ErrorCode#0"
+      },
+      "status": "renumbered_only",
+      "score": 1.0,
+      "review_required": false,
+      "comparisons": {
+        "namespace_equal": true,
+        "declaring_type_equal": true,
+        "signature_equal": true,
+        "locals_equal": true,
+        "generic_constraints_equal": true,
+        "semantic_equal": true,
+        "projection_equal": true,
+        "token_equal": false
+      },
+      "notes": [
+        "namespace=equal",
+        "declaring type=equal",
+        "signature=equal",
+        "local declarations=equal",
+        "generic constraints=equal",
+        "structural projection=equal",
+        "metadata token=changed"
+      ],
+      "target": {
+        "kind": "method",
+        "token": "0x06000003",
+        "name": "get_ErrorCode",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.LegacyApi",
+        "full_name": "method:Contoso.Incident.LegacyApi::get_ErrorCode#0"
+      },
+      "candidates": [
+        {
+          "kind": "method",
+          "token": "0x06000003",
+          "name": "get_ErrorCode",
+          "namespace": "Contoso.Incident",
+          "declaring_type": "Contoso.Incident.LegacyApi",
+          "full_name": "method:Contoso.Incident.LegacyApi::get_ErrorCode#0",
+          "score": 1.0,
+          "token_equal": false,
+          "semantic_equal": true,
+          "projection_equal": true,
+          "comparisons": {
+            "namespace_equal": true,
+            "declaring_type_equal": true,
+            "signature_equal": true,
+            "locals_equal": true,
+            "generic_constraints_equal": true,
+            "semantic_equal": true,
+            "projection_equal": true,
+            "token_equal": false
+          }
+        }
+      ]
+    },
+    {
+      "group_id": "AMB-0001",
+      "source": {
+        "kind": "method",
+        "token": "0x06000009",
+        "name": "Handle",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.Ambiguous",
+        "full_name": "method:Contoso.Incident.Ambiguous::Handle#0"
+      },
+      "status": "ambiguous_same_name",
+      "score": 1.0,
+      "review_required": true,
+      "comparisons": {
+        "namespace_equal": true,
+        "declaring_type_equal": true,
+        "signature_equal": true,
+        "locals_equal": true,
+        "generic_constraints_equal": true,
+        "semantic_equal": true,
+        "projection_equal": true,
+        "token_equal": false
+      },
+      "notes": [
+        "2 candidates share the best evidence; manual review required",
+        "namespace=equal",
+        "declaring type=equal",
+        "signature=equal",
+        "local declarations=equal",
+        "generic constraints=equal",
+        "structural projection=equal",
+        "metadata token=changed"
+      ],
+      "target": null,
+      "candidates": [
+        {
+          "kind": "method",
+          "token": "0x06000005",
+          "name": "Handle",
+          "namespace": "Contoso.Incident",
+          "declaring_type": "Contoso.Incident.Ambiguous",
+          "full_name": "method:Contoso.Incident.Ambiguous::Handle#0",
+          "score": 1.0,
+          "token_equal": false,
+          "semantic_equal": true,
+          "projection_equal": true,
+          "comparisons": {
+            "namespace_equal": true,
+            "declaring_type_equal": true,
+            "signature_equal": true,
+            "locals_equal": true,
+            "generic_constraints_equal": true,
+            "semantic_equal": true,
+            "projection_equal": true,
+            "token_equal": false
+          }
+        },
+        {
+          "kind": "method",
+          "token": "0x06000006",
+          "name": "Handle",
+          "namespace": "Contoso.Incident",
+          "declaring_type": "Contoso.Incident.Ambiguous",
+          "full_name": "method:Contoso.Incident.Ambiguous::Handle#0",
+          "score": 1.0,
+          "token_equal": false,
+          "semantic_equal": true,
+          "projection_equal": true,
+          "comparisons": {
+            "namespace_equal": true,
+            "declaring_type_equal": true,
+            "signature_equal": true,
+            "locals_equal": true,
+            "generic_constraints_equal": true,
+            "semantic_equal": true,
+            "projection_equal": true,
+            "token_equal": false
+          }
+        }
+      ]
+    },
+    {
+      "group_id": "AMB-0001",
+      "source": {
+        "kind": "method",
+        "token": "0x0600000A",
+        "name": "Handle",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.Ambiguous",
+        "full_name": "method:Contoso.Incident.Ambiguous::Handle#0"
+      },
+      "status": "ambiguous_same_name",
+      "score": 1.0,
+      "review_required": true,
+      "comparisons": {
+        "namespace_equal": true,
+        "declaring_type_equal": true,
+        "signature_equal": true,
+        "locals_equal": true,
+        "generic_constraints_equal": true,
+        "semantic_equal": true,
+        "projection_equal": true,
+        "token_equal": false
+      },
+      "notes": [
+        "2 candidates share the best evidence; manual review required",
+        "namespace=equal",
+        "declaring type=equal",
+        "signature=equal",
+        "local declarations=equal",
+        "generic constraints=equal",
+        "structural projection=equal",
+        "metadata token=changed"
+      ],
+      "target": null,
+      "candidates": [
+        {
+          "kind": "method",
+          "token": "0x06000005",
+          "name": "Handle",
+          "namespace": "Contoso.Incident",
+          "declaring_type": "Contoso.Incident.Ambiguous",
+          "full_name": "method:Contoso.Incident.Ambiguous::Handle#0",
+          "score": 1.0,
+          "token_equal": false,
+          "semantic_equal": true,
+          "projection_equal": true,
+          "comparisons": {
+            "namespace_equal": true,
+            "declaring_type_equal": true,
+            "signature_equal": true,
+            "locals_equal": true,
+            "generic_constraints_equal": true,
+            "semantic_equal": true,
+            "projection_equal": true,
+            "token_equal": false
+          }
+        },
+        {
+          "kind": "method",
+          "token": "0x06000006",
+          "name": "Handle",
+          "namespace": "Contoso.Incident",
+          "declaring_type": "Contoso.Incident.Ambiguous",
+          "full_name": "method:Contoso.Incident.Ambiguous::Handle#0",
+          "score": 1.0,
+          "token_equal": false,
+          "semantic_equal": true,
+          "projection_equal": true,
+          "comparisons": {
+            "namespace_equal": true,
+            "declaring_type_equal": true,
+            "signature_equal": true,
+            "locals_equal": true,
+            "generic_constraints_equal": true,
+            "semantic_equal": true,
+            "projection_equal": true,
+            "token_equal": false
+          }
+        }
+      ]
+    },
+    {
+      "group_id": "MAP-0020",
+      "source": {
+        "kind": "property",
+        "token": "0x17000001",
+        "name": "Status",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.StableService",
+        "full_name": "property:Contoso.Incident.StableService::Status"
+      },
+      "status": "renumbered_only",
+      "score": 1.0,
+      "review_required": false,
+      "comparisons": {
+        "namespace_equal": true,
+        "declaring_type_equal": true,
+        "signature_equal": true,
+        "locals_equal": null,
+        "generic_constraints_equal": true,
+        "semantic_equal": true,
+        "projection_equal": true,
+        "token_equal": false
+      },
+      "notes": [
+        "namespace=equal",
+        "declaring type=equal",
+        "signature=equal",
+        "local declarations=unknown",
+        "generic constraints=equal",
+        "structural projection=equal",
+        "metadata token=changed"
+      ],
+      "target": {
+        "kind": "property",
+        "token": "0x17000002",
+        "name": "Status",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.StableService",
+        "full_name": "property:Contoso.Incident.StableService::Status"
+      },
+      "candidates": [
+        {
+          "kind": "property",
+          "token": "0x17000002",
+          "name": "Status",
+          "namespace": "Contoso.Incident",
+          "declaring_type": "Contoso.Incident.StableService",
+          "full_name": "property:Contoso.Incident.StableService::Status",
+          "score": 1.0,
+          "token_equal": false,
+          "semantic_equal": true,
+          "projection_equal": true,
+          "comparisons": {
+            "namespace_equal": true,
+            "declaring_type_equal": true,
+            "signature_equal": true,
+            "locals_equal": null,
+            "generic_constraints_equal": true,
+            "semantic_equal": true,
+            "projection_equal": true,
+            "token_equal": false
+          }
+        }
+      ]
+    },
+    {
+      "group_id": "MAP-0021",
+      "source": {
+        "kind": "property",
+        "token": "0x17000002",
+        "name": "ErrorCode",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.LegacyApi",
+        "full_name": "property:Contoso.Incident.LegacyApi::ErrorCode"
+      },
+      "status": "renumbered_only",
+      "score": 1.0,
+      "review_required": false,
+      "comparisons": {
+        "namespace_equal": true,
+        "declaring_type_equal": true,
+        "signature_equal": true,
+        "locals_equal": null,
+        "generic_constraints_equal": true,
+        "semantic_equal": true,
+        "projection_equal": true,
+        "token_equal": false
+      },
+      "notes": [
+        "namespace=equal",
+        "declaring type=equal",
+        "signature=equal",
+        "local declarations=unknown",
+        "generic constraints=equal",
+        "structural projection=equal",
+        "metadata token=changed"
+      ],
+      "target": {
+        "kind": "property",
+        "token": "0x17000001",
+        "name": "ErrorCode",
+        "namespace": "Contoso.Incident",
+        "declaring_type": "Contoso.Incident.LegacyApi",
+        "full_name": "property:Contoso.Incident.LegacyApi::ErrorCode"
+      },
+      "candidates": [
+        {
+          "kind": "property",
+          "token": "0x17000001",
+          "name": "ErrorCode",
+          "namespace": "Contoso.Incident",
+          "declaring_type": "Contoso.Incident.LegacyApi",
+          "full_name": "property:Contoso.Incident.LegacyApi::ErrorCode",
+          "score": 1.0,
+          "token_equal": false,
+          "semantic_equal": true,
+          "projection_equal": true,
+          "comparisons": {
+            "namespace_equal": true,
+            "declaring_type_equal": true,
+            "signature_equal": true,
+            "locals_equal": null,
+            "generic_constraints_equal": true,
+            "semantic_equal": true,
+            "projection_equal": true,
+            "token_equal": false
+          }
+        }
+      ]
+    }
+  ],
+  "unmatched_new": []
+}

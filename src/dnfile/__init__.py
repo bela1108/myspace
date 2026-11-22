@@ -666,3 +666,13 @@ class ClrStreamFactory(object):
             return None
         else:
             return s
+
+
+def __getattr__(name):
+    # Keep the CLI import path clean (python -m dnfile.correlate) while still
+    # supporting the convenient dnfile.correlate attribute.
+    if name == "correlate":
+        import importlib
+
+        return importlib.import_module(__name__ + ".correlate")
+    raise AttributeError(name)

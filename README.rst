@@ -107,3 +107,20 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
 .. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
+
+
+Token-independent entity correlation
+------------------------------------
+
+Two builds of a managed assembly often renumber metadata tokens even when the
+declarations are unchanged.  ``dnfile.correlate`` builds a token-free entity
+view from each build, compares namespaces, signatures, local declarations,
+generic constraints and structural projections, and exports a correspondence
+table:
+
+.. code-block:: shell
+
+   python -m dnfile.correlate old.dll new.dll -o entity-map.csv
+
+A ready-to-run pair of tiny assemblies and the generated table live under
+``examples/correlate/``.

@@ -21,6 +21,9 @@ dependencies = [
 ]
 dynamic = ["version", "readme"]
 
+[project.scripts]
+dnfile-correlate = "dnfile.correlate:main"
+
 [project.urls]
 repository = "https://github.com/malwarefrank/dnfile"
 
