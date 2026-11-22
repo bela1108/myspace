@@ -17,6 +17,7 @@ Using and Extending Bandit
    plugins/index
    blacklists/index
    formatters/index
+   exchange
    ci-cd/index
    faq
 
