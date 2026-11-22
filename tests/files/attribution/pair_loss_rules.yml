@@ -1,0 +1,23 @@
+title: Redundant High A
+name: redundant_high_a
+level: high
+status: test
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection:
+        CommandLine|contains: "mimikatz"
+    condition: selection
+---
+title: Redundant High B
+name: redundant_high_b
+level: high
+status: test
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection:
+        CommandLine|contains: "mimikatz"
+    condition: selection

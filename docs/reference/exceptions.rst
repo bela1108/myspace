@@ -117,6 +117,12 @@ Validator Exceptions
 .. autoclass:: sigma.exceptions.SigmaValidatorConfigurationParsingError
    :show-inheritance:
 
+Attribution Exceptions
+----------------------
+
+.. autoclass:: sigma.exceptions.SigmaAttributionError
+   :show-inheritance:
+
 Filter Exceptions
 -----------------
 

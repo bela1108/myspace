@@ -1,0 +1,4 @@
+[
+  {"kind": "archived", "rule_name": "alert_a", "label": "archive-a"},
+  {"kind": "conversion_unsupported", "rule_name": "alert_b", "label": "no-conversion-b"}
+]

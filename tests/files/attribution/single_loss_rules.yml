@@ -1,0 +1,23 @@
+title: Alert A
+name: alert_a
+level: high
+status: test
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection:
+        CommandLine|contains: "alpha"
+    condition: selection
+---
+title: Alert B
+name: alert_b
+level: high
+status: test
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection:
+        CommandLine|contains: "bravo"
+    condition: selection

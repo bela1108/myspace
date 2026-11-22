@@ -202,6 +202,12 @@ class SigmaSecurityError(SigmaError):
     pass
 
 
+class SigmaAttributionError(SigmaError):
+    """Error while attributing changes or replaying notification routing."""
+
+    pass
+
+
 class SigmaTransformationError(SigmaError):
     """Error while transformation. Can be raised intentionally by FailureTransformation."""
 

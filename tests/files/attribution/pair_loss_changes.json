@@ -1,0 +1,4 @@
+[
+  {"kind": "level_changed", "rule_name": "redundant_high_a", "new_level": "medium", "label": "downgrade-a"},
+  {"kind": "archived", "rule_name": "redundant_high_b", "label": "archive-b"}
+]
