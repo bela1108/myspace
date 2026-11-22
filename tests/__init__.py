@@ -172,6 +172,7 @@ def test_classes():
     from .test_pem import PEMTests
     from .test_pkcs12 import PKCS12Tests
     from .test_tsp import TSPTests
+    from .test_time_explanation import TimeExplanationTests
     from .test_x509 import X509Tests
     from .test_util import UtilTests
     from .test_parser import ParserTests
@@ -188,6 +189,7 @@ def test_classes():
         PEMTests,
         PKCS12Tests,
         TSPTests,
+        TimeExplanationTests,
         UtilTests,
         ParserTests,
         X509Tests,
