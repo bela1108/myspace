@@ -61,3 +61,7 @@ target/
 #Ipython Notebook
 .ipynb_checkpoints
 .travis-solo/
+
+# Local demo output and replayable ledger stores
+demo-out/
+events.log
