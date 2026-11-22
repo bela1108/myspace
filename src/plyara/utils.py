@@ -459,3 +459,47 @@ def rebuild_yara_rule(rule, condition_indents=False):
     )
 
     return formatted_rule
+
+
+def review_release(*args, **kwargs):
+    """Review approval evidence for release.
+
+    This is a convenience wrapper around
+    :func:`plyara.release_review.review_release`.
+
+    Returns:
+        ReleaseReview: The valid-evidence and pending-rule lists.
+    """
+    from plyara.release_review import review_release as _review_release
+
+    return _review_release(*args, **kwargs)
+
+
+def review_approval_evidence(*args, **kwargs):
+    """Run a release review over approval evidence."""
+    return review_release(*args, **kwargs)
+
+
+def evaluate_approval_evidence(*args, **kwargs):
+    """Run a release review over approval evidence."""
+    return review_release(*args, **kwargs)
+
+
+def release_review(*args, **kwargs):
+    """Run a release review."""
+    return review_release(*args, **kwargs)
+
+
+def review_rules(*args, **kwargs):
+    """Run a release review."""
+    return review_release(*args, **kwargs)
+
+
+def evaluate_release(*args, **kwargs):
+    """Run a release review."""
+    return review_release(*args, **kwargs)
+
+
+def check_release(*args, **kwargs):
+    """Run a release review."""
+    return review_release(*args, **kwargs)

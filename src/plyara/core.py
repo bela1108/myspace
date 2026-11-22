@@ -1231,3 +1231,28 @@ class Plyara(Parser):
         else:
             message = f'Unknown text {p.value} for token of type {p.type} on line {p.lineno}'
             raise ParseTypeError(message, p.lineno, p.lexpos)
+
+    def review_release(self, evidence, **kwargs):
+        """Review approval evidence against the rules parsed by this instance.
+
+        Args:
+            evidence: Approval evidence records or a mapping of evidence IDs.
+            **kwargs: Additional keyword arguments for
+                :class:`plyara.release_review.ReleaseReview`.
+
+        Returns:
+            ReleaseReview: The valid-evidence and pending-rule lists.
+        """
+        from plyara.release_review import ReleaseReview
+
+        kwargs.setdefault('rules', self.rules)
+        return ReleaseReview(evidence=evidence, **kwargs)
+
+    def review(self, evidence, **kwargs):
+        """Alias for :meth:`review_release`."""
+        return self.review_release(evidence, **kwargs)
+
+    def parse_and_review(self, input_string, evidence, **kwargs):
+        """Parse YARA text and immediately review approval evidence."""
+        rules = self.parse_string(input_string)
+        return self.review_release(evidence, rules=rules, **kwargs)

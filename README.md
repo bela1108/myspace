@@ -134,6 +134,32 @@ JSON Output:
 ]
 ```
 
+
+## Release Review
+
+`plyara.release_review` checks which previously authorised approval evidence may still be cited for a
+ruleset. Evidence is matched by rule content hash, so changing only a rule display name does not
+invalidate an approval. Sample retention and substitute samples are evaluated per rule, which means
+two rules that cite the same sample still have to satisfy their own coverage requirements.
+
+```python
+from datetime import datetime, timezone
+from plyara import review_release
+
+report = review_release(
+    yara_rules,
+    evidence,
+    sample_commitments={"sample-1": {"retention_until": datetime(2026, 11, 21, tzinfo=timezone.utc),
+                                      "coverage": {"rule_a": ["red"], "rule_b": ["blue"]}}},
+    substitute_samples={"sample-1": "sample-2"},
+    now=datetime(2026, 11, 22, tzinfo=timezone.utc),
+)
+
+valid, pending = report
+print(report.valid_evidence)
+print(report.rules_pending_review)
+```
+
 # Additional Information
 
 ## Reusing The Parser
