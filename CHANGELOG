@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+3.0.2
+-----
+
+* Add stix2.provenance.check_independence, a local source-independence
+  check over observed-data self-citations and caller-registered collection
+  relationships. It supports mutual citations and reference gaps, and offers a
+  public view whose lower bound never discloses restricted observations.
+
 3.0.1 2021-09-24
 
 * #513 Fixes check for reference properties to apply to all custom objects, not

@@ -13,6 +13,7 @@
    pattern_visitor
    patterns
    properties
+   provenance
    serialization
    utils
    v20
@@ -40,6 +41,7 @@ from .markings import (
     set_markings,
 )
 from .parsing import parse, parse_observable
+from .provenance import check_independence
 from .patterns import (
     AndBooleanExpression, AndObservationExpression, BasicObjectPathComponent,
     BinaryConstant, BooleanConstant, EqualityComparisonExpression,
