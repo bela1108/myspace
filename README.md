@@ -112,6 +112,37 @@ Windows Shortcut Information:
 }
 ```
 
+## Offline text evidence review
+
+`LnkParse3.evidence_text` performs an offline, network-free review of a raw
+path field whose bytes may have been read under different code pages by
+forensic workstations in different regions. It takes the original bytes, the
+collector-registered legal encodings, and any traceable support materials.
+
+Each decoded character is bound back to the exact byte span `[start, end)`
+that produced it, so alternative decodings stay aligned on the same bytes. A
+support material can only corroborate or contradict the spans it covers; it
+never erases ambiguity on bytes outside its coverage, and alternative
+readings are always retained.
+
+```python
+>>> from LnkParse3.evidence_text import review_text_evidence, SupportMaterial
+>>> raw = bytes.fromhex("c8edbcfe")  # gbk reads 软件; cp1252 reads Èí¼þ
+>>> materials = [SupportMaterial("EVID-GBK-01", 0, 4, "软件")]
+>>> review = review_text_evidence(raw, ["gbk", "cp1252", "utf-8"], materials)
+>>> review.conclusion.value
+"ambiguous"
+>>> review.to_dict()["span_reviews"][0]["readings"]
+{"gbk": "软", "cp1252": "Èí"}
+```
+
+The review distinguishes three outcomes:
+
+- `unique` — exactly one registered encoding decodes the full field;
+- `equivalent` — several encodings decode to the identical text;
+- `ambiguous` — two or more different readings remain (a fourth value
+  `inconclusive` means no registered encoding can decode the field).
+
 # Extracted data
 
 List of data in LNK structure and their current status of implementation.
