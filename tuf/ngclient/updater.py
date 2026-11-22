@@ -57,7 +57,6 @@ from __future__ import annotations
 import contextlib
 import logging
 import os
-import shutil
 import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
@@ -65,6 +64,7 @@ from urllib import parse
 
 from tuf.api import exceptions
 from tuf.api.metadata import Root, Snapshot, TargetFile, Targets, Timestamp
+from tuf.ngclient._internal.target_delivery import TargetDelivery
 from tuf.ngclient._internal.trusted_metadata_set import TrustedMetadataSet
 from tuf.ngclient.config import EnvelopeType, UpdaterConfig
 from tuf.ngclient.urllib3_fetcher import Urllib3Fetcher
@@ -103,7 +103,7 @@ class Updater:
         RepositoryError: Local root.json is invalid
     """
 
-    def __init__(  # noqa: PLR0917
+    def __init__(
         self,
         metadata_dir: str,
         metadata_base_url: str,
@@ -275,6 +275,12 @@ class Updater:
             filepath = self._generate_target_file_path(targetinfo)
         Path(filepath).parent.mkdir(exist_ok=True, parents=True)
 
+        # Reconcile any interrupted previous delivery with the currently
+        # trusted target. The delivery record is keyed by destination and
+        # claims a target identity (path, length and hashes): stale material
+        # from a superseded version is discarded, never reused.
+        delivery = TargetDelivery.open(filepath, targetinfo)
+
         if target_base_url is None:
             if self._target_base_url is None:
                 raise ValueError(
@@ -294,15 +300,23 @@ class Updater:
             target_filepath = f"{dirname}{sep}{hashes[0]}.{basename}"
         full_url = f"{target_base_url}{target_filepath}"
 
-        with self._fetcher.download_file(
-            full_url, targetinfo.length
-        ) as target_file:
-            targetinfo.verify_length_and_hashes(target_file)
+        # PENDING: no complete candidate yet, fetch one. A candidate left on
+        # disk by a crash before the DOWNLOADED state was persisted is
+        # overwritten rather than trusted.
+        if delivery.needs_download:
+            with self._fetcher.download_file(
+                full_url, targetinfo.length
+            ) as target_file:
+                delivery.stage_candidate(target_file)
 
-            target_file.seek(0)
-            with open(filepath, "wb") as destination_file:
-                shutil.copyfileobj(target_file, destination_file)
+        # DOWNLOADED: candidate is on disk but has not been proven against
+        # the trusted length/hashes yet. This re-check also covers a delivery
+        # resumed after a crash between staging and verification.
+        if delivery.needs_verification:
+            delivery.verify_candidate()
 
+        # READY: hand the verified candidate to the upper layer atomically.
+        filepath = delivery.promote()
         logger.debug("Downloaded target %s", targetinfo.path)
         return filepath
 
