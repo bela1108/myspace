@@ -1,0 +1,13 @@
+[
+  {
+    "asset_id": "web-01",
+    "slot": "app",
+    "old_cpe": "cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*",
+    "new_cpe": "cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:*",
+    "effective_at": "2026-11-16T00:00:00Z",
+    "credential_ref": "CHG-2026-1116-0042",
+    "verified": true,
+    "evidence_ref": "EVID-CHG-2026-1116-0042",
+    "source": "change-management"
+  }
+]

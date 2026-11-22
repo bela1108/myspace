@@ -23,6 +23,7 @@ Contents:
    model
    install
    examples
+   withdrawal_audit
    issues
    bugtracker
    todo

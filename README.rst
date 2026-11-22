@@ -93,3 +93,13 @@ Follow the steps on the `how to contribute`_ document.
 .. |Version| image:: https://camo.githubusercontent.com/8369bedde5c3455e907e9ddf9b06751af7cbbc28/68747470733a2f2f62616467652e667572792e696f2f70792f6370652e706e67
    :target: http://badge.fury.io/py/cpe
    :alt: Version
+
+Advisory withdrawal auditing
+----------------------------
+
+The optional ``cpe.audit`` module re-audits a withdrawn advisory against
+caller-approved inventory snapshots, three-valued CPE matching, an
+applicability interval, and verified component replacement evidence.  A
+family is excluded only with complete family inventory coverage; a failed
+match alone is never treated as proof of absence.  See
+``examples/withdrawal_audit`` for a runnable three-outcome example.

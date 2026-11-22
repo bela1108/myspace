@@ -1,0 +1,46 @@
+{
+  "snapshot_id": "after-withdrawal-20261118",
+  "observed_at": "2026-11-18T00:00:00Z",
+  "evidence_ref": "INV-SNAPSHOT-20261118",
+  "assets": [
+    {
+      "asset_id": "web-01",
+      "family": "web-frontend",
+      "manifest_complete": true,
+      "evidence_ref": "INV-WEB-20261118",
+      "components": [
+        {
+          "slot": "app",
+          "cpe": "cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:*",
+          "evidence_ref": "PKG-WEB-20261118"
+        }
+      ]
+    },
+    {
+      "asset_id": "db-01",
+      "family": "database",
+      "manifest_complete": true,
+      "evidence_ref": "INV-DB-20261118",
+      "components": [
+        {
+          "slot": "app",
+          "cpe": "cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*",
+          "evidence_ref": "PKG-DB-20261118"
+        }
+      ]
+    },
+    {
+      "asset_id": "edge-01",
+      "family": "edge",
+      "manifest_complete": false,
+      "evidence_ref": "INV-EDGE-PARTIAL-20261118",
+      "components": [
+        {
+          "slot": "os",
+          "cpe": "cpe:2.3:o:acme:edgeos:4.0:*:*:*:*:*:*:*",
+          "evidence_ref": "PKG-EDGE-OS-20261118"
+        }
+      ]
+    }
+  ]
+}

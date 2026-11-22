@@ -1,0 +1,705 @@
+{
+  "advisory": {
+    "advisory_id": "ADV-2026-0042",
+    "title": "示例：Acme Widget / Datastore 组件缺陷",
+    "source": "internal-vuln-db",
+    "published_at": "2026-10-01T00:00:00Z",
+    "withdrawn_at": "2026-11-15T00:00:00Z",
+    "applicability_interval": {
+      "start": "2026-10-01T00:00:00Z",
+      "end": "2026-11-15T00:00:00Z"
+    },
+    "expression": [
+      {
+        "operator": "OR",
+        "negate": false,
+        "children": [],
+        "cpe_match": [
+          {
+            "vulnerable": true,
+            "cpe23Uri": "cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*"
+          },
+          {
+            "vulnerable": true,
+            "cpe23Uri": "cpe:2.3:a:acme:widget:1.3:*:*:*:*:*:*:*"
+          },
+          {
+            "vulnerable": true,
+            "cpe23Uri": "cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*"
+          }
+        ]
+      }
+    ]
+  },
+  "caller_scope": {
+    "approved_by": "maintenance-desk@example.test",
+    "approved_at": "2026-11-18T01:00:00Z",
+    "scope_ref": "SCOPE-2026-11-18-A",
+    "approved_asset_ids": [
+      "web-01",
+      "db-01",
+      "edge-01"
+    ],
+    "family_coverage": {
+      "database": {
+        "family": "database",
+        "complete": true,
+        "evidence_ref": "INV-DB-20261118",
+        "asset_ids": [
+          "db-01"
+        ],
+        "covered_from": "2026-09-01T00:00:00Z",
+        "covered_to": "2026-11-18T00:00:00Z",
+        "source": ""
+      },
+      "edge": {
+        "family": "edge",
+        "complete": false,
+        "evidence_ref": "INV-EDGE-PARTIAL-20261118",
+        "asset_ids": [
+          "edge-01"
+        ],
+        "covered_from": "2026-11-14T00:00:00Z",
+        "covered_to": "2026-11-14T00:00:00Z",
+        "source": ""
+      },
+      "web-frontend": {
+        "family": "web-frontend",
+        "complete": true,
+        "evidence_ref": "INV-WEB-20261118",
+        "asset_ids": [
+          "web-01"
+        ],
+        "covered_from": "2026-09-01T00:00:00Z",
+        "covered_to": "2026-11-18T00:00:00Z",
+        "source": ""
+      }
+    }
+  },
+  "provable_scope": {
+    "complete": false,
+    "summary": "可证明范围不完整：3 台已审计资产中，1 台确已关闭、1 台仍受影响、1 台缺证。",
+    "confirmed_closed": [
+      "web-01"
+    ],
+    "still_affected": [
+      "db-01"
+    ],
+    "insufficient_evidence": [
+      "edge-01"
+    ],
+    "out_of_scope_assets": [],
+    "excluded_families": [],
+    "resolved_families": [
+      {
+        "family": "database",
+        "status": "resolved",
+        "label": "已定性",
+        "asset_ids": [
+          "db-01"
+        ],
+        "basis": [
+          "家族 database 的调用者认可资产：db-01。",
+          "家族库存证据 INV-DB-20261118：complete=True，覆盖区间=2026-09-01T00:00:00Z ~ 2026-11-18T00:00:00Z。",
+          "该族至少一台资产仍受影响：db-01。"
+        ],
+        "evidence_refs": [
+          "INV-DB-20261118"
+        ]
+      },
+      {
+        "family": "web-frontend",
+        "status": "resolved",
+        "label": "已定性",
+        "asset_ids": [
+          "web-01"
+        ],
+        "basis": [
+          "家族 web-frontend 的调用者认可资产：web-01。",
+          "家族库存证据 INV-WEB-20261118：complete=True，覆盖区间=2026-09-01T00:00:00Z ~ 2026-11-18T00:00:00Z。",
+          "该族资产均已定性（例如经替换关闭），不声称整族从未暴露。"
+        ],
+        "evidence_refs": [
+          "INV-WEB-20261118"
+        ]
+      }
+    ],
+    "unresolved_families": [
+      {
+        "family": "edge",
+        "status": "unresolved",
+        "label": "缺证",
+        "asset_ids": [
+          "edge-01"
+        ],
+        "basis": [
+          "家族 edge 的调用者认可资产：edge-01。",
+          "家族库存证据 INV-EDGE-PARTIAL-20261118：complete=False，覆盖区间=2026-11-14T00:00:00Z ~ 2026-11-14T00:00:00Z。",
+          "该族存在缺证资产：edge-01；不能排除该族。",
+          "family_coverage.complete=false；未匹配不能推出排除。"
+        ],
+        "evidence_refs": [
+          "INV-EDGE-PARTIAL-20261118"
+        ]
+      }
+    ],
+    "rule": "排除某族必须有该族完整库存证据，且覆盖公告适用区间；未匹配本身不能推出排除。"
+  },
+  "results": {
+    "confirmed_closed": [
+      {
+        "asset_id": "web-01",
+        "family": "web-frontend",
+        "status": "confirmed_closed",
+        "label": "确已关闭",
+        "basis": [
+          "调用者认可的库存范围包含资产 web-01（scope_ref=SCOPE-2026-11-18-A, approved_by=maintenance-desk@example.test, approved_at=2026-11-18T01:00:00Z）。",
+          "公告适用区间为 2026-10-01T00:00:00Z ~ 2026-11-15T00:00:00Z。",
+          "撤回前快照观测时间 2026-11-14T00:00:00Z 位于公告适用区间内。",
+          "撤回后快照观测时间 2026-11-18T00:00:00Z 不在公告适用区间内。",
+          "撤回前快照 2026-11-14T00:00:00Z 对公告表达式的判断为 MATCH（evidence_ref=INV-WEB-20261114）。",
+          "app[cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*]=MATCH (所有属性均为 EQUAL 或 SUPERSET)",
+          "app[cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*]=NO_MATCH (属性 version 可证明不相交)",
+          "app[cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)",
+          "OR 组合 3 个判断 -> MATCH",
+          "根表达式 OR 组合 1 个分支 -> MATCH",
+          "撤回后快照 2026-11-18T00:00:00Z 对公告表达式的判断为 NO_MATCH（evidence_ref=INV-WEB-20261118）。",
+          "app[cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:*]=NO_MATCH (属性 version 可证明不相交)",
+          "app[cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:*]=NO_MATCH (属性 version 可证明不相交)",
+          "app[cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)",
+          "OR 组合 3 个判断 -> NO_MATCH",
+          "根表达式 OR 组合 1 个分支 -> NO_MATCH",
+          "用旧组件 cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:* 回放撤回前上下文，公告判断为 MATCH。",
+          "app[cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*]=MATCH (所有属性均为 EQUAL 或 SUPERSET)",
+          "app[cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*]=NO_MATCH (属性 version 可证明不相交)",
+          "app[cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)",
+          "OR 组合 3 个判断 -> MATCH",
+          "根表达式 OR 组合 1 个分支 -> MATCH",
+          "用新组件 cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:* 回放撤回后上下文，公告判断为 NO_MATCH。",
+          "app[cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:*]=NO_MATCH (属性 version 可证明不相交)",
+          "app[cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:*]=NO_MATCH (属性 version 可证明不相交)",
+          "app[cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)",
+          "OR 组合 3 个判断 -> NO_MATCH",
+          "根表达式 OR 组合 1 个分支 -> NO_MATCH",
+          "撤回前快照槽位实际值为 cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*，与凭据旧组件关系为 MATCH（所有属性均为 EQUAL 或 SUPERSET）。",
+          "撤回后快照槽位实际值为 cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:*，与凭据新组件关系为 MATCH（所有属性均为 EQUAL 或 SUPERSET）。",
+          "替换凭据通过校验：旧组件命中公告，新组件不相交，且生效时间位于公告发布之后、撤回后快照之前。",
+          "撤回前命中、撤回后不相交，且替换凭据与两次快照一致，故确已关闭。"
+        ],
+        "evidence_refs": [
+          "INV-WEB-20261114",
+          "INV-WEB-20261118",
+          "EVID-CHG-2026-1116-0042"
+        ],
+        "before": {
+          "value": "MATCH",
+          "basis": [
+            "app[cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*]=MATCH (所有属性均为 EQUAL 或 SUPERSET)",
+            "app[cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*]=NO_MATCH (属性 version 可证明不相交)",
+            "app[cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)",
+            "OR 组合 3 个判断 -> MATCH",
+            "根表达式 OR 组合 1 个分支 -> MATCH"
+          ],
+          "facts": [
+            {
+              "selector": "cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*",
+              "value": "MATCH",
+              "detail": "app[cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*]=MATCH (所有属性均为 EQUAL 或 SUPERSET)"
+            },
+            {
+              "selector": "cpe:2.3:a:acme:widget:1.3:*:*:*:*:*:*:*",
+              "value": "NO_MATCH",
+              "detail": "app[cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*]=NO_MATCH (属性 version 可证明不相交)"
+            },
+            {
+              "selector": "cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*",
+              "value": "NO_MATCH",
+              "detail": "app[cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)"
+            }
+          ]
+        },
+        "after": {
+          "value": "NO_MATCH",
+          "basis": [
+            "app[cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:*]=NO_MATCH (属性 version 可证明不相交)",
+            "app[cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:*]=NO_MATCH (属性 version 可证明不相交)",
+            "app[cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)",
+            "OR 组合 3 个判断 -> NO_MATCH",
+            "根表达式 OR 组合 1 个分支 -> NO_MATCH"
+          ],
+          "facts": [
+            {
+              "selector": "cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*",
+              "value": "NO_MATCH",
+              "detail": "app[cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:*]=NO_MATCH (属性 version 可证明不相交)"
+            },
+            {
+              "selector": "cpe:2.3:a:acme:widget:1.3:*:*:*:*:*:*:*",
+              "value": "NO_MATCH",
+              "detail": "app[cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:*]=NO_MATCH (属性 version 可证明不相交)"
+            },
+            {
+              "selector": "cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*",
+              "value": "NO_MATCH",
+              "detail": "app[cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)"
+            }
+          ]
+        },
+        "replacement": {
+          "provided": true,
+          "valid": true,
+          "reasons": [
+            "用旧组件 cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:* 回放撤回前上下文，公告判断为 MATCH。",
+            "app[cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*]=MATCH (所有属性均为 EQUAL 或 SUPERSET)",
+            "app[cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*]=NO_MATCH (属性 version 可证明不相交)",
+            "app[cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)",
+            "OR 组合 3 个判断 -> MATCH",
+            "根表达式 OR 组合 1 个分支 -> MATCH",
+            "用新组件 cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:* 回放撤回后上下文，公告判断为 NO_MATCH。",
+            "app[cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:*]=NO_MATCH (属性 version 可证明不相交)",
+            "app[cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:*]=NO_MATCH (属性 version 可证明不相交)",
+            "app[cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)",
+            "OR 组合 3 个判断 -> NO_MATCH",
+            "根表达式 OR 组合 1 个分支 -> NO_MATCH",
+            "撤回前快照槽位实际值为 cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*，与凭据旧组件关系为 MATCH（所有属性均为 EQUAL 或 SUPERSET）。",
+            "撤回后快照槽位实际值为 cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:*，与凭据新组件关系为 MATCH（所有属性均为 EQUAL 或 SUPERSET）。",
+            "替换凭据通过校验：旧组件命中公告，新组件不相交，且生效时间位于公告发布之后、撤回后快照之前。"
+          ],
+          "evidence_ref": "EVID-CHG-2026-1116-0042",
+          "evidence": {
+            "asset_id": "web-01",
+            "slot": "app",
+            "old_cpe": "cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*",
+            "new_cpe": "cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:*",
+            "effective_at": "2026-11-16T00:00:00Z",
+            "credential_ref": "CHG-2026-1116-0042",
+            "verified": true,
+            "evidence_ref": "EVID-CHG-2026-1116-0042",
+            "source": "change-management"
+          }
+        },
+        "snapshot_evidence": {
+          "before": "INV-WEB-20261114",
+          "after": "INV-WEB-20261118"
+        }
+      }
+    ],
+    "still_affected": [
+      {
+        "asset_id": "db-01",
+        "family": "database",
+        "status": "still_affected",
+        "label": "仍受影响",
+        "basis": [
+          "调用者认可的库存范围包含资产 db-01（scope_ref=SCOPE-2026-11-18-A, approved_by=maintenance-desk@example.test, approved_at=2026-11-18T01:00:00Z）。",
+          "公告适用区间为 2026-10-01T00:00:00Z ~ 2026-11-15T00:00:00Z。",
+          "撤回前快照观测时间 2026-11-14T00:00:00Z 位于公告适用区间内。",
+          "撤回后快照观测时间 2026-11-18T00:00:00Z 不在公告适用区间内。",
+          "撤回前快照 2026-11-14T00:00:00Z 对公告表达式的判断为 MATCH（evidence_ref=INV-DB-20261114）。",
+          "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)",
+          "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)",
+          "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=MATCH (所有属性均为 EQUAL 或 SUPERSET)",
+          "OR 组合 3 个判断 -> MATCH",
+          "根表达式 OR 组合 1 个分支 -> MATCH",
+          "撤回后快照 2026-11-18T00:00:00Z 对公告表达式的判断为 MATCH（evidence_ref=INV-DB-20261118）。",
+          "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)",
+          "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)",
+          "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=MATCH (所有属性均为 EQUAL 或 SUPERSET)",
+          "OR 组合 3 个判断 -> MATCH",
+          "根表达式 OR 组合 1 个分支 -> MATCH",
+          "未提供该资产的组件替换凭据。",
+          "撤回后库存仍命中公告表达式，且没有通过的替换凭据；公告撤回不会移除已安装组件，故仍受影响。"
+        ],
+        "evidence_refs": [
+          "INV-DB-20261114",
+          "INV-DB-20261118"
+        ],
+        "before": {
+          "value": "MATCH",
+          "basis": [
+            "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)",
+            "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)",
+            "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=MATCH (所有属性均为 EQUAL 或 SUPERSET)",
+            "OR 组合 3 个判断 -> MATCH",
+            "根表达式 OR 组合 1 个分支 -> MATCH"
+          ],
+          "facts": [
+            {
+              "selector": "cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*",
+              "value": "NO_MATCH",
+              "detail": "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)"
+            },
+            {
+              "selector": "cpe:2.3:a:acme:widget:1.3:*:*:*:*:*:*:*",
+              "value": "NO_MATCH",
+              "detail": "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)"
+            },
+            {
+              "selector": "cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*",
+              "value": "MATCH",
+              "detail": "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=MATCH (所有属性均为 EQUAL 或 SUPERSET)"
+            }
+          ]
+        },
+        "after": {
+          "value": "MATCH",
+          "basis": [
+            "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)",
+            "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)",
+            "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=MATCH (所有属性均为 EQUAL 或 SUPERSET)",
+            "OR 组合 3 个判断 -> MATCH",
+            "根表达式 OR 组合 1 个分支 -> MATCH"
+          ],
+          "facts": [
+            {
+              "selector": "cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*",
+              "value": "NO_MATCH",
+              "detail": "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)"
+            },
+            {
+              "selector": "cpe:2.3:a:acme:widget:1.3:*:*:*:*:*:*:*",
+              "value": "NO_MATCH",
+              "detail": "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)"
+            },
+            {
+              "selector": "cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*",
+              "value": "MATCH",
+              "detail": "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=MATCH (所有属性均为 EQUAL 或 SUPERSET)"
+            }
+          ]
+        },
+        "replacement": null,
+        "snapshot_evidence": {
+          "before": "INV-DB-20261114",
+          "after": "INV-DB-20261118"
+        }
+      }
+    ],
+    "insufficient_evidence": [
+      {
+        "asset_id": "edge-01",
+        "family": "edge",
+        "status": "insufficient_evidence",
+        "label": "缺证",
+        "basis": [
+          "调用者认可的库存范围包含资产 edge-01（scope_ref=SCOPE-2026-11-18-A, approved_by=maintenance-desk@example.test, approved_at=2026-11-18T01:00:00Z）。",
+          "公告适用区间为 2026-10-01T00:00:00Z ~ 2026-11-15T00:00:00Z。",
+          "撤回前快照观测时间 2026-11-14T00:00:00Z 位于公告适用区间内。",
+          "撤回后快照观测时间 2026-11-18T00:00:00Z 不在公告适用区间内。",
+          "撤回前快照 2026-11-14T00:00:00Z 对公告表达式的判断为 UNKNOWN（evidence_ref=INV-EDGE-PARTIAL-20261114）。",
+          "安装清单不完整，缺少 part=a 的组件记录",
+          "安装清单不完整，缺少 part=a 的组件记录",
+          "安装清单不完整，缺少 part=a 的组件记录",
+          "OR 组合 3 个判断 -> UNKNOWN",
+          "根表达式 OR 组合 1 个分支 -> UNKNOWN",
+          "撤回后快照 2026-11-18T00:00:00Z 对公告表达式的判断为 UNKNOWN（evidence_ref=INV-EDGE-PARTIAL-20261118）。",
+          "安装清单不完整，缺少 part=a 的组件记录",
+          "安装清单不完整，缺少 part=a 的组件记录",
+          "安装清单不完整，缺少 part=a 的组件记录",
+          "OR 组合 3 个判断 -> UNKNOWN",
+          "根表达式 OR 组合 1 个分支 -> UNKNOWN",
+          "撤回后安装清单 manifest_complete=false：缺项不能当作组件不存在。",
+          "撤回后判断为 UNKNOWN，无法证明命中或不相交。",
+          "家族 edge 的库存证据标记为不完整（INV-EDGE-PARTIAL-20261118）；未匹配不能推出该族被排除。",
+          "安装清单未交齐，缺失槽位使 UNKNOWN 无法消除。",
+          "未提供该资产的组件替换凭据。",
+          "既不能确认关闭，也不能确认仍受影响，故记为缺证。"
+        ],
+        "evidence_refs": [
+          "INV-EDGE-PARTIAL-20261114",
+          "INV-EDGE-PARTIAL-20261118"
+        ],
+        "before": {
+          "value": "UNKNOWN",
+          "basis": [
+            "安装清单不完整，缺少 part=a 的组件记录",
+            "安装清单不完整，缺少 part=a 的组件记录",
+            "安装清单不完整，缺少 part=a 的组件记录",
+            "OR 组合 3 个判断 -> UNKNOWN",
+            "根表达式 OR 组合 1 个分支 -> UNKNOWN"
+          ],
+          "facts": [
+            {
+              "selector": "cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*",
+              "value": "UNKNOWN",
+              "detail": "安装清单不完整，缺少 part=a 的组件记录"
+            },
+            {
+              "selector": "cpe:2.3:a:acme:widget:1.3:*:*:*:*:*:*:*",
+              "value": "UNKNOWN",
+              "detail": "安装清单不完整，缺少 part=a 的组件记录"
+            },
+            {
+              "selector": "cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*",
+              "value": "UNKNOWN",
+              "detail": "安装清单不完整，缺少 part=a 的组件记录"
+            }
+          ]
+        },
+        "after": {
+          "value": "UNKNOWN",
+          "basis": [
+            "安装清单不完整，缺少 part=a 的组件记录",
+            "安装清单不完整，缺少 part=a 的组件记录",
+            "安装清单不完整，缺少 part=a 的组件记录",
+            "OR 组合 3 个判断 -> UNKNOWN",
+            "根表达式 OR 组合 1 个分支 -> UNKNOWN"
+          ],
+          "facts": [
+            {
+              "selector": "cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*",
+              "value": "UNKNOWN",
+              "detail": "安装清单不完整，缺少 part=a 的组件记录"
+            },
+            {
+              "selector": "cpe:2.3:a:acme:widget:1.3:*:*:*:*:*:*:*",
+              "value": "UNKNOWN",
+              "detail": "安装清单不完整，缺少 part=a 的组件记录"
+            },
+            {
+              "selector": "cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*",
+              "value": "UNKNOWN",
+              "detail": "安装清单不完整，缺少 part=a 的组件记录"
+            }
+          ]
+        },
+        "replacement": null,
+        "snapshot_evidence": {
+          "before": "INV-EDGE-PARTIAL-20261114",
+          "after": "INV-EDGE-PARTIAL-20261118"
+        }
+      }
+    ],
+    "out_of_scope": []
+  },
+  "snapshot_reconciliation": [
+    {
+      "asset_id": "web-01",
+      "family": "web-frontend",
+      "before_snapshot": "before-withdrawal-20261114",
+      "before_match": "MATCH",
+      "after_snapshot": "after-withdrawal-20261118",
+      "after_match": "NO_MATCH",
+      "result": "confirmed_closed",
+      "result_label": "确已关闭"
+    },
+    {
+      "asset_id": "db-01",
+      "family": "database",
+      "before_snapshot": "before-withdrawal-20261114",
+      "before_match": "MATCH",
+      "after_snapshot": "after-withdrawal-20261118",
+      "after_match": "MATCH",
+      "result": "still_affected",
+      "result_label": "仍受影响"
+    },
+    {
+      "asset_id": "edge-01",
+      "family": "edge",
+      "before_snapshot": "before-withdrawal-20261114",
+      "before_match": "UNKNOWN",
+      "after_snapshot": "after-withdrawal-20261118",
+      "after_match": "UNKNOWN",
+      "result": "insufficient_evidence",
+      "result_label": "缺证"
+    }
+  ],
+  "snapshots": {
+    "before": {
+      "db-01": {
+        "asset_id": "db-01",
+        "family": "database",
+        "observed_at": "2026-11-14T00:00:00Z",
+        "manifest_complete": true,
+        "evidence_ref": "INV-DB-20261114",
+        "match": "MATCH",
+        "basis": [
+          "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)",
+          "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)",
+          "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=MATCH (所有属性均为 EQUAL 或 SUPERSET)",
+          "OR 组合 3 个判断 -> MATCH",
+          "根表达式 OR 组合 1 个分支 -> MATCH"
+        ],
+        "facts": [
+          {
+            "selector": "cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*",
+            "value": "NO_MATCH",
+            "detail": "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)"
+          },
+          {
+            "selector": "cpe:2.3:a:acme:widget:1.3:*:*:*:*:*:*:*",
+            "value": "NO_MATCH",
+            "detail": "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)"
+          },
+          {
+            "selector": "cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*",
+            "value": "MATCH",
+            "detail": "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=MATCH (所有属性均为 EQUAL 或 SUPERSET)"
+          }
+        ]
+      },
+      "edge-01": {
+        "asset_id": "edge-01",
+        "family": "edge",
+        "observed_at": "2026-11-14T00:00:00Z",
+        "manifest_complete": false,
+        "evidence_ref": "INV-EDGE-PARTIAL-20261114",
+        "match": "UNKNOWN",
+        "basis": [
+          "安装清单不完整，缺少 part=a 的组件记录",
+          "安装清单不完整，缺少 part=a 的组件记录",
+          "安装清单不完整，缺少 part=a 的组件记录",
+          "OR 组合 3 个判断 -> UNKNOWN",
+          "根表达式 OR 组合 1 个分支 -> UNKNOWN"
+        ],
+        "facts": [
+          {
+            "selector": "cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*",
+            "value": "UNKNOWN",
+            "detail": "安装清单不完整，缺少 part=a 的组件记录"
+          },
+          {
+            "selector": "cpe:2.3:a:acme:widget:1.3:*:*:*:*:*:*:*",
+            "value": "UNKNOWN",
+            "detail": "安装清单不完整，缺少 part=a 的组件记录"
+          },
+          {
+            "selector": "cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*",
+            "value": "UNKNOWN",
+            "detail": "安装清单不完整，缺少 part=a 的组件记录"
+          }
+        ]
+      },
+      "web-01": {
+        "asset_id": "web-01",
+        "family": "web-frontend",
+        "observed_at": "2026-11-14T00:00:00Z",
+        "manifest_complete": true,
+        "evidence_ref": "INV-WEB-20261114",
+        "match": "MATCH",
+        "basis": [
+          "app[cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*]=MATCH (所有属性均为 EQUAL 或 SUPERSET)",
+          "app[cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*]=NO_MATCH (属性 version 可证明不相交)",
+          "app[cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)",
+          "OR 组合 3 个判断 -> MATCH",
+          "根表达式 OR 组合 1 个分支 -> MATCH"
+        ],
+        "facts": [
+          {
+            "selector": "cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*",
+            "value": "MATCH",
+            "detail": "app[cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*]=MATCH (所有属性均为 EQUAL 或 SUPERSET)"
+          },
+          {
+            "selector": "cpe:2.3:a:acme:widget:1.3:*:*:*:*:*:*:*",
+            "value": "NO_MATCH",
+            "detail": "app[cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*]=NO_MATCH (属性 version 可证明不相交)"
+          },
+          {
+            "selector": "cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*",
+            "value": "NO_MATCH",
+            "detail": "app[cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)"
+          }
+        ]
+      }
+    },
+    "after": {
+      "db-01": {
+        "asset_id": "db-01",
+        "family": "database",
+        "observed_at": "2026-11-18T00:00:00Z",
+        "manifest_complete": true,
+        "evidence_ref": "INV-DB-20261118",
+        "match": "MATCH",
+        "basis": [
+          "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)",
+          "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)",
+          "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=MATCH (所有属性均为 EQUAL 或 SUPERSET)",
+          "OR 组合 3 个判断 -> MATCH",
+          "根表达式 OR 组合 1 个分支 -> MATCH"
+        ],
+        "facts": [
+          {
+            "selector": "cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*",
+            "value": "NO_MATCH",
+            "detail": "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)"
+          },
+          {
+            "selector": "cpe:2.3:a:acme:widget:1.3:*:*:*:*:*:*:*",
+            "value": "NO_MATCH",
+            "detail": "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)"
+          },
+          {
+            "selector": "cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*",
+            "value": "MATCH",
+            "detail": "app[cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*]=MATCH (所有属性均为 EQUAL 或 SUPERSET)"
+          }
+        ]
+      },
+      "edge-01": {
+        "asset_id": "edge-01",
+        "family": "edge",
+        "observed_at": "2026-11-18T00:00:00Z",
+        "manifest_complete": false,
+        "evidence_ref": "INV-EDGE-PARTIAL-20261118",
+        "match": "UNKNOWN",
+        "basis": [
+          "安装清单不完整，缺少 part=a 的组件记录",
+          "安装清单不完整，缺少 part=a 的组件记录",
+          "安装清单不完整，缺少 part=a 的组件记录",
+          "OR 组合 3 个判断 -> UNKNOWN",
+          "根表达式 OR 组合 1 个分支 -> UNKNOWN"
+        ],
+        "facts": [
+          {
+            "selector": "cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*",
+            "value": "UNKNOWN",
+            "detail": "安装清单不完整，缺少 part=a 的组件记录"
+          },
+          {
+            "selector": "cpe:2.3:a:acme:widget:1.3:*:*:*:*:*:*:*",
+            "value": "UNKNOWN",
+            "detail": "安装清单不完整，缺少 part=a 的组件记录"
+          },
+          {
+            "selector": "cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*",
+            "value": "UNKNOWN",
+            "detail": "安装清单不完整，缺少 part=a 的组件记录"
+          }
+        ]
+      },
+      "web-01": {
+        "asset_id": "web-01",
+        "family": "web-frontend",
+        "observed_at": "2026-11-18T00:00:00Z",
+        "manifest_complete": true,
+        "evidence_ref": "INV-WEB-20261118",
+        "match": "NO_MATCH",
+        "basis": [
+          "app[cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:*]=NO_MATCH (属性 version 可证明不相交)",
+          "app[cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:*]=NO_MATCH (属性 version 可证明不相交)",
+          "app[cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)",
+          "OR 组合 3 个判断 -> NO_MATCH",
+          "根表达式 OR 组合 1 个分支 -> NO_MATCH"
+        ],
+        "facts": [
+          {
+            "selector": "cpe:2.3:a:acme:widget:1.2:*:*:*:*:*:*:*",
+            "value": "NO_MATCH",
+            "detail": "app[cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:*]=NO_MATCH (属性 version 可证明不相交)"
+          },
+          {
+            "selector": "cpe:2.3:a:acme:widget:1.3:*:*:*:*:*:*:*",
+            "value": "NO_MATCH",
+            "detail": "app[cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:*]=NO_MATCH (属性 version 可证明不相交)"
+          },
+          {
+            "selector": "cpe:2.3:a:acme:datastore:3.4:*:*:*:*:*:*:*",
+            "value": "NO_MATCH",
+            "detail": "app[cpe:2.3:a:acme:widget:2.0:*:*:*:*:*:*:*]=NO_MATCH (属性 product, version 可证明不相交)"
+          }
+        ]
+      }
+    }
+  }
+}

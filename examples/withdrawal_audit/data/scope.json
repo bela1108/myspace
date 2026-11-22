@@ -1,0 +1,39 @@
+{
+  "scope_ref": "SCOPE-2026-11-18-A",
+  "approved_by": "maintenance-desk@example.test",
+  "approved_at": "2026-11-18T01:00:00Z",
+  "approved_asset_ids": [
+    "web-01",
+    "db-01",
+    "edge-01"
+  ],
+  "family_coverage": {
+    "web-frontend": {
+      "complete": true,
+      "evidence_ref": "INV-WEB-20261118",
+      "asset_ids": [
+        "web-01"
+      ],
+      "covered_from": "2026-09-01T00:00:00Z",
+      "covered_to": "2026-11-18T00:00:00Z"
+    },
+    "database": {
+      "complete": true,
+      "evidence_ref": "INV-DB-20261118",
+      "asset_ids": [
+        "db-01"
+      ],
+      "covered_from": "2026-09-01T00:00:00Z",
+      "covered_to": "2026-11-18T00:00:00Z"
+    },
+    "edge": {
+      "complete": false,
+      "evidence_ref": "INV-EDGE-PARTIAL-20261118",
+      "asset_ids": [
+        "edge-01"
+      ],
+      "covered_from": "2026-11-14T00:00:00Z",
+      "covered_to": "2026-11-14T00:00:00Z"
+    }
+  }
+}
