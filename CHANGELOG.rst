@@ -5,6 +5,12 @@ Change log
 Next version
 ============
 
+- Added an optional offline change ledger (``ledger=`` on ``sanitize()``
+  and the ``sanitize_with_ledger()`` helper). It records parse, structure
+  and explicit-policy decisions, exposes only structural aliases and
+  reasons publicly, keeps a traceable internal view, retains unaligned
+  decisions as pending, and avoids duplicating decisions across tightened
+  policy rounds.
 - Dropped support for Python < 3.10.
 - Added Python 3.14 and 3.15 to the CI matrix.
 

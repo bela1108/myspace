@@ -37,6 +37,63 @@ Usage
     >>> sanitizer.sanitize('<span style="font-weight:bold">some text</span>')
     '<strong>some text</strong>'
 
+Change ledger (optional)
+========================
+
+The sanitizer can optionally keep an offline ledger of the decisions it
+made. It is opt-in: the existing ``sanitize()`` return value and behaviour
+are unchanged when no ledger is passed.
+
+    >>> from html_sanitizer import Sanitizer, ChangeLedger
+    >>> ledger = ChangeLedger()
+    >>> sanitizer = Sanitizer()
+    >>> result = sanitizer.sanitize_with_ledger(
+    ...     '<p>Hello <span>note</span></p><p></p>',
+    ...     ledger=ledger,
+    ...     policy='public-v1',
+    ... )
+    >>> result.html
+    '<p>Hello note</p>'
+
+Each decision belongs to one of three stages: ``parse`` (Unicode
+normalization and parser recovery), ``structure`` (empty/whitespace
+cleanup, merging, unwrapping and normalization) and ``policy``
+(allowlisted tags and attributes, link policy, embedded hosts and active
+content).
+
+The public view deliberately contains only a structural alias and an
+auditable reason. It never exposes source XPaths, serialized fragments or
+text from the document::
+
+    >>> ledger.public_dicts()
+    [{'alias': '#fragment/p[2]',
+      'reason': 'structure (round 1): empty <p> element was removed ...'},
+     {'alias': '#fragment/p[1]/span[1]',
+      'reason': 'policy (round 1): tag <span> is valid HTML but is not approved ...'}]
+
+The internal view is for administrators and can be tied back to the
+original node through ``source_xpath``, ``fragment`` and the original
+document captured by the ledger::
+
+    >>> entry = next(e for e in ledger.internal() if e.tag == 'span')
+    >>> entry.source_xpath
+    '/html/body/div/p[1]/span'
+    >>> entry.fragment
+    '<span>note</span>'
+    >>> ledger.locate(entry)
+    [<Element span at ...>]
+
+``pending()`` contains decisions whose source node could not be aligned
+with the output (for example after the parser repaired malformed markup).
+They are retained for confirmation and are never silently discarded.
+``to_json(internal=False)`` exports only the public alias/reason view;
+``to_json(internal=True)`` exports the traceability data.
+
+A ledger can be reused for successive, tighter policies. Decisions are
+deduplicated by the input document digest, the structural alias and the
+operation, so content removed in an earlier round is not recorded again
+as a new decision when a later policy is applied.
+
 Settings
 ========
 
