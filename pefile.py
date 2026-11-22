@@ -1697,6 +1697,73 @@ class ResourceDataEntryData(DataContainer):
     """
 
 
+class ResourceSelectorError(ValueError):
+    """Raised when a language selection preference cannot be interpreted.
+
+    The static resource verification never guesses how an unknown language
+    selection preference is meant to be applied. Only explicit language
+    identifiers are accepted, so a malformed or otherwise unknown selector
+    raises this exception instead of silently falling back.
+    """
+
+
+class ResourceVerificationIssue(DataContainer):
+    """Describes a single leaf whose raw bytes could not be located.
+
+    leaf:       The ResourceLeaf instance that could not be verified.
+    reason:     Human readable explanation of the failure.
+    """
+
+
+class ResourceLeaf(DataContainer):
+    """A resolved resource tree leaf and the identity of its contents.
+
+    type:       Numeric resource type id, or the string name when named.
+    name:       Numeric resource name/id, or the string name when named.
+    lang:       Primary language ID of the leaf.
+    sublang:    Sublanguage ID of the leaf.
+    lcid:       Combined language identifier, (sublang << 10) | lang.
+    rva:        OffsetToData of the IMAGE_RESOURCE_DATA_ENTRY.
+    size:       Size field of the IMAGE_RESOURCE_DATA_ENTRY.
+    codepage:   CodePage field of the IMAGE_RESOURCE_DATA_ENTRY.
+    file_offset: File offset independently derived from rva, or None when
+                the RVA cannot be mapped back into the file.
+    content:    The original resource bytes located at file_offset.
+    content_hash_algorithm: Name of the algorithm used for content_hash.
+    content_hash: Hex digest of the original resource bytes, or None when
+                the raw bytes could not be independently located.
+    raw_bytes_verifiable: True only when the independently located bytes are
+                exactly size bytes and match the parsed data entry.
+    """
+
+
+class ResourceVerificationResult(DataContainer):
+    """The verification outcome for one resource name under one type.
+
+    type:           Resource type id or name.
+    name:           Resource name/id.
+    matched:        ResourceLeaf instances sharing the highest matched
+                    priority. More than one entry means the file does not
+                    disambiguate the choice. Empty when nothing matched.
+    unmatched:      True when no selector matched any leaf.
+    available_lcids: Every LCID present under this resource name.
+    issue:          ResourceVerificationIssue when the raw bytes of a leaf
+                    could not be independently located, otherwise None.
+    """
+
+
+class ResourceVerificationReport(DataContainer):
+    """Holds the full verification outcome for a verify_resources call.
+
+    language_order: The explicit, normalized language selection order used.
+    resource_types: The resource types that were checked.
+    results:        ResourceVerificationResult instances, one per resource
+                    name under every checked type.
+    by_type:        Mapping of resource type to the list of results for it.
+    issues:         Flattened list of every ResourceVerificationIssue found.
+    """
+
+
 class DebugData(DataContainer):
     """Holds debug information.
 
@@ -4945,6 +5012,294 @@ class PE:
             struct=resource_dir, entries=dir_entries
         )
 
+
+    @staticmethod
+    def _coerce_resource_type(resource_type):
+        """Normalize a requested resource type to a numeric id or a name."""
+        if isinstance(resource_type, str):
+            if resource_type in RESOURCE_TYPE:
+                return int(RESOURCE_TYPE[resource_type])
+            return resource_type
+        if isinstance(resource_type, int) and not isinstance(
+            resource_type, bool
+        ):
+            return resource_type
+        raise ResourceSelectorError(
+            f"Unsupported resource type selector: {resource_type!r}. Use a "
+            "RESOURCE_TYPE id, an RT_* constant name or a string name."
+        )
+
+    @staticmethod
+    def _coerce_language_selector(selector):
+        """Normalize a language selector into a (lang, sublang) pair.
+
+        A sublanguage of None means "any sublanguage of this primary
+        language" and can match several leaves at equal priority.
+        """
+        if isinstance(selector, int) and not isinstance(selector, bool):
+            if not 0 <= selector <= 0xFFFF:
+                raise ResourceSelectorError(
+                    f"LCID selector out of range: {selector!r}."
+                )
+            return selector & 0x3FF, selector >> 10
+        if isinstance(selector, tuple) and len(selector) == 2:
+            lang_id, sublang_id = selector
+            if (
+                not isinstance(lang_id, int)
+                or isinstance(lang_id, bool)
+                or not 0 <= lang_id <= 0x3FF
+            ):
+                raise ResourceSelectorError(
+                    f"Invalid primary language in selector: {selector!r}."
+                )
+            if sublang_id is not None and (
+                not isinstance(sublang_id, int)
+                or isinstance(sublang_id, bool)
+                or not 0 <= sublang_id <= 0x3F
+            ):
+                raise ResourceSelectorError(
+                    f"Invalid sublanguage in selector: {selector!r}."
+                )
+            return int(lang_id), (
+                None if sublang_id is None else int(sublang_id)
+            )
+        if isinstance(selector, str):
+            if selector not in LANG:
+                raise ResourceSelectorError(
+                    f"Unknown language selection method {selector!r}; no "
+                    "platform fallback is guessed."
+                )
+            return int(LANG[selector]), None
+        raise ResourceSelectorError(
+            f"Unknown language selection method {selector!r}; use an LCID, a "
+            "(lang, sublang) tuple or a LANG_* constant."
+        )
+
+    def _iter_resource_leaves(self):
+        """Yield every tree leaf as a (type, name, lang_entry) triple."""
+        if not hasattr(self, "DIRECTORY_ENTRY_RESOURCE"):
+            return
+
+        for type_entry in self.DIRECTORY_ENTRY_RESOURCE.entries:
+            type_id = (
+                type_entry.id if type_entry.name is None else type_entry.name
+            )
+            if not hasattr(type_entry, "directory"):
+                continue
+
+            for name_entry in type_entry.directory.entries:
+                name_id = (
+                    name_entry.id
+                    if name_entry.name is None
+                    else name_entry.name
+                )
+                if not hasattr(name_entry, "directory"):
+                    continue
+
+                for lang_entry in name_entry.directory.entries:
+                    if not hasattr(lang_entry, "data"):
+                        continue
+                    yield type_id, name_id, lang_entry
+
+    def _build_resource_leaf(self, type_id, name_id, lang_entry, hash_algorithm):
+        """Build a ResourceLeaf and prove its raw bytes are locatable.
+
+        The file offset is derived independently from the data entry RVA, and
+        the located bytes must equal the bytes reachable through the parsed
+        data entry.
+        """
+        data_struct = lang_entry.data.struct
+        data_rva = data_struct.OffsetToData
+        data_size = data_struct.Size
+
+        algorithm_name = getattr(
+            hash_algorithm, "__name__", str(hash_algorithm)
+        )
+        if algorithm_name.startswith("openssl_"):
+            algorithm_name = algorithm_name[len("openssl_"):]
+
+        issue = None
+        file_offset = None
+        content = b""
+        content_hash = None
+        verifiable = False
+
+        try:
+            candidate_offset = self.get_offset_from_rva(data_rva)
+            located = self.__data__[
+                candidate_offset : candidate_offset + data_size
+            ]
+        except (PEFormatError, IndexError):
+            candidate_offset = None
+            located = b""
+
+        if candidate_offset is not None and len(located) == data_size:
+            try:
+                mapped = self.get_data(data_rva, data_size)
+            except PEFormatError:
+                mapped = b""
+            if mapped == located:
+                file_offset = candidate_offset
+                content = bytes(located)
+                content_hash = hash_algorithm(content).hexdigest()
+                verifiable = True
+
+        if not verifiable:
+            issue = ResourceVerificationIssue(
+                leaf=None,
+                reason=(
+                    "Raw resource bytes could not be independently located "
+                    f"for type {type_id!r}, name {name_id!r}, LCID "
+                    f"{lang_entry.id:#06x}."
+                ),
+            )
+
+        leaf = ResourceLeaf(
+            type=type_id,
+            name=name_id,
+            lang=lang_entry.data.lang,
+            sublang=lang_entry.data.sublang,
+            lcid=lang_entry.id,
+            rva=data_rva,
+            size=data_size,
+            codepage=data_struct.CodePage,
+            file_offset=file_offset,
+            content=content,
+            content_hash_algorithm=algorithm_name,
+            content_hash=content_hash,
+            raw_bytes_verifiable=verifiable,
+        )
+        if issue is not None:
+            issue.leaf = leaf
+        return leaf, issue
+
+    def verify_resources(
+        self,
+        language_order,
+        resource_types=None,
+        hash_algorithm=sha256,
+    ):
+        """Statically check which leaves an explicit language order selects.
+
+        No Windows loader behavior is emulated and, in particular, no neutral
+        or default-language fallback is guessed. Each element of
+        ``language_order`` is evaluated in turn and the first selector that
+        matches one or more leaves determines the result. When a selector
+        matches several leaves (for example a primary language with several
+        sublanguages), all equally preferred candidates are returned.
+
+        Args:
+            language_order: iterable of language selectors, each an LCID int,
+                a (primary_language, sublanguage) tuple (sublanguage may be
+                None to match every sublanguage) or a LANG_* constant name.
+            resource_types: a RESOURCE_TYPE id, an RT_* name, a string name,
+                or a list mixing them. None checks every type in the image.
+            hash_algorithm: hash constructor used for the content identity,
+                defaults to :func:`sha256`.
+
+        Returns:
+            A ResourceVerificationReport describing, per type and resource
+            name, the matched leaves and their content identities.
+
+        Raises:
+            ResourceSelectorError: if a selector cannot be understood.
+        """
+        if not hasattr(self, "DIRECTORY_ENTRY_RESOURCE"):
+            raise ResourceSelectorError(
+                "This PE file contains no parsed resource directory."
+            )
+
+        selectors = [
+            self._coerce_language_selector(selector)
+            for selector in language_order
+        ]
+
+        if resource_types is None:
+            requested_types = []
+            for type_entry in self.DIRECTORY_ENTRY_RESOURCE.entries:
+                type_id = (
+                    type_entry.id
+                    if type_entry.name is None
+                    else type_entry.name
+                )
+                if type_id not in requested_types:
+                    requested_types.append(type_id)
+        else:
+            if isinstance(resource_types, (str, int)):
+                resource_types = [resource_types]
+            requested_types = [
+                self._coerce_resource_type(resource_type)
+                for resource_type in resource_types
+            ]
+
+        leaves_by_type_name = {}
+        for type_id, name_id, lang_entry in self._iter_resource_leaves():
+            if type_id not in requested_types:
+                continue
+            leaves_by_type_name.setdefault((type_id, name_id), []).append(
+                lang_entry
+            )
+
+        results = []
+        issues = []
+        by_type = {}
+        for type_id in requested_types:
+            type_results = []
+            grouped = sorted(
+                (
+                    item
+                    for item in leaves_by_type_name.items()
+                    if item[0][0] == type_id
+                ),
+                key=lambda item: str(item[0][1]),
+            )
+            for (leaf_type_id, name_id), lang_entries in grouped:
+                built_leaves = []
+                name_issues = []
+                for lang_entry in lang_entries:
+                    leaf, issue = self._build_resource_leaf(
+                        leaf_type_id, name_id, lang_entry, hash_algorithm
+                    )
+                    built_leaves.append(leaf)
+                    if issue is not None:
+                        name_issues.append(issue)
+                issues.extend(name_issues)
+
+                matched = []
+                for selector in selectors:
+                    candidates = [
+                        leaf
+                        for leaf in built_leaves
+                        if leaf.lang == selector[0]
+                        and (
+                            selector[1] is None
+                            or leaf.sublang == selector[1]
+                        )
+                    ]
+                    if candidates:
+                        matched = candidates
+                        break
+
+                result = ResourceVerificationResult(
+                    type=leaf_type_id,
+                    name=name_id,
+                    matched=matched,
+                    unmatched=not matched,
+                    available_lcids=[leaf.lcid for leaf in built_leaves],
+                    issue=name_issues[0] if name_issues else None,
+                )
+                results.append(result)
+                type_results.append(result)
+            if type_results:
+                by_type[type_id] = type_results
+
+        return ResourceVerificationReport(
+            language_order=list(language_order),
+            resource_types=list(requested_types),
+            results=results,
+            by_type=by_type,
+            issues=issues,
+        )
 
     def parse_resource_data_entry(self, rva):
         """Parse a data entry from the resources directory."""
