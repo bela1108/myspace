@@ -28,6 +28,19 @@ Once in the shell, all commands are documented. Use the `?` command to see all o
 After parsing the minidump file, you can use the MinidumpFileReader and MinidumpBufferedReader objects to perform various searches/reads in the dumped process' address space.  
 Those objects will be able to read and search the VA of the dumped process and have a notion on integer sizes based on the CPU arch.
 
+For memory which may include uncaptured gaps, use an evidence-aware range query:
+
+```python
+from minidump.minidumpfile import MinidumpFile
+
+reader = MinidumpFile.parse("dump.dmp").get_reader()
+for interval in reader.read_range_with_evidence(0x1000, 0x1006):
+	print(hex(interval.start), hex(interval.end), interval.kind)
+	print(interval.data_stream, interval.memory_info)
+```
+
+The range is half-open. `sampled_zero` bytes are present in a memory data stream, `display_zero` bytes are zero-filled because only the memory-info table covers them, and `uncovered` ranges have neither source. Adjacent ranges with different evidence are never merged, even when both contain the same zero bytes.
+
 # Creating minidump file
 The ```createminidump.py``` script in the utils folder uses the Windows API to create minidump files. This script can also dump processes running on a different user context by enabling ```SeDebugPrivilege```.  
 Of course it only works if you are running it as administrator or a use that has ```SeDebugPrivilege```.

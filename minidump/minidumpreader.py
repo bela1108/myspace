@@ -6,6 +6,7 @@
 import struct
 import ntpath
 from .common_structs import *
+from .memory_range import MemoryRangeEvidence, MemoryRangeKind
 from .streams.SystemInfoStream import PROCESSOR_ARCHITECTURE
 
 class VirtualSegment:
@@ -105,6 +106,14 @@ class MinidumpBufferedReader:
 
 	def get_reader(self):
 		return self.reader
+
+	def read_range_with_evidence(self, start, end = None, size = None, length = None):
+		"""Query an address range without moving the buffered reader's cursor."""
+		return self.reader.read_range_with_evidence(start, end = end, size = size, length = length)
+
+	def query_range(self, start, end = None, size = None, length = None):
+		"""Alias for :meth:`read_range_with_evidence`."""
+		return self.read_range_with_evidence(start, end = end, size = size, length = length)
 
 	def seek(self, offset, whence = 0):
 		"""
@@ -274,19 +283,23 @@ class MinidumpBufferedReader:
 
 class MinidumpFileReader:
 	def __init__(self, minidumpfile):
-		self.modules = minidumpfile.modules.modules
+		self.modules = minidumpfile.modules.modules if minidumpfile.modules is not None else []
 		self.unloaded_modules = []
 		if minidumpfile.unloaded_modules is not None:
 			self.unloaded_modules = minidumpfile.unloaded_modules.modules
 
 		self.sysinfo = minidumpfile.sysinfo
+		self.memory_info = minidumpfile.memory_info
 
-		if minidumpfile.memory_segments_64:
+		if minidumpfile.memory_segments_64 is not None:
 			self.memory_segments = minidumpfile.memory_segments_64.memory_segments
 			self.is_fulldump = True
 
-		else:
+		elif minidumpfile.memory_segments is not None:
 			self.memory_segments = minidumpfile.memory_segments.memory_segments
+			self.is_fulldump = False
+		else:
+			self.memory_segments = []
 			self.is_fulldump = False
 
 		self.filename = minidumpfile.filename
@@ -295,7 +308,11 @@ class MinidumpFileReader:
 		#reader params
 		self.sizeof_long = 4
 		self.unpack_long = '<L'
-		if minidumpfile.sysinfo.ProcessorArchitecture in [PROCESSOR_ARCHITECTURE.AMD64, PROCESSOR_ARCHITECTURE.AARCH64]:
+		if self.sysinfo is None:
+			# Range/evidence queries do not need architecture information.
+			self.sizeof_ptr = 8
+			self.unpack_ptr = '<Q'
+		elif self.sysinfo.ProcessorArchitecture in [PROCESSOR_ARCHITECTURE.AMD64, PROCESSOR_ARCHITECTURE.AARCH64]:
 			self.sizeof_ptr = 8
 			self.unpack_ptr = '<Q'
 		elif self.sysinfo.ProcessorArchitecture in [PROCESSOR_ARCHITECTURE.INTEL,
@@ -310,6 +327,211 @@ class MinidumpFileReader:
 
 	def get_memory(self):
 		return self.memory_segments
+
+	def _get_memory_info_entries(self):
+		if self.memory_info is None:
+			return []
+		return self.memory_info.infos
+
+	def _overlapping_data_segments(self, start, end):
+		return [
+			segment for segment in self.memory_segments
+			if segment.start_virtual_address < end and segment.end_virtual_address > start
+		]
+
+	def _overlapping_memory_info(self, start, end):
+		t = []
+		for entry in self._get_memory_info_entries():
+			if entry.BaseAddress is None or entry.RegionSize is None:
+				continue
+			entry_end = entry.BaseAddress + entry.RegionSize
+			if entry.BaseAddress < end and entry_end > start:
+				t.append(entry)
+		return t
+
+	@staticmethod
+	def _normalise_range(start, end = None, size = None, length = None):
+		if length is not None:
+			if size is not None:
+				raise ValueError('Specify either size or length, not both')
+			size = length
+
+		if size is not None:
+			if end is not None:
+				raise ValueError('Specify either end or size, not both')
+			if size < 0:
+				raise ValueError('Range size must not be negative')
+			end = start + size
+		elif end is None:
+			raise ValueError('A range end or size is required')
+		elif end < start:
+			# Also accept the read(addr, size) convention. It is unambiguous for
+			# normal virtual addresses; callers should prefer size= for others.
+			end = start + end
+
+		if end < start:
+			raise ValueError('Range end must not precede range start')
+		return start, end
+
+	@staticmethod
+	def _memory_info_signature(entry):
+		if entry is None:
+			return (None, None, None)
+		return (entry.State, entry.Protect, entry.Type)
+
+	@staticmethod
+	def _signature(item):
+		data_segment = item.data_segment
+		data_source = None
+		if data_segment is not None:
+			data_source = (
+				data_segment.start_file_address,
+				data_segment.start_virtual_address,
+			)
+		return (
+			item.kind,
+			item.memory_info,
+			item.data_stream,
+			MinidumpFileReader._memory_info_signature(item.memory_info_entry),
+			data_source,
+			item.truncated,
+		)
+
+	@classmethod
+	def _merge_evidence(cls, items):
+		t = []
+		for item in items:
+			if item.end <= item.start:
+				continue
+			if t and t[-1].end == item.start and cls._signature(t[-1]) == cls._signature(item):
+				t[-1].end = item.end
+				t[-1].data += item.data
+				continue
+			t.append(item)
+		return t
+
+	def _read_sampled_interval(self, start, end, segment):
+		data = segment.read(start, end - start, self.file_handle)
+		size = end - start
+		truncated = len(data) != size
+		if truncated:
+			data += b'\x00' * (size - len(data))
+		return data, truncated
+
+	def read_range_with_evidence(self, start, end = None, size = None, length = None):
+		"""
+		Read a virtual-address range and return an interval-sorted evidence list.
+
+		The range is half-open (``start <= address < end``). Each returned
+		:class:`MemoryRangeEvidence` says whether its bytes came from the memory
+		data stream, only from the memory-info table (display-layer zero fill), or
+		from neither source (uncovered).
+
+		Adjacent intervals are merged only when their evidence is identical.
+		Intervals with the same byte value but different evidence stay separate.
+		"""
+		start, end = self._normalise_range(start, end = end, size = size, length = length)
+		if start == end:
+			return []
+
+		data_segments = self._overlapping_data_segments(start, end)
+		memory_infos = self._overlapping_memory_info(start, end)
+
+		boundaries = {start, end}
+		for segment in data_segments:
+			boundaries.add(max(start, segment.start_virtual_address))
+			boundaries.add(min(end, segment.end_virtual_address))
+		for entry in memory_infos:
+			boundaries.add(max(start, entry.BaseAddress))
+			boundaries.add(min(end, entry.BaseAddress + entry.RegionSize))
+
+		points = sorted(boundaries)
+		items = []
+		for interval_start, interval_end in zip(points, points[1:]):
+			if interval_start == interval_end:
+				continue
+
+			segment = next((
+				s for s in data_segments
+				if s.start_virtual_address <= interval_start and interval_end <= s.end_virtual_address
+			), None)
+			info = next((
+				i for i in memory_infos
+				if i.BaseAddress <= interval_start and interval_end <= i.BaseAddress + i.RegionSize
+			), None)
+
+			if segment is not None:
+				data, truncated = self._read_sampled_interval(interval_start, interval_end, segment)
+				# Keep captured zero and captured non-zero data distinct without
+				# changing the boundaries of the underlying evidence.
+				run_start = 0
+				run_is_zero = data[0] == 0 if data else None
+				for offset in range(1, len(data) + 1):
+					if offset == len(data) or (data[offset] == 0) != run_is_zero:
+						run_data = data[run_start:offset]
+						item_start = interval_start + run_start
+						item_end = interval_start + offset
+						kind = MemoryRangeKind.SAMPLED_ZERO if run_is_zero else MemoryRangeKind.SAMPLED
+						items.append(MemoryRangeEvidence(
+							item_start,
+							item_end,
+							run_data,
+							kind,
+							True,
+							info is not None,
+							data_segment = segment,
+							memory_info_entry = info,
+							truncated = truncated,
+						))
+						run_start = offset
+						if offset < len(data):
+							run_is_zero = data[offset] == 0
+				continue
+
+			zero_data = b'\x00' * (interval_end - interval_start)
+			if info is not None:
+				kind = MemoryRangeKind.DISPLAY_ZERO
+			else:
+				kind = MemoryRangeKind.UNCOVERED
+			items.append(MemoryRangeEvidence(
+				interval_start,
+				interval_end,
+				zero_data,
+				kind,
+				False,
+				info is not None,
+				memory_info_entry = info,
+			))
+
+		return self._merge_evidence(items)
+
+	def query_range(self, start, end = None, size = None, length = None):
+		"""Alias for :meth:`read_range_with_evidence`."""
+		return self.read_range_with_evidence(start, end = end, size = size, length = length)
+
+	def query_range_with_evidence(self, start, end = None, size = None, length = None):
+		"""Alias for :meth:`read_range_with_evidence`."""
+		return self.read_range_with_evidence(start, end = end, size = size, length = length)
+
+	def read_range(self, start, end = None, size = None, length = None):
+		"""Alias for :meth:`read_range_with_evidence`."""
+		return self.read_range_with_evidence(start, end = end, size = size, length = length)
+
+	def query_memory_range(self, start, end = None, size = None, length = None):
+		"""Alias for :meth:`read_range_with_evidence`."""
+		return self.read_range_with_evidence(start, end = end, size = size, length = length)
+
+	def read_range_evidence(self, start, end = None, size = None, length = None):
+		"""Alias for :meth:`read_range_with_evidence`."""
+		return self.read_range_with_evidence(start, end = end, size = size, length = length)
+
+	def get_range_evidence(self, start, end = None, size = None, length = None):
+		"""Alias for :meth:`read_range_with_evidence`."""
+		return self.read_range_with_evidence(start, end = end, size = size, length = length)
+
+	def evidence_ranges(self, start, end = None, size = None, length = None):
+		"""Alias for :meth:`read_range_with_evidence`."""
+		return self.read_range_with_evidence(start, end = end, size = size, length = length)
 
 	def get_buffered_reader(self, segment_chunk_size = 10*1024):
 		return MinidumpBufferedReader(self, segment_chunk_size = segment_chunk_size)

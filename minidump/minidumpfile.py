@@ -79,6 +79,28 @@ class MinidumpFile:
 	def get_reader(self):
 		return MinidumpFileReader(self)
 
+	def read_range_with_evidence(self, start, end = None, size = None, length = None):
+		"""
+		Read a virtual-address range and return interval-sorted evidence.
+
+		This is a convenience wrapper around
+		:meth:`MinidumpFileReader.read_range_with_evidence`.
+		"""
+		return self.get_reader().read_range_with_evidence(
+			start,
+			end = end,
+			size = size,
+			length = length,
+		)
+
+	def query_range(self, start, end = None, size = None, length = None):
+		"""Alias for :meth:`read_range_with_evidence`."""
+		return self.read_range_with_evidence(start, end = end, size = size, length = length)
+
+	def query_range_with_evidence(self, start, end = None, size = None, length = None):
+		"""Alias for :meth:`read_range_with_evidence`."""
+		return self.read_range_with_evidence(start, end = end, size = size, length = length)
+
 	def _parse(self):
 		self.__parse_header()
 		self.__parse_directories()
