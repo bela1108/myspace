@@ -41,3 +41,7 @@ class PrefixError(Error):
 
 class InvalidMetadata(Error):  # noqa: N818
     """Indicates that the metadata is not valid."""
+
+
+class CompatibilityReviewError(Error):
+    """Indicates that an offline layout compatibility review cannot proceed."""
