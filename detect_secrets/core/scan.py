@@ -5,6 +5,7 @@ from typing import cast
 from typing import Generator
 from typing import Iterable
 from typing import List
+from typing import Optional
 from typing import Set
 from typing import Tuple
 from typing import Union
@@ -137,7 +138,28 @@ def scan_line(line: str) -> Generator[PotentialSecret, None, None]:
     )
 
 
-def scan_file(filename: str) -> Generator[PotentialSecret, None, None]:
+def scan_file(
+    filename: str,
+    checkpoint: str = '',
+    batch_size: Optional[int] = None,
+    result_path: Optional[str] = None,
+    **kwargs: Any,
+) -> Generator[PotentialSecret, None, None]:
+    if not checkpoint:
+        checkpoint = kwargs.pop('checkpoint_path', '')
+    if not checkpoint:
+        checkpoint = kwargs.pop('cursor', '')
+
+    if checkpoint:
+        resume_kwargs = dict(kwargs)
+        if batch_size is not None:
+            resume_kwargs['batch_size'] = batch_size
+        if result_path is not None:
+            resume_kwargs['result_path'] = result_path
+
+        yield from scan_file_resumable(filename, checkpoint, **resume_kwargs)
+        return
+
     try:
         if not get_plugins():   # pragma: no cover
             log.error('No plugins to scan with!')
@@ -439,3 +461,58 @@ def get_filters_with_parameter(*parameters: str) -> List[SelfAwareCallable]:
         for filter in get_filters()
         if minimum_parameters <= filter.injectable_variables
     ]
+
+
+def scan_file_resumable(
+    filename: str,
+    checkpoint_path: str,
+    **kwargs: Any,
+) -> Generator[PotentialSecret, None, None]:
+    """
+    Rescan ``filename`` from a checkpoint, if one is available.
+
+    This is a thin lazy wrapper over :mod:`detect_secrets.core.resumable` so
+    that the resumable implementation does not create an import cycle with the
+    core scanning primitives it reuses.
+    """
+    from .resumable import scan_file_resumable as _scan_file_resumable
+
+    yield from _scan_file_resumable(filename, checkpoint_path, **kwargs)
+
+
+def resumable_scan_file(
+    filename: str,
+    checkpoint_path: str,
+    **kwargs: Any,
+) -> Generator[PotentialSecret, None, None]:
+    """Alias for :func:`scan_file_resumable`."""
+    yield from scan_file_resumable(filename, checkpoint_path, **kwargs)
+
+
+scan_file_with_checkpoint = resumable_scan_file
+scan_file_from_checkpoint = resumable_scan_file
+
+
+def load_checkpoint(filename: str) -> Any:
+    """Lazily load a resumable scan checkpoint from :mod:`.resumable`."""
+    from .resumable import load_checkpoint as _load_checkpoint
+
+    return _load_checkpoint(filename)
+
+
+def save_checkpoint(filename: str, checkpoint: Any) -> None:
+    """Lazily save a resumable scan checkpoint to :mod:`.resumable`."""
+    from .resumable import save_checkpoint as _save_checkpoint
+
+    _save_checkpoint(filename, checkpoint)
+
+
+def get_checkpoint_invalidation_reason(
+    checkpoint_filename: str,
+    source_filename: str,
+    settings_fingerprint: Any = None,
+) -> Any:
+    """Lazily expose checkpoint validation from :mod:`.resumable`."""
+    from .resumable import get_checkpoint_invalidation_reason as _get_reason
+
+    return _get_reason(checkpoint_filename, source_filename, settings_fingerprint)

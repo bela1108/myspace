@@ -85,6 +85,49 @@ def _add_initialize_baseline_options(parser: argparse.ArgumentParser) -> None:
             'slim baselines will need to be remade to be audited.'
         ),
     )
+    group.add_argument(
+        '--checkpoint',
+        '--cursor',
+        '--resume',
+        nargs=1,
+        metavar='PATH',
+        default=None,
+        help=(
+            'Persist resumable scan progress to PATH. For multiple files, PATH is used as '
+            'a directory containing one checkpoint per file. Checkpoints contain only '
+            'progress and input/settings fingerprints, never file content or secrets.'
+        ),
+    )
+    group.add_argument(
+        '--batch-size',
+        '--chunk-size',
+        nargs=1,
+        type=int,
+        metavar='BYTES',
+        default=None,
+        help=(
+            'Target number of input bytes to scan before committing a resumable checkpoint. '
+            'Defaults to 1 MiB. Lines are never split across batches.'
+        ),
+    )
+    group.add_argument(
+        '--results-log',
+        nargs=1,
+        metavar='PATH',
+        default=None,
+        help=(
+            'Append-only result log used to make resumable checkpoints crash-safe. '
+            'Defaults to a path derived from --checkpoint.'
+        ),
+    )
+    group.add_argument(
+        '--restart-on-invalid-checkpoint',
+        action='store_true',
+        help=(
+            'If a checkpoint no longer matches the source file or scan settings, restart '
+            'the scan from the beginning instead of failing.'
+        ),
+    )
 
 
 def parse_args(args: argparse.Namespace) -> None:
@@ -96,3 +139,13 @@ def parse_args(args: argparse.Namespace) -> None:
     if args.baseline is not None and args.force_use_all_plugins:
         get_settings().plugins.clear()
         initialize_plugin_settings(args)
+
+    for option in ('checkpoint', 'batch_size', 'results_log'):
+        value = getattr(args, option, None)
+        if isinstance(value, list):
+            setattr(args, option, value[0])
+
+    if getattr(args, 'batch_size', None) is None:
+        from ..resumable import DEFAULT_BATCH_SIZE
+
+        args.batch_size = DEFAULT_BATCH_SIZE

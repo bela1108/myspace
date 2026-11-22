@@ -72,8 +72,28 @@ class SecretsCollection:
                 for secret in secrets:
                     self[os.path.relpath(secret.filename, self.root)].add(secret)
 
-    def scan_file(self, filename: str) -> None:
-        for secret in scan.scan_file(os.path.join(self.root, convert_local_os_path(filename))):
+    def scan_file(
+        self,
+        filename: str,
+        checkpoint: str = '',
+        batch_size: Optional[int] = None,
+        result_path: Optional[str] = None,
+    ) -> None:
+        scanner_filename = os.path.join(
+            self.root,
+            convert_local_os_path(filename),
+        )
+        if checkpoint:
+            secrets = scan.scan_file_resumable(
+                scanner_filename,
+                checkpoint,
+                batch_size=batch_size or 1024 * 1024,
+                result_path=result_path,
+            )
+        else:
+            secrets = scan.scan_file(scanner_filename)
+
+        for secret in secrets:
             self[convert_local_os_path(filename)].add(secret)
 
     def scan_diff(self, diff: str) -> None:

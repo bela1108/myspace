@@ -13,6 +13,7 @@ from .core.scan import scan_for_allowlisted_secrets_in_file
 from .core.scan import scan_line
 from .core.secrets_collection import SecretsCollection
 from .core.usage import ParserBuilder
+from .exceptions import CheckpointInvalidError
 from .exceptions import InvalidBaselineError
 from .settings import get_plugins
 from .settings import get_settings
@@ -26,10 +27,14 @@ def main(argv: Optional[List[str]] = None) -> int:
     if args.verbose:    # pragma: no cover
         log.set_debug_level(args.verbose)
 
-    if args.action == 'scan':
-        handle_scan_action(args)
-    elif args.action == 'audit':
-        handle_audit_action(args)
+    try:
+        if args.action == 'scan':
+            handle_scan_action(args)
+        elif args.action == 'audit':
+            handle_audit_action(args)
+    except CheckpointInvalidError as e:
+        print(f'Unable to resume scan because {e.reason}: {e}', file=sys.stderr)
+        return 1
 
     return 0
 
@@ -67,12 +72,25 @@ def handle_scan_action(args: argparse.Namespace) -> None:
         print(json.dumps(baseline.format_for_output(secrets), indent=2))
         return
 
-    secrets = baseline.create(
-        *args.path,
-        should_scan_all_files=args.all_files,
-        root=args.custom_root,
-        num_processors=args.num_cores,
-    )
+    if getattr(args, 'checkpoint', None):
+        secrets = baseline.create_resumable(
+            *args.path,
+            checkpoint=args.checkpoint,
+            batch_size=getattr(args, 'batch_size', 1024 * 1024),
+            result_path=getattr(args, 'results_log', None),
+            should_scan_all_files=args.all_files,
+            root=args.custom_root,
+            restart_on_invalid=getattr(
+                args, 'restart_on_invalid_checkpoint', False,
+            ),
+        )
+    else:
+        secrets = baseline.create(
+            *args.path,
+            should_scan_all_files=args.all_files,
+            root=args.custom_root,
+            num_processors=args.num_cores,
+        )
     if args.baseline is not None:
         # The pre-commit hook's baseline upgrade is to trim the supplied baseline for non-existent
         # secrets, and to upgrade the format to the latest version. This is because the pre-commit

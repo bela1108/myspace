@@ -57,6 +57,34 @@ $ detect-secrets -C /path/to/directory scan > /path/to/directory/.secrets.baseli
 $ detect-secrets scan test_data/ --all-files > .secrets.baseline
 ```
 
+### Resumable Offline Scans:
+
+Long-running offline scans can commit progress after each batch, so a restart
+continues near the last processed line instead of rereading the whole file:
+
+```bash
+$ detect-secrets scan archive/ --all-files \
+    --checkpoint /var/tmp/archive-scan.checkpoint.json \
+    --batch-size 1048576
+```
+
+The checkpoint contains only the cursor (source byte offset, next line number,
+and result-log offset), verification metadata for the input file, and a
+fingerprint of the scan settings. It never contains source content, transformed
+lines, or matched secret values. Results are stored separately in an append-only
+log containing the same hashed entries as a baseline.
+
+Batches always end on complete lines, so a boundary inside a multi-byte
+character or halfway through a line cannot change filtering. Results are flushed
+before the checkpoint advances, and uncommitted result-log bytes are discarded
+on resume; an interruption on either side of the checkpoint commit therefore
+neither loses a segment tail nor counts it twice.
+
+If the source file or scan settings change, the cursor is rejected with a
+reason of `source_changed` or `settings_changed`. Use
+`--restart-on-invalid-checkpoint` to discard the old cursor and scan from the
+beginning instead.
+
 ### Adding New Secrets to Baseline:
 
 This will rescan your codebase, and:
@@ -234,6 +262,9 @@ $ detect-secrets scan --help
 usage: detect-secrets scan [-h] [--string [STRING]] [--only-allowlisted]
                            [--all-files] [--baseline FILENAME]
                            [--force-use-all-plugins] [--slim]
+                           [--checkpoint PATH] [--batch-size BYTES]
+                           [--results-log PATH]
+                           [--restart-on-invalid-checkpoint]
                            [--list-all-plugins] [-p PLUGIN]
                            [--base64-limit [BASE64_LIMIT]]
                            [--hex-limit [HEX_LIMIT]]
@@ -276,6 +307,18 @@ scan options:
                         minimizing differences between commits. However, they
                         are not compatible with the `audit` functionality, and
                         slim baselines will need to be remade to be audited.
+  --checkpoint PATH, --cursor PATH, --resume PATH
+                        Persist resumable scan progress to PATH. For multiple
+                        files, PATH is used as a directory containing one
+                        checkpoint per file.
+  --batch-size BYTES, --chunk-size BYTES
+                        Target number of input bytes to scan before committing
+                        a resumable checkpoint. Defaults to 1 MiB.
+  --results-log PATH    Append-only result log used to make resumable
+                        checkpoints crash-safe.
+  --restart-on-invalid-checkpoint
+                        Restart from the beginning if a checkpoint no longer
+                        matches the source or scan settings.
 
 plugin options:
   Configure settings for each secret scanning ruleset. By default, all

@@ -1,5 +1,7 @@
 import json
+import os
 import time
+from hashlib import sha1
 from typing import Any
 from typing import Callable
 from typing import cast
@@ -19,13 +21,124 @@ from .scan import get_files_to_scan
 from .secrets_collection import SecretsCollection
 
 
+def create_resumable(
+    *paths: str,
+    checkpoint: str,
+    batch_size: int = 1024 * 1024,
+    result_path: Optional[str] = None,
+    should_scan_all_files: bool = False,
+    root: str = '',
+    restart_on_invalid: bool = False,
+) -> SecretsCollection:
+    """
+    Scan files using resumable per-file checkpoints.
+
+    When more than one file is discovered, ``checkpoint`` is treated as a
+    directory and each file receives its own checkpoint and result log. This
+    keeps a recovery point small even for repository-wide offline batches.
+    """
+    from ..util.path import convert_local_os_path
+    from .resumable import ResumableScan
+
+    filenames = list(get_files_to_scan(
+        *paths,
+        should_scan_all_files=should_scan_all_files,
+        root=root,
+    ))
+    secrets = SecretsCollection(root=root)
+    if not filenames:
+        return secrets
+
+    checkpoint_paths = _resumable_checkpoint_paths(checkpoint, filenames)
+
+    for filename, checkpoint_filename, result_filename in zip(
+        filenames,
+        checkpoint_paths,
+        _resumable_result_paths(checkpoint, filenames, result_path),
+    ):
+        scanner_filename = (
+            os.path.join(root, convert_local_os_path(filename))
+            if root
+            else filename
+        )
+        scanner = ResumableScan(
+            scanner_filename,
+            checkpoint_filename,
+            batch_size=batch_size,
+            result_path=result_filename,
+            restart_on_invalid=restart_on_invalid,
+        )
+        for secret in scanner.scan():
+            secrets[convert_local_os_path(filename)].add(secret)
+
+    return secrets
+
+
+def _resumable_checkpoint_paths(
+    checkpoint: str,
+    filenames: List[str],
+) -> List[str]:
+    if len(filenames) == 1:
+        return [checkpoint]
+
+    os.makedirs(checkpoint, exist_ok=True)
+    return [
+        os.path.join(checkpoint, _resumable_file_key(filename) + '.checkpoint.json')
+        for filename in filenames
+    ]
+
+
+def _resumable_result_paths(
+    checkpoint: str,
+    filenames: List[str],
+    result_path: Optional[str],
+) -> List[Optional[str]]:
+    if result_path is None:
+        if len(filenames) == 1:
+            return [checkpoint + '.results.jsonl']
+
+        os.makedirs(checkpoint, exist_ok=True)
+        return [
+            os.path.join(checkpoint, _resumable_file_key(filename) + '.results.jsonl')
+            for filename in filenames
+        ]
+
+    if len(filenames) == 1:
+        return [result_path]
+
+    os.makedirs(result_path, exist_ok=True)
+    return [
+        os.path.join(result_path, _resumable_file_key(filename) + '.results.jsonl')
+        for filename in filenames
+    ]
+
+
+def _resumable_file_key(filename: str) -> str:
+    return sha1(filename.encode('utf-8')).hexdigest()[:16]
+
+
 def create(
     *paths: str,
     should_scan_all_files: bool = False,
     root: str = '',
     num_processors: Optional[int] = None,
+    checkpoint: Optional[str] = None,
+    batch_size: int = 1024 * 1024,
+    result_path: Optional[str] = None,
+    restart_on_invalid: bool = False,
 ) -> SecretsCollection:
     """Scans all the files recursively in path to initialize a baseline."""
+    if checkpoint:
+        return create_resumable(
+            *paths,
+            checkpoint=checkpoint,
+            batch_size=batch_size,
+            result_path=result_path,
+            should_scan_all_files=should_scan_all_files,
+            root=root,
+            restart_on_invalid=restart_on_invalid,
+        )
+
     kwargs = {}
     if num_processors:
         kwargs['num_processors'] = num_processors
