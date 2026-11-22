@@ -263,3 +263,60 @@ $ detect-secrets audit --report --only-false .secret.baseline
     }
 ]
 ```
+
+## Offline aggregate and disclosure review
+
+Use `detect-secrets aggregate` (or `detect-secrets audit --aggregate`) when a
+security team needs an offline summary of audited findings without exposing the
+underlying secret locations or individual changes. The command reads the manual
+`is_secret` decisions already stored in baselines, applies team boundaries, and
+writes two separate results:
+
+- `external` contains only groups that may be disclosed. Groups below the
+  contributor threshold, or groups whose difference from a prior report would
+  reveal a sub-threshold change, are omitted.
+- `receipt` is the internal review record. It identifies every restricted group
+  and the historical report identities that caused the restriction.
+
+For example:
+
+```bash
+detect-secrets aggregate current.baseline \
+    --team-boundaries teams.json \
+    --minimum-group-size 5 \
+    --history release-history.json \
+    --report-id 2026-11-22 \
+    --output approved-external.json \
+    --receipt internal-receipt.json
+```
+
+`teams.json` may contain group members, a person-to-group map, or file/path
+boundaries:
+
+```json
+{
+  "teams": {
+    "payments": ["alice", "bob", "carol", "dave", "erin"],
+    "search": ["frank", "grace", "heidi", "ivan", "judy"]
+  },
+  "minimum_group_size": 5
+}
+```
+
+`--history` accepts previously released external reports, full review
+envelopes, historical checked-out baselines, a list of those files, or a
+directory of JSON reports. History is checked even when a release is delayed.
+A report that introduces a one-person change compared with an earlier report is
+blocked, because subtracting the two reports would isolate that contributor.
+Merging the affected groups into a coarser disclosure scope removes that
+group-level difference:
+
+```bash
+detect-secrets audit --aggregate current.baseline \
+    --team-boundaries teams.json \
+    --history release-history.json \
+    --merge-group payments,search=engineering
+```
+
+The command never performs network requests. Use `--external-only` to print only
+the release-safe report, or `--internal-only` for the restricted-group receipt.

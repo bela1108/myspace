@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 import sys
 from typing import List
 from typing import Optional
@@ -30,6 +31,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         handle_scan_action(args)
     elif args.action == 'audit':
         handle_audit_action(args)
+    elif args.action == 'aggregate':
+        handle_aggregate_action(args)
 
     return 0
 
@@ -119,7 +122,9 @@ def scan_adhoc_string(line: str) -> str:
 
 def handle_audit_action(args: argparse.Namespace) -> None:
     try:
-        if args.stats:
+        if getattr(args, 'aggregate', False):
+            handle_aggregate_action(args)
+        elif args.stats:
             stats = audit.analytics.calculate_statistics_for_baseline(args.filename[0])
             if args.diff:
                 # TODO
@@ -152,3 +157,37 @@ def handle_audit_action(args: argparse.Namespace) -> None:
                 audit.audit_baseline(args.filename[0])
     except InvalidBaselineError:
         pass
+
+
+def handle_aggregate_action(args: argparse.Namespace) -> None:
+    result = audit.aggregate.aggregate(
+        *args.filename,
+        team_boundaries=args.team_boundaries,
+        minimum_group_size=args.minimum_group_size,
+        history=args.history,
+        report_id=args.aggregate_report_id,
+        merge_groups=args.merge_groups or None,
+        include_unlabelled=args.include_unlabelled,
+    )
+
+    if args.aggregate_output:
+        _write_json(args.aggregate_output, result['external'])
+    if args.receipt_output:
+        _write_json(args.receipt_output, result['receipt'])
+
+    if args.external_only:
+        output = result['external']
+    elif args.internal_only:
+        output = result['receipt']
+    else:
+        output = result
+
+    print(json.dumps(output, indent=2, sort_keys=True))
+
+
+def _write_json(filename: str, data: object) -> None:
+    directory = os.path.dirname(filename)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
+    with open(filename, 'w') as f:
+        f.write(json.dumps(data, indent=2, sort_keys=True) + '\n')

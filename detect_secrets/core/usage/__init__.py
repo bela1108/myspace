@@ -83,6 +83,7 @@ class ParserBuilder:
 
         audit.add_audit_action(subparser)
         self._post_processors.append(audit.parse_args)
+        audit.add_aggregate_action(subparser)
         return self
 
     def add_pre_commit_arguments(self) -> 'ParserBuilder':
@@ -173,7 +174,7 @@ class ParserBuilder:
 
             # Abide by the Principle of Least Surprise, and have the default value be the
             # custom root directory itself.
-            if args.path == ['.']:
+            if getattr(args, 'path', ['.']) == ['.']:
                 args.path = [args.custom_root]
 
         args.num_cores = args.num_cores[0]

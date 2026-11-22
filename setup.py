@@ -50,6 +50,7 @@ setup(
     entry_points={
         'console_scripts': [
             'detect-secrets = detect_secrets.main:main',
+            'detect-secrets-aggregate = detect_secrets.audit.aggregate:main',
             'detect-secrets-hook = detect_secrets.pre_commit_hook:main',
         ],
     },
