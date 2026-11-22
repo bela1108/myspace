@@ -10,4 +10,10 @@ well as developer and signing tools.
 The repository module is not considered part of the stable python-tuf API yet.
 """
 
+from tuf.repository._handover import (  # noqa: F401
+    HandoverGap,
+    HandoverReport,
+    HandoverStageReport,
+    handover_precheck,
+)
 from tuf.repository._repository import AbortEdit, Repository  # noqa: F401
