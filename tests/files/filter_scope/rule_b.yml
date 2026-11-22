@@ -1,0 +1,9 @@
+title: Same-name selection B
+id: 22222222-2222-2222-2222-222222222222
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection:
+        Image: b.exe
+    condition: selection

@@ -13,6 +13,7 @@ from sigma.rule.detection import EmptySigmaDetections, SigmaDetections
 from sigma.rule.logsource import EmptyLogSource, SigmaLogSource
 
 if TYPE_CHECKING:
+    from sigma.filters import SigmaFilterApplication
     from sigma.policy import SigmaPolicy
 
 
@@ -24,6 +25,72 @@ class SigmaRule(SigmaRuleBase, ProcessingItemTrackingMixin):
 
     logsource: SigmaLogSource = field(default_factory=SigmaLogSource)
     detection: SigmaDetections = field(default_factory=EmptySigmaDetections)
+    # Provenance records for filters applied to this rule. They are intentionally excluded
+    # from equality/serialization and retain the exact rule and filter objects.
+    applied_filters: list["SigmaFilterApplication"] = field(
+        default_factory=list, compare=False, repr=False
+    )
+
+    @property
+    def filter_applications(self: Self) -> list["SigmaFilterApplication"]:
+        """Alias for :attr:`applied_filters`."""
+        return self.applied_filters
+
+    def filter_report(self: Self) -> dict[str, Any]:
+        """
+        Return an inspectable report of the filters applied to this rule.
+
+        The report pairs the rule's final conditions and conversion result with one entry per
+        applied filter, including the filter's source location. It can therefore be used
+        after conversion to determine which rule still alerts and which material contributed
+        each exception.
+        """
+        return {
+            "rule": {
+                "title": self.title,
+                "id": str(self.id) if self.id is not None else None,
+                "name": self.name,
+                "source": str(self.source) if self.source is not None else None,
+            },
+            "conditions": list(self.detection.condition),
+            "applications": [application.to_dict() for application in self.applied_filters],
+            "filters": [application.to_dict() for application in self.applied_filters],
+            "conversion_result": self._conversion_result,
+            "alerts": self._output and bool(self.detection.condition),
+            "alerting": self._output and bool(self.detection.condition),
+        }
+
+    def get_filter_provenance(self: Self) -> dict[str, Any]:
+        """Alias for :meth:`filter_report`."""
+        return self.filter_report()
+
+    def get_filter_report(self: Self) -> dict[str, Any]:
+        """Alias for :meth:`filter_report`."""
+        return self.filter_report()
+
+    def filter_application_by_namespace(
+        self: Self, namespace: str
+    ) -> "SigmaFilterApplication | None":
+        """Return the filter application owning *namespace*, if any."""
+        return next(
+            (
+                application
+                for application in self.applied_filters
+                if application.namespace == namespace
+            ),
+            None,
+        )
+
+    def filter_application_for_detection(
+        self: Self, detection_name: str
+    ) -> "SigmaFilterApplication | None":
+        """Return the filter application that owns a detection (original or qualified name)."""
+        for application in self.applied_filters:
+            if detection_name in application.detections or detection_name in (
+                application.detections.values()
+            ):
+                return application
+        return None
 
     @classmethod
     def from_dict(  # type: ignore[override]

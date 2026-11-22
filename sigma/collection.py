@@ -74,18 +74,55 @@ class SigmaCollection:
         if resolve_references:
             self.resolve_rule_references()
 
-    def apply_filters(self: Self, filters: list[SigmaFilter]) -> None:
+    def apply_filters(
+        self: Self,
+        filters: list[SigmaFilter],
+        rules: Iterable[SigmaRule | SigmaCorrelationRule] | None = None,
+    ) -> None:
         """
-        Apply filters on each rule and replace the rule with the filtered rule
+        Apply filters on each rule and replace the rule with the filtered rule.
+
+        If *rules* is passed, it is used as the explicit object scope of the call. Only those
+        exact rule instances are considered; otherwise all rules in the collection are.
         """
-        self.rules = [
-            reduce(
-                lambda r, f: f.apply_on_rule(r) if isinstance(r, SigmaRule) else r,
-                filters,
-                rule,
-            )
+        targets = list(self.rules if rules is None else rules)
+        for sigma_filter in filters:
+            sigma_filter.apply_to_rules(targets)
+
+    @property
+    def filter_applications(self: Self) -> list[Any]:
+        """All filter application records attached to rules in this collection."""
+        return [
+            application
             for rule in self.rules
+            if isinstance(rule, SigmaRule)
+            for application in rule.applied_filters
         ]
+
+    def get_filter_applications(self: Self) -> list[Any]:
+        """Alias for :attr:`filter_applications`."""
+        return self.filter_applications
+
+    def filter_report(self: Self) -> list[dict[str, Any]]:
+        """
+        Return one provenance report per rule, including its conversion result if available.
+
+        This pairs the converted queries with the filter materials that contributed their
+        exceptions and is intended to be called after conversion.
+        """
+        return [rule.filter_report() for rule in self.rules if isinstance(rule, SigmaRule)]
+
+    def describe_filters(self: Self) -> list[dict[str, Any]]:
+        """Alias for :meth:`filter_report`."""
+        return self.filter_report()
+
+    def get_filter_report(self: Self) -> list[dict[str, Any]]:
+        """Alias for :meth:`filter_report`."""
+        return self.filter_report()
+
+    def filter_provenance(self: Self) -> list[dict[str, Any]]:
+        """Alias for :meth:`filter_report`."""
+        return self.filter_report()
 
     def resolve_rule_references(self: Self) -> None:
         """

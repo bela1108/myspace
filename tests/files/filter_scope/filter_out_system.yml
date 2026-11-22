@@ -1,0 +1,11 @@
+title: False positive SYSTEM account
+description: Excludes SYSTEM events from the rule that owns selection B
+logsource:
+    category: process_creation
+    product: windows
+filter:
+  rules:
+    - 22222222-2222-2222-2222-222222222222
+  selection:
+      User: SYSTEM
+  condition: not selection

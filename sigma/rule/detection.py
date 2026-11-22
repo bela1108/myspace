@@ -298,6 +298,10 @@ class SigmaDetection(ParentChainMixin):
     detection_items: list[SigmaDetectionItem | SigmaDetection]
     source: SigmaRuleLocation | None = field(default=None, compare=False)
     item_linking: type[ConditionAND | ConditionOR] | None = field(default=None)
+    # Namespace of the material this detection belongs to. ``None`` means the detection is
+    # owned by the rule itself; a filter application stores its namespace here so condition
+    # selectors can be resolved against an explicit scope instead of a naming convention.
+    scope: str | None = field(default=None, compare=False, repr=False)
 
     def __post_init__(self: Self) -> None:
         """Check detection validity."""
@@ -519,6 +523,10 @@ class SigmaDetections:
     condition: list[str]
     source: SigmaRuleLocation | None = field(default=None, compare=False)
     policy: "SigmaPolicy | None" = field(default=None, compare=False)
+    # Parallel scope information for the detection identifiers. This is kept separate from the
+    # detection objects because processing transformations may replace a detection while the
+    # identifier (and therefore its owning material) stays the same.
+    detection_scopes: dict[str, str | None] = field(default_factory=dict, compare=False, repr=False)
 
     def __post_init__(self: Self) -> None:
         """Detections sanity checks"""
@@ -530,6 +538,8 @@ class SigmaDetections:
             raise sigma_exceptions.SigmaConditionError(
                 "Sigma rule must contain at least one condition", source=self.source
             )
+        for name, detection in self.detections.items():
+            self.detection_scopes.setdefault(name, detection.scope)
         self.parsed_condition = [SigmaCondition(cond, self, self.source) for cond in self.condition]
 
     @classmethod
@@ -578,6 +588,25 @@ class SigmaDetections:
     def __getitem__(self: Self, key: str) -> SigmaDetection:
         """Get detection by name"""
         return self.detections[key]
+
+    def get_detection_scope(self: Self, name: str) -> str | None:
+        """Return the owning namespace of a detection (``None`` for rule-owned detections)."""
+        if name in self.detection_scopes:
+            return self.detection_scopes[name]
+        detection = self.detections.get(name)
+        return getattr(detection, "scope", None)
+
+    @property
+    def detection_owners(self: Self) -> dict[str, str | None]:
+        """Map every detection identifier to its owning namespace."""
+        return {name: self.get_detection_scope(name) for name in self.detections}
+
+    def set_detection_scope(self: Self, name: str, scope: str | None) -> None:
+        """Set the owning namespace of a detection and keep the parallel map in sync."""
+        self.detection_scopes[name] = scope
+        detection = self.detections.get(name)
+        if detection is not None:
+            detection.scope = scope
 
 
 @dataclass

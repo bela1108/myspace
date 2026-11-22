@@ -16,6 +16,7 @@ from sigma.exceptions import (
     SigmaFilterError,
     SigmaConditionError,
     SigmaFilterRuleReferenceError,
+    SigmaRuleLocation,
 )
 
 from sigma.filters import SigmaFilter, SigmaGlobalFilter
@@ -1092,3 +1093,283 @@ def test_sigmafilter_collect_errors_false_raises():
     """Without collect_errors the first recognized error is raised as a SigmaError."""
     with pytest.raises(SigmaLogsourceError):
         SigmaFilter.from_dict({"title": "Test"}, collect_errors=False)
+
+
+# ---------------------------------------------------------------------------
+# Filter applicability scope and provenance
+# ---------------------------------------------------------------------------
+
+
+def test_filter_scope_is_an_inspectable_contract(test_backend):
+    sigma_filter = SigmaFilter.from_yaml(f"""
+title: Scoped filter
+{_FILTER_LOGSOURCE}
+filter:
+{_FILTER_RULES}
+  selection_allow:
+      User|startswith: 'adm_'
+  selection_block:
+      User|startswith: 'srv_'
+  condition: not 1 of selection_*
+""")
+
+    scope = sigma_filter.filter_scope
+    assert scope.rule_references == ("6f3e2987-db24-4c78-a860-b4f4095a7095",)
+    assert scope.detection_names == ("selection_allow", "selection_block")
+    assert scope.condition == "not 1 of selection_*"
+    assert scope.condition_tokens == ("selection_*",)
+    assert scope.resolve_detections() == {"selection_*": ("selection_allow", "selection_block")}
+    assert scope.unresolved_tokens() == ()
+    assert scope.to_dict()["rules"] == ["6f3e2987-db24-4c78-a860-b4f4095a7095"]
+    assert scope.to_dict()["resolved_detections"] == {
+        "selection_*": ["selection_allow", "selection_block"]
+    }
+    assert sigma_filter.get_filter_scope() == scope
+    assert sigma_filter.get_scope() == scope
+    assert sigma_filter.applicability == scope
+
+
+def test_filter_scope_binds_exact_rule_objects():
+    rule_collection = SigmaCollection.from_yaml(_TWO_RULES_YAML)
+    sigma_filter = SigmaFilter.from_yaml(_ANY_FILTER_YAML)
+
+    resolved = sigma_filter.resolve_scope(rule_collection.rules)
+
+    assert [rule.title for rule, _ in resolved] == ["Rule 1", "Rule 2"]
+    assert resolved[0][0] is rule_collection.rules[0]
+    assert resolved[1][0] is rule_collection.rules[1]
+    assert [reference for _, reference in resolved] == ["any", "any"]
+    assert all(sigma_filter.applies_to(rule) for rule in rule_collection.rules)
+
+
+def test_apply_filters_honors_caller_object_scope():
+    rule_collection = SigmaCollection.from_yaml(_TWO_RULES_YAML)
+    sigma_filter = SigmaFilter.from_yaml(_ANY_FILTER_YAML)
+
+    rule_collection.apply_filters([sigma_filter], rules=[rule_collection.rules[1]])
+
+    assert rule_collection.rules[0].applied_filters == []
+    assert len(rule_collection.rules[1].applied_filters) == 1
+    assert rule_collection.rules[1].applied_filters[0].rule is rule_collection.rules[1]
+
+
+def test_filter_scope_resolves_them_against_filter_detections():
+    sigma_filter = SigmaFilter.from_yaml(f"""
+title: Them scope
+{_FILTER_LOGSOURCE}
+filter:
+{_FILTER_RULES}
+  selection_admin:
+      User|startswith: 'adm_'
+  selection_service:
+      User|startswith: 'srv_'
+  condition: not 1 of them
+""")
+
+    assert sigma_filter.filter_scope.condition_tokens == ("them",)
+    assert sigma_filter.filter_scope.resolve_detections() == {
+        "them": ("selection_admin", "selection_service")
+    }
+
+
+def test_filter_scope_connects_explicit_rule_reference_to_condition():
+    rule_collection = SigmaCollection.from_yaml(_TWO_RULES_YAML)
+    sigma_filter = SigmaFilter.from_yaml("""
+title: Exact object scope
+logsource:
+    category: process_creation
+    product: windows
+filter:
+  rules:
+    - Rule 2
+  selection:
+      User: SYSTEM
+  condition: not selection
+""")
+
+    resolved = sigma_filter.resolve_scope(rule_collection.rules)
+
+    assert [(rule.title, reference.reference) for rule, reference in resolved] == [
+        ("Rule 2", "Rule 2")
+    ]
+    assert sigma_filter.filter_scope.resolve_detections() == {"selection": ("selection",)}
+    assert sigma_filter.filter_scope.condition_tokens == ("selection",)
+
+
+def test_filter_scope_same_named_selection_preserves_alert_and_provenance(test_backend):
+    rule_collection = SigmaCollection.load_ruleset([Path("tests/files/filter_scope")])
+
+    results = test_backend.convert(rule_collection)
+    report = {entry["rule"]["title"]: entry for entry in rule_collection.filter_report()}
+
+    rule_a = report["Same-name selection A"]
+    rule_b = report["Same-name selection B"]
+
+    # Both rules own a detection called "selection"; the filter's selection must stay local
+    # to the filter and must not turn either whole rule into a permanent exception.
+    assert rule_a["conditions"] == ["selection"]
+    assert rule_a["applications"] == []
+    assert rule_a["conversion_result"] == ['Image="a.exe"']
+    assert rule_a["alerts"] is True
+
+    namespace = rule_b["applications"][0]["namespace"]
+    assert rule_b["conditions"] == [f"(selection) and (not {namespace}_selection)"]
+    assert rule_b["conversion_result"] == ['Image="b.exe" and not User="SYSTEM"']
+    assert rule_b["alerts"] is True
+
+    application = rule_b["applications"][0]
+    assert application["detections"] == {"selection": f"{namespace}_selection"}
+    assert application["source_condition"] == "not selection"
+    assert application["condition"] == f"not {namespace}_selection"
+    assert application["source"].endswith("filter_out_system.yml")
+    assert application["rule"]["title"] == "Same-name selection B"
+    assert application["reference"] == "22222222-2222-2222-2222-222222222222"
+    assert application["excludes"] is True
+    assert application["polarity"] == "exclude"
+    assert len(results) == 2
+
+    rule_b_object = next(
+        rule for rule in rule_collection.rules if rule.title == "Same-name selection B"
+    )
+    assert rule_b_object.filter_application_by_namespace(namespace).to_dict() == application
+    assert (
+        rule_b_object.filter_application_for_detection(f"{namespace}_selection").to_dict()
+        == application
+    )
+    assert rule_b_object.detection.detection_owners["selection"] is None
+    assert rule_b_object.detection.detection_owners[f"{namespace}_selection"] == namespace
+
+
+def test_filter_provenance_survives_merge_and_is_idempotent(test_backend):
+    rule_collection = SigmaCollection.from_yaml(
+        _RULE_YAML,
+        source=SigmaRuleLocation(Path("materials/rule.yml")),
+    )
+    filter_collection = SigmaCollection.from_yaml(
+        """
+title: Merged filter
+logsource:
+    category: process_creation
+    product: windows
+filter:
+  rules:
+    - 6f3e2987-db24-4c78-a860-b4f4095a7095
+  selection:
+      User: SYSTEM
+  condition: not selection
+""",
+        collect_filters=True,
+        source=SigmaRuleLocation(Path("materials/filter.yml")),
+    )
+
+    merged = SigmaCollection.merge([rule_collection, filter_collection])
+    merged_again = SigmaCollection.merge([merged])
+
+    assert len(merged_again.filter_applications) == 1
+    application = merged_again.filter_applications[0]
+    assert str(application.source) == str(SigmaRuleLocation(Path("materials/filter.yml")))
+    assert application.rule is merged_again.rules[0]
+    assert test_backend.convert(merged_again) == ['EventID=4625 and not User="SYSTEM"']
+
+
+def test_filter_negation_keeps_source_identity(test_backend):
+    rule_collection = SigmaCollection.from_yaml(
+        """
+title: Negated rule
+id: 6f3e2987-db24-4c78-a860-b4f4095a7095
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection:
+        EventID: 4625
+    condition: not selection
+""",
+        source=SigmaRuleLocation(Path("materials/negated_rule.yml")),
+    )
+    sigma_filter = SigmaFilter.from_yaml("""
+title: Negated filter
+logsource:
+    category: process_creation
+    product: windows
+filter:
+  rules:
+    - 6f3e2987-db24-4c78-a860-b4f4095a7095
+  selection:
+      User: SYSTEM
+  condition: not selection
+""")
+    sigma_filter.source = SigmaRuleLocation(Path("materials/negated_filter.yml"))
+    rule_collection.apply_filters([sigma_filter])
+
+    application = rule_collection.rules[0].applied_filters[0]
+    assert application.negated is True
+    assert application.excludes is True
+    assert str(application.source) == str(SigmaRuleLocation(Path("materials/negated_filter.yml")))
+    assert test_backend.convert(rule_collection) == ['not EventID=4625 and not User="SYSTEM"']
+
+
+def test_filter_rule_scope_does_not_leak_into_rule_them_selector(test_backend):
+    rule_collection = SigmaCollection.from_yaml("""
+title: Rule with them selector
+id: 6f3e2987-db24-4c78-a860-b4f4095a7095
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection:
+        EventID: 4625
+    condition: 1 of them
+""")
+    sigma_filter = SigmaFilter.from_yaml("""
+title: Local filter
+logsource:
+    category: process_creation
+    product: windows
+filter:
+  rules: any
+  selection:
+      User: SYSTEM
+  condition: not selection
+""")
+    rule_collection.apply_filters([sigma_filter])
+    rule = rule_collection.rules[0]
+
+    # The rule's "them" resolves only its own detection; the filter's prefixed detection is
+    # explicit scope, not an accidental member of the rule namespace.
+    assert rule.detection.get_detection_scope("selection") is None
+    assert rule.detection.get_detection_scope(
+        next(iter(rule.applied_filters[0].detections.values()))
+    ) == (rule.applied_filters[0].namespace)
+    assert test_backend.convert(rule_collection) == ['EventID=4625 and not User="SYSTEM"']
+
+
+def test_filter_scope_field_is_readable_as_legacy_alias():
+    semantics_filter = SigmaFilter.from_yaml("""
+title: Scope alias
+logsource:
+    category: process_creation
+    product: windows
+filter:
+  scope:
+    rules: any
+  selection:
+      User: SYSTEM
+  condition: not selection
+""")
+    legacy_filter = SigmaFilter.from_yaml("""
+title: Legacy rules
+logsource:
+    category: process_creation
+    product: windows
+filter:
+  rules:
+    - 6f3e2987-db24-4c78-a860-b4f4095a7095
+  selection:
+      User: SYSTEM
+  condition: not selection
+""")
+
+    assert semantics_filter.filter.rules == "any"
+    assert semantics_filter.filter_scope.any_rule is True
+    assert legacy_filter.filter_scope.rule_references == ("6f3e2987-db24-4c78-a860-b4f4095a7095",)

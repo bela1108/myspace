@@ -247,6 +247,14 @@ class ConditionSelector(ConditionItem):
     ) -> list[ConditionIdentifier]:
         """
         Resolve all detection identifiers referenced by the selector.
+
+        Detection ownership is an explicit scope, not a naming convention. A selector is
+        evaluated against either the rule-owned detections (``scope is None``) or the
+        detections of the filter namespace named by the pattern's prefix. This keeps a
+        filter's ``them``/wildcard selectors inside the filter that defined them and, in
+        the other direction, stops filter detections from leaking into rule selectors such
+        as ``1 of them``. The existing reserved-underscore rule for rule-owned detection
+        identifiers is preserved below.
         """
         from sigma.policy import default_policy
 
@@ -257,18 +265,33 @@ class ConditionSelector(ConditionItem):
         else:
             r = engine.compile(self.pattern.replace("*", ".*"))
 
-        # When a filter is applied to a rule its detection identifiers are renamed to
-        # start with a `_filt_<random>_` prefix, and its condition patterns receive the
-        # same prefix.  We therefore allow `_`-prefixed identifiers to be matched when
-        # the pattern itself starts with `_` (i.e. it is a filter-internal pattern).
-        # For patterns that do NOT start with `_` (i.e. rule-level patterns such as
-        # "1 of selection_*") the original restriction is kept so that filter identifiers
-        # are never accidentally pulled into the rule's own selectors.
+        # A filter condition references its own detections through a qualified pattern
+        # (for example "_filt_abcdefghij_selection_*"). The prefix determines the scope.
+        # Patterns without such a prefix belong to the rule and must never see filter
+        # detections.
+        filter_scopes = {
+            scope
+            for identifier in detections.detections
+            if (scope := detections.get_detection_scope(identifier)) is not None
+        }
+        selector_scope = next(
+            (
+                scope
+                for scope in sorted(filter_scopes, key=len, reverse=True)
+                if self.pattern.startswith(scope + "_")
+            ),
+            None,
+        )
         return [
             ConditionIdentifier([identifier])
             for identifier in detections.detections.keys()
             if r.fullmatch(identifier)
-            and (self.pattern.startswith("_") or not identifier.startswith("_"))
+            and detections.get_detection_scope(identifier) == selector_scope
+            and not (
+                selector_scope is None
+                and not self.pattern.startswith("_")
+                and identifier.startswith("_")
+            )
         ]
 
     def postprocess(
