@@ -48,6 +48,8 @@ from .twisted.inlinecallbacks_yield_statement import InlineCallbacksYieldStateme
 from .twisted.returnvalue_in_inlinecallbacks import ReturnValueInInlineCallbacksLinter
 from .twisted.yield_return_statement import YieldReturnStatementLinter
 
+from .masking.deferred_masking_level import DeferredMaskingLevelLinter
+
 ALL = (
     BadCommandsUseLinter,
     BadCompileUseLinter,
@@ -87,4 +89,5 @@ ALL = (
     InlineCallbacksYieldStatementLinter,
     ReturnValueInInlineCallbacksLinter,
     YieldReturnStatementLinter,
+    DeferredMaskingLevelLinter,
 )
