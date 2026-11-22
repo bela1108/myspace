@@ -1,0 +1,139 @@
+{
+  "case_id": "CASE-2026-1122-NTUSER-IDENTITY",
+  "claim": "The three registry exports were left by one user (investigation record).",
+  "target_exports": ["EXP-A", "EXP-B", "EXP-C"],
+  "classification": "internal_review",
+  "metadata": {
+    "generated_at": "2026-11-22T00:00:00+08:00",
+    "fixture": true
+  },
+  "notes": "Internal review fixture. The three hive files are the repository NTUSER fixtures. Acquisition/volume metadata below is synthetic and marked fixture=true; replace it with the case acquisition records before relying on the result. EXP-B is a derived clone of EXP-A (NTUSER_modified carries the same hive creation GUID and 6 of 7 anchor digests). EXP-C is the independent tony export.",
+  "exports": [
+    {
+      "export_id": "EXP-A",
+      "hive_path": "regipy_tests/data/NTUSER.DAT.xz",
+      "hive_type": "ntuser",
+      "sampling_source": {
+        "source_id": "SRC-ORIGINAL",
+        "acquisition_id": "ACQ-2026-001",
+        "collected_from": "faulty disk image (fixture)",
+        "collected_at": "2026-11-22T00:00:00+08:00",
+        "collector": "case intake (fixture)",
+        "image_sha256": "6a38fcea924113963e4931725cc4c2f4f10e1240234cb1867d101a1cd92cd439",
+        "derived_from": null,
+        "notes": "Synthetic provenance for regression fixture."
+      },
+      "volume_identity": {
+        "volume_serial": "1A2B3C4D",
+        "disk_signature": "0xA1B2C3D4",
+        "disk_guid": "fixture-disk-01",
+        "volume_label": "FIXTURE-VOL-01",
+        "origin": "caller",
+        "independently_verifiable": false,
+        "evidence_path": "acquisition manifest (fixture)",
+        "fixture": true,
+        "note": "Synthetic volume identity; not an evidentiary fact."
+      },
+      "name_associations": [
+        {
+          "identifier_type": "profile_path",
+          "identifier": "C:\\Users\\vibranium",
+          "name_type": "account_name",
+          "name": "vibranium",
+          "method": "shell_folders:AppData",
+          "evidence_path": "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
+          "value_name": "AppData",
+          "value_role": "identifier",
+          "origin": "hive",
+          "independently_verifiable": true
+        }
+      ],
+      "auto_extract": true,
+      "plugins": ["typed_urls", "typed_paths", "user_assist", "ntuser_persistence", "recentdocs", "runmru"]
+    },
+    {
+      "export_id": "EXP-B",
+      "hive_path": "regipy_tests/data/NTUSER_modified.DAT.xz",
+      "hive_type": "ntuser",
+      "sampling_source": {
+        "source_id": "SRC-CLONE",
+        "acquisition_id": "ACQ-2026-002",
+        "collected_from": "faulty disk clone (fixture)",
+        "collected_at": "2026-11-22T00:05:00+08:00",
+        "collector": "case intake (fixture)",
+        "image_sha256": "6c6f87a6d9085bc92d28a063e0cad988bd0f8195296dcc725e48676580ab0669",
+        "derived_from": "EXP-A",
+        "notes": "Clone/derived export declared by the sampling source."
+      },
+      "volume_identity": {
+        "volume_serial": "1A2B3C4D",
+        "disk_signature": "0xA1B2C3D4",
+        "disk_guid": "fixture-disk-01",
+        "volume_label": "FIXTURE-VOL-01",
+        "origin": "caller",
+        "independently_verifiable": false,
+        "evidence_path": "acquisition manifest (fixture)",
+        "fixture": true,
+        "note": "Clone retains the source volume identity in this fixture."
+      },
+      "name_associations": [
+        {
+          "identifier_type": "profile_path",
+          "identifier": "C:\\Users\\vibranium",
+          "name_type": "account_name",
+          "name": "vibranium",
+          "method": "shell_folders:AppData",
+          "evidence_path": "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
+          "value_name": "AppData",
+          "value_role": "identifier",
+          "origin": "hive",
+          "independently_verifiable": true
+        }
+      ],
+      "auto_extract": true,
+      "plugins": ["typed_urls", "typed_paths", "user_assist", "ntuser_persistence", "recentdocs", "runmru"]
+    },
+    {
+      "export_id": "EXP-C",
+      "hive_path": "regipy_tests/data/NTUSER_with_winscp.DAT.xz",
+      "hive_type": "ntuser",
+      "sampling_source": {
+        "source_id": "SRC-INDEPENDENT",
+        "acquisition_id": "ACQ-2026-003",
+        "collected_from": "independent user export (fixture)",
+        "collected_at": "2026-11-22T00:10:00+08:00",
+        "collector": "case intake (fixture)",
+        "image_sha256": "805e3f4ae79827df2456f9fe450487b7e72278bceb45b8758c725d25d694139a",
+        "derived_from": null,
+        "notes": "Independent export in the fixture."
+      },
+      "volume_identity": {
+        "volume_serial": "5E6F7A8B",
+        "disk_signature": "0xB2C3D4E5",
+        "disk_guid": "fixture-disk-02",
+        "volume_label": "FIXTURE-VOL-02",
+        "origin": "caller",
+        "independently_verifiable": false,
+        "evidence_path": "acquisition manifest (fixture)",
+        "fixture": true,
+        "note": "Synthetic volume identity; not an evidentiary fact."
+      },
+      "name_associations": [
+        {
+          "identifier_type": "profile_path",
+          "identifier": "C:\\Users\\tony",
+          "name_type": "account_name",
+          "name": "tony",
+          "method": "shell_folders:AppData",
+          "evidence_path": "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
+          "value_name": "AppData",
+          "value_role": "identifier",
+          "origin": "hive",
+          "independently_verifiable": true
+        }
+      ],
+      "auto_extract": true,
+      "plugins": ["typed_urls", "typed_paths", "user_assist", "ntuser_persistence", "recentdocs", "runmru"]
+    }
+  ]
+}

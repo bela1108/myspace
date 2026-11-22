@@ -1,0 +1,81 @@
+{
+  "case_id": "SYNTHETIC-SAME-SUBJECT-FIXTURE",
+  "claim": "Two independent synthetic exports resolve to the same account.",
+  "target_exports": ["SYN-A", "SYN-B"],
+  "classification": "internal_review_fixture",
+  "metadata": {
+    "generated_at": "2026-11-22T00:00:00+08:00",
+    "fixture": true
+  },
+  "notes": "Synthetic, non-evidentiary example used to show the same_subject branch of the reviewer. It carries no hive file and no real acquisition metadata.",
+  "exports": [
+    {
+      "export_id": "SYN-A",
+      "hive_type": "ntuser",
+      "sampling_source": {
+        "source_id": "SYN-SRC-A",
+        "acquisition_id": "SYN-ACQ-A",
+        "collected_from": "synthetic source A",
+        "image_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "volume_identity": {
+        "volume_serial": "SYN-VOL-A",
+        "disk_signature": "0xAAAA1111",
+        "origin": "caller",
+        "independently_verifiable": false,
+        "fixture": true
+      },
+      "name_associations": [
+        {
+          "identifier_type": "profile_path",
+          "identifier": "C:\\Users\\caseuser",
+          "name_type": "account_name",
+          "name": "caseuser",
+          "method": "synthetic_preverified_fixture",
+          "evidence_path": "<synthetic>",
+          "origin": "caller",
+          "independently_verifiable": true,
+          "verified": true
+        }
+      ],
+      "metadata": {
+        "hive_not_applicable": true
+      },
+      "auto_extract": false
+    },
+    {
+      "export_id": "SYN-B",
+      "hive_type": "ntuser",
+      "sampling_source": {
+        "source_id": "SYN-SRC-B",
+        "acquisition_id": "SYN-ACQ-B",
+        "collected_from": "synthetic source B",
+        "image_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "volume_identity": {
+        "volume_serial": "SYN-VOL-B",
+        "disk_signature": "0xBBBB2222",
+        "origin": "caller",
+        "independently_verifiable": false,
+        "fixture": true
+      },
+      "name_associations": [
+        {
+          "identifier_type": "profile_path",
+          "identifier": "C:\\Users\\caseuser",
+          "name_type": "account_name",
+          "name": "caseuser",
+          "method": "synthetic_preverified_fixture",
+          "evidence_path": "<synthetic>",
+          "origin": "caller",
+          "independently_verifiable": true,
+          "verified": true
+        }
+      ],
+      "metadata": {
+        "hive_not_applicable": true
+      },
+      "auto_extract": false
+    }
+  ]
+}

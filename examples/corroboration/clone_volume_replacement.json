@@ -1,0 +1,2771 @@
+{
+  "tool": {
+    "name": "regipy-corroboration",
+    "version": "1.0"
+  },
+  "classification": "internal_review",
+  "case_id": "CASE-2026-1122-NTUSER-IDENTITY",
+  "claim": "The three registry exports were left by one user (investigation record).",
+  "verdict": "conflict",
+  "rationale": [
+    "At least one export pair is in direct conflict.",
+    "The same-subject claim is contradicted by conflicting identity or content evidence.",
+    "EXP-A vs EXP-B: missing_evidence - Exports share one acquisition or clone lineage; identical content cannot count as independent corroboration. Matching plugin output is supplemental only and was not used to establish identity.",
+    "EXP-A vs EXP-C: conflict - Exports disagree on comparable identity values: account_name=['vibranium'] vs ['tony']; profile_path=['c:\\\\users\\\\vibranium'] vs ['c:\\\\users\\\\tony'].",
+    "EXP-B vs EXP-C: conflict - Exports disagree on comparable identity values: account_name=['vibranium'] vs ['tony']; profile_path=['c:\\\\users\\\\vibranium'] vs ['c:\\\\users\\\\tony'].",
+    "Clone or copy lineage was detected; identical keys and timestamps from cloned content were not counted as independent corroboration.",
+    "Plugin-derived values were retained as supplemental evidence and were not promoted to an original source."
+  ],
+  "notes": "Internal review fixture. The three hive files are the repository NTUSER fixtures. Acquisition/volume metadata below is synthetic and marked fixture=true; replace it with the case acquisition records before relying on the result. EXP-B is a derived clone of EXP-A (NTUSER_modified carries the same hive creation GUID and 6 of 7 anchor digests). EXP-C is the independent tony export.",
+  "generated_at": "2026-11-22T00:00:00+08:00",
+  "provenance": {
+    "plugin_values_are_supplemental": true,
+    "plugin_values_used_as_original_source": false,
+    "plugin_values_can_establish_identity": false,
+    "caller_metadata_is_asserted_not_forensically_verified": true,
+    "content_anchor_identity_is_not_subject_identity": true,
+    "clone_content_is_not_independent_corroboration": true,
+    "independence_rule": "Exports sharing a declared derivative chain, an image hash or an acquisition id are treated as one lineage.",
+    "verification_rule": "A caller name association becomes primary only when it is independently verifiable and verified against the cited hive value."
+  },
+  "exports": [
+    {
+      "export_id": "EXP-A",
+      "hive_path": "regipy_tests/data/NTUSER.DAT.xz",
+      "hive_type": "ntuser",
+      "materialize_error": null,
+      "source": {
+        "source_id": "SRC-ORIGINAL",
+        "acquisition_id": "ACQ-2026-001",
+        "collected_from": "faulty disk image (fixture)",
+        "collected_at": "2026-11-22T00:00:00+08:00",
+        "collector": "case intake (fixture)",
+        "image_sha256": "6a38fcea924113963e4931725cc4c2f4f10e1240234cb1867d101a1cd92cd439",
+        "derived_from": null,
+        "notes": "Synthetic provenance for regression fixture."
+      },
+      "volume": {
+        "volume_serial": "1A2B3C4D",
+        "disk_signature": "0xA1B2C3D4",
+        "disk_guid": "fixture-disk-01",
+        "volume_label": "FIXTURE-VOL-01",
+        "device_serial": null,
+        "image_sha256": null,
+        "origin": "caller",
+        "independently_verifiable": false,
+        "evidence_path": "acquisition manifest (fixture)",
+        "fixture": true,
+        "note": "Synthetic volume identity; not an evidentiary fact.",
+        "fingerprint": "disk_guid=fixture-disk-01|disk_signature=0xa1b2c3d4|volume_serial=1a2b3c4d"
+      },
+      "volume_fingerprint": "disk_guid=fixture-disk-01|disk_signature=0xa1b2c3d4|volume_serial=1a2b3c4d",
+      "hive_identity": {
+        "root_key": "CMI-CreateHive{6A1C4018-979D-4291-A7DC-7AED1C75B67C}",
+        "root_guid": "{6A1C4018-979D-4291-A7DC-7AED1C75B67C}",
+        "hive_type": "ntuser"
+      },
+      "hive_header": {
+        "file_name": "?\\C:\\Users\\vibranium\\ntuser.dat",
+        "primary_sequence_num": 749,
+        "secondary_sequence_num": 749,
+        "payload_sha256": "6a38fcea924113963e4931725cc4c2f4f10e1240234cb1867d101a1cd92cd439",
+        "hive_type": "ntuser"
+      },
+      "lineage_root": "EXP-B",
+      "independent_lineage_count": 2,
+      "name_association_counts": {
+        "primary": 1,
+        "supplemental": 0,
+        "verified": 1
+      },
+      "content_anchor_count": 7,
+      "plugin_observation_count": 4,
+      "is_clone_of": [
+        "EXP-B"
+      ]
+    },
+    {
+      "export_id": "EXP-B",
+      "hive_path": "regipy_tests/data/NTUSER_modified.DAT.xz",
+      "hive_type": "ntuser",
+      "materialize_error": null,
+      "source": {
+        "source_id": "SRC-CLONE",
+        "acquisition_id": "ACQ-2026-002",
+        "collected_from": "faulty disk clone (fixture)",
+        "collected_at": "2026-11-22T00:05:00+08:00",
+        "collector": "case intake (fixture)",
+        "image_sha256": "6c6f87a6d9085bc92d28a063e0cad988bd0f8195296dcc725e48676580ab0669",
+        "derived_from": "EXP-A",
+        "notes": "Clone/derived export declared by the sampling source."
+      },
+      "volume": {
+        "volume_serial": "DEADBEEF",
+        "disk_signature": "0xDEADBEEF",
+        "disk_guid": "fixture-disk-replaced",
+        "volume_label": "REPLACED",
+        "device_serial": null,
+        "image_sha256": null,
+        "origin": "caller",
+        "independently_verifiable": false,
+        "evidence_path": "acquisition manifest (fixture)",
+        "fixture": true,
+        "note": "Clone retains the source volume identity in this fixture.",
+        "fingerprint": "disk_guid=fixture-disk-replaced|disk_signature=0xdeadbeef|volume_serial=deadbeef"
+      },
+      "volume_fingerprint": "disk_guid=fixture-disk-replaced|disk_signature=0xdeadbeef|volume_serial=deadbeef",
+      "hive_identity": {
+        "root_key": "CMI-CreateHive{6A1C4018-979D-4291-A7DC-7AED1C75B67C}",
+        "root_guid": "{6A1C4018-979D-4291-A7DC-7AED1C75B67C}",
+        "hive_type": "ntuser"
+      },
+      "hive_header": {
+        "file_name": "ny\\Desktop\\Vibranium-NTUSER.DAT",
+        "primary_sequence_num": 747,
+        "secondary_sequence_num": 747,
+        "payload_sha256": "6c6f87a6d9085bc92d28a063e0cad988bd0f8195296dcc725e48676580ab0669",
+        "hive_type": "ntuser"
+      },
+      "lineage_root": "EXP-B",
+      "independent_lineage_count": 2,
+      "name_association_counts": {
+        "primary": 1,
+        "supplemental": 0,
+        "verified": 1
+      },
+      "content_anchor_count": 7,
+      "plugin_observation_count": 4,
+      "is_clone_of": [
+        "EXP-A"
+      ]
+    },
+    {
+      "export_id": "EXP-C",
+      "hive_path": "regipy_tests/data/NTUSER_with_winscp.DAT.xz",
+      "hive_type": "ntuser",
+      "materialize_error": null,
+      "source": {
+        "source_id": "SRC-INDEPENDENT",
+        "acquisition_id": "ACQ-2026-003",
+        "collected_from": "independent user export (fixture)",
+        "collected_at": "2026-11-22T00:10:00+08:00",
+        "collector": "case intake (fixture)",
+        "image_sha256": "805e3f4ae79827df2456f9fe450487b7e72278bceb45b8758c725d25d694139a",
+        "derived_from": null,
+        "notes": "Independent export in the fixture."
+      },
+      "volume": {
+        "volume_serial": "5E6F7A8B",
+        "disk_signature": "0xB2C3D4E5",
+        "disk_guid": "fixture-disk-02",
+        "volume_label": "FIXTURE-VOL-02",
+        "device_serial": null,
+        "image_sha256": null,
+        "origin": "caller",
+        "independently_verifiable": false,
+        "evidence_path": "acquisition manifest (fixture)",
+        "fixture": true,
+        "note": "Synthetic volume identity; not an evidentiary fact.",
+        "fingerprint": "disk_guid=fixture-disk-02|disk_signature=0xb2c3d4e5|volume_serial=5e6f7a8b"
+      },
+      "volume_fingerprint": "disk_guid=fixture-disk-02|disk_signature=0xb2c3d4e5|volume_serial=5e6f7a8b",
+      "hive_identity": {
+        "root_key": "ROOT",
+        "root_guid": null,
+        "hive_type": "ntuser"
+      },
+      "hive_header": {
+        "file_name": "\\??\\C:\\Users\\tony\\ntuser.dat",
+        "primary_sequence_num": 5161,
+        "secondary_sequence_num": 5160,
+        "payload_sha256": "805e3f4ae79827df2456f9fe450487b7e72278bceb45b8758c725d25d694139a",
+        "hive_type": "ntuser"
+      },
+      "lineage_root": "EXP-C",
+      "independent_lineage_count": 2,
+      "name_association_counts": {
+        "primary": 1,
+        "supplemental": 0,
+        "verified": 1
+      },
+      "content_anchor_count": 7,
+      "plugin_observation_count": 4,
+      "is_clone_of": []
+    }
+  ],
+  "pairwise": [
+    {
+      "pair_id": "EXP-A|EXP-B",
+      "exports": [
+        "EXP-A",
+        "EXP-B"
+      ],
+      "verdict": "missing_evidence",
+      "reasons": [
+        "Exports share one acquisition or clone lineage; identical content cannot count as independent corroboration.",
+        "Matching plugin output is supplemental only and was not used to establish identity."
+      ],
+      "independent": false,
+      "clone_related": true,
+      "shared_lineage": true,
+      "lineage_roots": [
+        "EXP-B",
+        "EXP-B"
+      ],
+      "shared_volume": false,
+      "volume_conflict": false,
+      "volume_comparison": {
+        "comparable": true,
+        "match": false,
+        "status": "different",
+        "conflicts": [
+          {
+            "field": "disk_guid",
+            "first": "fixture-disk-01",
+            "second": "fixture-disk-replaced"
+          },
+          {
+            "field": "disk_signature",
+            "first": "0xA1B2C3D4",
+            "second": "0xDEADBEEF"
+          },
+          {
+            "field": "volume_serial",
+            "first": "1A2B3C4D",
+            "second": "DEADBEEF"
+          }
+        ],
+        "matches": []
+      },
+      "volume_status": "different",
+      "shared_hive_identity": true,
+      "identical_anchor_count": 6,
+      "comparable_anchor_count": 7,
+      "identical_anchor_ratio": 0.8571,
+      "identical_anchor_examples": [
+        {
+          "path": "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
+          "timestamp": "2012-04-03T22:08:40.416558+00:00"
+        },
+        {
+          "path": "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders",
+          "timestamp": "2012-04-03T21:19:54.836740+00:00"
+        },
+        {
+          "path": "\\Control Panel\\Desktop",
+          "timestamp": "2012-04-04T14:45:43.953750+00:00"
+        },
+        {
+          "path": "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+          "timestamp": "2012-04-03T22:08:47.836010+00:00"
+        },
+        {
+          "path": "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\RunMRU",
+          "timestamp": "2012-04-04T15:35:08.895090+00:00"
+        }
+      ],
+      "content_conflicts": [],
+      "content_drift": [
+        "\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"
+      ],
+      "shared_name_nodes": [
+        {
+          "type": "account_name",
+          "value": "vibranium"
+        },
+        {
+          "type": "profile_path",
+          "value": "c:\\users\\vibranium"
+        }
+      ],
+      "comparable_name_types": [
+        "account_name",
+        "profile_path"
+      ],
+      "different_name_values": {},
+      "plugin_matches": [
+        "typed_paths",
+        "typed_urls",
+        "user_assist"
+      ],
+      "plugin_divergences": [
+        "ntuser_persistence"
+      ],
+      "depends_on": [
+        "EXP-A:anchor:control-panel-desktop",
+        "EXP-A:anchor:software-microsoft-windows-currentversion-explor-01234040",
+        "EXP-A:anchor:software-microsoft-windows-currentversion-explor-61e9f7e0",
+        "EXP-A:anchor:software-microsoft-windows-currentversion-explor-8a5a6b63",
+        "EXP-A:anchor:software-microsoft-windows-currentversion-explor-9b63e800",
+        "EXP-A:anchor:software-microsoft-windows-currentversion-explor-aea6d0a2",
+        "EXP-A:hive_identity",
+        "EXP-A:plugin:ntuser-persistence",
+        "EXP-A:plugin:typed-paths",
+        "EXP-A:plugin:typed-urls",
+        "EXP-A:plugin:user-assist",
+        "EXP-A:profile:c-users-vibranium",
+        "EXP-A:source",
+        "EXP-A:volume",
+        "EXP-B:anchor:control-panel-desktop",
+        "EXP-B:anchor:software-microsoft-windows-currentversion-explor-01234040",
+        "EXP-B:anchor:software-microsoft-windows-currentversion-explor-61e9f7e0",
+        "EXP-B:anchor:software-microsoft-windows-currentversion-explor-8a5a6b63",
+        "EXP-B:anchor:software-microsoft-windows-currentversion-explor-9b63e800",
+        "EXP-B:anchor:software-microsoft-windows-currentversion-explor-aea6d0a2",
+        "EXP-B:hive_identity",
+        "EXP-B:plugin:ntuser-persistence",
+        "EXP-B:plugin:typed-paths",
+        "EXP-B:plugin:typed-urls",
+        "EXP-B:plugin:user-assist",
+        "EXP-B:profile:c-users-vibranium",
+        "EXP-B:source",
+        "EXP-B:volume"
+      ]
+    },
+    {
+      "pair_id": "EXP-A|EXP-C",
+      "exports": [
+        "EXP-A",
+        "EXP-C"
+      ],
+      "verdict": "conflict",
+      "reasons": [
+        "Exports disagree on comparable identity values: account_name=['vibranium'] vs ['tony']; profile_path=['c:\\\\users\\\\vibranium'] vs ['c:\\\\users\\\\tony']."
+      ],
+      "independent": true,
+      "clone_related": false,
+      "shared_lineage": false,
+      "lineage_roots": [
+        "EXP-B",
+        "EXP-C"
+      ],
+      "shared_volume": false,
+      "volume_conflict": false,
+      "volume_comparison": {
+        "comparable": true,
+        "match": false,
+        "status": "different",
+        "conflicts": [
+          {
+            "field": "disk_guid",
+            "first": "fixture-disk-01",
+            "second": "fixture-disk-02"
+          },
+          {
+            "field": "disk_signature",
+            "first": "0xA1B2C3D4",
+            "second": "0xB2C3D4E5"
+          },
+          {
+            "field": "volume_serial",
+            "first": "1A2B3C4D",
+            "second": "5E6F7A8B"
+          }
+        ],
+        "matches": []
+      },
+      "volume_status": "different",
+      "shared_hive_identity": false,
+      "identical_anchor_count": 0,
+      "comparable_anchor_count": 7,
+      "identical_anchor_ratio": 0.0,
+      "identical_anchor_examples": [],
+      "content_conflicts": [],
+      "content_drift": [
+        "\\Control Panel\\Desktop",
+        "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+        "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\RunMRU",
+        "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
+        "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\TypedPaths",
+        "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders",
+        "\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"
+      ],
+      "shared_name_nodes": [],
+      "comparable_name_types": [
+        "account_name",
+        "profile_path"
+      ],
+      "different_name_values": {
+        "account_name": {
+          "first": [
+            "vibranium"
+          ],
+          "second": [
+            "tony"
+          ]
+        },
+        "profile_path": {
+          "first": [
+            "c:\\users\\vibranium"
+          ],
+          "second": [
+            "c:\\users\\tony"
+          ]
+        }
+      },
+      "plugin_matches": [],
+      "plugin_divergences": [
+        "ntuser_persistence",
+        "typed_paths",
+        "typed_urls",
+        "user_assist"
+      ],
+      "depends_on": [
+        "EXP-A:plugin:ntuser-persistence",
+        "EXP-A:plugin:typed-paths",
+        "EXP-A:plugin:typed-urls",
+        "EXP-A:plugin:user-assist",
+        "EXP-A:profile:c-users-vibranium",
+        "EXP-A:source",
+        "EXP-A:volume",
+        "EXP-C:plugin:ntuser-persistence",
+        "EXP-C:plugin:typed-paths",
+        "EXP-C:plugin:typed-urls",
+        "EXP-C:plugin:user-assist",
+        "EXP-C:profile:c-users-tony",
+        "EXP-C:source",
+        "EXP-C:volume"
+      ]
+    },
+    {
+      "pair_id": "EXP-B|EXP-C",
+      "exports": [
+        "EXP-B",
+        "EXP-C"
+      ],
+      "verdict": "conflict",
+      "reasons": [
+        "Exports disagree on comparable identity values: account_name=['vibranium'] vs ['tony']; profile_path=['c:\\\\users\\\\vibranium'] vs ['c:\\\\users\\\\tony']."
+      ],
+      "independent": true,
+      "clone_related": false,
+      "shared_lineage": false,
+      "lineage_roots": [
+        "EXP-B",
+        "EXP-C"
+      ],
+      "shared_volume": false,
+      "volume_conflict": false,
+      "volume_comparison": {
+        "comparable": true,
+        "match": false,
+        "status": "different",
+        "conflicts": [
+          {
+            "field": "disk_guid",
+            "first": "fixture-disk-replaced",
+            "second": "fixture-disk-02"
+          },
+          {
+            "field": "disk_signature",
+            "first": "0xDEADBEEF",
+            "second": "0xB2C3D4E5"
+          },
+          {
+            "field": "volume_serial",
+            "first": "DEADBEEF",
+            "second": "5E6F7A8B"
+          }
+        ],
+        "matches": []
+      },
+      "volume_status": "different",
+      "shared_hive_identity": false,
+      "identical_anchor_count": 0,
+      "comparable_anchor_count": 7,
+      "identical_anchor_ratio": 0.0,
+      "identical_anchor_examples": [],
+      "content_conflicts": [],
+      "content_drift": [
+        "\\Control Panel\\Desktop",
+        "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+        "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\RunMRU",
+        "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
+        "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\TypedPaths",
+        "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders",
+        "\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"
+      ],
+      "shared_name_nodes": [],
+      "comparable_name_types": [
+        "account_name",
+        "profile_path"
+      ],
+      "different_name_values": {
+        "account_name": {
+          "first": [
+            "vibranium"
+          ],
+          "second": [
+            "tony"
+          ]
+        },
+        "profile_path": {
+          "first": [
+            "c:\\users\\vibranium"
+          ],
+          "second": [
+            "c:\\users\\tony"
+          ]
+        }
+      },
+      "plugin_matches": [],
+      "plugin_divergences": [
+        "ntuser_persistence",
+        "typed_paths",
+        "typed_urls",
+        "user_assist"
+      ],
+      "depends_on": [
+        "EXP-B:plugin:ntuser-persistence",
+        "EXP-B:plugin:typed-paths",
+        "EXP-B:plugin:typed-urls",
+        "EXP-B:plugin:user-assist",
+        "EXP-B:profile:c-users-vibranium",
+        "EXP-B:source",
+        "EXP-B:volume",
+        "EXP-C:plugin:ntuser-persistence",
+        "EXP-C:plugin:typed-paths",
+        "EXP-C:plugin:typed-urls",
+        "EXP-C:plugin:user-assist",
+        "EXP-C:profile:c-users-tony",
+        "EXP-C:source",
+        "EXP-C:volume"
+      ]
+    }
+  ],
+  "associations": [
+    {
+      "association_id": "conflict:name:EXP-A:EXP-C:account_name",
+      "kind": "name_value_conflict",
+      "status": "conflict",
+      "exports": [
+        "EXP-A",
+        "EXP-C"
+      ],
+      "origin": "hive",
+      "role": "primary",
+      "depends_on": [
+        "EXP-A:profile:c-users-vibranium",
+        "EXP-C:profile:c-users-tony"
+      ],
+      "summary": "Exports resolve account_name to different values: ['vibranium'] vs ['tony'].",
+      "evidence": {
+        "node_type": "account_name",
+        "values": {
+          "first": [
+            "vibranium"
+          ],
+          "second": [
+            "tony"
+          ]
+        }
+      }
+    },
+    {
+      "association_id": "conflict:name:EXP-A:EXP-C:profile_path",
+      "kind": "name_value_conflict",
+      "status": "conflict",
+      "exports": [
+        "EXP-A",
+        "EXP-C"
+      ],
+      "origin": "hive",
+      "role": "primary",
+      "depends_on": [
+        "EXP-A:profile:c-users-vibranium",
+        "EXP-C:profile:c-users-tony"
+      ],
+      "summary": "Exports resolve profile_path to different values: ['c:\\\\users\\\\vibranium'] vs ['c:\\\\users\\\\tony'].",
+      "evidence": {
+        "node_type": "profile_path",
+        "values": {
+          "first": [
+            "c:\\users\\vibranium"
+          ],
+          "second": [
+            "c:\\users\\tony"
+          ]
+        }
+      }
+    },
+    {
+      "association_id": "conflict:name:EXP-B:EXP-C:account_name",
+      "kind": "name_value_conflict",
+      "status": "conflict",
+      "exports": [
+        "EXP-B",
+        "EXP-C"
+      ],
+      "origin": "hive",
+      "role": "primary",
+      "depends_on": [
+        "EXP-B:profile:c-users-vibranium",
+        "EXP-C:profile:c-users-tony"
+      ],
+      "summary": "Exports resolve account_name to different values: ['vibranium'] vs ['tony'].",
+      "evidence": {
+        "node_type": "account_name",
+        "values": {
+          "first": [
+            "vibranium"
+          ],
+          "second": [
+            "tony"
+          ]
+        }
+      }
+    },
+    {
+      "association_id": "conflict:name:EXP-B:EXP-C:profile_path",
+      "kind": "name_value_conflict",
+      "status": "conflict",
+      "exports": [
+        "EXP-B",
+        "EXP-C"
+      ],
+      "origin": "hive",
+      "role": "primary",
+      "depends_on": [
+        "EXP-B:profile:c-users-vibranium",
+        "EXP-C:profile:c-users-tony"
+      ],
+      "summary": "Exports resolve profile_path to different values: ['c:\\\\users\\\\vibranium'] vs ['c:\\\\users\\\\tony'].",
+      "evidence": {
+        "node_type": "profile_path",
+        "values": {
+          "first": [
+            "c:\\users\\vibranium"
+          ],
+          "second": [
+            "c:\\users\\tony"
+          ]
+        }
+      }
+    },
+    {
+      "association_id": "divergence:plugin:EXP-A:EXP-B:ntuser-persistence",
+      "kind": "plugin_divergence",
+      "status": "supplemental",
+      "exports": [
+        "EXP-A",
+        "EXP-B"
+      ],
+      "origin": "plugin",
+      "role": "supplemental",
+      "depends_on": [
+        "EXP-A:plugin:ntuser-persistence",
+        "EXP-B:plugin:ntuser-persistence"
+      ],
+      "summary": "Plugin ntuser_persistence output differs. This is supplemental activity evidence, not an identity source.",
+      "evidence": {
+        "plugin": "ntuser_persistence",
+        "digest_first": "76b64ed36a5c30251c684ab3bcc98d26e22c609f27464b750613b7a60f949ecb",
+        "digest_second": "f73c3a8e8ff6a097fc4e3cba095e1895fb5e347f4c61d0bf7c3c6b503c1e3ce6"
+      }
+    },
+    {
+      "association_id": "divergence:plugin:EXP-A:EXP-C:ntuser-persistence",
+      "kind": "plugin_divergence",
+      "status": "supplemental",
+      "exports": [
+        "EXP-A",
+        "EXP-C"
+      ],
+      "origin": "plugin",
+      "role": "supplemental",
+      "depends_on": [
+        "EXP-A:plugin:ntuser-persistence",
+        "EXP-C:plugin:ntuser-persistence"
+      ],
+      "summary": "Plugin ntuser_persistence output differs. This is supplemental activity evidence, not an identity source.",
+      "evidence": {
+        "plugin": "ntuser_persistence",
+        "digest_first": "76b64ed36a5c30251c684ab3bcc98d26e22c609f27464b750613b7a60f949ecb",
+        "digest_second": "9343f64663547af4a31add6824194dc9012f77c25c3a18f71d2ec72ef32ed3d7"
+      }
+    },
+    {
+      "association_id": "divergence:plugin:EXP-A:EXP-C:typed-paths",
+      "kind": "plugin_divergence",
+      "status": "supplemental",
+      "exports": [
+        "EXP-A",
+        "EXP-C"
+      ],
+      "origin": "plugin",
+      "role": "supplemental",
+      "depends_on": [
+        "EXP-A:plugin:typed-paths",
+        "EXP-C:plugin:typed-paths"
+      ],
+      "summary": "Plugin typed_paths output differs. This is supplemental activity evidence, not an identity source.",
+      "evidence": {
+        "plugin": "typed_paths",
+        "digest_first": "0dccf74067c2fbe6d143463b399f07bf74cbe0f6765f3cdc3f2670cc5499e520",
+        "digest_second": "b51275913fb0424a39885f30053f26390710b3ceb9b5058b6f4cb3b66397eaad"
+      }
+    },
+    {
+      "association_id": "divergence:plugin:EXP-A:EXP-C:typed-urls",
+      "kind": "plugin_divergence",
+      "status": "supplemental",
+      "exports": [
+        "EXP-A",
+        "EXP-C"
+      ],
+      "origin": "plugin",
+      "role": "supplemental",
+      "depends_on": [
+        "EXP-A:plugin:typed-urls",
+        "EXP-C:plugin:typed-urls"
+      ],
+      "summary": "Plugin typed_urls output differs. This is supplemental activity evidence, not an identity source.",
+      "evidence": {
+        "plugin": "typed_urls",
+        "digest_first": "7e8c6dc6da654f2a88b6ec068f2f770b31ed20316910e98901c8b40009bbc262",
+        "digest_second": "6a12bcdc69aa5f8a8b85086b26d4be4fe33fff10adfb16869dc3f32c98e41b4a"
+      }
+    },
+    {
+      "association_id": "divergence:plugin:EXP-A:EXP-C:user-assist",
+      "kind": "plugin_divergence",
+      "status": "supplemental",
+      "exports": [
+        "EXP-A",
+        "EXP-C"
+      ],
+      "origin": "plugin",
+      "role": "supplemental",
+      "depends_on": [
+        "EXP-A:plugin:user-assist",
+        "EXP-C:plugin:user-assist"
+      ],
+      "summary": "Plugin user_assist output differs. This is supplemental activity evidence, not an identity source.",
+      "evidence": {
+        "plugin": "user_assist",
+        "digest_first": "8d6e0f7887774f8b8c715ca4f976c89da3dd4f8fc9d2abc2dc3aa47b99a9ada3",
+        "digest_second": "f97309aa8de1dbe34078587fa98802102c9917ad52bed8324989cc3c6ef189a8"
+      }
+    },
+    {
+      "association_id": "divergence:plugin:EXP-B:EXP-C:ntuser-persistence",
+      "kind": "plugin_divergence",
+      "status": "supplemental",
+      "exports": [
+        "EXP-B",
+        "EXP-C"
+      ],
+      "origin": "plugin",
+      "role": "supplemental",
+      "depends_on": [
+        "EXP-B:plugin:ntuser-persistence",
+        "EXP-C:plugin:ntuser-persistence"
+      ],
+      "summary": "Plugin ntuser_persistence output differs. This is supplemental activity evidence, not an identity source.",
+      "evidence": {
+        "plugin": "ntuser_persistence",
+        "digest_first": "f73c3a8e8ff6a097fc4e3cba095e1895fb5e347f4c61d0bf7c3c6b503c1e3ce6",
+        "digest_second": "9343f64663547af4a31add6824194dc9012f77c25c3a18f71d2ec72ef32ed3d7"
+      }
+    },
+    {
+      "association_id": "divergence:plugin:EXP-B:EXP-C:typed-paths",
+      "kind": "plugin_divergence",
+      "status": "supplemental",
+      "exports": [
+        "EXP-B",
+        "EXP-C"
+      ],
+      "origin": "plugin",
+      "role": "supplemental",
+      "depends_on": [
+        "EXP-B:plugin:typed-paths",
+        "EXP-C:plugin:typed-paths"
+      ],
+      "summary": "Plugin typed_paths output differs. This is supplemental activity evidence, not an identity source.",
+      "evidence": {
+        "plugin": "typed_paths",
+        "digest_first": "0dccf74067c2fbe6d143463b399f07bf74cbe0f6765f3cdc3f2670cc5499e520",
+        "digest_second": "b51275913fb0424a39885f30053f26390710b3ceb9b5058b6f4cb3b66397eaad"
+      }
+    },
+    {
+      "association_id": "divergence:plugin:EXP-B:EXP-C:typed-urls",
+      "kind": "plugin_divergence",
+      "status": "supplemental",
+      "exports": [
+        "EXP-B",
+        "EXP-C"
+      ],
+      "origin": "plugin",
+      "role": "supplemental",
+      "depends_on": [
+        "EXP-B:plugin:typed-urls",
+        "EXP-C:plugin:typed-urls"
+      ],
+      "summary": "Plugin typed_urls output differs. This is supplemental activity evidence, not an identity source.",
+      "evidence": {
+        "plugin": "typed_urls",
+        "digest_first": "7e8c6dc6da654f2a88b6ec068f2f770b31ed20316910e98901c8b40009bbc262",
+        "digest_second": "6a12bcdc69aa5f8a8b85086b26d4be4fe33fff10adfb16869dc3f32c98e41b4a"
+      }
+    },
+    {
+      "association_id": "divergence:plugin:EXP-B:EXP-C:user-assist",
+      "kind": "plugin_divergence",
+      "status": "supplemental",
+      "exports": [
+        "EXP-B",
+        "EXP-C"
+      ],
+      "origin": "plugin",
+      "role": "supplemental",
+      "depends_on": [
+        "EXP-B:plugin:user-assist",
+        "EXP-C:plugin:user-assist"
+      ],
+      "summary": "Plugin user_assist output differs. This is supplemental activity evidence, not an identity source.",
+      "evidence": {
+        "plugin": "user_assist",
+        "digest_first": "8d6e0f7887774f8b8c715ca4f976c89da3dd4f8fc9d2abc2dc3aa47b99a9ada3",
+        "digest_second": "f97309aa8de1dbe34078587fa98802102c9917ad52bed8324989cc3c6ef189a8"
+      }
+    },
+    {
+      "association_id": "link:anchor:EXP-A:EXP-B:control-panel-desktop",
+      "kind": "content_anchor_match",
+      "status": "valid",
+      "exports": [
+        "EXP-A",
+        "EXP-B"
+      ],
+      "origin": "hive",
+      "role": "primary",
+      "depends_on": [
+        "EXP-A:anchor:control-panel-desktop",
+        "EXP-B:anchor:control-panel-desktop"
+      ],
+      "summary": "Identical key path and timestamp with identical value digest. This is content identity, not subject identity.",
+      "evidence": {
+        "path": "\\Control Panel\\Desktop",
+        "timestamp": "2012-04-04T14:45:43.953750+00:00",
+        "value_digest": "be12f4ab4760d1097a47ef0c5e4a938003b784a430a6c494d51601ce9fb83a2e",
+        "clone_related": true
+      }
+    },
+    {
+      "association_id": "link:anchor:EXP-A:EXP-B:software-microsoft-windows-currentversion-explor-01234040",
+      "kind": "content_anchor_match",
+      "status": "valid",
+      "exports": [
+        "EXP-A",
+        "EXP-B"
+      ],
+      "origin": "hive",
+      "role": "primary",
+      "depends_on": [
+        "EXP-A:anchor:software-microsoft-windows-currentversion-explor-01234040",
+        "EXP-B:anchor:software-microsoft-windows-currentversion-explor-01234040"
+      ],
+      "summary": "Identical key path and timestamp with identical value digest. This is content identity, not subject identity.",
+      "evidence": {
+        "path": "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+        "timestamp": "2012-04-03T22:08:47.836010+00:00",
+        "value_digest": "d9227af67ff209c8773328541a1a9845bb5cecfe65cbb35e587ac984b413d2db",
+        "clone_related": true
+      }
+    },
+    {
+      "association_id": "link:anchor:EXP-A:EXP-B:software-microsoft-windows-currentversion-explor-61e9f7e0",
+      "kind": "content_anchor_match",
+      "status": "valid",
+      "exports": [
+        "EXP-A",
+        "EXP-B"
+      ],
+      "origin": "hive",
+      "role": "primary",
+      "depends_on": [
+        "EXP-A:anchor:software-microsoft-windows-currentversion-explor-61e9f7e0",
+        "EXP-B:anchor:software-microsoft-windows-currentversion-explor-61e9f7e0"
+      ],
+      "summary": "Identical key path and timestamp with identical value digest. This is content identity, not subject identity.",
+      "evidence": {
+        "path": "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\RunMRU",
+        "timestamp": "2012-04-04T15:35:08.895090+00:00",
+        "value_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "clone_related": true
+      }
+    },
+    {
+      "association_id": "link:anchor:EXP-A:EXP-B:software-microsoft-windows-currentversion-explor-8a5a6b63",
+      "kind": "content_anchor_match",
+      "status": "valid",
+      "exports": [
+        "EXP-A",
+        "EXP-B"
+      ],
+      "origin": "hive",
+      "role": "primary",
+      "depends_on": [
+        "EXP-A:anchor:software-microsoft-windows-currentversion-explor-8a5a6b63",
+        "EXP-B:anchor:software-microsoft-windows-currentversion-explor-8a5a6b63"
+      ],
+      "summary": "Identical key path and timestamp with identical value digest. This is content identity, not subject identity.",
+      "evidence": {
+        "path": "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders",
+        "timestamp": "2012-04-03T21:19:54.836740+00:00",
+        "value_digest": "b6afb640d145b2c49c9c25bf015dbbb206bccc85dc467d2a223181cdf67f148d",
+        "clone_related": true
+      }
+    },
+    {
+      "association_id": "link:anchor:EXP-A:EXP-B:software-microsoft-windows-currentversion-explor-9b63e800",
+      "kind": "content_anchor_match",
+      "status": "valid",
+      "exports": [
+        "EXP-A",
+        "EXP-B"
+      ],
+      "origin": "hive",
+      "role": "primary",
+      "depends_on": [
+        "EXP-A:anchor:software-microsoft-windows-currentversion-explor-9b63e800",
+        "EXP-B:anchor:software-microsoft-windows-currentversion-explor-9b63e800"
+      ],
+      "summary": "Identical key path and timestamp with identical value digest. This is content identity, not subject identity.",
+      "evidence": {
+        "path": "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\TypedPaths",
+        "timestamp": "2012-04-04T15:35:08.895090+00:00",
+        "value_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "clone_related": true
+      }
+    },
+    {
+      "association_id": "link:anchor:EXP-A:EXP-B:software-microsoft-windows-currentversion-explor-aea6d0a2",
+      "kind": "content_anchor_match",
+      "status": "valid",
+      "exports": [
+        "EXP-A",
+        "EXP-B"
+      ],
+      "origin": "hive",
+      "role": "primary",
+      "depends_on": [
+        "EXP-A:anchor:software-microsoft-windows-currentversion-explor-aea6d0a2",
+        "EXP-B:anchor:software-microsoft-windows-currentversion-explor-aea6d0a2"
+      ],
+      "summary": "Identical key path and timestamp with identical value digest. This is content identity, not subject identity.",
+      "evidence": {
+        "path": "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
+        "timestamp": "2012-04-03T22:08:40.416558+00:00",
+        "value_digest": "b29f4e098176a431294cbec1a48a6a6f02049b07ea614a5b3858ba2ddacbb3e1",
+        "clone_related": true
+      }
+    },
+    {
+      "association_id": "link:clone:EXP-A:EXP-B",
+      "kind": "clone_or_copy",
+      "status": "valid",
+      "exports": [
+        "EXP-A",
+        "EXP-B"
+      ],
+      "origin": "caller",
+      "role": "primary",
+      "depends_on": [
+        "EXP-A:source",
+        "EXP-B:source"
+      ],
+      "summary": "Clone or copy lineage declared by sampling source or inferred from shared hive identity and anchors.",
+      "evidence": {
+        "declared": true
+      }
+    },
+    {
+      "association_id": "link:hive_identity:EXP-A:EXP-B",
+      "kind": "shared_hive_identity",
+      "status": "valid",
+      "exports": [
+        "EXP-A",
+        "EXP-B"
+      ],
+      "origin": "hive",
+      "role": "primary",
+      "depends_on": [
+        "EXP-A:hive_identity",
+        "EXP-B:hive_identity"
+      ],
+      "summary": "Exports share the registry-internal hive creation identity.",
+      "evidence": {
+        "identity": "guid:{6a1c4018-979d-4291-a7dc-7aed1c75b67c}"
+      }
+    },
+    {
+      "association_id": "link:name:EXP-A:EXP-B:account-name-vibranium",
+      "kind": "shared_name_node",
+      "status": "valid",
+      "exports": [
+        "EXP-A",
+        "EXP-B"
+      ],
+      "origin": "hive",
+      "role": "primary",
+      "depends_on": [
+        "EXP-A:profile:c-users-vibranium",
+        "EXP-B:profile:c-users-vibranium"
+      ],
+      "summary": "Both exports independently resolve account_name='vibranium'.",
+      "evidence": {
+        "node_type": "account_name",
+        "node_value": "vibranium",
+        "clone_related": true
+      }
+    },
+    {
+      "association_id": "link:name:EXP-A:EXP-B:profile-path-c-users-vibranium",
+      "kind": "shared_name_node",
+      "status": "valid",
+      "exports": [
+        "EXP-A",
+        "EXP-B"
+      ],
+      "origin": "hive",
+      "role": "primary",
+      "depends_on": [
+        "EXP-A:profile:c-users-vibranium",
+        "EXP-B:profile:c-users-vibranium"
+      ],
+      "summary": "Both exports independently resolve profile_path='c:\\\\users\\\\vibranium'.",
+      "evidence": {
+        "node_type": "profile_path",
+        "node_value": "c:\\users\\vibranium",
+        "clone_related": true
+      }
+    },
+    {
+      "association_id": "link:plugin:EXP-A:EXP-B:typed-paths",
+      "kind": "plugin_corroboration",
+      "status": "supplemental",
+      "exports": [
+        "EXP-A",
+        "EXP-B"
+      ],
+      "origin": "plugin",
+      "role": "supplemental",
+      "depends_on": [
+        "EXP-A:plugin:typed-paths",
+        "EXP-B:plugin:typed-paths"
+      ],
+      "summary": "Plugin typed_paths output digest matches. Supplemental only; it cannot establish identity.",
+      "evidence": {
+        "plugin": "typed_paths",
+        "digest": "0dccf74067c2fbe6d143463b399f07bf74cbe0f6765f3cdc3f2670cc5499e520"
+      }
+    },
+    {
+      "association_id": "link:plugin:EXP-A:EXP-B:typed-urls",
+      "kind": "plugin_corroboration",
+      "status": "supplemental",
+      "exports": [
+        "EXP-A",
+        "EXP-B"
+      ],
+      "origin": "plugin",
+      "role": "supplemental",
+      "depends_on": [
+        "EXP-A:plugin:typed-urls",
+        "EXP-B:plugin:typed-urls"
+      ],
+      "summary": "Plugin typed_urls output digest matches. Supplemental only; it cannot establish identity.",
+      "evidence": {
+        "plugin": "typed_urls",
+        "digest": "7e8c6dc6da654f2a88b6ec068f2f770b31ed20316910e98901c8b40009bbc262"
+      }
+    },
+    {
+      "association_id": "link:plugin:EXP-A:EXP-B:user-assist",
+      "kind": "plugin_corroboration",
+      "status": "supplemental",
+      "exports": [
+        "EXP-A",
+        "EXP-B"
+      ],
+      "origin": "plugin",
+      "role": "supplemental",
+      "depends_on": [
+        "EXP-A:plugin:user-assist",
+        "EXP-B:plugin:user-assist"
+      ],
+      "summary": "Plugin user_assist output digest matches. Supplemental only; it cannot establish identity.",
+      "evidence": {
+        "plugin": "user_assist",
+        "digest": "8d6e0f7887774f8b8c715ca4f976c89da3dd4f8fc9d2abc2dc3aa47b99a9ada3"
+      }
+    },
+    {
+      "association_id": "link:source:EXP-A:EXP-B",
+      "kind": "shared_lineage",
+      "status": "valid",
+      "exports": [
+        "EXP-A",
+        "EXP-B"
+      ],
+      "origin": "caller",
+      "role": "primary",
+      "depends_on": [
+        "EXP-A:source",
+        "EXP-B:source"
+      ],
+      "summary": "Exports share one acquisition lineage; repeated observations are not independent.",
+      "evidence": {
+        "lineage_root": "EXP-B"
+      }
+    },
+    {
+      "association_id": "plugin:supplemental:EXP-A:ntuser-persistence",
+      "kind": "plugin_supplemental",
+      "status": "supplemental",
+      "exports": [
+        "EXP-A"
+      ],
+      "origin": "plugin",
+      "role": "supplemental",
+      "depends_on": [
+        "EXP-A:plugin:ntuser-persistence"
+      ],
+      "summary": "Plugin-derived value retained as supplemental evidence only; it is not an original source.",
+      "evidence": {
+        "plugin_name": "ntuser_persistence",
+        "digest": "76b64ed36a5c30251c684ab3bcc98d26e22c609f27464b750613b7a60f949ecb",
+        "error": null
+      }
+    },
+    {
+      "association_id": "plugin:supplemental:EXP-A:typed-paths",
+      "kind": "plugin_supplemental",
+      "status": "supplemental",
+      "exports": [
+        "EXP-A"
+      ],
+      "origin": "plugin",
+      "role": "supplemental",
+      "depends_on": [
+        "EXP-A:plugin:typed-paths"
+      ],
+      "summary": "Plugin-derived value retained as supplemental evidence only; it is not an original source.",
+      "evidence": {
+        "plugin_name": "typed_paths",
+        "digest": "0dccf74067c2fbe6d143463b399f07bf74cbe0f6765f3cdc3f2670cc5499e520",
+        "error": null
+      }
+    },
+    {
+      "association_id": "plugin:supplemental:EXP-A:typed-urls",
+      "kind": "plugin_supplemental",
+      "status": "supplemental",
+      "exports": [
+        "EXP-A"
+      ],
+      "origin": "plugin",
+      "role": "supplemental",
+      "depends_on": [
+        "EXP-A:plugin:typed-urls"
+      ],
+      "summary": "Plugin-derived value retained as supplemental evidence only; it is not an original source.",
+      "evidence": {
+        "plugin_name": "typed_urls",
+        "digest": "7e8c6dc6da654f2a88b6ec068f2f770b31ed20316910e98901c8b40009bbc262",
+        "error": null
+      }
+    },
+    {
+      "association_id": "plugin:supplemental:EXP-A:user-assist",
+      "kind": "plugin_supplemental",
+      "status": "supplemental",
+      "exports": [
+        "EXP-A"
+      ],
+      "origin": "plugin",
+      "role": "supplemental",
+      "depends_on": [
+        "EXP-A:plugin:user-assist"
+      ],
+      "summary": "Plugin-derived value retained as supplemental evidence only; it is not an original source.",
+      "evidence": {
+        "plugin_name": "user_assist",
+        "digest": "8d6e0f7887774f8b8c715ca4f976c89da3dd4f8fc9d2abc2dc3aa47b99a9ada3",
+        "error": null
+      }
+    },
+    {
+      "association_id": "plugin:supplemental:EXP-B:ntuser-persistence",
+      "kind": "plugin_supplemental",
+      "status": "supplemental",
+      "exports": [
+        "EXP-B"
+      ],
+      "origin": "plugin",
+      "role": "supplemental",
+      "depends_on": [
+        "EXP-B:plugin:ntuser-persistence"
+      ],
+      "summary": "Plugin-derived value retained as supplemental evidence only; it is not an original source.",
+      "evidence": {
+        "plugin_name": "ntuser_persistence",
+        "digest": "f73c3a8e8ff6a097fc4e3cba095e1895fb5e347f4c61d0bf7c3c6b503c1e3ce6",
+        "error": null
+      }
+    },
+    {
+      "association_id": "plugin:supplemental:EXP-B:typed-paths",
+      "kind": "plugin_supplemental",
+      "status": "supplemental",
+      "exports": [
+        "EXP-B"
+      ],
+      "origin": "plugin",
+      "role": "supplemental",
+      "depends_on": [
+        "EXP-B:plugin:typed-paths"
+      ],
+      "summary": "Plugin-derived value retained as supplemental evidence only; it is not an original source.",
+      "evidence": {
+        "plugin_name": "typed_paths",
+        "digest": "0dccf74067c2fbe6d143463b399f07bf74cbe0f6765f3cdc3f2670cc5499e520",
+        "error": null
+      }
+    },
+    {
+      "association_id": "plugin:supplemental:EXP-B:typed-urls",
+      "kind": "plugin_supplemental",
+      "status": "supplemental",
+      "exports": [
+        "EXP-B"
+      ],
+      "origin": "plugin",
+      "role": "supplemental",
+      "depends_on": [
+        "EXP-B:plugin:typed-urls"
+      ],
+      "summary": "Plugin-derived value retained as supplemental evidence only; it is not an original source.",
+      "evidence": {
+        "plugin_name": "typed_urls",
+        "digest": "7e8c6dc6da654f2a88b6ec068f2f770b31ed20316910e98901c8b40009bbc262",
+        "error": null
+      }
+    },
+    {
+      "association_id": "plugin:supplemental:EXP-B:user-assist",
+      "kind": "plugin_supplemental",
+      "status": "supplemental",
+      "exports": [
+        "EXP-B"
+      ],
+      "origin": "plugin",
+      "role": "supplemental",
+      "depends_on": [
+        "EXP-B:plugin:user-assist"
+      ],
+      "summary": "Plugin-derived value retained as supplemental evidence only; it is not an original source.",
+      "evidence": {
+        "plugin_name": "user_assist",
+        "digest": "8d6e0f7887774f8b8c715ca4f976c89da3dd4f8fc9d2abc2dc3aa47b99a9ada3",
+        "error": null
+      }
+    },
+    {
+      "association_id": "plugin:supplemental:EXP-C:ntuser-persistence",
+      "kind": "plugin_supplemental",
+      "status": "supplemental",
+      "exports": [
+        "EXP-C"
+      ],
+      "origin": "plugin",
+      "role": "supplemental",
+      "depends_on": [
+        "EXP-C:plugin:ntuser-persistence"
+      ],
+      "summary": "Plugin-derived value retained as supplemental evidence only; it is not an original source.",
+      "evidence": {
+        "plugin_name": "ntuser_persistence",
+        "digest": "9343f64663547af4a31add6824194dc9012f77c25c3a18f71d2ec72ef32ed3d7",
+        "error": null
+      }
+    },
+    {
+      "association_id": "plugin:supplemental:EXP-C:typed-paths",
+      "kind": "plugin_supplemental",
+      "status": "supplemental",
+      "exports": [
+        "EXP-C"
+      ],
+      "origin": "plugin",
+      "role": "supplemental",
+      "depends_on": [
+        "EXP-C:plugin:typed-paths"
+      ],
+      "summary": "Plugin-derived value retained as supplemental evidence only; it is not an original source.",
+      "evidence": {
+        "plugin_name": "typed_paths",
+        "digest": "b51275913fb0424a39885f30053f26390710b3ceb9b5058b6f4cb3b66397eaad",
+        "error": null
+      }
+    },
+    {
+      "association_id": "plugin:supplemental:EXP-C:typed-urls",
+      "kind": "plugin_supplemental",
+      "status": "supplemental",
+      "exports": [
+        "EXP-C"
+      ],
+      "origin": "plugin",
+      "role": "supplemental",
+      "depends_on": [
+        "EXP-C:plugin:typed-urls"
+      ],
+      "summary": "Plugin-derived value retained as supplemental evidence only; it is not an original source.",
+      "evidence": {
+        "plugin_name": "typed_urls",
+        "digest": "6a12bcdc69aa5f8a8b85086b26d4be4fe33fff10adfb16869dc3f32c98e41b4a",
+        "error": null
+      }
+    },
+    {
+      "association_id": "plugin:supplemental:EXP-C:user-assist",
+      "kind": "plugin_supplemental",
+      "status": "supplemental",
+      "exports": [
+        "EXP-C"
+      ],
+      "origin": "plugin",
+      "role": "supplemental",
+      "depends_on": [
+        "EXP-C:plugin:user-assist"
+      ],
+      "summary": "Plugin-derived value retained as supplemental evidence only; it is not an original source.",
+      "evidence": {
+        "plugin_name": "user_assist",
+        "digest": "f97309aa8de1dbe34078587fa98802102c9917ad52bed8324989cc3c6ef189a8",
+        "error": null
+      }
+    }
+  ],
+  "conflicts": [
+    {
+      "kind": "pairwise_conflict",
+      "exports": [
+        "EXP-A",
+        "EXP-C"
+      ],
+      "reasons": [
+        "Exports disagree on comparable identity values: account_name=['vibranium'] vs ['tony']; profile_path=['c:\\\\users\\\\vibranium'] vs ['c:\\\\users\\\\tony']."
+      ]
+    },
+    {
+      "kind": "pairwise_conflict",
+      "exports": [
+        "EXP-B",
+        "EXP-C"
+      ],
+      "reasons": [
+        "Exports disagree on comparable identity values: account_name=['vibranium'] vs ['tony']; profile_path=['c:\\\\users\\\\vibranium'] vs ['c:\\\\users\\\\tony']."
+      ]
+    },
+    {
+      "kind": "name_value_conflict",
+      "association_id": "conflict:name:EXP-A:EXP-C:account_name",
+      "exports": [
+        "EXP-A",
+        "EXP-C"
+      ],
+      "summary": "Exports resolve account_name to different values: ['vibranium'] vs ['tony'].",
+      "depends_on": [
+        "EXP-A:profile:c-users-vibranium",
+        "EXP-C:profile:c-users-tony"
+      ]
+    },
+    {
+      "kind": "name_value_conflict",
+      "association_id": "conflict:name:EXP-A:EXP-C:profile_path",
+      "exports": [
+        "EXP-A",
+        "EXP-C"
+      ],
+      "summary": "Exports resolve profile_path to different values: ['c:\\\\users\\\\vibranium'] vs ['c:\\\\users\\\\tony'].",
+      "depends_on": [
+        "EXP-A:profile:c-users-vibranium",
+        "EXP-C:profile:c-users-tony"
+      ]
+    },
+    {
+      "kind": "name_value_conflict",
+      "association_id": "conflict:name:EXP-B:EXP-C:account_name",
+      "exports": [
+        "EXP-B",
+        "EXP-C"
+      ],
+      "summary": "Exports resolve account_name to different values: ['vibranium'] vs ['tony'].",
+      "depends_on": [
+        "EXP-B:profile:c-users-vibranium",
+        "EXP-C:profile:c-users-tony"
+      ]
+    },
+    {
+      "kind": "name_value_conflict",
+      "association_id": "conflict:name:EXP-B:EXP-C:profile_path",
+      "exports": [
+        "EXP-B",
+        "EXP-C"
+      ],
+      "summary": "Exports resolve profile_path to different values: ['c:\\\\users\\\\vibranium'] vs ['c:\\\\users\\\\tony'].",
+      "depends_on": [
+        "EXP-B:profile:c-users-vibranium",
+        "EXP-C:profile:c-users-tony"
+      ]
+    }
+  ],
+  "missing_evidence": [
+    {
+      "kind": "pairwise_missing_evidence",
+      "exports": [
+        "EXP-A",
+        "EXP-B"
+      ],
+      "reasons": [
+        "Exports share one acquisition or clone lineage; identical content cannot count as independent corroboration.",
+        "Matching plugin output is supplemental only and was not used to establish identity."
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "path": "\\Control Panel\\Desktop",
+      "observations": [
+        {
+          "export_id": "EXP-A",
+          "timestamp": "2012-04-04T14:45:43.953750+00:00",
+          "value_digest": "be12f4ab4760d1097a47ef0c5e4a938003b784a430a6c494d51601ce9fb83a2e",
+          "values_count": 36
+        },
+        {
+          "export_id": "EXP-B",
+          "timestamp": "2012-04-04T14:45:43.953750+00:00",
+          "value_digest": "be12f4ab4760d1097a47ef0c5e4a938003b784a430a6c494d51601ce9fb83a2e",
+          "values_count": 36
+        },
+        {
+          "export_id": "EXP-C",
+          "timestamp": "2022-05-23T09:09:34.434736+00:00",
+          "value_digest": "4763ab255f60c4d608c8d85f6b70036dd174fdc458bd0a46824b89ad295dba6c",
+          "values_count": 48
+        }
+      ]
+    },
+    {
+      "path": "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+      "observations": [
+        {
+          "export_id": "EXP-A",
+          "timestamp": "2012-04-03T22:08:47.836010+00:00",
+          "value_digest": "d9227af67ff209c8773328541a1a9845bb5cecfe65cbb35e587ac984b413d2db",
+          "values_count": 17
+        },
+        {
+          "export_id": "EXP-B",
+          "timestamp": "2012-04-03T22:08:47.836010+00:00",
+          "value_digest": "d9227af67ff209c8773328541a1a9845bb5cecfe65cbb35e587ac984b413d2db",
+          "values_count": 17
+        },
+        {
+          "export_id": "EXP-C",
+          "timestamp": "2022-05-16T22:26:26.816972+00:00",
+          "value_digest": "625fdcf3450d18b46d01a50b8149b4349169848d0cbf7e7b0d594c03dc40296e",
+          "values_count": 25
+        }
+      ]
+    },
+    {
+      "path": "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\RunMRU",
+      "observations": [
+        {
+          "export_id": "EXP-A",
+          "timestamp": "2012-04-04T15:35:08.895090+00:00",
+          "value_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "values_count": 0
+        },
+        {
+          "export_id": "EXP-B",
+          "timestamp": "2012-04-04T15:35:08.895090+00:00",
+          "value_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "values_count": 0
+        },
+        {
+          "export_id": "EXP-C",
+          "timestamp": "2022-05-30T12:01:31.682832+00:00",
+          "value_digest": "ee2d7a95461f0176511e32501474e07938357924c406ea868bdf6c06755675fd",
+          "values_count": 19
+        }
+      ]
+    },
+    {
+      "path": "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
+      "observations": [
+        {
+          "export_id": "EXP-A",
+          "timestamp": "2012-04-03T22:08:40.416558+00:00",
+          "value_digest": "b29f4e098176a431294cbec1a48a6a6f02049b07ea614a5b3858ba2ddacbb3e1",
+          "values_count": 30
+        },
+        {
+          "export_id": "EXP-B",
+          "timestamp": "2012-04-03T22:08:40.416558+00:00",
+          "value_digest": "b29f4e098176a431294cbec1a48a6a6f02049b07ea614a5b3858ba2ddacbb3e1",
+          "values_count": 30
+        },
+        {
+          "export_id": "EXP-C",
+          "timestamp": "2022-02-14T13:08:49.004558+00:00",
+          "value_digest": "9f255a6a6db960e85fec2559867ec690aff446bcda463dc25b2daebee0149bcd",
+          "values_count": 31
+        }
+      ]
+    },
+    {
+      "path": "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\TypedPaths",
+      "observations": [
+        {
+          "export_id": "EXP-A",
+          "timestamp": "2012-04-04T15:35:08.895090+00:00",
+          "value_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "values_count": 0
+        },
+        {
+          "export_id": "EXP-B",
+          "timestamp": "2012-04-04T15:35:08.895090+00:00",
+          "value_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "values_count": 0
+        },
+        {
+          "export_id": "EXP-C",
+          "timestamp": "2022-04-28T16:15:49.810332+00:00",
+          "value_digest": "12adc22101fb7c874c3aef70f462e8114d0646539c2b3592bb7782d25cd836ff",
+          "values_count": 7
+        }
+      ]
+    },
+    {
+      "path": "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders",
+      "observations": [
+        {
+          "export_id": "EXP-A",
+          "timestamp": "2012-04-03T21:19:54.836740+00:00",
+          "value_digest": "b6afb640d145b2c49c9c25bf015dbbb206bccc85dc467d2a223181cdf67f148d",
+          "values_count": 20
+        },
+        {
+          "export_id": "EXP-B",
+          "timestamp": "2012-04-03T21:19:54.836740+00:00",
+          "value_digest": "b6afb640d145b2c49c9c25bf015dbbb206bccc85dc467d2a223181cdf67f148d",
+          "values_count": 20
+        },
+        {
+          "export_id": "EXP-C",
+          "timestamp": "2022-02-14T13:08:03.006466+00:00",
+          "value_digest": "c3b471daa6bcc0e1a748474445abaa7205c0373d1a2890c84a6bb40b2fe4e835",
+          "values_count": 20
+        }
+      ]
+    },
+    {
+      "path": "\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+      "observations": [
+        {
+          "export_id": "EXP-A",
+          "timestamp": "2012-04-03T21:19:54.837716+00:00",
+          "value_digest": "6516d934e7d89d28f204e9e4e5269ba95c8a926ab303161030f6ae7c0a1ec05b",
+          "values_count": 1
+        },
+        {
+          "export_id": "EXP-B",
+          "timestamp": "2019-02-11T19:45:25.516346+00:00",
+          "value_digest": "684e62a82b8a68bd62c6e84f033cf6c79960e29c6d3117d3dd1623641957a80f",
+          "values_count": 2
+        },
+        {
+          "export_id": "EXP-C",
+          "timestamp": "2022-05-23T08:44:40.434800+00:00",
+          "value_digest": "c63ab242983030d130f0c79254e9635d399ec1798e514236c735c873ef7fa535",
+          "values_count": 5
+        }
+      ]
+    }
+  ],
+  "plugin_evidence": [
+    {
+      "export_id": "EXP-A",
+      "plugin_name": "ntuser_persistence",
+      "origin": "plugin",
+      "role": "supplemental",
+      "used_as_source": false,
+      "can_establish_identity": false,
+      "digest": "76b64ed36a5c30251c684ab3bcc98d26e22c609f27464b750613b7a60f949ecb",
+      "entry_count": 1,
+      "last_write": null,
+      "error": null,
+      "sample": {
+        "\\Software\\Microsoft\\Windows\\CurrentVersion\\Run": {
+          "timestamp": "2012-04-03T21:19:54.837716+00:00",
+          "values": [
+            {
+              "name": "...",
+              "value": "...",
+              "value_type": "...",
+              "is_corrupted": "..."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "export_id": "EXP-A",
+      "plugin_name": "typed_paths",
+      "origin": "plugin",
+      "role": "supplemental",
+      "used_as_source": false,
+      "can_establish_identity": false,
+      "digest": "0dccf74067c2fbe6d143463b399f07bf74cbe0f6765f3cdc3f2670cc5499e520",
+      "entry_count": 2,
+      "last_write": "2012-04-04T15:35:08.895090+00:00",
+      "error": null,
+      "sample": {
+        "last_write": "2012-04-04T15:35:08.895090+00:00",
+        "entries": []
+      }
+    },
+    {
+      "export_id": "EXP-A",
+      "plugin_name": "typed_urls",
+      "origin": "plugin",
+      "role": "supplemental",
+      "used_as_source": false,
+      "can_establish_identity": false,
+      "digest": "7e8c6dc6da654f2a88b6ec068f2f770b31ed20316910e98901c8b40009bbc262",
+      "entry_count": 2,
+      "last_write": "2012-04-03T22:37:55.411500+00:00",
+      "error": null,
+      "sample": {
+        "last_write": "2012-04-03T22:37:55.411500+00:00",
+        "entries": [
+          {
+            "url1": "http://199.73.28.114:53/"
+          },
+          {
+            "url2": "http://go.microsoft.com/fwlink/?LinkId=69157"
+          }
+        ]
+      }
+    },
+    {
+      "export_id": "EXP-A",
+      "plugin_name": "user_assist",
+      "origin": "plugin",
+      "role": "supplemental",
+      "used_as_source": false,
+      "can_establish_identity": false,
+      "digest": "8d6e0f7887774f8b8c715ca4f976c89da3dd4f8fc9d2abc2dc3aa47b99a9ada3",
+      "entry_count": 62,
+      "last_write": null,
+      "error": null,
+      "sample": [
+        {
+          "name": "%PROGRAMDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Accessories\\Welcome Center.lnk",
+          "timestamp": "2012-04-03T22:06:58.124282+00:00",
+          "run_counter": 14,
+          "focus_count": 0,
+          "total_focus_time_ms": 14,
+          "session_id": 0
+        },
+        {
+          "name": "%PROGRAMDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Media Center.lnk",
+          "timestamp": "2012-04-03T22:06:58.124282+00:00",
+          "run_counter": 13,
+          "focus_count": 0,
+          "total_focus_time_ms": 13,
+          "session_id": 0
+        },
+        {
+          "name": "%PROGRAMDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Accessories\\Calculator.lnk",
+          "timestamp": "2012-04-03T22:06:58.124282+00:00",
+          "run_counter": 12,
+          "focus_count": 0,
+          "total_focus_time_ms": 12,
+          "session_id": 0
+        }
+      ]
+    },
+    {
+      "export_id": "EXP-B",
+      "plugin_name": "ntuser_persistence",
+      "origin": "plugin",
+      "role": "supplemental",
+      "used_as_source": false,
+      "can_establish_identity": false,
+      "digest": "f73c3a8e8ff6a097fc4e3cba095e1895fb5e347f4c61d0bf7c3c6b503c1e3ce6",
+      "entry_count": 1,
+      "last_write": null,
+      "error": null,
+      "sample": {
+        "\\Software\\Microsoft\\Windows\\CurrentVersion\\Run": {
+          "timestamp": "2019-02-11T19:45:25.516346+00:00",
+          "values": [
+            {
+              "name": "...",
+              "value": "...",
+              "value_type": "...",
+              "is_corrupted": "..."
+            },
+            {
+              "name": "...",
+              "value": "...",
+              "value_type": "...",
+              "is_corrupted": "..."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "export_id": "EXP-B",
+      "plugin_name": "typed_paths",
+      "origin": "plugin",
+      "role": "supplemental",
+      "used_as_source": false,
+      "can_establish_identity": false,
+      "digest": "0dccf74067c2fbe6d143463b399f07bf74cbe0f6765f3cdc3f2670cc5499e520",
+      "entry_count": 2,
+      "last_write": "2012-04-04T15:35:08.895090+00:00",
+      "error": null,
+      "sample": {
+        "last_write": "2012-04-04T15:35:08.895090+00:00",
+        "entries": []
+      }
+    },
+    {
+      "export_id": "EXP-B",
+      "plugin_name": "typed_urls",
+      "origin": "plugin",
+      "role": "supplemental",
+      "used_as_source": false,
+      "can_establish_identity": false,
+      "digest": "7e8c6dc6da654f2a88b6ec068f2f770b31ed20316910e98901c8b40009bbc262",
+      "entry_count": 2,
+      "last_write": "2012-04-03T22:37:55.411500+00:00",
+      "error": null,
+      "sample": {
+        "last_write": "2012-04-03T22:37:55.411500+00:00",
+        "entries": [
+          {
+            "url1": "http://199.73.28.114:53/"
+          },
+          {
+            "url2": "http://go.microsoft.com/fwlink/?LinkId=69157"
+          }
+        ]
+      }
+    },
+    {
+      "export_id": "EXP-B",
+      "plugin_name": "user_assist",
+      "origin": "plugin",
+      "role": "supplemental",
+      "used_as_source": false,
+      "can_establish_identity": false,
+      "digest": "8d6e0f7887774f8b8c715ca4f976c89da3dd4f8fc9d2abc2dc3aa47b99a9ada3",
+      "entry_count": 62,
+      "last_write": null,
+      "error": null,
+      "sample": [
+        {
+          "name": "%PROGRAMDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Accessories\\Welcome Center.lnk",
+          "timestamp": "2012-04-03T22:06:58.124282+00:00",
+          "run_counter": 14,
+          "focus_count": 0,
+          "total_focus_time_ms": 14,
+          "session_id": 0
+        },
+        {
+          "name": "%PROGRAMDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Media Center.lnk",
+          "timestamp": "2012-04-03T22:06:58.124282+00:00",
+          "run_counter": 13,
+          "focus_count": 0,
+          "total_focus_time_ms": 13,
+          "session_id": 0
+        },
+        {
+          "name": "%PROGRAMDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Accessories\\Calculator.lnk",
+          "timestamp": "2012-04-03T22:06:58.124282+00:00",
+          "run_counter": 12,
+          "focus_count": 0,
+          "total_focus_time_ms": 12,
+          "session_id": 0
+        }
+      ]
+    },
+    {
+      "export_id": "EXP-C",
+      "plugin_name": "ntuser_persistence",
+      "origin": "plugin",
+      "role": "supplemental",
+      "used_as_source": false,
+      "can_establish_identity": false,
+      "digest": "9343f64663547af4a31add6824194dc9012f77c25c3a18f71d2ec72ef32ed3d7",
+      "entry_count": 1,
+      "last_write": null,
+      "error": null,
+      "sample": {
+        "\\Software\\Microsoft\\Windows\\CurrentVersion\\Run": {
+          "timestamp": "2022-05-23T08:44:40.434800+00:00",
+          "values": [
+            {
+              "name": "...",
+              "value": "...",
+              "value_type": "...",
+              "is_corrupted": "..."
+            },
+            {
+              "name": "...",
+              "value": "...",
+              "value_type": "...",
+              "is_corrupted": "..."
+            },
+            {
+              "name": "...",
+              "value": "...",
+              "value_type": "...",
+              "is_corrupted": "..."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "export_id": "EXP-C",
+      "plugin_name": "typed_paths",
+      "origin": "plugin",
+      "role": "supplemental",
+      "used_as_source": false,
+      "can_establish_identity": false,
+      "digest": "b51275913fb0424a39885f30053f26390710b3ceb9b5058b6f4cb3b66397eaad",
+      "entry_count": 2,
+      "last_write": "2022-04-28T16:15:49.810332+00:00",
+      "error": null,
+      "sample": {
+        "last_write": "2022-04-28T16:15:49.810332+00:00",
+        "entries": [
+          {
+            "url1": "C:\\Users\\tony\\Desktop\\offline\\Memory CTF\\vol2_output\\w3wp"
+          },
+          {
+            "url2": "C:\\Users\\tony\\Desktop\\offline\\Memory CTF\\vol2_output\\w3wp\\dumpFiles"
+          },
+          {
+            "url3": "C:\\Users\\tony\\Desktop\\offline\\Memory CTF\\vol2_output"
+          }
+        ]
+      }
+    },
+    {
+      "export_id": "EXP-C",
+      "plugin_name": "typed_urls",
+      "origin": "plugin",
+      "role": "supplemental",
+      "used_as_source": false,
+      "can_establish_identity": false,
+      "digest": "6a12bcdc69aa5f8a8b85086b26d4be4fe33fff10adfb16869dc3f32c98e41b4a",
+      "entry_count": 2,
+      "last_write": "2022-03-09T23:12:57.169676+00:00",
+      "error": null,
+      "sample": {
+        "last_write": "2022-03-09T23:12:57.169676+00:00",
+        "entries": [
+          {
+            "url1": "http://go.microsoft.com/fwlink/p/?LinkId=255141"
+          }
+        ]
+      }
+    },
+    {
+      "export_id": "EXP-C",
+      "plugin_name": "user_assist",
+      "origin": "plugin",
+      "role": "supplemental",
+      "used_as_source": false,
+      "can_establish_identity": false,
+      "digest": "f97309aa8de1dbe34078587fa98802102c9917ad52bed8324989cc3c6ef189a8",
+      "entry_count": 276,
+      "last_write": null,
+      "error": null,
+      "sample": [
+        {
+          "name": "UEME_CTLCUACount:ctor",
+          "timestamp": "1601-01-01T00:00:00+00:00",
+          "run_counter": 0,
+          "focus_count": 0,
+          "total_focus_time_ms": 0,
+          "session_id": 4294967295
+        },
+        {
+          "name": "%PROGRAMDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Accessories\\Snipping Tool.lnk",
+          "timestamp": "2022-02-14T13:07:03.118348+00:00",
+          "run_counter": 9,
+          "focus_count": 0,
+          "total_focus_time_ms": 9,
+          "session_id": 0
+        },
+        {
+          "name": "%PROGRAMDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Accessories\\Paint.lnk",
+          "timestamp": "2022-02-14T13:07:03.118348+00:00",
+          "run_counter": 7,
+          "focus_count": 0,
+          "total_focus_time_ms": 7,
+          "session_id": 0
+        }
+      ]
+    }
+  ],
+  "replacement": {
+    "export_id": "EXP-B",
+    "record_id": "volume",
+    "full_id": "EXP-B:volume",
+    "kind": "volume_identity",
+    "old_value": {
+      "volume_serial": "1A2B3C4D",
+      "disk_signature": "0xA1B2C3D4",
+      "disk_guid": "fixture-disk-01",
+      "volume_label": "FIXTURE-VOL-01",
+      "device_serial": null,
+      "image_sha256": null,
+      "origin": "caller",
+      "independently_verifiable": false,
+      "evidence_path": "acquisition manifest (fixture)",
+      "fixture": true,
+      "note": "Clone retains the source volume identity in this fixture.",
+      "fingerprint": "disk_guid=fixture-disk-01|disk_signature=0xa1b2c3d4|volume_serial=1a2b3c4d"
+    },
+    "new_value": {
+      "volume_serial": "DEADBEEF",
+      "disk_signature": "0xDEADBEEF",
+      "disk_guid": "fixture-disk-replaced",
+      "volume_label": "REPLACED",
+      "device_serial": null,
+      "image_sha256": null,
+      "origin": "caller",
+      "independently_verifiable": false,
+      "evidence_path": "acquisition manifest (fixture)",
+      "fixture": true,
+      "note": "Clone retains the source volume identity in this fixture.",
+      "fingerprint": "disk_guid=fixture-disk-replaced|disk_signature=0xdeadbeef|volume_serial=deadbeef"
+    },
+    "note": "Counterfactual: replace the clone volume identity record; show which associations depend on it.",
+    "verdict_before": "conflict",
+    "verdict_after": "conflict",
+    "invalidated_associations": [
+      {
+        "association_id": "link:volume:EXP-A:EXP-B",
+        "kind": "shared_volume_identity",
+        "status": "caller_asserted",
+        "exports": [
+          "EXP-A",
+          "EXP-B"
+        ],
+        "origin": "caller",
+        "role": "primary",
+        "depends_on": [
+          "EXP-A:volume",
+          "EXP-B:volume"
+        ],
+        "summary": "Exports report the same volume fingerprint. Volume identity groups artifacts; it does not prove a user.",
+        "evidence": {
+          "comparison": {
+            "comparable": true,
+            "match": true,
+            "status": "match",
+            "conflicts": [],
+            "matches": [
+              {
+                "field": "disk_guid",
+                "first": "fixture-disk-01",
+                "second": "fixture-disk-01"
+              },
+              {
+                "field": "disk_signature",
+                "first": "0xA1B2C3D4",
+                "second": "0xA1B2C3D4"
+              },
+              {
+                "field": "volume_serial",
+                "first": "1A2B3C4D",
+                "second": "1A2B3C4D"
+              }
+            ]
+          },
+          "verified": false
+        }
+      }
+    ],
+    "surviving_associations": [
+      {
+        "association_id": "divergence:plugin:EXP-A:EXP-B:ntuser-persistence",
+        "kind": "plugin_divergence",
+        "status": "supplemental",
+        "exports": [
+          "EXP-A",
+          "EXP-B"
+        ],
+        "origin": "plugin",
+        "role": "supplemental",
+        "depends_on": [
+          "EXP-A:plugin:ntuser-persistence",
+          "EXP-B:plugin:ntuser-persistence"
+        ],
+        "summary": "Plugin ntuser_persistence output differs. This is supplemental activity evidence, not an identity source.",
+        "evidence": {
+          "plugin": "ntuser_persistence",
+          "digest_first": "76b64ed36a5c30251c684ab3bcc98d26e22c609f27464b750613b7a60f949ecb",
+          "digest_second": "f73c3a8e8ff6a097fc4e3cba095e1895fb5e347f4c61d0bf7c3c6b503c1e3ce6"
+        }
+      },
+      {
+        "association_id": "divergence:plugin:EXP-A:EXP-C:ntuser-persistence",
+        "kind": "plugin_divergence",
+        "status": "supplemental",
+        "exports": [
+          "EXP-A",
+          "EXP-C"
+        ],
+        "origin": "plugin",
+        "role": "supplemental",
+        "depends_on": [
+          "EXP-A:plugin:ntuser-persistence",
+          "EXP-C:plugin:ntuser-persistence"
+        ],
+        "summary": "Plugin ntuser_persistence output differs. This is supplemental activity evidence, not an identity source.",
+        "evidence": {
+          "plugin": "ntuser_persistence",
+          "digest_first": "76b64ed36a5c30251c684ab3bcc98d26e22c609f27464b750613b7a60f949ecb",
+          "digest_second": "9343f64663547af4a31add6824194dc9012f77c25c3a18f71d2ec72ef32ed3d7"
+        }
+      },
+      {
+        "association_id": "divergence:plugin:EXP-A:EXP-C:typed-paths",
+        "kind": "plugin_divergence",
+        "status": "supplemental",
+        "exports": [
+          "EXP-A",
+          "EXP-C"
+        ],
+        "origin": "plugin",
+        "role": "supplemental",
+        "depends_on": [
+          "EXP-A:plugin:typed-paths",
+          "EXP-C:plugin:typed-paths"
+        ],
+        "summary": "Plugin typed_paths output differs. This is supplemental activity evidence, not an identity source.",
+        "evidence": {
+          "plugin": "typed_paths",
+          "digest_first": "0dccf74067c2fbe6d143463b399f07bf74cbe0f6765f3cdc3f2670cc5499e520",
+          "digest_second": "b51275913fb0424a39885f30053f26390710b3ceb9b5058b6f4cb3b66397eaad"
+        }
+      },
+      {
+        "association_id": "divergence:plugin:EXP-A:EXP-C:typed-urls",
+        "kind": "plugin_divergence",
+        "status": "supplemental",
+        "exports": [
+          "EXP-A",
+          "EXP-C"
+        ],
+        "origin": "plugin",
+        "role": "supplemental",
+        "depends_on": [
+          "EXP-A:plugin:typed-urls",
+          "EXP-C:plugin:typed-urls"
+        ],
+        "summary": "Plugin typed_urls output differs. This is supplemental activity evidence, not an identity source.",
+        "evidence": {
+          "plugin": "typed_urls",
+          "digest_first": "7e8c6dc6da654f2a88b6ec068f2f770b31ed20316910e98901c8b40009bbc262",
+          "digest_second": "6a12bcdc69aa5f8a8b85086b26d4be4fe33fff10adfb16869dc3f32c98e41b4a"
+        }
+      },
+      {
+        "association_id": "divergence:plugin:EXP-A:EXP-C:user-assist",
+        "kind": "plugin_divergence",
+        "status": "supplemental",
+        "exports": [
+          "EXP-A",
+          "EXP-C"
+        ],
+        "origin": "plugin",
+        "role": "supplemental",
+        "depends_on": [
+          "EXP-A:plugin:user-assist",
+          "EXP-C:plugin:user-assist"
+        ],
+        "summary": "Plugin user_assist output differs. This is supplemental activity evidence, not an identity source.",
+        "evidence": {
+          "plugin": "user_assist",
+          "digest_first": "8d6e0f7887774f8b8c715ca4f976c89da3dd4f8fc9d2abc2dc3aa47b99a9ada3",
+          "digest_second": "f97309aa8de1dbe34078587fa98802102c9917ad52bed8324989cc3c6ef189a8"
+        }
+      },
+      {
+        "association_id": "divergence:plugin:EXP-B:EXP-C:ntuser-persistence",
+        "kind": "plugin_divergence",
+        "status": "supplemental",
+        "exports": [
+          "EXP-B",
+          "EXP-C"
+        ],
+        "origin": "plugin",
+        "role": "supplemental",
+        "depends_on": [
+          "EXP-B:plugin:ntuser-persistence",
+          "EXP-C:plugin:ntuser-persistence"
+        ],
+        "summary": "Plugin ntuser_persistence output differs. This is supplemental activity evidence, not an identity source.",
+        "evidence": {
+          "plugin": "ntuser_persistence",
+          "digest_first": "f73c3a8e8ff6a097fc4e3cba095e1895fb5e347f4c61d0bf7c3c6b503c1e3ce6",
+          "digest_second": "9343f64663547af4a31add6824194dc9012f77c25c3a18f71d2ec72ef32ed3d7"
+        }
+      },
+      {
+        "association_id": "divergence:plugin:EXP-B:EXP-C:typed-paths",
+        "kind": "plugin_divergence",
+        "status": "supplemental",
+        "exports": [
+          "EXP-B",
+          "EXP-C"
+        ],
+        "origin": "plugin",
+        "role": "supplemental",
+        "depends_on": [
+          "EXP-B:plugin:typed-paths",
+          "EXP-C:plugin:typed-paths"
+        ],
+        "summary": "Plugin typed_paths output differs. This is supplemental activity evidence, not an identity source.",
+        "evidence": {
+          "plugin": "typed_paths",
+          "digest_first": "0dccf74067c2fbe6d143463b399f07bf74cbe0f6765f3cdc3f2670cc5499e520",
+          "digest_second": "b51275913fb0424a39885f30053f26390710b3ceb9b5058b6f4cb3b66397eaad"
+        }
+      },
+      {
+        "association_id": "divergence:plugin:EXP-B:EXP-C:typed-urls",
+        "kind": "plugin_divergence",
+        "status": "supplemental",
+        "exports": [
+          "EXP-B",
+          "EXP-C"
+        ],
+        "origin": "plugin",
+        "role": "supplemental",
+        "depends_on": [
+          "EXP-B:plugin:typed-urls",
+          "EXP-C:plugin:typed-urls"
+        ],
+        "summary": "Plugin typed_urls output differs. This is supplemental activity evidence, not an identity source.",
+        "evidence": {
+          "plugin": "typed_urls",
+          "digest_first": "7e8c6dc6da654f2a88b6ec068f2f770b31ed20316910e98901c8b40009bbc262",
+          "digest_second": "6a12bcdc69aa5f8a8b85086b26d4be4fe33fff10adfb16869dc3f32c98e41b4a"
+        }
+      },
+      {
+        "association_id": "divergence:plugin:EXP-B:EXP-C:user-assist",
+        "kind": "plugin_divergence",
+        "status": "supplemental",
+        "exports": [
+          "EXP-B",
+          "EXP-C"
+        ],
+        "origin": "plugin",
+        "role": "supplemental",
+        "depends_on": [
+          "EXP-B:plugin:user-assist",
+          "EXP-C:plugin:user-assist"
+        ],
+        "summary": "Plugin user_assist output differs. This is supplemental activity evidence, not an identity source.",
+        "evidence": {
+          "plugin": "user_assist",
+          "digest_first": "8d6e0f7887774f8b8c715ca4f976c89da3dd4f8fc9d2abc2dc3aa47b99a9ada3",
+          "digest_second": "f97309aa8de1dbe34078587fa98802102c9917ad52bed8324989cc3c6ef189a8"
+        }
+      },
+      {
+        "association_id": "link:anchor:EXP-A:EXP-B:control-panel-desktop",
+        "kind": "content_anchor_match",
+        "status": "valid",
+        "exports": [
+          "EXP-A",
+          "EXP-B"
+        ],
+        "origin": "hive",
+        "role": "primary",
+        "depends_on": [
+          "EXP-A:anchor:control-panel-desktop",
+          "EXP-B:anchor:control-panel-desktop"
+        ],
+        "summary": "Identical key path and timestamp with identical value digest. This is content identity, not subject identity.",
+        "evidence": {
+          "path": "\\Control Panel\\Desktop",
+          "timestamp": "2012-04-04T14:45:43.953750+00:00",
+          "value_digest": "be12f4ab4760d1097a47ef0c5e4a938003b784a430a6c494d51601ce9fb83a2e",
+          "clone_related": true
+        }
+      },
+      {
+        "association_id": "link:anchor:EXP-A:EXP-B:software-microsoft-windows-currentversion-explor-01234040",
+        "kind": "content_anchor_match",
+        "status": "valid",
+        "exports": [
+          "EXP-A",
+          "EXP-B"
+        ],
+        "origin": "hive",
+        "role": "primary",
+        "depends_on": [
+          "EXP-A:anchor:software-microsoft-windows-currentversion-explor-01234040",
+          "EXP-B:anchor:software-microsoft-windows-currentversion-explor-01234040"
+        ],
+        "summary": "Identical key path and timestamp with identical value digest. This is content identity, not subject identity.",
+        "evidence": {
+          "path": "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+          "timestamp": "2012-04-03T22:08:47.836010+00:00",
+          "value_digest": "d9227af67ff209c8773328541a1a9845bb5cecfe65cbb35e587ac984b413d2db",
+          "clone_related": true
+        }
+      },
+      {
+        "association_id": "link:anchor:EXP-A:EXP-B:software-microsoft-windows-currentversion-explor-61e9f7e0",
+        "kind": "content_anchor_match",
+        "status": "valid",
+        "exports": [
+          "EXP-A",
+          "EXP-B"
+        ],
+        "origin": "hive",
+        "role": "primary",
+        "depends_on": [
+          "EXP-A:anchor:software-microsoft-windows-currentversion-explor-61e9f7e0",
+          "EXP-B:anchor:software-microsoft-windows-currentversion-explor-61e9f7e0"
+        ],
+        "summary": "Identical key path and timestamp with identical value digest. This is content identity, not subject identity.",
+        "evidence": {
+          "path": "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\RunMRU",
+          "timestamp": "2012-04-04T15:35:08.895090+00:00",
+          "value_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "clone_related": true
+        }
+      },
+      {
+        "association_id": "link:anchor:EXP-A:EXP-B:software-microsoft-windows-currentversion-explor-8a5a6b63",
+        "kind": "content_anchor_match",
+        "status": "valid",
+        "exports": [
+          "EXP-A",
+          "EXP-B"
+        ],
+        "origin": "hive",
+        "role": "primary",
+        "depends_on": [
+          "EXP-A:anchor:software-microsoft-windows-currentversion-explor-8a5a6b63",
+          "EXP-B:anchor:software-microsoft-windows-currentversion-explor-8a5a6b63"
+        ],
+        "summary": "Identical key path and timestamp with identical value digest. This is content identity, not subject identity.",
+        "evidence": {
+          "path": "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders",
+          "timestamp": "2012-04-03T21:19:54.836740+00:00",
+          "value_digest": "b6afb640d145b2c49c9c25bf015dbbb206bccc85dc467d2a223181cdf67f148d",
+          "clone_related": true
+        }
+      },
+      {
+        "association_id": "link:anchor:EXP-A:EXP-B:software-microsoft-windows-currentversion-explor-9b63e800",
+        "kind": "content_anchor_match",
+        "status": "valid",
+        "exports": [
+          "EXP-A",
+          "EXP-B"
+        ],
+        "origin": "hive",
+        "role": "primary",
+        "depends_on": [
+          "EXP-A:anchor:software-microsoft-windows-currentversion-explor-9b63e800",
+          "EXP-B:anchor:software-microsoft-windows-currentversion-explor-9b63e800"
+        ],
+        "summary": "Identical key path and timestamp with identical value digest. This is content identity, not subject identity.",
+        "evidence": {
+          "path": "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\TypedPaths",
+          "timestamp": "2012-04-04T15:35:08.895090+00:00",
+          "value_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "clone_related": true
+        }
+      },
+      {
+        "association_id": "link:anchor:EXP-A:EXP-B:software-microsoft-windows-currentversion-explor-aea6d0a2",
+        "kind": "content_anchor_match",
+        "status": "valid",
+        "exports": [
+          "EXP-A",
+          "EXP-B"
+        ],
+        "origin": "hive",
+        "role": "primary",
+        "depends_on": [
+          "EXP-A:anchor:software-microsoft-windows-currentversion-explor-aea6d0a2",
+          "EXP-B:anchor:software-microsoft-windows-currentversion-explor-aea6d0a2"
+        ],
+        "summary": "Identical key path and timestamp with identical value digest. This is content identity, not subject identity.",
+        "evidence": {
+          "path": "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
+          "timestamp": "2012-04-03T22:08:40.416558+00:00",
+          "value_digest": "b29f4e098176a431294cbec1a48a6a6f02049b07ea614a5b3858ba2ddacbb3e1",
+          "clone_related": true
+        }
+      },
+      {
+        "association_id": "link:clone:EXP-A:EXP-B",
+        "kind": "clone_or_copy",
+        "status": "valid",
+        "exports": [
+          "EXP-A",
+          "EXP-B"
+        ],
+        "origin": "caller",
+        "role": "primary",
+        "depends_on": [
+          "EXP-A:source",
+          "EXP-B:source"
+        ],
+        "summary": "Clone or copy lineage declared by sampling source or inferred from shared hive identity and anchors.",
+        "evidence": {
+          "declared": true
+        }
+      },
+      {
+        "association_id": "link:hive_identity:EXP-A:EXP-B",
+        "kind": "shared_hive_identity",
+        "status": "valid",
+        "exports": [
+          "EXP-A",
+          "EXP-B"
+        ],
+        "origin": "hive",
+        "role": "primary",
+        "depends_on": [
+          "EXP-A:hive_identity",
+          "EXP-B:hive_identity"
+        ],
+        "summary": "Exports share the registry-internal hive creation identity.",
+        "evidence": {
+          "identity": "guid:{6a1c4018-979d-4291-a7dc-7aed1c75b67c}"
+        }
+      },
+      {
+        "association_id": "link:name:EXP-A:EXP-B:account-name-vibranium",
+        "kind": "shared_name_node",
+        "status": "valid",
+        "exports": [
+          "EXP-A",
+          "EXP-B"
+        ],
+        "origin": "hive",
+        "role": "primary",
+        "depends_on": [
+          "EXP-A:profile:c-users-vibranium",
+          "EXP-B:profile:c-users-vibranium"
+        ],
+        "summary": "Both exports independently resolve account_name='vibranium'.",
+        "evidence": {
+          "node_type": "account_name",
+          "node_value": "vibranium",
+          "clone_related": true
+        }
+      },
+      {
+        "association_id": "link:name:EXP-A:EXP-B:profile-path-c-users-vibranium",
+        "kind": "shared_name_node",
+        "status": "valid",
+        "exports": [
+          "EXP-A",
+          "EXP-B"
+        ],
+        "origin": "hive",
+        "role": "primary",
+        "depends_on": [
+          "EXP-A:profile:c-users-vibranium",
+          "EXP-B:profile:c-users-vibranium"
+        ],
+        "summary": "Both exports independently resolve profile_path='c:\\\\users\\\\vibranium'.",
+        "evidence": {
+          "node_type": "profile_path",
+          "node_value": "c:\\users\\vibranium",
+          "clone_related": true
+        }
+      },
+      {
+        "association_id": "link:plugin:EXP-A:EXP-B:typed-paths",
+        "kind": "plugin_corroboration",
+        "status": "supplemental",
+        "exports": [
+          "EXP-A",
+          "EXP-B"
+        ],
+        "origin": "plugin",
+        "role": "supplemental",
+        "depends_on": [
+          "EXP-A:plugin:typed-paths",
+          "EXP-B:plugin:typed-paths"
+        ],
+        "summary": "Plugin typed_paths output digest matches. Supplemental only; it cannot establish identity.",
+        "evidence": {
+          "plugin": "typed_paths",
+          "digest": "0dccf74067c2fbe6d143463b399f07bf74cbe0f6765f3cdc3f2670cc5499e520"
+        }
+      },
+      {
+        "association_id": "link:plugin:EXP-A:EXP-B:typed-urls",
+        "kind": "plugin_corroboration",
+        "status": "supplemental",
+        "exports": [
+          "EXP-A",
+          "EXP-B"
+        ],
+        "origin": "plugin",
+        "role": "supplemental",
+        "depends_on": [
+          "EXP-A:plugin:typed-urls",
+          "EXP-B:plugin:typed-urls"
+        ],
+        "summary": "Plugin typed_urls output digest matches. Supplemental only; it cannot establish identity.",
+        "evidence": {
+          "plugin": "typed_urls",
+          "digest": "7e8c6dc6da654f2a88b6ec068f2f770b31ed20316910e98901c8b40009bbc262"
+        }
+      },
+      {
+        "association_id": "link:plugin:EXP-A:EXP-B:user-assist",
+        "kind": "plugin_corroboration",
+        "status": "supplemental",
+        "exports": [
+          "EXP-A",
+          "EXP-B"
+        ],
+        "origin": "plugin",
+        "role": "supplemental",
+        "depends_on": [
+          "EXP-A:plugin:user-assist",
+          "EXP-B:plugin:user-assist"
+        ],
+        "summary": "Plugin user_assist output digest matches. Supplemental only; it cannot establish identity.",
+        "evidence": {
+          "plugin": "user_assist",
+          "digest": "8d6e0f7887774f8b8c715ca4f976c89da3dd4f8fc9d2abc2dc3aa47b99a9ada3"
+        }
+      },
+      {
+        "association_id": "link:source:EXP-A:EXP-B",
+        "kind": "shared_lineage",
+        "status": "valid",
+        "exports": [
+          "EXP-A",
+          "EXP-B"
+        ],
+        "origin": "caller",
+        "role": "primary",
+        "depends_on": [
+          "EXP-A:source",
+          "EXP-B:source"
+        ],
+        "summary": "Exports share one acquisition lineage; repeated observations are not independent.",
+        "evidence": {
+          "lineage_root": "EXP-B"
+        }
+      },
+      {
+        "association_id": "plugin:supplemental:EXP-A:ntuser-persistence",
+        "kind": "plugin_supplemental",
+        "status": "supplemental",
+        "exports": [
+          "EXP-A"
+        ],
+        "origin": "plugin",
+        "role": "supplemental",
+        "depends_on": [
+          "EXP-A:plugin:ntuser-persistence"
+        ],
+        "summary": "Plugin-derived value retained as supplemental evidence only; it is not an original source.",
+        "evidence": {
+          "plugin_name": "ntuser_persistence",
+          "digest": "76b64ed36a5c30251c684ab3bcc98d26e22c609f27464b750613b7a60f949ecb",
+          "error": null
+        }
+      },
+      {
+        "association_id": "plugin:supplemental:EXP-A:typed-paths",
+        "kind": "plugin_supplemental",
+        "status": "supplemental",
+        "exports": [
+          "EXP-A"
+        ],
+        "origin": "plugin",
+        "role": "supplemental",
+        "depends_on": [
+          "EXP-A:plugin:typed-paths"
+        ],
+        "summary": "Plugin-derived value retained as supplemental evidence only; it is not an original source.",
+        "evidence": {
+          "plugin_name": "typed_paths",
+          "digest": "0dccf74067c2fbe6d143463b399f07bf74cbe0f6765f3cdc3f2670cc5499e520",
+          "error": null
+        }
+      },
+      {
+        "association_id": "plugin:supplemental:EXP-A:typed-urls",
+        "kind": "plugin_supplemental",
+        "status": "supplemental",
+        "exports": [
+          "EXP-A"
+        ],
+        "origin": "plugin",
+        "role": "supplemental",
+        "depends_on": [
+          "EXP-A:plugin:typed-urls"
+        ],
+        "summary": "Plugin-derived value retained as supplemental evidence only; it is not an original source.",
+        "evidence": {
+          "plugin_name": "typed_urls",
+          "digest": "7e8c6dc6da654f2a88b6ec068f2f770b31ed20316910e98901c8b40009bbc262",
+          "error": null
+        }
+      },
+      {
+        "association_id": "plugin:supplemental:EXP-A:user-assist",
+        "kind": "plugin_supplemental",
+        "status": "supplemental",
+        "exports": [
+          "EXP-A"
+        ],
+        "origin": "plugin",
+        "role": "supplemental",
+        "depends_on": [
+          "EXP-A:plugin:user-assist"
+        ],
+        "summary": "Plugin-derived value retained as supplemental evidence only; it is not an original source.",
+        "evidence": {
+          "plugin_name": "user_assist",
+          "digest": "8d6e0f7887774f8b8c715ca4f976c89da3dd4f8fc9d2abc2dc3aa47b99a9ada3",
+          "error": null
+        }
+      },
+      {
+        "association_id": "plugin:supplemental:EXP-B:ntuser-persistence",
+        "kind": "plugin_supplemental",
+        "status": "supplemental",
+        "exports": [
+          "EXP-B"
+        ],
+        "origin": "plugin",
+        "role": "supplemental",
+        "depends_on": [
+          "EXP-B:plugin:ntuser-persistence"
+        ],
+        "summary": "Plugin-derived value retained as supplemental evidence only; it is not an original source.",
+        "evidence": {
+          "plugin_name": "ntuser_persistence",
+          "digest": "f73c3a8e8ff6a097fc4e3cba095e1895fb5e347f4c61d0bf7c3c6b503c1e3ce6",
+          "error": null
+        }
+      },
+      {
+        "association_id": "plugin:supplemental:EXP-B:typed-paths",
+        "kind": "plugin_supplemental",
+        "status": "supplemental",
+        "exports": [
+          "EXP-B"
+        ],
+        "origin": "plugin",
+        "role": "supplemental",
+        "depends_on": [
+          "EXP-B:plugin:typed-paths"
+        ],
+        "summary": "Plugin-derived value retained as supplemental evidence only; it is not an original source.",
+        "evidence": {
+          "plugin_name": "typed_paths",
+          "digest": "0dccf74067c2fbe6d143463b399f07bf74cbe0f6765f3cdc3f2670cc5499e520",
+          "error": null
+        }
+      },
+      {
+        "association_id": "plugin:supplemental:EXP-B:typed-urls",
+        "kind": "plugin_supplemental",
+        "status": "supplemental",
+        "exports": [
+          "EXP-B"
+        ],
+        "origin": "plugin",
+        "role": "supplemental",
+        "depends_on": [
+          "EXP-B:plugin:typed-urls"
+        ],
+        "summary": "Plugin-derived value retained as supplemental evidence only; it is not an original source.",
+        "evidence": {
+          "plugin_name": "typed_urls",
+          "digest": "7e8c6dc6da654f2a88b6ec068f2f770b31ed20316910e98901c8b40009bbc262",
+          "error": null
+        }
+      },
+      {
+        "association_id": "plugin:supplemental:EXP-B:user-assist",
+        "kind": "plugin_supplemental",
+        "status": "supplemental",
+        "exports": [
+          "EXP-B"
+        ],
+        "origin": "plugin",
+        "role": "supplemental",
+        "depends_on": [
+          "EXP-B:plugin:user-assist"
+        ],
+        "summary": "Plugin-derived value retained as supplemental evidence only; it is not an original source.",
+        "evidence": {
+          "plugin_name": "user_assist",
+          "digest": "8d6e0f7887774f8b8c715ca4f976c89da3dd4f8fc9d2abc2dc3aa47b99a9ada3",
+          "error": null
+        }
+      },
+      {
+        "association_id": "plugin:supplemental:EXP-C:ntuser-persistence",
+        "kind": "plugin_supplemental",
+        "status": "supplemental",
+        "exports": [
+          "EXP-C"
+        ],
+        "origin": "plugin",
+        "role": "supplemental",
+        "depends_on": [
+          "EXP-C:plugin:ntuser-persistence"
+        ],
+        "summary": "Plugin-derived value retained as supplemental evidence only; it is not an original source.",
+        "evidence": {
+          "plugin_name": "ntuser_persistence",
+          "digest": "9343f64663547af4a31add6824194dc9012f77c25c3a18f71d2ec72ef32ed3d7",
+          "error": null
+        }
+      },
+      {
+        "association_id": "plugin:supplemental:EXP-C:typed-paths",
+        "kind": "plugin_supplemental",
+        "status": "supplemental",
+        "exports": [
+          "EXP-C"
+        ],
+        "origin": "plugin",
+        "role": "supplemental",
+        "depends_on": [
+          "EXP-C:plugin:typed-paths"
+        ],
+        "summary": "Plugin-derived value retained as supplemental evidence only; it is not an original source.",
+        "evidence": {
+          "plugin_name": "typed_paths",
+          "digest": "b51275913fb0424a39885f30053f26390710b3ceb9b5058b6f4cb3b66397eaad",
+          "error": null
+        }
+      },
+      {
+        "association_id": "plugin:supplemental:EXP-C:typed-urls",
+        "kind": "plugin_supplemental",
+        "status": "supplemental",
+        "exports": [
+          "EXP-C"
+        ],
+        "origin": "plugin",
+        "role": "supplemental",
+        "depends_on": [
+          "EXP-C:plugin:typed-urls"
+        ],
+        "summary": "Plugin-derived value retained as supplemental evidence only; it is not an original source.",
+        "evidence": {
+          "plugin_name": "typed_urls",
+          "digest": "6a12bcdc69aa5f8a8b85086b26d4be4fe33fff10adfb16869dc3f32c98e41b4a",
+          "error": null
+        }
+      },
+      {
+        "association_id": "plugin:supplemental:EXP-C:user-assist",
+        "kind": "plugin_supplemental",
+        "status": "supplemental",
+        "exports": [
+          "EXP-C"
+        ],
+        "origin": "plugin",
+        "role": "supplemental",
+        "depends_on": [
+          "EXP-C:plugin:user-assist"
+        ],
+        "summary": "Plugin-derived value retained as supplemental evidence only; it is not an original source.",
+        "evidence": {
+          "plugin_name": "user_assist",
+          "digest": "f97309aa8de1dbe34078587fa98802102c9917ad52bed8324989cc3c6ef189a8",
+          "error": null
+        }
+      }
+    ],
+    "added_associations": [],
+    "resolved_conflicts": [],
+    "invalidated_association_ids": [
+      "link:volume:EXP-A:EXP-B"
+    ],
+    "surviving_association_ids": [
+      "divergence:plugin:EXP-A:EXP-B:ntuser-persistence",
+      "divergence:plugin:EXP-A:EXP-C:ntuser-persistence",
+      "divergence:plugin:EXP-A:EXP-C:typed-paths",
+      "divergence:plugin:EXP-A:EXP-C:typed-urls",
+      "divergence:plugin:EXP-A:EXP-C:user-assist",
+      "divergence:plugin:EXP-B:EXP-C:ntuser-persistence",
+      "divergence:plugin:EXP-B:EXP-C:typed-paths",
+      "divergence:plugin:EXP-B:EXP-C:typed-urls",
+      "divergence:plugin:EXP-B:EXP-C:user-assist",
+      "link:anchor:EXP-A:EXP-B:control-panel-desktop",
+      "link:anchor:EXP-A:EXP-B:software-microsoft-windows-currentversion-explor-01234040",
+      "link:anchor:EXP-A:EXP-B:software-microsoft-windows-currentversion-explor-61e9f7e0",
+      "link:anchor:EXP-A:EXP-B:software-microsoft-windows-currentversion-explor-8a5a6b63",
+      "link:anchor:EXP-A:EXP-B:software-microsoft-windows-currentversion-explor-9b63e800",
+      "link:anchor:EXP-A:EXP-B:software-microsoft-windows-currentversion-explor-aea6d0a2",
+      "link:clone:EXP-A:EXP-B",
+      "link:hive_identity:EXP-A:EXP-B",
+      "link:name:EXP-A:EXP-B:account-name-vibranium",
+      "link:name:EXP-A:EXP-B:profile-path-c-users-vibranium",
+      "link:plugin:EXP-A:EXP-B:typed-paths",
+      "link:plugin:EXP-A:EXP-B:typed-urls",
+      "link:plugin:EXP-A:EXP-B:user-assist",
+      "link:source:EXP-A:EXP-B",
+      "plugin:supplemental:EXP-A:ntuser-persistence",
+      "plugin:supplemental:EXP-A:typed-paths",
+      "plugin:supplemental:EXP-A:typed-urls",
+      "plugin:supplemental:EXP-A:user-assist",
+      "plugin:supplemental:EXP-B:ntuser-persistence",
+      "plugin:supplemental:EXP-B:typed-paths",
+      "plugin:supplemental:EXP-B:typed-urls",
+      "plugin:supplemental:EXP-B:user-assist",
+      "plugin:supplemental:EXP-C:ntuser-persistence",
+      "plugin:supplemental:EXP-C:typed-paths",
+      "plugin:supplemental:EXP-C:typed-urls",
+      "plugin:supplemental:EXP-C:user-assist"
+    ],
+    "pairwise_changes": []
+  }
+}

@@ -170,6 +170,39 @@ Example output:
 [2019-02-11 19:49:18.825328] INFO: regipy.cli: Detected 2 differences
 ```
 
+#### Corroborate identity across registry exports
+
+`regipy-corroborate` performs an offline, provenance-aware identity review
+across several exports. It combines caller-registered sampling sources,
+caller-registered volume identities, and name associations that regipy checks
+against the hive itself. The result is exactly one of `same_subject`,
+`missing_evidence`, or `conflict`.
+
+```bash
+regipy-corroborate examples/corroboration/three_ntuser_case.json \
+  -o examples/corroboration/three_ntuser_review.json \
+  --markdown examples/corroboration/three_ntuser_review.md
+```
+
+Identical key paths and timestamps are reported as content anchors, not as
+subject identity. Cloned or derivative exports collapse into one lineage, so
+their repeated content cannot corroborate the same subject twice. Plugin
+output is retained as supplemental evidence and is never treated as an
+original source.
+
+The reviewer can also replace one identity record and report which
+associations become invalid:
+
+```bash
+regipy-corroborate examples/corroboration/three_ntuser_case.json \
+  --replace-export EXP-B --replace-record volume \
+  --replace-value "{\"volume_serial\":\"DEADBEEF\",\"disk_signature\":\"0xDEADBEEF\"}" \
+  -o examples/corroboration/clone_volume_replacement.json
+```
+
+See [docs/CORROBORATION.md](docs/CORROBORATION.md) for the manifest schema,
+verdict rules, and the example internal review result.
+
 ## Recover a registry hive, using transaction logs
 
 ```bash

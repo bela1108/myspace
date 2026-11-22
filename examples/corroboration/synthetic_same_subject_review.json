@@ -1,0 +1,237 @@
+{
+  "tool": {
+    "name": "regipy-corroboration",
+    "version": "1.0"
+  },
+  "classification": "internal_review_fixture",
+  "case_id": "SYNTHETIC-SAME-SUBJECT-FIXTURE",
+  "claim": "Two independent synthetic exports resolve to the same account.",
+  "verdict": "same_subject",
+  "rationale": [
+    "At least two independent export lineages resolve the same subject name nodes.",
+    "No identity or integrity conflict was found.",
+    "SYN-A vs SYN-B: same_subject - Independent exports resolve shared name nodes to the same values."
+  ],
+  "notes": "Synthetic, non-evidentiary example used to show the same_subject branch of the reviewer. It carries no hive file and no real acquisition metadata.",
+  "generated_at": "2026-11-22T00:00:00+08:00",
+  "provenance": {
+    "plugin_values_are_supplemental": true,
+    "plugin_values_used_as_original_source": false,
+    "plugin_values_can_establish_identity": false,
+    "caller_metadata_is_asserted_not_forensically_verified": true,
+    "content_anchor_identity_is_not_subject_identity": true,
+    "clone_content_is_not_independent_corroboration": true,
+    "independence_rule": "Exports sharing a declared derivative chain, an image hash or an acquisition id are treated as one lineage.",
+    "verification_rule": "A caller name association becomes primary only when it is independently verifiable and verified against the cited hive value."
+  },
+  "exports": [
+    {
+      "export_id": "SYN-A",
+      "hive_path": null,
+      "hive_type": "ntuser",
+      "materialize_error": null,
+      "source": {
+        "source_id": "SYN-SRC-A",
+        "acquisition_id": "SYN-ACQ-A",
+        "collected_from": "synthetic source A",
+        "collected_at": null,
+        "collector": null,
+        "image_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "derived_from": null,
+        "notes": null
+      },
+      "volume": {
+        "volume_serial": "SYN-VOL-A",
+        "disk_signature": "0xAAAA1111",
+        "disk_guid": null,
+        "volume_label": null,
+        "device_serial": null,
+        "image_sha256": null,
+        "origin": "caller",
+        "independently_verifiable": false,
+        "evidence_path": null,
+        "fixture": true,
+        "note": null,
+        "fingerprint": "disk_signature=0xaaaa1111|volume_serial=syn-vol-a"
+      },
+      "volume_fingerprint": "disk_signature=0xaaaa1111|volume_serial=syn-vol-a",
+      "hive_identity": null,
+      "hive_header": null,
+      "lineage_root": "SYN-A",
+      "independent_lineage_count": 2,
+      "name_association_counts": {
+        "primary": 1,
+        "supplemental": 0,
+        "verified": 1
+      },
+      "content_anchor_count": 0,
+      "plugin_observation_count": 0,
+      "is_clone_of": []
+    },
+    {
+      "export_id": "SYN-B",
+      "hive_path": null,
+      "hive_type": "ntuser",
+      "materialize_error": null,
+      "source": {
+        "source_id": "SYN-SRC-B",
+        "acquisition_id": "SYN-ACQ-B",
+        "collected_from": "synthetic source B",
+        "collected_at": null,
+        "collector": null,
+        "image_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "derived_from": null,
+        "notes": null
+      },
+      "volume": {
+        "volume_serial": "SYN-VOL-B",
+        "disk_signature": "0xBBBB2222",
+        "disk_guid": null,
+        "volume_label": null,
+        "device_serial": null,
+        "image_sha256": null,
+        "origin": "caller",
+        "independently_verifiable": false,
+        "evidence_path": null,
+        "fixture": true,
+        "note": null,
+        "fingerprint": "disk_signature=0xbbbb2222|volume_serial=syn-vol-b"
+      },
+      "volume_fingerprint": "disk_signature=0xbbbb2222|volume_serial=syn-vol-b",
+      "hive_identity": null,
+      "hive_header": null,
+      "lineage_root": "SYN-B",
+      "independent_lineage_count": 2,
+      "name_association_counts": {
+        "primary": 1,
+        "supplemental": 0,
+        "verified": 1
+      },
+      "content_anchor_count": 0,
+      "plugin_observation_count": 0,
+      "is_clone_of": []
+    }
+  ],
+  "pairwise": [
+    {
+      "pair_id": "SYN-A|SYN-B",
+      "exports": [
+        "SYN-A",
+        "SYN-B"
+      ],
+      "verdict": "same_subject",
+      "reasons": [
+        "Independent exports resolve shared name nodes to the same values."
+      ],
+      "independent": true,
+      "clone_related": false,
+      "shared_lineage": false,
+      "lineage_roots": [
+        "SYN-A",
+        "SYN-B"
+      ],
+      "shared_volume": false,
+      "volume_conflict": false,
+      "volume_comparison": {
+        "comparable": true,
+        "match": false,
+        "status": "different",
+        "conflicts": [
+          {
+            "field": "disk_signature",
+            "first": "0xAAAA1111",
+            "second": "0xBBBB2222"
+          },
+          {
+            "field": "volume_serial",
+            "first": "SYN-VOL-A",
+            "second": "SYN-VOL-B"
+          }
+        ],
+        "matches": []
+      },
+      "volume_status": "different",
+      "shared_hive_identity": false,
+      "identical_anchor_count": 0,
+      "comparable_anchor_count": 0,
+      "identical_anchor_ratio": 0.0,
+      "identical_anchor_examples": [],
+      "content_conflicts": [],
+      "content_drift": [],
+      "shared_name_nodes": [
+        {
+          "type": "account_name",
+          "value": "caseuser"
+        },
+        {
+          "type": "profile_path",
+          "value": "c:\\users\\caseuser"
+        }
+      ],
+      "comparable_name_types": [
+        "account_name",
+        "profile_path"
+      ],
+      "different_name_values": {},
+      "plugin_matches": [],
+      "plugin_divergences": [],
+      "depends_on": [
+        "SYN-A:name:0",
+        "SYN-A:source",
+        "SYN-A:volume",
+        "SYN-B:name:0",
+        "SYN-B:source",
+        "SYN-B:volume"
+      ]
+    }
+  ],
+  "associations": [
+    {
+      "association_id": "link:name:SYN-A:SYN-B:account-name-caseuser",
+      "kind": "shared_name_node",
+      "status": "valid",
+      "exports": [
+        "SYN-A",
+        "SYN-B"
+      ],
+      "origin": "caller",
+      "role": "primary",
+      "depends_on": [
+        "SYN-A:name:0",
+        "SYN-B:name:0"
+      ],
+      "summary": "Both exports independently resolve account_name='caseuser'.",
+      "evidence": {
+        "node_type": "account_name",
+        "node_value": "caseuser",
+        "clone_related": false
+      }
+    },
+    {
+      "association_id": "link:name:SYN-A:SYN-B:profile-path-c-users-caseuser",
+      "kind": "shared_name_node",
+      "status": "valid",
+      "exports": [
+        "SYN-A",
+        "SYN-B"
+      ],
+      "origin": "caller",
+      "role": "primary",
+      "depends_on": [
+        "SYN-A:name:0",
+        "SYN-B:name:0"
+      ],
+      "summary": "Both exports independently resolve profile_path='c:\\\\users\\\\caseuser'.",
+      "evidence": {
+        "node_type": "profile_path",
+        "node_value": "c:\\users\\caseuser",
+        "clone_related": false
+      }
+    }
+  ],
+  "conflicts": [],
+  "missing_evidence": [],
+  "anchors": [],
+  "plugin_evidence": [],
+  "replacement": null
+}
