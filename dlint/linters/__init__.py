@@ -8,6 +8,7 @@ from __future__ import (
 from . import base  # noqa F401
 from . import helpers  # noqa F401
 
+from .bad_async_security_check import BadAsyncSecurityCheckLinter
 from .bad_commands_use import BadCommandsUseLinter
 from .bad_compile_use import BadCompileUseLinter
 from .bad_cryptography_module_attribute_use import BadCryptographyModuleAttributeUseLinter
@@ -49,6 +50,7 @@ from .twisted.returnvalue_in_inlinecallbacks import ReturnValueInInlineCallbacks
 from .twisted.yield_return_statement import YieldReturnStatementLinter
 
 ALL = (
+    BadAsyncSecurityCheckLinter,
     BadCommandsUseLinter,
     BadCompileUseLinter,
     BadCryptographyModuleAttributeUseLinter,
