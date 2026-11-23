@@ -1,0 +1,34 @@
+{
+  "dependencies": [
+    { "name": "appcore", "version": "3.0.0", "vulns": [] },
+    { "name": "basesettings", "version": "2.4.0", "vulns": [] },
+    { "name": "sharedutils", "version": "1.7.0", "vulns": [] },
+    { "name": "troublemaker", "version": "0.9.0", "vulns": [] },
+    {
+      "name": "vulnchain",
+      "version": "4.0.0",
+      "vulns": [
+        {
+          "id": "GHSA-vuln-chain-0001",
+          "fix_versions": ["4.1.0"],
+          "aliases": ["CVE-2030-0001"]
+        }
+      ]
+    },
+    { "name": "legacylib", "version": "1.2.0", "vulns": [] },
+    { "name": "plugintool", "version": "5.2.0", "vulns": [] },
+    { "name": "platformextras", "version": "0.3.0", "vulns": [] },
+    {
+      "name": "markerlib",
+      "version": "1.2.0",
+      "vulns": [
+        {
+          "id": "GHSA-marker-lib-0003",
+          "fix_versions": ["1.3.0"],
+          "aliases": []
+        }
+      ]
+    }
+  ],
+  "fixes": []
+}

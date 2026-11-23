@@ -8,6 +8,17 @@ All versions prior to 0.0.9 are untracked.
 
 ## [Unreleased]
 
+### Added
+
+* Added the `pip-audit-remediation` entrypoint, an offline check that
+  compares two resolved PEP 751 lock plans and their existing
+  `pip-audit --format json` results. It reads each plan's environment
+  markers, optional groups, and dependency chains to report, per group,
+  which vulnerability alerts were closed, which merely moved onto another
+  dependency chain, and which lack sufficient evidence. It does not install
+  packages or perform dependency resolution, and the original single-environment
+  `pip-audit` workflow is unchanged.
+
 ### Fixed
 
 * Editable requirements skipped with `--skip-editable` no longer require a hash

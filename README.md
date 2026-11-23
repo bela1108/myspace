@@ -32,6 +32,7 @@ with support from Google, and is currently maintained under the
   * [Environment variables](#environment-variables)
   * [Exit codes](#exit-codes)
   * [Dry runs](#dry-runs)
+  * [Offline remediation checks across lock plans](#offline-remediation-checks-across-lock-plans)
 * [Examples](#examples)
 * [Troubleshooting](#troubleshooting)
 * [Tips and Tricks](#tips-and-tricks)
@@ -267,6 +268,39 @@ an audit (or fix) step is actually performed.
   out the fix behavior (i.e., which dependencies would be upgraded or skipped)
   that *would have been performed*.
 
+### Offline remediation checks across lock plans
+
+The base environment can be green while optional groups still carry the same
+alerts through *other* dependency chains. `pip-audit` ships a second,
+fully-offline entrypoint, `pip-audit-remediation`, that compares two already
+resolved [PEP 751](https://peps.python.org/pep-0751/) lock plans alongside the
+`pip-audit --format json` results captured for each one.
+
+It never installs packages, downloads anything, or performs dependency
+resolution; it only reads the environment markers, optional groups, dependency
+edges, and audit results you already have. For each group (including the
+implicit `base` group) it classifies every alert as:
+
+* `closed`: the vulnerable version is gone from, or no longer flagged in, the
+  after plan;
+* `moved-chain`: the alert persists, but only through a different dependency
+  chain than in the before plan, so removing one route did not close it;
+* `unresolved`: the alert persists through an unchanged chain;
+* `incomplete-evidence`: a skipped audit entry, a missing audit result, or an
+  environment marker that cannot be decided offline prevents a verdict.
+
+```console
+$ pip-audit-remediation \
+    --before-lock pylock.before.toml --after-lock pylock.after.toml \
+    --before-audit audit.before.json --after-audit audit.after.json
+```
+
+The same report is available as JSON with `-f json`. Restrict it to specific
+optional groups with repeatable `-g/--group` flags (the `base` group is always
+included). The exit code is `0` when every alert is closed, `1` when at least
+one alert remains unresolved or merely moved, and `2` when the only outstanding
+alerts have incomplete evidence.
+
 ## Examples
 
 Audit dependencies for the current Python environment:
@@ -411,6 +445,25 @@ Name  Version ID             Fix Versions Applied Fix
 ----- ------- -------------- ------------ ----------------------------------------
 flask 0.5     PYSEC-2019-179 1.0          Successfully upgraded flask (0.5 => 1.0)
 flask 0.5     PYSEC-2018-66  0.12.3       Successfully upgraded flask (0.5 => 1.0)
+```
+
+Check whether removing one dependency route actually closed an alert. In
+this example `vulnchain` is pulled in two ways in the before plan: a short
+`appcore -> sharedutils -> troublemaker -> vulnchain` route and a group route
+`plugintool -> vulnchain`. The after plan drops the short base route, but the
+package is still vulnerable through `troublemaker -> vulnchain`, so the alert
+is reported as `moved-chain` rather than closed:
+
+```console
+$ pip-audit-remediation \
+    --before-lock pylock.before.toml --after-lock pylock.after.toml \
+    --before-audit audit.before.json --after-audit audit.after.json
+[base]
+  closed=1 moved-chain=1 unresolved=0 incomplete-evidence=1
+  - vulnchain GHSA-vuln-chain-0001: moved-chain
+      before chain:   appcore -> sharedutils -> troublemaker -> vulnchain
+      after chain:    troublemaker -> vulnchain
+      detail:          GHSA-vuln-chain-0001 remains via troublemaker -> vulnchain, a different chain than in the before plan; it moved rather than being closed
 ```
 
 ## Troubleshooting
