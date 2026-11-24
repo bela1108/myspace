@@ -11,6 +11,7 @@ from . import helpers  # noqa F401
 from .bad_commands_use import BadCommandsUseLinter
 from .bad_compile_use import BadCompileUseLinter
 from .bad_cryptography_module_attribute_use import BadCryptographyModuleAttributeUseLinter
+from .bad_deferred_desensitize_use import BadDeferredDesensitizeUseLinter
 from .bad_defusedxml_use import BadDefusedxmlUseLinter
 from .bad_dl_use import BadDlUseLinter
 from .bad_duo_client_use import BadDuoClientUseLinter
@@ -47,6 +48,11 @@ from .bad_zipfile_use import BadZipfileUseLinter
 from .twisted.inlinecallbacks_yield_statement import InlineCallbacksYieldStatementLinter
 from .twisted.returnvalue_in_inlinecallbacks import ReturnValueInInlineCallbacksLinter
 from .twisted.yield_return_statement import YieldReturnStatementLinter
+
+from .masking.deferred_masking_level import DeferredMaskingLevelLinter
+
+BadDeferredMaskingLevelLinter = DeferredMaskingLevelLinter
+BadDeferredMaskingLevelUseLinter = DeferredMaskingLevelLinter
 
 ALL = (
     BadCommandsUseLinter,
@@ -87,4 +93,5 @@ ALL = (
     InlineCallbacksYieldStatementLinter,
     ReturnValueInInlineCallbacksLinter,
     YieldReturnStatementLinter,
+    DeferredMaskingLevelLinter,
 )

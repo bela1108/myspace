@@ -221,3 +221,159 @@ def same_modules(s1, s2):
         len(modules1) <= len(modules2)
         and all(m1 == m2 for (m1, m2) in zip(modules1, modules2))
     )
+def argument_name(arg):
+    """Return the bound name for an ast.arg node (Python 3) or a raw
+    identifier string (Python 2)."""
+    if isinstance(arg, ast.arg):
+        return arg.arg
+
+    return arg
+
+
+def collect_nodes(node, node_types):
+    """Walk an entire tree, including nested scopes, and return every node
+    that is an instance of one of the provided node types.
+    """
+    results = []
+
+    def collect_callback(inner_node):
+        if isinstance(inner_node, node_types):
+            results.append(inner_node)
+
+    walk_callback(node, collect_callback)
+
+    return results
+
+
+def node_parent_map(root):
+    """Map every node in the tree to its direct parent node."""
+    parents = {}
+
+    def parent_callback(inner_node):
+        for child_node in ast.iter_child_nodes(inner_node):
+            parents[child_node] = inner_node
+
+    parent_callback(root)
+    walk_callback(root, parent_callback)
+
+    return parents
+
+
+def node_is_within_types(node, node_types, parents):
+    """Return True if any ancestor of the node is an instance of one of the
+    provided node types.
+    """
+    current = node
+
+    while current in parents:
+        current = parents[current]
+        if isinstance(current, node_types):
+            return True
+
+    return False
+
+
+def literal_node_value(node):
+    """Return the literal value of a constant AST node, or None when the node
+    is not a statically known literal.
+    """
+    if hasattr(ast, 'Constant') and isinstance(node, ast.Constant):
+        # A NameConstant is folded into Constant on Python 3.8+
+        return node.value
+
+    if isinstance(node, ast.Str):
+        return node.s
+    elif isinstance(node, ast.Num):
+        return node.n
+    elif hasattr(ast, 'NameConstant') and isinstance(node, ast.NameConstant):
+        return node.value
+
+    return None
+
+
+def node_is_literal(node):
+    """Return True when the node is a statically known constant literal."""
+    literal_types = (ast.Str, ast.Num)
+    if hasattr(ast, 'NameConstant'):
+        literal_types += (ast.NameConstant,)
+    if hasattr(ast, 'Constant'):
+        literal_types += (ast.Constant,)
+
+    return isinstance(node, literal_types)
+
+
+def call_name(call):
+    """Return the function name of a call node for both attribute and bare
+    name calls. E.g. "queue.submit" becomes "submit" and "mask" becomes "mask".
+    """
+    if isinstance(call.func, ast.Attribute):
+        return call.func.attr
+    elif isinstance(call.func, ast.Name):
+        return call.func.id
+
+    return None
+
+
+
+
+def is_constant_literal(node):
+    """Return True when the node is a statically known constant literal."""
+    return node_is_literal(node)
+
+
+def literal_value(node):
+    """Return the literal value of a constant AST node, or None when the
+    node is not a statically known literal.
+    """
+    return literal_node_value(node)
+
+
+def assignment_names(node):
+    """Return every identifier bound by an assignment-like node."""
+    names = []
+
+    def add_target(target):
+        if isinstance(target, ast.Name):
+            names.append(target.id)
+        elif isinstance(target, (ast.Tuple, ast.List)):
+            for element in target.elts:
+                add_target(element)
+        elif isinstance(target, ast.Starred):
+            add_target(target.value)
+
+    if isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
+        targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+        for target in targets:
+            add_target(target)
+    elif isinstance(node, ast.For):
+        add_target(node.target)
+    elif isinstance(node, ast.comprehension):
+        add_target(node.target)
+    elif isinstance(node, ast.withitem):
+        if node.optional_vars is not None:
+            add_target(node.optional_vars)
+
+    return names
+
+
+def function_name(node):
+    """Return a readable name for a function or lambda node."""
+    if isinstance(node, ast.Lambda):
+        return '<lambda>'
+    return getattr(node, 'name', '<function>')
+
+
+def binding_is_loop_binding(assignment_node, root):
+    """Return True when the binding happens through a loop target, either
+    because the assignment node itself is a loop/comprehension or because one
+    of its ancestors (up to ``root``) is a loop.
+    """
+    loop_types = (ast.For, ast.While, ast.comprehension)
+    if hasattr(ast, 'AsyncFor'):
+        loop_types += (ast.AsyncFor,)
+
+    if isinstance(assignment_node, loop_types):
+        return True
+
+    parents = node_parent_map(root)
+    return node_is_within_types(assignment_node, loop_types, parents)

@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `DUO139`: lint unprovable data-classification levels in deferred masking queue callbacks
+
 ## [0.10.2] - 2020-02-19
 ### Changed
 - Cache namespace results and minimize kwarg checks by grouping similar rules - ~500% speed up ([#18](https://github.com/dlint-py/dlint/issues/18))
