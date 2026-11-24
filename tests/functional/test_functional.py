@@ -894,6 +894,45 @@ class FunctionalTests(testtools.TestCase):
         }
         self.check_example("trojansource_latin1.py", expect)
 
+    def test_internal_export_fields_safe(self):
+        """Safe export: no restricted field reaches the export."""
+        expect = {
+            "SEVERITY": {"UNDEFINED": 0, "LOW": 0, "MEDIUM": 0, "HIGH": 0},
+            "CONFIDENCE": {"UNDEFINED": 0, "LOW": 0, "MEDIUM": 0, "HIGH": 0},
+        }
+        with self.with_test_set(
+            b_test_set.BanditTestSet(
+                config=self.b_mgr.b_conf, profile={"include": ["B616"]}
+            )
+        ):
+            self.check_example("internal_export_fields_safe.py", expect)
+
+    def test_internal_export_fields_reflow(self):
+        """Reflow: a restricted field is written back into the export."""
+        expect = {
+            "SEVERITY": {"UNDEFINED": 0, "LOW": 0, "MEDIUM": 0, "HIGH": 1},
+            "CONFIDENCE": {"UNDEFINED": 0, "LOW": 0, "MEDIUM": 0, "HIGH": 1},
+        }
+        with self.with_test_set(
+            b_test_set.BanditTestSet(
+                config=self.b_mgr.b_conf, profile={"include": ["B616"]}
+            )
+        ):
+            self.check_example("internal_export_fields_reflow.py", expect)
+
+    def test_internal_export_fields_unknown(self):
+        """Unknown-key updates make the exported field set uninferable."""
+        expect = {
+            "SEVERITY": {"UNDEFINED": 0, "LOW": 0, "MEDIUM": 1, "HIGH": 0},
+            "CONFIDENCE": {"UNDEFINED": 0, "LOW": 1, "MEDIUM": 0, "HIGH": 0},
+        }
+        with self.with_test_set(
+            b_test_set.BanditTestSet(
+                config=self.b_mgr.b_conf, profile={"include": ["B616"]}
+            )
+        ):
+            self.check_example("internal_export_fields_unknown.py", expect)
+
     def test_markupsafe_markup_xss(self):
         expect = {
             "SEVERITY": {"UNDEFINED": 0, "LOW": 0, "MEDIUM": 4, "HIGH": 0},
