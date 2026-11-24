@@ -5,8 +5,107 @@ from collections import deque
 import lxml.html
 import lxml.html.clean
 
+from .transactions import (
+    ALL_CAPABILITIES,
+    CallbackChain,
+    CallbackContext,
+    CallbackDeclaration,
+    CallbackError,
+    CallbackExecutionError,
+    CallbackFailed,
+    CallbackScope,
+    CallbackSpec,
+    CallbackTransaction,
+    CallbackTransactionError,
+    CapabilityError,
+    CapabilityViolation,
+    CapabilityViolationError,
+    Chain,
+    ExtensionSpec,
+    ImpactReport,
+    NodeChange,
+    NodeScope,
+    ProcessorChain,
+    ProcessorDeclaration,
+    ProcessorSpec,
+    ScopedCallback,
+    ScopeDeclaration,
+    ScopedExtension,
+    ScopedProcessor,
+    ScopeError,
+    ScopeViolation,
+    ScopeViolationError,
+    Snapshot,
+    Transaction,
+    TransactionalChain,
+    TransactionError,
+    TransactionViolation,
+    Violation,
+    coerce_callback,
+    coerce_capabilities,
+    coerce_scope,
+    declare_callback,
+    get_declaration,
+    guarded_callback_call,
+    run_callback_chain,
+    scoped,
+    scoped_callback,
+    transactional,
+    transactional_callback,
+    verify_impact,
+)
 
-__all__ = ("Sanitizer",)
+
+__all__ = (
+    "Sanitizer",
+    "Snapshot",
+    "NodeScope",
+    "CallbackDeclaration",
+    "ScopedCallback",
+    "scoped",
+    "scoped_callback",
+    "declare_callback",
+    "transactional_callback",
+    "CallbackContext",
+    "CallbackTransaction",
+    "CallbackChain",
+    "ProcessorChain",
+    "run_callback_chain",
+    "guarded_callback_call",
+    "get_declaration",
+    "coerce_callback",
+    "coerce_scope",
+    "coerce_capabilities",
+    "verify_impact",
+    "ImpactReport",
+    "NodeChange",
+    "Violation",
+    "TransactionError",
+    "CallbackTransactionError",
+    "TransactionViolation",
+    "ScopeViolation",
+    "ScopeViolationError",
+    "CapabilityViolation",
+    "CapabilityViolationError",
+    "CallbackExecutionError",
+    "CallbackFailed",
+    "CallbackError",
+    "Transaction",
+    "Chain",
+    "ScopeError",
+    "CapabilityError",
+    "ALL_CAPABILITIES",
+    "CallbackScope",
+    "CallbackSpec",
+    "ExtensionSpec",
+    "ProcessorDeclaration",
+    "ProcessorSpec",
+    "ScopeDeclaration",
+    "ScopedExtension",
+    "ScopedProcessor",
+    "TransactionalChain",
+    "transactional",
+)
 
 
 def sanitize_href(href):
@@ -201,6 +300,13 @@ class Sanitizer:
             for tag, attributes in self.attributes.items()
         }
 
+        self.element_preprocessors = [
+            coerce_callback(processor) for processor in self.element_preprocessors
+        ]
+        self.element_postprocessors = [
+            coerce_callback(processor) for processor in self.element_postprocessors
+        ]
+
         if self.keep_typographic_whitespace:
             re_whitespace = r"[^\S%s]" % typographic_whitespace
         else:
@@ -254,6 +360,46 @@ class Sanitizer:
             normalize_tail=not inside,
         )
 
+    def _declaration_checks_enabled(self):
+        return (
+            getattr(self, "enforce_callback_declarations", True)
+            and getattr(self, "strict_callbacks", True)
+            and getattr(self, "transactional_callbacks", True)
+        )
+
+    def _run_element_processor(self, processor, element, doc, *, stage):
+        declaration = get_declaration(processor)
+        if declaration is None or not self._declaration_checks_enabled():
+            return processor(element)
+        callback_name = (
+            f"{stage}:{declaration.name or getattr(processor, '__name__', 'callback')}"
+        )
+        return guarded_callback_call(
+            processor,
+            element,
+            doc,
+            declaration=declaration,
+            callback_name=callback_name,
+        )
+
+    def callback_transaction(self, root=None, callbacks=None, *, stage="pre", **kwargs):
+        """Build a :class:`CallbackTransaction` using this sanitizer's chain."""
+        if callbacks is None:
+            callbacks = (
+                self.element_postprocessors
+                if stage in {"post", "postprocessor", "postprocessors"}
+                else self.element_preprocessors
+            )
+        return CallbackTransaction(root, list(callbacks), **kwargs)
+
+    def run_callback_chain(
+        self, root=None, callbacks=None, *, commit=True, stage="pre", **kwargs
+    ):
+        """Run a callback chain atomically and return the committed root."""
+        transaction = self.callback_transaction(root, callbacks, stage=stage, **kwargs)
+        transaction.run(commit=commit)
+        return transaction.original_root
+
     def sanitize(self, html):  # noqa: C901 -- I know.
         """
         Clean HTML code from ugly copy-pasted CSS and empty elements
@@ -304,7 +450,9 @@ class Sanitizer:
                 break
 
             for processor in self.element_preprocessors:
-                element = processor(element)
+                element = self._run_element_processor(
+                    processor, element, doc, stage="preprocessor"
+                )
 
             if self.drop_disallowed_contents and element.tag not in self.tags:
                 element.drop_tree()
@@ -401,7 +549,9 @@ class Sanitizer:
                     continue
 
             for processor in self.element_postprocessors:
-                element = processor(element)
+                element = self._run_element_processor(
+                    processor, element, doc, stage="postprocessor"
+                )
 
             # remove all attributes which are not explicitly allowed
             allowed = self.attributes.get(element.tag, [])

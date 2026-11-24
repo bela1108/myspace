@@ -125,6 +125,50 @@ The keys' meaning is as follows:
   adjacent elements e.g. when their classes do not match
   (``lambda e1, e2: e1.get('class') == e2.get('class')``)
 
+Scoped, transactional callbacks
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Callbacks may optionally declare the node scope they are responsible for
+and the mutation capabilities they need. Plain functions without a
+declaration keep working unchanged and are treated as trusted/legacy
+callbacks::
+
+    from html_sanitizer import Sanitizer, scoped
+
+    @scoped(
+        scope=lambda node: node.get("data-part") == "body",
+        capabilities={"text", "attributes"},
+    )
+    def clean_body(element):
+        ...
+
+    Sanitizer({"element_preprocessors": [clean_body]})
+
+Scopes accept tag names, tag collections, CSS-like selectors such as
+``"[data-part='body']"``, attribute mappings, predicates or concrete
+elements. Capabilities are ``text``, ``attributes``, ``tag``, ``move``,
+``insert``, ``remove`` and ``replace_ancestor``; omitting the
+capability declaration means "no capability restriction".
+
+For all-or-nothing composition use ``CallbackTransaction`` (also
+available as ``CallbackChain`` and ``Transaction``). Every callback runs
+against an isolated ``Snapshot``; a structural diff measures its impact
+and checks it against the declaration. Scope crossings, undeclared
+moves or ancestor replacements and callbacks raising halfway raise
+``ScopeViolation``, ``CapabilityViolation`` or
+``CallbackExecutionError``. Each error carries an ``ImpactReport``
+naming the callback, the affected node and the exact failed check. The
+tree passed by the caller stays untouched until ``commit()``, so a
+failed chain never exposes a half cleaned tree::
+
+    from html_sanitizer import CallbackTransaction
+
+    transaction = CallbackTransaction(root, [first, middle, last])
+    transaction.run()     # raises and rolls back on a violation
+    transaction.commit()  # publishes the composed tree back to root
+
+``run_callback_chain(root, callbacks)`` is a short convenience wrapper.
+
 Settings can be specified partially when initializing a sanitizer
 instance, but are still checked for consistency. For example, it is not
 allowed to have tags in ``empty`` that are not in ``tags``, that is,
