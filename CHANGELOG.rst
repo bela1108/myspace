@@ -7,6 +7,14 @@ Next version
 
 - Dropped support for Python < 3.10.
 - Added Python 3.14 and 3.15 to the CI matrix.
+- Added ``html_sanitizer.policy`` with request-scoped policy snapshots and a
+  generation-aware sanitization cache: policy hot-updates and revocations are
+  applied atomically per tenant, and cached output is only reused when the
+  requesting snapshot proves the same tenant, policy generation, revocation
+  epoch and document version.
+- Wired the Django integration to the policy registry: ``HTML_SANITIZERS``
+  changes now take effect immediately, and ``begin_sanitizer_request`` /
+  ``sanitize_request`` pin each request to a single policy snapshot.
 
 2.7 (2026-10-25)
 ================

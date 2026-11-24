@@ -1,6 +1,8 @@
+import threading
 from unittest import TestCase
 
-from .sanitizer import Sanitizer
+from .policy import PolicyRegistry, SanitizationCache, SanitizationService
+from .sanitizer import DEFAULT_SETTINGS, Sanitizer
 
 
 default_sanitizer = Sanitizer()
@@ -830,3 +832,185 @@ git commit
             ],
             sanitizer=sanitizer,
         )
+
+
+# One piece of content shared by all requests in the policy replay tests.
+SHARED_HTML = (
+    '<p>shared <em>markup</em> '
+    '<a href="https://example.com/" target="_blank">link</a></p>'
+)
+
+# Policy v2 no longer allows <em>; everything else stays at the defaults.
+V2_SETTINGS = {"tags": set(DEFAULT_SETTINGS["tags"]) - {"em"}}
+
+
+def _count_calls(sanitizer):
+    """Patch a sanitizer instance to count sanitize() invocations."""
+    real_sanitize = sanitizer.sanitize
+    calls = []
+
+    def counted(html):
+        calls.append(html)
+        return real_sanitize(html)
+
+    sanitizer.sanitize = counted
+    return calls
+
+
+class PolicyReplayTestCase(TestCase):
+    """
+    Replay of the document service incident: two concurrent requests, one
+    policy hot-update, one revocation and a shared piece of content.
+    """
+
+    def make_service(self):
+        return SanitizationService(PolicyRegistry(), SanitizationCache())
+
+    def test_concurrent_requests_keep_their_policy_snapshot(self):
+        service = self.make_service()
+        service.registry.update_policy(None, tenant="docs")  # generation 1
+
+        # Request A captures its snapshot (generation 1) and blocks inside
+        # sanitize until the policy update and request B have completed.
+        snapshot_a = service.begin_request("docs")
+        self.assertEqual(snapshot_a.generation, 1)
+
+        started = threading.Event()
+        release = threading.Event()
+        real_sanitize = snapshot_a.sanitizer.sanitize
+
+        def slow_sanitize(html):
+            started.set()
+            self.assertTrue(release.wait(5))
+            return real_sanitize(html)
+
+        snapshot_a.sanitizer.sanitize = slow_sanitize
+
+        results = {}
+
+        def request_a():
+            results["a"] = service.sanitize(
+                SHARED_HTML,
+                snapshot=snapshot_a,
+                tenant="docs",
+                document_version="doc-1",
+            )
+
+        thread = threading.Thread(target=request_a)
+        thread.start()
+        self.assertTrue(started.wait(5))
+
+        # Hot-update while request A is in flight: generation 2 drops <em>.
+        service.registry.update_policy(V2_SETTINGS, tenant="docs")
+
+        # Request B starts after the update and sees only the new rules.
+        results["b"] = service.sanitize(
+            SHARED_HTML, tenant="docs", document_version="doc-1"
+        )
+
+        release.set()
+        thread.join(5)
+
+        # Same shared content, but each request got a consistent snapshot:
+        # A's in-flight output follows the old rules, B's the new ones.
+        self.assertIn("<em>markup</em>", results["a"])
+        self.assertNotIn("<em>", results["b"])
+        self.assertIn("shared markup", results["b"])
+
+        # Both outputs coexist in the cache under distinct generations;
+        # neither clobbered the other.
+        self.assertEqual(len(service.cache), 2)
+
+        # A fresh request reuses B's generation-2 output, never A's.
+        again = service.sanitize(SHARED_HTML, tenant="docs", document_version="doc-1")
+        self.assertEqual(again, results["b"])
+
+    def test_revocation_invalidates_all_generations_atomically(self):
+        service = self.make_service()
+        service.registry.update_policy(V2_SETTINGS, tenant="docs")  # gen 1
+        out_v2 = service.sanitize(SHARED_HTML, tenant="docs", document_version="doc-1")
+        self.assertNotIn("<em>", out_v2)
+
+        # Revoke: epoch bump invalidates every cached generation at once
+        # and falls back to the built-in defaults.
+        service.registry.revoke("docs")
+        snapshot = service.registry.snapshot("docs")
+        self.assertEqual(snapshot.epoch, 1)
+
+        calls = _count_calls(snapshot.sanitizer)
+        out_default = service.sanitize(
+            SHARED_HTML, tenant="docs", document_version="doc-1"
+        )
+        # Recomputed under the defaults, not served from the revoked entry.
+        self.assertEqual(len(calls), 1)
+        self.assertIn("<em>markup</em>", out_default)
+
+        # Re-applying the exact pre-revocation policy must NOT resurrect
+        # its cached output: the epoch differs, so this is a cache miss
+        # even though tenant, rules, content and version all match.
+        service.registry.update_policy(V2_SETTINGS, tenant="docs")
+        snapshot = service.registry.snapshot("docs")
+        calls = _count_calls(snapshot.sanitizer)
+        out_again = service.sanitize(
+            SHARED_HTML, tenant="docs", document_version="doc-1"
+        )
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(out_again, out_v2)
+
+        # Within the same epoch the identical request is a cache hit.
+        self.assertEqual(
+            service.sanitize(SHARED_HTML, tenant="docs", document_version="doc-1"),
+            out_v2,
+        )
+        self.assertEqual(len(calls), 1)
+
+    def test_interrupted_update_leaves_policy_and_cache_intact(self):
+        service = self.make_service()
+        service.registry.update_policy(None, tenant="docs")  # generation 1
+        out = service.sanitize(SHARED_HTML, tenant="docs", document_version="doc-1")
+
+        # An invalid policy raises before any shared state is touched.
+        with self.assertRaises(TypeError):
+            service.registry.update_policy({"tags": set()}, tenant="docs")
+
+        snapshot = service.registry.snapshot("docs")
+        self.assertEqual(snapshot.generation, 1)
+        self.assertEqual(snapshot.epoch, 0)
+
+        # The pre-update cache entry is still served; nothing half-applied.
+        calls = _count_calls(snapshot.sanitizer)
+        self.assertEqual(
+            service.sanitize(SHARED_HTML, tenant="docs", document_version="doc-1"),
+            out,
+        )
+        self.assertEqual(calls, [])
+
+    def test_cache_hit_requires_same_tenant_and_document_version(self):
+        service = self.make_service()
+        service.registry.update_policy(None, tenant="tenant-a")
+        service.registry.update_policy(V2_SETTINGS, tenant="tenant-b")
+
+        out_a = service.sanitize(SHARED_HTML, tenant="tenant-a", document_version="v1")
+        out_b = service.sanitize(SHARED_HTML, tenant="tenant-b", document_version="v1")
+
+        # Same shared content and document version, different tenants and
+        # policies: different outputs, no cross-tenant cache hits.
+        self.assertNotEqual(out_a, out_b)
+
+        # Same tenant and policy, new document version: separate entry.
+        service.sanitize(SHARED_HTML, tenant="tenant-a", document_version="v2")
+        self.assertEqual(len(service.cache), 3)
+
+        # Identical requests hit the cache instead of recomputing.
+        snapshot = service.registry.snapshot("tenant-a")
+        calls = _count_calls(snapshot.sanitizer)
+        self.assertEqual(
+            service.sanitize(SHARED_HTML, tenant="tenant-a", document_version="v1"),
+            out_a,
+        )
+        self.assertEqual(
+            service.sanitize(SHARED_HTML, tenant="tenant-a", document_version="v2"),
+            service.sanitize(SHARED_HTML, tenant="tenant-a", document_version="v2"),
+        )
+        self.assertEqual(calls, [])
+        self.assertEqual(len(service.cache), 3)
