@@ -9,6 +9,7 @@ from . import base  # noqa F401
 from . import helpers  # noqa F401
 
 from .bad_commands_use import BadCommandsUseLinter
+from .bad_audit_generator_use import BadAuditGeneratorUseLinter
 from .bad_compile_use import BadCompileUseLinter
 from .bad_cryptography_module_attribute_use import BadCryptographyModuleAttributeUseLinter
 from .bad_defusedxml_use import BadDefusedxmlUseLinter
@@ -49,6 +50,7 @@ from .twisted.returnvalue_in_inlinecallbacks import ReturnValueInInlineCallbacks
 from .twisted.yield_return_statement import YieldReturnStatementLinter
 
 ALL = (
+    BadAuditGeneratorUseLinter,
     BadCommandsUseLinter,
     BadCompileUseLinter,
     BadCryptographyModuleAttributeUseLinter,
