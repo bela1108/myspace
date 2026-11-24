@@ -7,6 +7,10 @@ Next version
 
 - Dropped support for Python < 3.10.
 - Added Python 3.14 and 3.15 to the CI matrix.
+- Added the trusted-document ``PublicationBoundary`` check. It keeps
+  provenance through node merging and tail concatenation, publishes public-only
+  blocks, withholds internal-only blocks, and sends blocks mixing public and
+  internal runs to manual review.
 
 2.7 (2026-10-25)
 ================

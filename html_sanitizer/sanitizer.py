@@ -254,13 +254,31 @@ class Sanitizer:
             normalize_tail=not inside,
         )
 
-    def sanitize(self, html):  # noqa: C901 -- I know.
+    def sanitize_with_provenance(self, html, **kwargs):
+        """Sanitize a trusted document and keep publication provenance.
+
+        This is a thin convenience wrapper around
+        :class:`html_sanitizer.PublicationBoundary` using this sanitizer
+        instance (and therefore its local configuration).
+        """
+        from .publication import PublicationBoundary  # noqa: PLC0415
+
+        return PublicationBoundary(self, **kwargs).check(html)
+
+    def check_publication(self, html, **kwargs):
+        """Alias for :meth:`sanitize_with_provenance`."""
+        return self.sanitize_with_provenance(html, **kwargs)
+
+    def sanitize(self, html, *, annotate=None):  # noqa: C901 -- I know.
         """
         Clean HTML code from ugly copy-pasted CSS and empty elements
 
         Removes everything not explicitly allowed in ``self.allowed_tags``.
 
         Requires ``lxml`` and, for especially broken HTML, ``beautifulsoup4``.
+
+        The optional keyword-only ``annotate`` callable is invoked on the parsed
+        tree before cleaning. It is used internally for provenance checks.
         """
 
         # normalize unicode
@@ -273,10 +291,13 @@ class Sanitizer:
         try:
             doc = lxml.html.fromstring(html)
             lxml.html.tostring(doc, encoding="utf-8")
-        except Exception:  # noqa: BLE001 -- we could and maybe should be more specific
+        except Exception:
             from lxml.html import soupparser  # noqa: PLC0415
 
             doc = soupparser.fromstring(html)
+
+        if annotate is not None:
+            annotate(doc)
 
         lxml.html.clean.Cleaner(
             remove_unknown_tags=False,

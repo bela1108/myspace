@@ -1,5 +1,6 @@
 from unittest import TestCase
 
+from .publication import INTERNAL, MIXED, PUBLIC, PublicationBoundary
 from .sanitizer import Sanitizer
 
 
@@ -830,3 +831,246 @@ git commit
             ],
             sanitizer=sanitizer,
         )
+
+
+class PublicationBoundaryTestCase(TestCase):
+    def test_unlabelled_content_matches_plain_sanitization(self):
+        """The provenance pass must not change clean publication output."""
+        sanitizer = Sanitizer()
+        boundary = PublicationBoundary(sanitizer)
+        entries = (
+            "<p>Hello <strong>world</strong></p>",
+            "<h2>foo  </h2>   <h2>   bar</h2>",
+            "<p><br><strong></strong>  <br> abc</p>",
+            "<li><p>foo</p></li>",
+            "<p>a <strong>b</strong>   <strong>c</strong> d</p>",
+        )
+        for html in entries:
+            with self.subTest(html=html):
+                result = boundary.check(html)
+                self.assertEqual(result.public_html, sanitizer.sanitize(html))
+                self.assertFalse(result.needs_review)
+                self.assertEqual(result.withheld, ())
+
+    def test_internal_only_segment_is_withheld(self):
+        result = PublicationBoundary().check(
+            '<p data-publish="internal">备课批注</p><p>公开内容</p>'
+        )
+
+        self.assertEqual(result.public_html, "<p>公开内容</p>")
+        self.assertFalse(result.needs_review)
+        self.assertEqual(len(result.withheld), 1)
+        self.assertEqual(result.withheld[0].html, "<p>备课批注</p>")
+        self.assertEqual(result.withheld[0].status, "withheld")
+
+    def test_public_and_internal_merge_requires_review(self):
+        result = PublicationBoundary().check(
+            '<p data-publish="public">周一'
+            '<span data-publish="internal">备课批注</span></p>'
+        )
+
+        self.assertEqual(result.public_html, "")
+        self.assertTrue(result.needs_review)
+        self.assertEqual(len(result.review), 1)
+        self.assertEqual(result.review[0].html, "<p>周一备课批注</p>")
+        self.assertEqual(result.review[0].source_ids, ("s1", "s2"))
+
+        merged_run = result.text_runs[-1]
+        self.assertEqual(merged_run.visibility, MIXED)
+        self.assertTrue(merged_run.merged)
+        self.assertTrue(merged_run.review_required)
+        self.assertEqual(merged_run.source_ids, ("s1", "s2"))
+
+    def test_tail_provenance_survives_merge(self):
+        result = PublicationBoundary().check(
+            '<p data-publish="public">公开'
+            '<span data-publish="internal">内部</span>尾部</p>'
+        )
+
+        self.assertEqual(result.public_html, "")
+        self.assertEqual(result.review[0].html, "<p>公开内部尾部</p>")
+        self.assertEqual(
+            [(source.kind, source.visibility) for source in result.sources],
+            [("text", PUBLIC), ("text", INTERNAL), ("tail", PUBLIC)],
+        )
+        merged_run = result.text_runs[-1]
+        self.assertTrue(merged_run.merged)
+        self.assertEqual(merged_run.visibility, MIXED)
+
+    def test_adjacent_nodes_are_merged_before_review(self):
+        result = PublicationBoundary().check(
+            '<strong data-publish="public">公</strong>'
+            '<strong data-publish="internal">内</strong>'
+        )
+
+        self.assertEqual(result.public_html, "")
+        self.assertEqual(result.review[0].html, "<strong>公内</strong>")
+        self.assertEqual(result.review[0].source_ids, ("s1", "s2"))
+        self.assertTrue(result.text_runs[-1].merged)
+
+    def test_course_table_publication_regression(self):
+        """Clean rows stay publishable; a mixed citation goes to review."""
+        html = (
+            "<table>"
+            "<tr><td><p data-publish='public'>课程</p></td>"
+            "<td><p data-publish='public'>时间</p></td></tr>"
+            "<tr><td><p data-publish='public'>数学</p></td>"
+            "<td><p data-publish='public'>周一"
+            "<span data-publish='internal'>备课提醒带词典</span>"
+            "</p></td></tr>"
+            "</table>"
+        )
+
+        result = PublicationBoundary().check(html)
+
+        self.assertEqual(
+            result.public_html,
+            "<p>课程</p><p>时间</p><p>数学</p>",
+        )
+        self.assertEqual(len(result.review), 1)
+        self.assertEqual(result.review[0].html, "<p>周一备课提醒带词典</p>")
+        self.assertEqual(
+            [source.status for source in result.sources],
+            ["published", "published", "published", "review", "review"],
+        )
+
+    def test_segments_and_local_settings(self):
+        settings = {
+            "tags": {"p"},
+            "attributes": {},
+            "empty": set(),
+            "separate": {"p"},
+        }
+        result = PublicationBoundary(settings).check(
+            [
+                {"text": "clean", "visibility": "public", "tag": "p"},
+                {"text": "note", "visibility": "internal", "tag": "p"},
+            ]
+        )
+
+        self.assertEqual(result.public_html, "<p>clean</p>")
+        self.assertEqual(result.withheld[0].html, "<p>note</p>")
+
+    def test_optional_row_level_grouping(self):
+        html = (
+            "<table>"
+            "<tr><td><p>课程</p></td><td><p>时间</p></td></tr>"
+            "<tr><td><p>数学</p></td><td><p>周一"
+            "<span data-publish='internal'>备课</span></p></td></tr>"
+            "</table>"
+        )
+
+        result = PublicationBoundary(group_rows=True).check(html)
+
+        self.assertEqual(result.public_html, "<p>课程</p><p>时间</p>")
+        self.assertEqual(
+            result.review[0].html,
+            "<p>数学</p><p>周一备课</p>",
+        )
+        self.assertEqual(
+            [(segment.tag, segment.status) for segment in result.segments],
+            [("tr", "published"), ("tr", "review")],
+        )
+
+    def test_complete_table_hierarchy_keeps_clean_rows(self):
+        settings = {
+            "tags": {"table", "tr", "td", "p"},
+            "attributes": {},
+            "empty": set(),
+            "separate": {"table", "tr", "td", "p"},
+        }
+        html = (
+            "<table>"
+            "<tr><td><p>课程</p></td><td><p>时间</p></td></tr>"
+            "<tr><td><p>数学</p></td><td><p>周一"
+            "<span data-publish='internal'>备课</span></p></td></tr>"
+            "</table>"
+        )
+
+        result = PublicationBoundary(settings).check(html)
+
+        self.assertEqual(
+            result.public_html,
+            (
+                "<table><tr><td><p>课程</p></td><td><p>时间</p></td></tr>"
+                "<tr><td><p>数学</p></td></tr></table>"
+            ),
+        )
+        self.assertEqual(result.review[0].html, "<p>周一备课</p>")
+        self.assertEqual(
+            [(segment.tag, segment.status) for segment in result.segments],
+            [
+                ("p", "published"),
+                ("p", "published"),
+                ("p", "published"),
+                ("p", "review"),
+            ],
+        )
+
+    def test_flattened_course_table_keeps_clean_rows(self):
+        html = (
+            "<table>"
+            "<tr><td>课程<td>时间"
+            "<tr><td>数学<td>周一"
+            "<span data-publish='internal'>备课批注</span>"
+            "</table>"
+        )
+
+        result = PublicationBoundary().check(html)
+
+        self.assertEqual(result.public_html, "课程时间数学")
+        self.assertEqual(len(result.review), 1)
+        self.assertEqual(result.review[0].html, "周一备课批注")
+        self.assertEqual(
+            [
+                (source.segment_tag, source.status)
+                for source in result.review[0].sources
+            ],
+            [("td", "review"), ("td", "review")],
+        )
+        self.assertEqual(
+            [run.text for run in result.text_runs],
+            ["课程", "时间", "数学", "周一备课批注"],
+        )
+        self.assertEqual(
+            [(segment.tag, segment.status) for segment in result.segments],
+            [
+                ("td", "published"),
+                ("td", "published"),
+                ("td", "published"),
+                ("td", "review"),
+            ],
+        )
+
+
+class PublicationBoundaryHelpersTestCase(TestCase):
+    def test_boolean_permission_attributes(self):
+        result = PublicationBoundary().check(
+            '<p data-public="false">内部</p>'
+            '<p data-public="true">公开</p>'
+            '<p data-confidential="false">公开</p>'
+            '<p data-confidential="true">内部</p>'
+        )
+
+        self.assertEqual(result.public_html, "<p>公开</p><p>公开</p>")
+        self.assertFalse(result.has_review)
+        self.assertEqual(len(result.withheld), 2)
+
+    def test_segment_sequence_defaults_to_separate_paragraphs(self):
+        result = PublicationBoundary().check(
+            [("public", "public"), ("note", "internal")]
+        )
+
+        self.assertEqual(result.public_html, "<p>public</p>")
+        self.assertEqual(result.withheld[0].html, "<p>note</p>")
+
+    def test_sanitizer_convenience_method(self):
+        sanitizer = Sanitizer()
+        result = sanitizer.sanitize_with_provenance(
+            '<p>公开<span data-publish="internal">内部</span></p>'
+        )
+
+        self.assertEqual(result.public_html, "")
+        self.assertEqual(result.review[0].html, "<p>公开内部</p>")
+        self.assertTrue(result.needs_manual_review)
+        self.assertEqual(result.review_count, 1)

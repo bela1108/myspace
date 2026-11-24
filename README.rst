@@ -146,6 +146,81 @@ The rationale for such a restricted set of allowed tags (e.g. no
 images) is documented in the `design decisions`_ section of
 django-content-editor_'s documentation.
 
+Publication boundary checks (own documents only)
+================================================
+
+Sanitizing a document can merge adjacent nodes and concatenate their text and
+tail runs. If a document uses annotations for publication permissions, a clean
+public citation can therefore end up containing text from an internal
+annotation. ``PublicationBoundary`` adds a boundary check for this case. It
+returns both the publishable HTML and a review queue with source provenance.
+
+This helper is intended for documents owned and controlled by the application.
+The permission annotations are trusted metadata, not a security boundary. It
+does not make third-party HTML safe; sanitize untrusted input first.
+
+Annotations are ordinary HTML attributes, classes or small semantic tags::
+
+    <p data-publish="public">Monday, maths</p>
+    <p data-publish="public">Tuesday, Chinese
+      <span data-publish="internal">Remember the dictionary.</span>
+    </p>
+
+Supported permission values include ``public``, ``internal``, ``private``,
+``draft``, ``teacher`` and the corresponding Chinese labels. Unlabelled content
+is public by default. Use ``default_visibility="internal"`` for a fail-closed
+document.
+
+Usage::
+
+    >>> from html_sanitizer import PublicationBoundary
+    >>> boundary = PublicationBoundary({
+    ...     "tags": {"p"},
+    ...     "attributes": {},
+    ...     "empty": set(),
+    ...     "separate": {"p"},
+    ... })
+    >>> result = boundary.check(html)
+    >>> result.public_html.strip()
+    "<p>Monday, maths</p>"
+    >>> result.review[0].text
+    "Tuesday, Chinese Remember the dictionary."
+
+The result has the following useful attributes:
+
+- ``public_html``: sanitized HTML containing public-only blocks. Internal-only
+  blocks are omitted; blocks mixing public and internal runs are omitted and
+  sent to review as a whole.
+- ``review``: a tuple of ``ReviewItem`` objects. Every item contains the
+  sanitized ``html``, flattened ``text``, the affected ``sources`` and ``runs``.
+- ``withheld``: internal-only segments. These are not published and are kept for
+  audit purposes.
+- ``text_runs``: the provenance artifact. Each run records the sanitized text,
+  whether it came from the element text or tail, the output position and the
+  source runs which contributed to it. ``merged`` is true when a run contains
+  more than one source permission; such a run needs review.
+- ``sources``: all annotated source runs with their tag, XPath, trust level and
+  final status (``published``, ``withheld``, ``review`` or ``dropped``).
+
+Blocks, paragraphs and table cells are the default publication units. Clean
+public citations stay in public_html while a citation which absorbed an
+internal annotation is sent to review as a whole. Use ``group_rows=True`` when
+table rows must stay atomic; a mixed row is then reviewed as one row.
+
+A convenient functional wrapper is also available::
+
+    >>> from html_sanitizer import check_publication
+    >>> check_publication(html, settings).public_html
+
+Input may also be a sequence of annotated text segments. This is useful when a
+pipeline has already split plain copy into runs::
+
+    >>> boundary.check([
+    ...     {"text": "Monday, maths", "visibility": "public", "tag": "p"},
+    ...     {"text": "Remember the dictionary.", "visibility": "internal", "tag": "p"},
+    ... ]).public_html
+    "<p>Monday, maths</p>"
+
 Django
 ======
 
