@@ -10,6 +10,12 @@ from __future__ import print_function, absolute_import
 from xml.sax.expatreader import ExpatParser as _ExpatParser
 
 from .common import DTDForbidden, EntitiesForbidden, ExternalReferenceForbidden
+from .policy import (
+    BACKEND_SAX,
+    BudgetPolicy,
+    PolicyRejected,
+    install_expat_policy,
+)
 
 __origin__ = "xml.sax.expatreader"
 
@@ -22,12 +28,28 @@ class DefusedExpatParser(_ExpatParser):
         namespaceHandling=0,
         bufsize=2**16 - 20,
         forbid_dtd=False,
-        forbid_entities=True,
+        forbid_entities=None,
         forbid_external=True,
+        policy=None,
+        budget=None,
+        max_expansions=None,
+        max_depth=None,
+        max_bytes=None,
+        max_unparsed_entities=None,
     ):
         super().__init__(namespaceHandling, bufsize)
+        self.policy = BudgetPolicy.from_value(
+            policy,
+            budget,
+            max_expansions=max_expansions,
+            max_depth=max_depth,
+            max_bytes=max_bytes,
+            max_unparsed_entities=max_unparsed_entities,
+        )
         self.forbid_dtd = forbid_dtd
-        self.forbid_entities = forbid_entities
+        self.forbid_entities = (
+            self.policy is None if forbid_entities is None else bool(forbid_entities)
+        )
         self.forbid_external = forbid_external
 
     def defused_start_doctype_decl(self, name, sysid, pubid, has_internal_subset):
@@ -45,6 +67,18 @@ class DefusedExpatParser(_ExpatParser):
     def defused_external_entity_ref_handler(self, context, base, sysid, pubid):
         raise ExternalReferenceForbidden(context, base, sysid, pubid)
 
+    def feed(self, data, isFinal=False):
+        if self.policy is not None and not isFinal:
+            backend = getattr(self, "policy_backend", None) or BACKEND_SAX
+            self.policy.observe_data(data, backend=backend)
+        try:
+            return super().feed(data, isFinal=isFinal)
+        except Exception as exc:
+            if self.policy is not None and isinstance(exc, PolicyRejected):
+                if exc.backend is None:
+                    exc.backend = getattr(self, "policy_backend", None) or BACKEND_SAX
+            raise
+
     def reset(self):
         super().reset()
         parser = self._parser
@@ -55,6 +89,9 @@ class DefusedExpatParser(_ExpatParser):
             parser.UnparsedEntityDeclHandler = self.defused_unparsed_entity_decl
         if self.forbid_external:
             parser.ExternalEntityRefHandler = self.defused_external_entity_ref_handler
+        if self.policy is not None:
+            backend = getattr(self, "policy_backend", None) or BACKEND_SAX
+            install_expat_policy(parser, self.policy, backend)
 
 
 def create_parser(*args, **kwargs):

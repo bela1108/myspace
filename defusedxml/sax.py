@@ -20,14 +20,29 @@ def parse(
     handler,
     errorHandler=_ErrorHandler(),
     forbid_dtd=False,
-    forbid_entities=True,
+    forbid_entities=None,
     forbid_external=True,
+    policy=None,
+    budget=None,
+    max_expansions=None,
+    max_depth=None,
+    max_bytes=None,
+    max_unparsed_entities=None,
 ):
-    parser = make_parser()
+    parser = make_parser(
+        policy=policy,
+        budget=budget,
+        max_expansions=max_expansions,
+        max_depth=max_depth,
+        max_bytes=max_bytes,
+        max_unparsed_entities=max_unparsed_entities,
+    )
     parser.setContentHandler(handler)
     parser.setErrorHandler(errorHandler)
     parser.forbid_dtd = forbid_dtd
-    parser.forbid_entities = forbid_entities
+    parser.forbid_entities = (
+        parser.policy is None if forbid_entities is None else forbid_entities
+    )
     parser.forbid_external = forbid_external
     parser.parse(source)
 
@@ -37,18 +52,33 @@ def parseString(
     handler,
     errorHandler=_ErrorHandler(),
     forbid_dtd=False,
-    forbid_entities=True,
+    forbid_entities=None,
     forbid_external=True,
+    policy=None,
+    budget=None,
+    max_expansions=None,
+    max_depth=None,
+    max_bytes=None,
+    max_unparsed_entities=None,
 ):
     from io import BytesIO
 
     if errorHandler is None:
         errorHandler = _ErrorHandler()
-    parser = make_parser()
+    parser = make_parser(
+        policy=policy,
+        budget=budget,
+        max_expansions=max_expansions,
+        max_depth=max_depth,
+        max_bytes=max_bytes,
+        max_unparsed_entities=max_unparsed_entities,
+    )
     parser.setContentHandler(handler)
     parser.setErrorHandler(errorHandler)
     parser.forbid_dtd = forbid_dtd
-    parser.forbid_entities = forbid_entities
+    parser.forbid_entities = (
+        parser.policy is None if forbid_entities is None else forbid_entities
+    )
     parser.forbid_external = forbid_external
 
     inpsrc = _InputSource()
@@ -56,5 +86,5 @@ def parseString(
     parser.parse(inpsrc)
 
 
-def make_parser(parser_list=[]):
-    return expatreader.create_parser()
+def make_parser(parser_list=[], **kwargs):
+    return expatreader.create_parser(**kwargs)

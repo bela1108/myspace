@@ -83,3 +83,16 @@ def _apply_defusing(defused_mod):
             continue
         setattr(stdlib_mod, name, obj)
     return stdlib_mod
+
+
+# Policy types live in their own module; re-export them here because
+# ``defusedxml.common`` is the conventional home for public errors/helpers.
+from .policy import (  # noqa: E402
+    BudgetExceeded,
+    BudgetPolicy,
+    CommonPolicy,
+    ControlledRejection,
+    EntityBudget,
+    PolicyRejected,
+    RejectionReason,
+)

@@ -17,6 +17,15 @@ from .common import (
     NotSupportedError,
     _apply_defusing,
 )
+from .policy import (
+    BudgetExceeded,
+    BudgetPolicy,
+    CommonPolicy,
+    ControlledRejection,
+    EntityBudget,
+    PolicyRejected,
+    RejectionReason,
+)
 
 
 def defuse_stdlib():
@@ -65,4 +74,11 @@ __all__ = [
     "EntitiesForbidden",
     "ExternalReferenceForbidden",
     "NotSupportedError",
+    "BudgetExceeded",
+    "BudgetPolicy",
+    "CommonPolicy",
+    "ControlledRejection",
+    "EntityBudget",
+    "PolicyRejected",
+    "RejectionReason",
 ]
