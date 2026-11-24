@@ -36,11 +36,14 @@ class DefusedExpatParser(_ExpatParser):
     def defused_entity_decl(
         self, name, is_parameter_entity, value, base, sysid, pubid, notation_name
     ):
-        raise EntitiesForbidden(name, value, base, sysid, pubid, notation_name)
+        kind = "parameter_entity" if is_parameter_entity else "entity"
+        raise EntitiesForbidden(name, value, base, sysid, pubid, notation_name, kind)
 
     def defused_unparsed_entity_decl(self, name, base, sysid, pubid, notation_name):
         # expat 1.2
-        raise EntitiesForbidden(name, None, base, sysid, pubid, notation_name)  # pragma: no cover
+        raise EntitiesForbidden(  # pragma: no cover
+            name, None, base, sysid, pubid, notation_name, "unparsed_entity"
+        )
 
     def defused_external_entity_ref_handler(self, context, base, sysid, pubid):
         raise ExternalReferenceForbidden(context, base, sysid, pubid)

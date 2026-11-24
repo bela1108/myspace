@@ -126,7 +126,16 @@ def check_docinfo(elementtree, forbid_dtd=False, forbid_entities=True):
             if dtd is None:
                 continue
             for entity in dtd.iterentities():
-                raise EntitiesForbidden(entity.name, entity.content, None, None, None, None)
+                etype = getattr(entity, "etype", "")
+                if "PARAMETER" in etype:
+                    kind = "parameter_entity"
+                elif "UNPARSED" in etype:
+                    kind = "unparsed_entity"
+                else:
+                    kind = "entity"
+                raise EntitiesForbidden(
+                    entity.name, entity.content, None, None, None, None, kind
+                )
 
 
 def parse(source, parser=None, base_url=None, forbid_dtd=False, forbid_entities=True):

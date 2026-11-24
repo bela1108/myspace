@@ -39,7 +39,7 @@ class DTDForbidden(DefusedXmlException):
 class EntitiesForbidden(DefusedXmlException):
     """Entity definition is forbidden"""
 
-    def __init__(self, name, value, base, sysid, pubid, notation_name):
+    def __init__(self, name, value, base, sysid, pubid, notation_name, kind=None):
         super().__init__()
         self.name = name
         self.value = value
@@ -47,6 +47,7 @@ class EntitiesForbidden(DefusedXmlException):
         self.sysid = sysid
         self.pubid = pubid
         self.notation_name = notation_name
+        self.kind = kind
 
     def __str__(self):
         tpl = "EntitiesForbidden(name='{}', system_id={!r}, public_id={!r})"
