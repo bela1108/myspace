@@ -16,6 +16,7 @@ import traceback
 from rich import progress
 
 from bandit.core import constants as b_constants
+from bandit.core import coverage as b_coverage
 from bandit.core import extension_loader
 from bandit.core import issue
 from bandit.core import meta_ast as b_meta_ast
@@ -41,6 +42,7 @@ class BanditManager:
         quiet=False,
         profile=None,
         ignore_nosec=False,
+        shard=None,
     ):
         """Get logger, config, AST handler, and result store ready
 
@@ -52,6 +54,8 @@ class BanditManager:
         :param quiet: Whether to only show output in the case of an error
         :param profile_name: Optional name of profile to use (from cmd line)
         :param ignore_nosec: Whether to ignore #nosec or not
+        :param shard: Optional shard identifier recorded in the coverage
+                ledger, used to track offline scan provenance
         :return:
         """
         self.debug = debug
@@ -71,6 +75,32 @@ class BanditManager:
         self.metrics = metrics.Metrics()
         self.b_ts = b_test_set.BanditTestSet(config, profile)
         self.scores = []
+        self.coverage = b_coverage.CoverageLedger(
+            config_digest=self._coverage_config_digest(),
+            shard=shard or "default",
+        )
+        self.metrics.coverage = self.coverage
+
+    def _selected_rule_ids(self):
+        """Return the sorted ids of the rules selected for this scan."""
+        return sorted({p.plugin._test_id for p in self.b_ts.plugins})
+
+    def _unselected_rule_ids(self):
+        """Return ids of known rules that were not selected for this scan."""
+        extman = extension_loader.MANAGER
+        known = set(extman.plugins_by_id)
+        if extman.blacklist:
+            known.add("B001")
+        return sorted(known - set(self._selected_rule_ids()))
+
+    def _coverage_config_digest(self):
+        return b_coverage.CoverageLedger.digest_config(
+            self._selected_rule_ids()
+        )
+
+    def get_coverage_report(self):
+        """Return a text report of the rule x file coverage ledger."""
+        return self.coverage.report()
 
     def get_skipped(self):
         ret = []
@@ -305,6 +335,18 @@ class BanditManager:
             lines = data.splitlines()
             self.metrics.begin(fname)
             self.metrics.count_locs(lines)
+            self.coverage.begin_file(
+                fname, b_coverage.CoverageLedger.digest_source(data)
+            )
+            for rule_id in self._selected_rule_ids():
+                self.coverage.record(rule_id, fname, b_coverage.SELECTED)
+            for rule_id in self._unselected_rule_ids():
+                self.coverage.record(
+                    rule_id,
+                    fname,
+                    b_coverage.SKIPPED,
+                    detail="rule not selected",
+                )
             # nosec_lines is a dict of line number -> set of tests to ignore
             #                                         for the line
             nosec_lines = dict()
@@ -322,6 +364,9 @@ class BanditManager:
             score = self._execute_ast_visitor(fname, fdata, data, nosec_lines)
             self.scores.append(score)
             self.metrics.count_issues([score])
+            self.coverage.transition_file(
+                fname, b_coverage.SELECTED, b_coverage.COMPLETED
+            )
         except KeyboardInterrupt:
             sys.exit(2)
         except SyntaxError:
@@ -329,6 +374,12 @@ class BanditManager:
                 (fname, "syntax error while parsing AST from file")
             )
             new_files_list.remove(fname)
+            self.coverage.transition_file(
+                fname,
+                b_coverage.SELECTED,
+                b_coverage.FAILED,
+                detail="syntax error while parsing AST from file",
+            )
         except Exception as e:
             LOG.error(
                 "Exception occurred when executing tests against %s.", fname
@@ -340,6 +391,12 @@ class BanditManager:
 
             self.skipped.append((fname, "exception while scanning file"))
             new_files_list.remove(fname)
+            self.coverage.transition_file(
+                fname,
+                b_coverage.SELECTED,
+                b_coverage.FAILED,
+                detail="exception while scanning file",
+            )
             LOG.debug("  Exception string: %s", e)
             LOG.debug("  Exception traceback: %s", traceback.format_exc())
 

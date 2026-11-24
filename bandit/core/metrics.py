@@ -24,6 +24,8 @@ class Metrics:
             "nosec": 0,
             "skipped_tests": 0,
         }
+        # optional rule x file coverage ledger, attached by the manager
+        self.coverage = None
 
         # initialize 0 totals for criteria and rank; this will be reset later
         for rank in constants.RANKING:

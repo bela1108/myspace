@@ -8,6 +8,7 @@ import warnings
 
 from bandit.core import constants
 from bandit.core import context as b_context
+from bandit.core import coverage as b_coverage
 from bandit.core import utils
 
 warnings.formatwarning = utils.warnings_formatter
@@ -85,12 +86,24 @@ class BanditTester:
                         if not nosec_tests_to_skip:
                             LOG.debug("skipped, nosec without test number")
                             self.metrics.note_nosec()
+                            self._note_coverage(
+                                b_coverage.SKIPPED,
+                                test,
+                                temp_context,
+                                "nosec",
+                            )
                             continue
                         if result.test_id in nosec_tests_to_skip:
                             LOG.debug(
                                 f"skipped, nosec for test {result.test_id}"
                             )
                             self.metrics.note_skipped_test()
+                            self._note_coverage(
+                                b_coverage.SKIPPED,
+                                test,
+                                temp_context,
+                                f"nosec {result.test_id}",
+                            )
                             continue
 
                     self.results.append(result)
@@ -119,10 +132,28 @@ class BanditTester:
 
             except Exception as e:
                 self.report_error(name, context, e)
+                self._note_coverage(
+                    b_coverage.FAILED, test, temp_context, str(e)
+                )
                 if self.debug:
                     raise
         LOG.debug("Returning scores: %s", scores)
         return scores
+
+    def _note_coverage(self, state, test, context, detail=""):
+        """Record a rule x file coverage cell if a ledger is attached."""
+        cov = getattr(self.metrics, "coverage", None)
+        if cov is None:
+            return
+        fname = context.get("filename")
+        if isinstance(fname, bytes):
+            fname = fname.decode("utf-8")
+        try:
+            cov.record(test._test_id, fname, state, detail=detail)
+        except b_coverage.CoverageConflictError:
+            raise
+        except Exception as e:
+            LOG.debug("unable to record coverage for %s: %s", fname, e)
 
     def _get_nosecs_from_contexts(self, context, test_result=None):
         """Use context and optional test result to get set of tests to skip.
