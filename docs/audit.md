@@ -134,6 +134,44 @@ $ detect-secrets audit --stats --json --diff limit4 limit5
 }
 ```
 
+## Recovery Probes
+
+Aggregate statistics can hide a dead plugin: if two plugins match the same marker, the surviving
+plugin keeps reporting findings even after the other one stops running. A recovery probe removes
+that blind spot by holding every plugin accountable against a known set of labelled test samples.
+
+A probe manifest (e.g. `test_data/recovery_probe/probe.yaml`) identifies each marker by its hashed
+value, names the plugin(s) expected to catch it, and marks entries that every plugin must ignore.
+Each plugin then answers for:
+
+* its own exclusive positives,
+* the positives it shares with other plugins,
+* the negative samples it is supposed to leave alone.
+
+Run a fresh probe scan and print the per-plugin ledger with:
+
+```bash
+$ detect-secrets audit --probe path/to/probe.yaml
+```
+
+Add `--gate` to enforce a release decision. The gate exits non-zero if any plugin misses a
+positive sample or flags a negative one, even when the total number of findings looks healthy:
+
+```bash
+$ detect-secrets audit --probe path/to/probe.yaml --gate
+```
+
+An older baseline that predates the probe sample identities can still be reconciled for display,
+but a comparison-only run can never satisfy the release gate. Releasing recovery still requires a
+fresh, verified probe run:
+
+```bash
+$ detect-secrets audit --probe path/to/probe.yaml --compare-baseline .secrets.baseline
+```
+
+Use `--json` with any of these commands for machine-readable per-plugin positive and negative
+counts.
+
 ## Extracting Raw Secrets
 
 There are times you want to extract the raw secret values to run further analysis on. You can do

@@ -29,7 +29,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     if args.action == 'scan':
         handle_scan_action(args)
     elif args.action == 'audit':
-        handle_audit_action(args)
+        try:
+            return handle_audit_action(args)
+        except audit.recovery.RecoveryCheckFailed as e:
+            print(str(e), file=sys.stderr)
+            return 1
 
     return 0
 
@@ -117,9 +121,11 @@ def scan_adhoc_string(line: str) -> str:
     ])
 
 
-def handle_audit_action(args: argparse.Namespace) -> None:
+def handle_audit_action(args: argparse.Namespace) -> int:
     try:
-        if args.stats:
+        if args.probe:
+            return _handle_recovery_probe(args)
+        elif args.stats:
             stats = audit.analytics.calculate_statistics_for_baseline(args.filename[0])
             if args.diff:
                 # TODO
@@ -152,3 +158,29 @@ def handle_audit_action(args: argparse.Namespace) -> None:
                 audit.audit_baseline(args.filename[0])
     except InvalidBaselineError:
         pass
+
+    return 0
+
+
+def _handle_recovery_probe(args: argparse.Namespace) -> int:
+    if args.compare_baseline:
+        report = audit.recovery.compare_historical_baseline(
+            args.probe,
+            args.compare_baseline,
+        )
+    else:
+        report = audit.recovery.run_recovery_probe(args.probe)
+
+    if args.json:
+        print(json.dumps(report.json(), indent=2))
+    else:
+        print(str(report))
+
+    if args.gate:
+        if not report.passed:
+            raise audit.recovery.RecoveryCheckFailed(
+                'Recovery probe gate failed: every plugin must account for all of '
+                'its probe samples. See the per-plugin counts above.',
+            )
+
+    return 0

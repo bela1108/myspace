@@ -1,0 +1,57 @@
+# Recovery probe manifest.
+#
+# Each entry identifies a labelled marker by its hashed value, names the plugin(s)
+# that are expected to catch it, and marks the entries that every plugin must ignore.
+# The hashed_secret values are the sha1 of the literal marker (see samples.py), so
+# the plaintext secrets never need to live in this manifest.
+version: '1.0.0'
+
+plugins_used:
+    - classname: AlphaTokenDetector
+      path: plugins/alpha_token.py
+    - classname: BetaTokenDetector
+      path: plugins/beta_token.py
+
+samples:
+    # Marker 1: only Alpha is expected to catch it.
+    - id: alpha-only-marker
+      marker: RP-ALPHA-ONLY-00010203
+      filename: samples.py
+      line_number: 9
+      is_negative: false
+      expected_plugins:
+          - AlphaTokenDetector
+      hashed_secret: 154ff1d9d40fa0bf858afd338cbaf115b9afe6b7
+
+    # Marker 2: a shared positive. Both plugins must report it on their own ledger,
+    # so a dead plugin cannot hide behind the survivor's findings.
+    - id: shared-marker
+      marker: RP-SHARED-04050607
+      filename: samples.py
+      line_number: 10
+      is_negative: false
+      expected_plugins:
+          - AlphaTokenDetector
+          - BetaTokenDetector
+      hashed_secret: 09076953600c3fa8c7cc43c77e5a7cf89d6476c7
+
+    # Marker 3: only Beta is expected to catch it.
+    - id: beta-only-marker
+      marker: RP-BETA-ONLY-08090a0b
+      filename: samples.py
+      line_number: 11
+      is_negative: false
+      expected_plugins:
+          - BetaTokenDetector
+      hashed_secret: fe9d7c552f4d2e914f241204157c0a6c87576963
+
+    # Marker 4: a negative. Every listed plugin must ignore it.
+    - id: negative-decoy
+      marker: RP-NEGATIVE-LOOKALIKE-10111213
+      filename: samples.py
+      line_number: 13
+      is_negative: true
+      expected_plugins:
+          - AlphaTokenDetector
+          - BetaTokenDetector
+      hashed_secret: 437eddc3c26b76907da1325d9c654909ae71968f

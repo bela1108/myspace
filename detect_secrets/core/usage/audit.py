@@ -14,16 +14,17 @@ def add_audit_action(parent: argparse._SubParsersAction) -> argparse.ArgumentPar
 
     parser.add_argument(
         'filename',
-        nargs='+',
+        nargs='*',
         help=(
             'Audit a given baseline file to distinguish the difference '
-            'between false and true positives.'
+            'between false and true positives. Optional when --probe is used.'
         ),
     )
 
     _add_mode_parser(parser)
     _add_report_module(parser)
     _add_statistics_module(parser)
+    _add_recovery_probe_module(parser)
     return cast(argparse.ArgumentParser, parser)
 
 
@@ -55,6 +56,45 @@ def _add_mode_parser(parser: argparse.ArgumentParser) -> None:
         ),
     )
 
+
+
+def _add_recovery_probe_module(parser: argparse.ArgumentParser) -> None:
+    group = parser.add_argument_group(
+        title='recovery probe',
+        description=(
+            'Holds each plugin accountable against a labelled set of test samples. '
+            'Use --probe with a probe manifest; add --gate to enforce a release decision.'
+        ),
+    )
+
+    group.add_argument(
+        '--probe',
+        metavar='PROBE_FILE',
+        help=(
+            'Path to a recovery probe manifest. Runs a fresh scan of the probe '
+            'samples and reports per-plugin positive/negative accounting.'
+        ),
+    )
+
+    group.add_argument(
+        '--gate',
+        action='store_true',
+        help=(
+            'Treat the recovery probe result as a release gate: exit non-zero if any '
+            'plugin misses a positive sample or flags a negative one. Comparison-only '
+            'runs never pass the gate.'
+        ),
+    )
+
+    group.add_argument(
+        '--compare-baseline',
+        metavar='BASELINE_FILE',
+        help=(
+            'Reconcile an existing baseline against the probe samples without scanning. '
+            'A baseline that predates the probe can only be displayed for comparison; it '
+            'cannot satisfy the release gate (use a fresh --probe run for that).'
+        ),
+    )
 
 def _add_report_module(parent: argparse.ArgumentParser) -> None:
     parser = parent.add_argument_group(
@@ -107,7 +147,17 @@ def parse_args(args: argparse.Namespace) -> None:
         raise argparse.ArgumentTypeError(
             '--diff mode requires two files to compare with each other.',
         )
-    elif not args.diff and len(args.filename) != 1:
+    elif not args.diff and not args.probe and len(args.filename) != 1:
         raise argparse.ArgumentTypeError(
             'Can only specify one baseline at a time.',
+        )
+
+    if args.compare_baseline and not args.probe:
+        raise argparse.ArgumentTypeError(
+            '--compare-baseline requires a --probe manifest.',
+        )
+
+    if args.gate and not args.probe:
+        raise argparse.ArgumentTypeError(
+            '--gate requires a --probe manifest.',
         )
