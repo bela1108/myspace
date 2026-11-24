@@ -1,0 +1,16 @@
+{
+  "description": "Both resident template versions observed for EID 2024/6113 are authoritative.",
+  "event_template_guids": {
+    "withdrawal_request": [
+      "520e6584-8fb6-5000-18fd-9567eb5ac94a",
+      "176d51c9-d4d9-5cfa-eb57-6218ab6dc6df"
+    ],
+    "generated_record": [
+      "520e6584-8fb6-5000-18fd-9567eb5ac94a",
+      "176d51c9-d4d9-5cfa-eb57-6218ab6dc6df"
+    ],
+    "later_service_event": [
+      "176d51c9-d4d9-5cfa-eb57-6218ab6dc6df"
+    ]
+  }
+}

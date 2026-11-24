@@ -31,6 +31,8 @@ Examples
 --------
 Provided with the parsing module `Evtx` are four scripts that mimic the tools distributed with Parse-Evtx.  `evtx_info.py` prints metadata about the event log and verifies the checksums of each chunk.  `evtx_templates.py` builds and prints the templates used throughout the event log. `evtx_dump.py` parses the event log and transforms the binary XML into a human readable ASCII XML format. Finally, `evtx_dump_json.py` parses event logs, similar to `evtx_dump.py` and transforms the binary XML into JSON with the added capability to output the JSON array to a file. 
 
+An additional offline analysis script, `evtx_rebut.py`, tests a documented case claim against one or more EVTX files.  The claim is supplied as JSON that names finite event identities, required chronological orderings and field interpretations, and an optional template proof maps each identity to authoritative template GUIDs.  For every assertion the script reports the shortest credible record that `rebuts` it, or marks it `unconfirmable` when the deciding material is absent, unrenderable or tied to a template version that cannot be established; missing or corrupt records are never treated as contradictions.  See `examples/rebuttal/README.md` for sample claims, template proofs and end-to-end commands.
+
 Note the length of the `evtx_dump.py` script: its only 20 lines.  Now, review the contents and notice the complete implementation of the logic:
 
     print(e_views.XML_HEADER)

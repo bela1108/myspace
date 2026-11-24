@@ -1,0 +1,15 @@
+{
+  "title": "DNS analytical channel claim over a malformed log",
+  "events": {
+    "dns_query": {
+      "channel": "Microsoft-Windows-DNSServer/Analytical",
+      "event_id": 260
+    },
+    "unknown_dns_event": {
+      "channel": "Microsoft-Windows-DNSServer/Analytical",
+      "event_id": 257
+    }
+  },
+  "orderings": [],
+  "fields": []
+}

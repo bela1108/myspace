@@ -1,0 +1,14 @@
+{
+  "description": "Only the 176d51c9 version is authoritative; the 520e6584 version is unresolved.",
+  "event_template_guids": {
+    "withdrawal_request": [
+      "176d51c9-d4d9-5cfa-eb57-6218ab6dc6df"
+    ],
+    "generated_record": [
+      "176d51c9-d4d9-5cfa-eb57-6218ab6dc6df"
+    ],
+    "later_service_event": [
+      "176d51c9-d4d9-5cfa-eb57-6218ab6dc6df"
+    ]
+  }
+}

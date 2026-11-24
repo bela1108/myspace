@@ -1,0 +1,40 @@
+{
+  "title": "device withdrawal record generation claim (LiveId operational log)",
+  "events": {
+    "withdrawal_request": {
+      "channel": "Microsoft-Windows-LiveId/Operational",
+      "event_id": 6113,
+      "provider": "Microsoft-Windows-LiveId"
+    },
+    "generated_record": {
+      "channel": "Microsoft-Windows-LiveId/Operational",
+      "event_id": 2024,
+      "provider": "Microsoft-Windows-LiveId"
+    },
+    "later_service_event": {
+      "channel": "Microsoft-Windows-LiveId/Operational",
+      "event_id": 6117,
+      "provider": "Microsoft-Windows-LiveId"
+    },
+    "missing_acknowledgement": {
+      "channel": "Microsoft-Windows-LiveId/Operational",
+      "event_id": 9999,
+      "provider": "Microsoft-Windows-LiveId"
+    }
+  },
+  "orderings": [
+    {
+      "first": "withdrawal_request",
+      "relation": "before",
+      "second": "generated_record"
+    }
+  ],
+  "fields": [
+    {
+      "event": "generated_record",
+      "field": "Status",
+      "op": "equals",
+      "value": "0x00000001"
+    }
+  ]
+}

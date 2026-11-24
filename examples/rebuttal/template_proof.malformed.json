@@ -1,0 +1,8 @@
+{
+  "description": "Template proof tying the only resident DNS template to the dns_query identity.",
+  "event_template_guids": {
+    "dns_query": [
+      "561068e3-3468-5a3c-4464-ef4758bb742f"
+    ]
+  }
+}
