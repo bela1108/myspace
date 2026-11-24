@@ -1,3 +1,5 @@
+import copy
+import functools
 import re
 import unicodedata
 from collections import deque
@@ -6,7 +8,14 @@ import lxml.html
 import lxml.html.clean
 
 
-__all__ = ("Sanitizer",)
+__all__ = (
+    "Capability",
+    "CallbackSpec",
+    "ExtensionError",
+    "Sanitizer",
+    "apply_callbacks",
+    "extension",
+)
 
 
 def sanitize_href(href):
@@ -92,6 +101,186 @@ def filter_control_characters(text):
     if not text:
         return text
     return re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]", "", text)
+
+
+class Capability:
+    """Capabilities a sanitizer callback may declare for itself."""
+
+    ATTRIBUTES = "attributes"
+    TEXT = "text"
+    RENAME = "rename"
+    MOVE = "move"
+    REMOVE = "remove"
+
+
+ALL_CAPABILITIES = frozenset(
+    {
+        Capability.ATTRIBUTES,
+        Capability.TEXT,
+        Capability.RENAME,
+        Capability.MOVE,
+        Capability.REMOVE,
+    }
+)
+
+
+class ExtensionError(Exception):
+    """A callback exceeded its declared scope or capabilities."""
+
+
+class CallbackSpec:
+    """
+    A sanitizer callback with an optional node scope and capability
+    declarations.
+
+    ``scope`` limits the elements the callback is invoked on. It may be a
+    tag name, an iterable of tag names or a predicate callable. ``None``
+    (the default) matches all elements.
+
+    ``capabilities`` declares what the callback is allowed to do when run
+    through :func:`apply_callbacks`. Defaults to all capabilities, which
+    means no enforcement, matching the historical behavior of plain
+    callback functions.
+    """
+
+    def __init__(self, callback, *, scope=None, capabilities=None):
+        self.callback = callback
+        if scope is None or callable(scope):
+            self.scope = scope
+        elif isinstance(scope, str):
+            self.scope = frozenset({scope})
+        else:
+            self.scope = frozenset(scope)
+        self.capabilities = (
+            ALL_CAPABILITIES if capabilities is None else frozenset(capabilities)
+        )
+        unknown = self.capabilities - ALL_CAPABILITIES
+        if unknown:
+            raise TypeError(f"Unknown capabilities: {sorted(unknown)!r}")
+
+    def matches(self, element):
+        if self.scope is None:
+            return True
+        if callable(self.scope):
+            return bool(self.scope(element))
+        return element.tag in self.scope
+
+    def __call__(self, element):
+        if self.matches(element):
+            return self.callback(element)
+        return element
+
+    def __repr__(self):
+        return f"{type(self).__name__}({self.callback!r}, scope={self.scope!r})"
+
+
+def extension(callback=None, *, scope=None, capabilities=None):
+    """
+    Wrap a sanitizer callback in a :class:`CallbackSpec`, optionally
+    declaring a node scope and capabilities. Usable as a decorator.
+    """
+    if callback is None:
+        return functools.partial(extension, scope=scope, capabilities=capabilities)
+    return CallbackSpec(callback, scope=scope, capabilities=capabilities)
+
+
+def _element_state(element):
+    return (
+        element.tag,
+        dict(element.attrib),
+        element.text,
+        element.tail,
+        element.getparent(),
+    )
+
+
+def _within_boundary(element, boundary):
+    if element is boundary:
+        return True
+    return any(ancestor is boundary for ancestor in element.iterancestors())
+
+
+def _check_callback_bounds(spec, element, before, boundary):
+    if not _within_boundary(element, boundary):
+        if element.getparent() is None and Capability.REMOVE in spec.capabilities:
+            return  # Legitimately removed from the tree.
+        raise ExtensionError(
+            f"Callback {spec.callback!r} moved {element!r} out of bounds"
+        )
+    tag, attrib, text, tail, parent = before
+    if element.getparent() is not parent and Capability.MOVE not in spec.capabilities:
+        raise ExtensionError(
+            f"Callback {spec.callback!r} moved {element!r} without the"
+            f" {Capability.MOVE!r} capability"
+        )
+    if element.tag != tag and Capability.RENAME not in spec.capabilities:
+        raise ExtensionError(
+            f"Callback {spec.callback!r} renamed {element!r} without the"
+            f" {Capability.RENAME!r} capability"
+        )
+    if (
+        dict(element.attrib) != attrib
+        and Capability.ATTRIBUTES not in spec.capabilities
+    ):
+        raise ExtensionError(
+            f"Callback {spec.callback!r} modified attributes of {element!r}"
+            f" without the {Capability.ATTRIBUTES!r} capability"
+        )
+    if (element.text, element.tail) != (
+        text,
+        tail,
+    ) and Capability.TEXT not in spec.capabilities:
+        raise ExtensionError(
+            f"Callback {spec.callback!r} modified text of {element!r}"
+            f" without the {Capability.TEXT!r} capability"
+        )
+
+
+def _restore_element(element, backup):
+    element.tag = backup.tag
+    element.text = backup.text
+    element.tail = backup.tail
+    element.attrib.clear()
+    element.attrib.update(backup.attrib)
+    for child in list(element):
+        element.remove(child)
+    for child in backup:
+        element.append(copy.deepcopy(child))
+
+
+def apply_callbacks(root, callbacks):
+    """
+    Run ``callbacks`` sequentially on a fixed snapshot of the elements
+    below ``root``, atomically.
+
+    The set of visited nodes is fixed before the first callback runs;
+    nodes added by callbacks are not visited and nodes removed from the
+    tree are skipped. Plain callables are accepted and behave as before
+    (no scope, no capability enforcement). If any callback raises or
+    exceeds its declared capabilities -- for example by moving a node out
+    of the tree rooted at ``root`` -- all changes are rolled back and the
+    exception propagates.
+    """
+    specs = [
+        callback if isinstance(callback, CallbackSpec) else CallbackSpec(callback)
+        for callback in callbacks
+    ]
+    snapshot = list(root.iter())
+    backup = copy.deepcopy(root)
+    try:
+        for spec in specs:
+            for element in snapshot:
+                if not _within_boundary(element, root):
+                    continue  # Removed from the tree by an earlier callback.
+                if not spec.matches(element):
+                    continue
+                before = _element_state(element)
+                spec(element)
+                _check_callback_bounds(spec, element, before, root)
+    except Exception:
+        _restore_element(root, backup)
+        raise
+    return root
 
 
 def normalize_whitespace_in_text_or_tail(

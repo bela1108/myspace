@@ -119,7 +119,10 @@ The keys' meaning is as follows:
   processed in reverse depth-first order. Under certain circumstances
   elements are processed more than once (search the code for
   ``backlog.append``). Preprocessors are run before whitespace
-  normalization, postprocessors afterwards.
+  normalization, postprocessors afterwards. Instead of plain callables
+  you may also pass callbacks wrapped with ``extension(...)`` to limit
+  them to a node ``scope`` (a tag name, an iterable of tag names or a
+  predicate); out-of-scope elements are skipped.
 - ``is_mergeable``: Adjacent elements which aren't kept ``separate`` are
   merged by default. This callable can be used to prevent merging of
   adjacent elements e.g. when their classes do not match
@@ -145,6 +148,31 @@ An example for an even more restricted configuration might be::
 The rationale for such a restricted set of allowed tags (e.g. no
 images) is documented in the `design decisions`_ section of
 django-content-editor_'s documentation.
+
+Scoped callbacks with capabilities
+==================================
+
+Callbacks may declare a node scope and a set of capabilities using
+``extension`` (usable as a decorator)::
+
+    >>> from html_sanitizer import Capability, apply_callbacks, extension
+
+    >>> @extension(scope="p", capabilities={Capability.ATTRIBUTES})
+    ... def mark_paragraphs(element):
+    ...     element.set("class", "body")
+    ...     return element
+
+``apply_callbacks(root, callbacks)`` runs a list of callbacks
+sequentially on a fixed snapshot of the elements below ``root``: nodes
+added by callbacks are not visited and removed nodes are skipped. The
+run is atomic -- if a callback raises or exceeds its declared
+capabilities (for example by moving a node out of the subtree rooted at
+``root`` without the ``move`` or ``remove`` capability) all changes are
+rolled back and an ``ExtensionError`` (or the original exception)
+propagates. The available capabilities are ``attributes``, ``text``,
+``rename``, ``move`` and ``remove``. Plain callables are still accepted
+and behave as before, without scope filtering or capability enforcement.
+
 
 Django
 ======

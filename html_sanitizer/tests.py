@@ -1,6 +1,14 @@
 from unittest import TestCase
 
-from .sanitizer import Sanitizer
+import lxml.html
+
+from .sanitizer import (
+    Capability,
+    ExtensionError,
+    Sanitizer,
+    apply_callbacks,
+    extension,
+)
 
 
 default_sanitizer = Sanitizer()
@@ -830,3 +838,128 @@ git commit
             ],
             sanitizer=sanitizer,
         )
+
+
+class CallbackExtensionTestCase(TestCase):
+    def make_tree(self):
+        return lxml.html.fromstring("<div><p>one</p><p>two</p><span>keep</span></div>")
+
+    def serialize(self, root):
+        return lxml.html.tostring(root, encoding="unicode")
+
+    def test_apply_callbacks_sequential_and_scoped(self):
+        calls = []
+
+        @extension(scope="p", capabilities={Capability.ATTRIBUTES})
+        def mark_paragraphs(element):
+            calls.append(element)
+            element.set("class", "body")
+            return element
+
+        @extension(scope="span", capabilities={Capability.RENAME})
+        def span_to_em(element):
+            element.tag = "em"
+            return element
+
+        root = self.make_tree()
+        apply_callbacks(root, [mark_paragraphs, span_to_em])
+
+        # Scoped callbacks only ran on matching elements, in order.
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(
+            self.serialize(root),
+            '<div><p class="body">one</p><p class="body">two</p><em>keep</em></div>',
+        )
+
+    def test_apply_callbacks_fixed_snapshot(self):
+        seen = []
+
+        @extension(scope="p", capabilities={Capability.MOVE})
+        def duplicate(element):
+            seen.append(element)
+            copy = element.makeelement("p", {})
+            copy.text = "copy"
+            element.addnext(copy)
+            return element
+
+        root = self.make_tree()
+        apply_callbacks(root, [duplicate])
+
+        # Nodes added by callbacks are not visited: the snapshot is fixed.
+        self.assertEqual(len(seen), 2)
+        self.assertEqual(
+            self.serialize(root),
+            "<div><p>one</p><p>copy</p><p>two</p><p>copy</p><span>keep</span></div>",
+        )
+
+    def test_apply_callbacks_atomic_out_of_bounds(self):
+        @extension(scope="p", capabilities={Capability.ATTRIBUTES})
+        def mark_paragraphs(element):
+            element.set("class", "body")
+            return element
+
+        @extension(scope="span", capabilities={Capability.RENAME})
+        def span_to_em(element):
+            element.tag = "em"
+            return element
+
+        foreign = lxml.html.Element("div")
+
+        @extension(scope="p", capabilities={Capability.TEXT})
+        def move_out_of_bounds(element):
+            foreign.append(element)
+            return element
+
+        root = self.make_tree()
+        before = self.serialize(root)
+
+        with self.assertRaises(ExtensionError):
+            apply_callbacks(root, [mark_paragraphs, span_to_em, move_out_of_bounds])
+
+        # The whole commit is rolled back: even the two legal extensions'
+        # changes are gone.
+        self.assertEqual(self.serialize(root), before)
+
+    def test_apply_callbacks_atomic_exception(self):
+        @extension(scope="p", capabilities={Capability.ATTRIBUTES})
+        def mark_paragraphs(element):
+            element.set("class", "body")
+            return element
+
+        def broken(element):
+            raise ValueError("boom")
+
+        root = self.make_tree()
+        before = self.serialize(root)
+
+        with self.assertRaises(ValueError):
+            apply_callbacks(root, [mark_paragraphs, broken])
+
+        self.assertEqual(self.serialize(root), before)
+
+    def test_apply_callbacks_legacy_callables(self):
+        # Plain callables behave as before: no scope, no enforcement.
+        def drop_spans(element):
+            if element.tag == "span":
+                element.drop_tree()
+            return element
+
+        root = self.make_tree()
+        apply_callbacks(root, [drop_spans])
+        self.assertEqual(self.serialize(root), "<div><p>one</p><p>two</p></div>")
+
+    def test_callback_spec_in_sanitizer_settings(self):
+        def rename(element):
+            element.tag = "strong"
+            return element
+
+        sanitizer = Sanitizer({"element_preprocessors": [extension(rename, scope="b")]})
+        self.assertEqual(
+            sanitizer.sanitize("<p><b>x</b></p>"), "<p><strong>x</strong></p>"
+        )
+        # Out-of-scope elements are left alone by the wrapped callback.
+        self.assertEqual(sanitizer.sanitize("<p><i>x</i></p>"), "<p>x</p>")
+
+    def test_unknown_capability_rejected(self):
+        with self.assertRaises(TypeError):
+            extension(lambda element: element, capabilities={"fly"})

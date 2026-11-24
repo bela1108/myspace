@@ -7,6 +7,12 @@ Next version
 
 - Dropped support for Python < 3.10.
 - Added Python 3.14 and 3.15 to the CI matrix.
+- Added ``extension`` and ``CallbackSpec`` for wrapping sanitizer
+  callbacks with an optional node scope and capability declarations, and
+  ``apply_callbacks`` which runs callbacks sequentially on a fixed
+  snapshot of nodes and rolls back all changes if a callback raises or
+  moves a node out of bounds. Plain callable callbacks keep working
+  unchanged.
 
 2.7 (2026-10-25)
 ================
