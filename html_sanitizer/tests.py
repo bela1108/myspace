@@ -1,9 +1,390 @@
+from copy import deepcopy
+from contextlib import ExitStack
+from dataclasses import dataclass, replace
+import random
+import re
+from random import Random
 from unittest import TestCase
+from unittest.mock import patch
+import lxml.html
 
+from . import sanitizer as sanitizer_module
 from .sanitizer import Sanitizer
 
 
 default_sanitizer = Sanitizer()
+
+
+MUTATION_SEED = 20261125
+MUTATION_COUNT = 24
+FORBIDDEN_TAGS = (
+    "script",
+    "object",
+    "iframe",
+    "embed",
+    "svg",
+    "math",
+    "template",
+)
+EVENT_ATTRIBUTES = ("onerror", "onload", "onclick", "onfocus", "onanimationstart")
+DANGEROUS_PROTOCOLS = (
+    "javascript:alert(1)",
+    "JaVaScRiPt:alert(2)",
+    "java\tscript:alert(3)",
+    "vbscript:msgbox(4)",
+    "data:text/html,<script>alert(5)</script>",
+)
+SAFE_TAGS = ("p", "div", "span", "strong", "em", "a")
+COMMENT_PAYLOADS = (
+    "--><img src=x onerror=alert(6)>",
+    "[if IE]><img src=x onerror=alert(7)><![endif]",
+    "<![CDATA[<img src=x onerror=alert(8)>]]>",
+)
+
+
+def encode_entities(value):
+    replacements = {
+        "a": ("&#97;", "&Aacute;"),
+        "j": ("&#106;",),
+        "v": ("&#118;",),
+        "s": ("&#115;",),
+        "c": ("&#99;",),
+        "r": ("&#114;",),
+        "i": ("&#105;",),
+        "p": ("&#112;",),
+        "t": ("&#116;",),
+        ":": ("&#58;", "&colon;"),
+        "/": ("&#47;",),
+    }
+    encoded = []
+    for index, char in enumerate(value):
+        options = replacements.get(char.lower())
+        if options:
+            encoded.append(options[index % len(options)])
+        else:
+            encoded.append(char)
+    return "".join(encoded)
+
+
+def normalize_scheme(value):
+    return "".join(char for char in value.lower() if not char.isspace())
+
+
+def has_dangerous_protocol(value):
+    normalized = normalize_scheme(value)
+    return normalized.startswith(
+        (
+            "javascript:",
+            "vbscript:",
+            "data:text/html",
+            "file:",
+        )
+    )
+
+
+@dataclass(frozen=True)
+class TextNode:
+    text: str
+
+    def render(self):
+        return self.text
+
+    def contains_dangerous_mutation(self):
+        return any(
+            token in self.text.lower()
+            for token in ("<script", "<img", "<svg", "onerror", "onload")
+        )
+
+
+@dataclass(frozen=True)
+class CommentNode:
+    text: str
+
+    def render(self):
+        return f"<!--{self.text}-->"
+
+    def contains_dangerous_mutation(self):
+        lowered = self.text.lower()
+        return "<img" in lowered or "<script" in lowered or "onerror" in lowered
+
+
+@dataclass(frozen=True)
+class ElementNode:
+    tag: str
+    attributes: tuple = ()
+    children: tuple = ()
+
+    def render(self):
+        attribute_text = ""
+        for name, value in self.attributes:
+            attribute_text += f' {name}="{value}"'
+        children = "".join(child.render() for child in self.children)
+        return f"<{self.tag}{attribute_text}>{children}</{self.tag.split()[0]}>"
+
+    def contains_dangerous_mutation(self):
+        lowered_tag = self.tag.lower()
+        if lowered_tag in FORBIDDEN_TAGS:
+            return True
+        if any(name.lower().startswith("on") for name, _ in self.attributes):
+            return True
+        if any(
+            name.lower() == "href" and has_dangerous_protocol(value)
+            for name, value in self.attributes
+        ):
+            return True
+        return any(child.contains_dangerous_mutation() for child in self.children)
+
+
+@dataclass(frozen=True)
+class StageEvent:
+    stage: str
+    detail: str
+
+
+@dataclass(frozen=True)
+class MutationReport:
+    index: int
+    payload: str
+    minimized_payload: str
+    sanitized: str
+    resanitized: str
+    trace: tuple
+
+
+class FixedSeedMutator:
+    def __init__(self, seed=MUTATION_SEED):
+        self.random = Random(seed)
+
+    def generate(self, count=MUTATION_COUNT):
+        return [self.generate_mutation(index) for index in range(count)]
+
+    def generate_mutation(self, index):
+        random = self.random
+        children = [
+            self.protocol_anchor(),
+            self.event_element(),
+            self.forbidden_element(),
+            CommentNode(random.choice(COMMENT_PAYLOADS)),
+        ]
+        depth = random.randrange(2, 5)
+        nested = self.nest(children, depth)
+        if index % 2:
+            nested = (
+                ElementNode("p", (), nested),
+                TextNode("&lt;img src=x onerror=alert(9)&gt;"),
+            )
+        return ElementNode("div", (), nested)
+
+    def nest(self, children, depth):
+        if not depth:
+            return tuple(children)
+        wrapper = ElementNode(
+            random_tag(self.random, SAFE_TAGS),
+            (),
+            self.nest(children, depth - 1),
+        )
+        return (wrapper,)
+
+    def protocol_anchor(self):
+        protocol = self.random.choice(DANGEROUS_PROTOCOLS)
+        if self.random.randrange(2):
+            protocol = encode_entities(protocol)
+        return ElementNode("a", (("HREF", protocol),), (TextNode("link"),))
+
+    def event_element(self):
+        event = self.random.choice(EVENT_ATTRIBUTES)
+        if self.random.randrange(2):
+            event = mixed_case(event)
+        tag = random_tag(self.random, SAFE_TAGS)
+        return ElementNode(
+            tag,
+            ((event, "alert(10)"),),
+            (TextNode("mutated"),),
+        )
+
+    def forbidden_element(self):
+        tag = self.random.choice(FORBIDDEN_TAGS)
+        if self.random.randrange(2):
+            tag = mixed_case(tag)
+        return ElementNode(
+            tag,
+            (("OnErRoR", "alert(11)"),),
+            (TextNode("blocked"),),
+        )
+
+
+def random_tag(random, tags):
+    tag = random.choice(tags)
+    if random.randrange(2):
+        return mixed_case(tag)
+    return tag
+
+
+def mixed_case(value):
+    return "".join(
+        char.upper() if index % 2 else char.lower()
+        for index, char in enumerate(value)
+    )
+
+
+def tree_size(node):
+    if isinstance(node, ElementNode):
+        return 1 + sum(tree_size(child) for child in node.children)
+    return 1
+
+
+def with_children(element, children):
+    return replace(element, children=tuple(children))
+
+
+def minimize_tree(root):
+    candidate = replace(root)
+    while True:
+        reduced = reduce_tree_once(candidate)
+        if reduced == candidate:
+            return candidate
+        candidate = reduced
+
+
+def reduce_tree_once(root):
+    for index, child in enumerate(root.children):
+        without = with_children(root, root.children[:index] + root.children[index + 1 :])
+        if without.contains_dangerous_mutation():
+            return without
+
+        if isinstance(child, ElementNode):
+            if child.contains_dangerous_mutation():
+                unwrapped = with_children(
+                    root,
+                    root.children[:index] + child.children + root.children[index + 1 :],
+                )
+                if unwrapped.contains_dangerous_mutation():
+                    return unwrapped
+
+            reduced_child = reduce_tree_once(child)
+            if reduced_child != child:
+                return with_children(
+                    root,
+                    root.children[:index]
+                    + (reduced_child,)
+                    + root.children[index + 1 :],
+                )
+    return root
+
+
+def describe_element(element):
+    attributes = sorted((name, value) for name, value in element.attrib.items())
+    return f"{element.tag} {attributes}"
+
+
+def run_with_stage_trace(sanitizer, payload):
+    trace = []
+    configured = Sanitizer(sanitizer.__dict__.copy())
+
+    def parse_hook(parser, *args, **kwargs):
+        trace.append(StageEvent("parse", "lxml.html.fromstring"))
+        return parser(*args, **kwargs)
+
+    def soup_parse_hook(parser, *args, **kwargs):
+        trace.append(StageEvent("parse", "soupparser.fromstring"))
+        return parser(*args, **kwargs)
+
+    def tostring_hook(*args, **kwargs):
+        trace.append(StageEvent("serialize", "lxml.html.tostring"))
+        return sanitizer_module.lxml.html.tostring(*args, **kwargs)
+
+    def wrap_processor(name, processor):
+        def tracked(element):
+            result = processor(element)
+            trace.append(StageEvent("callback", f"{name}:{describe_element(result)}"))
+            return result
+
+        return tracked
+
+    configured.element_preprocessors = [
+        wrap_processor("preprocessor", processor)
+        for processor in configured.element_preprocessors
+    ]
+    configured.element_postprocessors = [
+        wrap_processor("postprocessor", processor)
+        for processor in configured.element_postprocessors
+    ]
+    configured.sanitize_href = wrap_href_callback(configured.sanitize_href, trace)
+
+    with ExitStack() as stack:
+        stack.enter_context(
+            patch.object(
+                sanitizer_module.lxml.html,
+                "fromstring",
+                side_effect=lambda *args, **kwargs: parse_hook(
+                    original_parse, *args, **kwargs
+                ),
+            )
+        )
+        stack.enter_context(
+            patch.object(
+                sanitizer_module.lxml.html,
+                "tostring",
+                side_effect=tostring_hook,
+            )
+        )
+        original_parse = sanitizer_module.lxml.html.fromstring
+        stack.enter_context(
+            patch.object(
+                sanitizer_module.lxml.html.soupparser,
+                "fromstring",
+                side_effect=lambda *args, **kwargs: soup_parse_hook(
+                    original_soup_parse, *args, **kwargs
+                ),
+            )
+        )
+        original_soup_parse = sanitizer_module.lxml.html.soupparser.fromstring
+        sanitized = configured.sanitize(payload)
+
+    return sanitized, tuple(trace)
+
+
+def wrap_href_callback(callback, trace):
+    def tracked(href):
+        result = callback(href)
+        trace.append(StageEvent("callback", f"sanitize_href:{href}->{result}"))
+        return result
+
+    return tracked
+
+
+def build_mutation_reports(sanitizer):
+    reports = []
+    for index, tree in enumerate(FixedSeedMutator().generate()):
+        payload = tree.render()
+        minimized_tree = minimize_tree(tree)
+        minimized_payload = minimized_tree.render()
+        sanitized, trace = run_with_stage_trace(sanitizer, minimized_payload)
+        resanitized = sanitizer.sanitize(sanitized)
+        reports.append(
+            MutationReport(
+                index=index,
+                payload=payload,
+                minimized_payload=minimized_payload,
+                sanitized=sanitized,
+                resanitized=resanitized,
+                trace=trace,
+            )
+        )
+    return reports
+
+
+def assert_sanitized_output_is_allowed(test_case, sanitizer, html):
+    parsed = sanitizer_module.lxml.html.fragment_fromstring(html, create_parent="div")
+    for element in parsed.iter():
+        if not isinstance(element.tag, str):
+            continue
+        test_case.assertIn(element.tag, sanitizer.tags)
+        allowed_attributes = sanitizer.attributes.get(element.tag, set())
+        for name, value in element.attrib.items():
+            test_case.assertIn(name, allowed_attributes)
+            test_case.assertFalse(name.lower().startswith("on"))
+            test_case.assertFalse(has_dangerous_protocol(value))
 
 
 class SanitizerTestCase(TestCase):
