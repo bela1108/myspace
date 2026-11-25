@@ -8,6 +8,14 @@ All versions prior to 0.0.9 are untracked.
 
 ## [Unreleased]
 
+### Added
+
+* `pip-audit` can now replay a saved remediation calendar with
+  `--remediation-calendar FILE`, `--as-of DATE`, and optional
+  `--weekly-report`. The calendar tracks first-seen, actionable, and deadline
+  moments separately, applies versioned maintenance windows only from their
+  effective dates, and skips weekends and holidays when computing deadlines.
+
 ### Fixed
 
 * Editable requirements skipped with `--skip-editable` no longer require a hash

@@ -6,11 +6,13 @@ from __future__ import annotations
 
 import argparse
 import enum
+import json
 import logging
 import os
 import sys
 from collections.abc import Iterator
 from contextlib import ExitStack, contextmanager
+from datetime import datetime
 from pathlib import Path
 from typing import IO, NoReturn, cast
 
@@ -31,6 +33,14 @@ from pip_audit._format import (
     JsonFormat,
     MarkdownFormat,
     VulnerabilityFormat,
+)
+from pip_audit._remediation import (
+    RemediationCalendar,
+    RemediationCalendarError,
+    build_report,
+    parse_reference,
+    render_json,
+    render_markdown,
 )
 from pip_audit._service import EcosystemsService, OsvService, PyPIService
 from pip_audit._service.interface import ConnectionError as VulnServiceConnectionError
@@ -373,6 +383,38 @@ def _parser() -> argparse.ArgumentParser:  # pragma: no cover
         default=os.environ.get("PIP_AUDIT_OUTPUT", "stdout"),
     )
     parser.add_argument(
+        "--remediation-calendar",
+        type=Path,
+        metavar="FILE",
+        help="emit a replayable remediation calendar from the given saved JSON/TOML file; "
+        "the report is written beside the normal audit results",
+    )
+    parser.add_argument(
+        "--as-of",
+        type=str,
+        metavar="DATE",
+        help="reference date or ISO 8601 timestamp used to replay the remediation calendar; "
+        "date-only values are interpreted as the start of the day in the calendar timezone",
+    )
+    parser.add_argument(
+        "--remediation-output",
+        type=Path,
+        metavar="FILE",
+        help="write the remediation calendar to the given file instead of stdout",
+    )
+    parser.add_argument(
+        "--remediation-format",
+        choices=("json", "markdown"),
+        default="json",
+        help="format for the remediation calendar (choices: json, markdown)",
+    )
+    parser.add_argument(
+        "--weekly-report",
+        action="store_true",
+        help="add week-by-week snapshots, each recomputed at its own cutoff, to the "
+        "remediation calendar",
+    )
+    parser.add_argument(
         "--ignore-vuln",
         type=str,
         metavar="ID",
@@ -438,12 +480,77 @@ def _dep_source_from_project_path(
     _fatal(f"couldn't find a supported project file in {project_path}")
 
 
+def _emit_outputs(
+    args: argparse.Namespace,
+    audit_text: str | None,
+    remediation_text: str | None,
+) -> None:
+    """Write the audit output and an optional remediation calendar side by side."""
+    audit_is_stdout = str(args.output) in {"stdout", "-"}
+    remediation_is_stdout = args.remediation_output is None or str(args.remediation_output) in {
+        "stdout",
+        "-",
+    }
+
+    if remediation_text is None:
+        if audit_text is not None:
+            with _output_io(args.output) as io:
+                print(audit_text, file=io)
+        return
+
+    can_merge = (
+        audit_text is not None
+        and audit_is_stdout
+        and remediation_is_stdout
+        and args.format is OutputFormatChoice.Json
+        and args.remediation_format == "json"
+    )
+    if can_merge:
+        assert audit_text is not None
+        assert remediation_text is not None
+        combined = json.loads(audit_text)
+        combined["remediation"] = json.loads(remediation_text)["remediation_calendar"]
+        print(json.dumps(combined, indent=2))
+        return
+
+    if audit_text is not None:
+        with _output_io(args.output) as io:
+            print(audit_text, file=io)
+
+    if remediation_is_stdout:
+        if audit_text is not None and audit_is_stdout:
+            print()
+            print("--- remediation calendar ---")
+        print(remediation_text)
+    else:
+        with _output_io(args.remediation_output) as io:
+            print(remediation_text, file=io)
+
+
 def audit() -> None:  # pragma: no cover
     """
     The primary entrypoint for `pip-audit`.
     """
     parser = _parser()
     args = _parse_args(parser)
+
+    remediation_calendar: RemediationCalendar | None = None
+    reference: datetime | None = None
+    if args.remediation_calendar is not None:
+        try:
+            remediation_calendar = RemediationCalendar.load(args.remediation_calendar)
+            reference = parse_reference(args.as_of, remediation_calendar)
+        except RemediationCalendarError as exc:
+            _fatal(f"invalid remediation calendar: {exc}")
+    else:
+        if args.as_of is not None:
+            parser.error("--as-of requires --remediation-calendar")
+        if args.remediation_output is not None:
+            parser.error("--remediation-output requires --remediation-calendar")
+        if args.weekly_report:
+            parser.error("--weekly-report requires --remediation-calendar")
+        if args.remediation_format != "json":
+            parser.error("--remediation-format requires --remediation-calendar")
 
     service: VulnerabilityService
     if args.vulnerability_service is VulnerabilityServiceChoice.Osv:
@@ -613,6 +720,7 @@ def audit() -> None:  # pragma: no cover
                         fix = SkippedFixVersion(fix.dep, skip_reason)
                 fixes.append(fix)
 
+    audit_text: str | None = None
     if vuln_count > 0:
         if vuln_ignore_count:
             ignored = f", ignored {vuln_ignore_count}"
@@ -632,10 +740,7 @@ def audit() -> None:  # pragma: no cover
                 f"{'package' if fixed_pkg_count == 1 else 'packages'}"
             )
         print(summary_msg, file=sys.stderr)
-        with _output_io(args.output) as io:
-            print(formatter.format(result, fixes), file=io)
-        if pkg_count != fixed_pkg_count:
-            sys.exit(1)
+        audit_text = formatter.format(result, fixes)
     else:
         summary_msg = "No known vulnerabilities found"
         if vuln_ignore_count:
@@ -648,5 +753,24 @@ def audit() -> None:  # pragma: no cover
         # If our output format is a "manifest" format we always emit it,
         # even if nothing other than a dependency summary is present.
         if skip_count > 0 or formatter.is_manifest:
-            with _output_io(args.output) as io:
-                print(formatter.format(result, fixes), file=io)
+            audit_text = formatter.format(result, fixes)
+
+    remediation_text: str | None = None
+    if remediation_calendar is not None and reference is not None:
+        try:
+            report = build_report(
+                remediation_calendar,
+                reference,
+                result,
+                weekly=args.weekly_report,
+            )
+        except RemediationCalendarError as exc:
+            _fatal(f"invalid remediation calendar: {exc}")
+        remediation_text = (
+            render_json(report) if args.remediation_format == "json" else render_markdown(report)
+        )
+
+    _emit_outputs(args, audit_text, remediation_text)
+
+    if vuln_count > 0 and pkg_count != fixed_pkg_count:
+        sys.exit(1)

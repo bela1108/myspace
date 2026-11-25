@@ -1,0 +1,22 @@
+schema_version = 1
+timezone = "UTC"
+default_sla_business_days = 0
+
+[[maintenance_calendars]]
+effective_at = "2026-01-01T00:00:00Z"
+windows = [{ weekdays = ["mon"], start = "00:00", end = "23:59" }]
+holidays = []
+
+[[version_groups]]
+id = "g"
+package = "pkg"
+versions = ["1.0"]
+
+[[version_groups.alerts]]
+id = "A"
+first_seen = "2026-01-05T00:00:00Z"
+
+[[patches]]
+group = "g"
+alert = "A"
+available_at = "2026-01-05T00:00:00Z"

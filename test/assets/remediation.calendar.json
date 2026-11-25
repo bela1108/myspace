@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "timezone": "Asia/Shanghai",
+  "default_sla_business_days": 5,
+  "maintenance_calendars": [
+    {
+      "effective_at": "2026-11-01T00:00:00+08:00",
+      "windows": [
+        {
+          "weekdays": ["tue", "thu"],
+          "start": "02:00",
+          "end": "06:00"
+        }
+      ],
+      "holidays": ["2026-11-19"]
+    },
+    {
+      "effective_at": "2026-11-20T00:00:00+08:00",
+      "windows": [
+        {
+          "weekdays": ["tue", "thu", "sat"],
+          "start": "01:00",
+          "end": "05:00"
+        }
+      ],
+      "holidays": []
+    }
+  ],
+  "version_groups": [
+    {
+      "id": "retail-stable",
+      "line": "retail",
+      "package": "demo-pkg",
+      "versions": ["1.4.0"],
+      "alerts": [
+        {
+          "id": "CVE-2026-1000",
+          "first_seen": "2026-11-03T09:00:00+08:00",
+          "sla_business_days": 10
+        }
+      ]
+    },
+    {
+      "id": "retail-legacy",
+      "line": "legacy",
+      "package": "demo-pkg",
+      "versions": ["0.9.3"],
+      "alerts": [
+        {
+          "id": "CVE-2026-1000",
+          "first_seen": "2026-11-03T09:00:00+08:00",
+          "sla_business_days": 10
+        }
+      ]
+    }
+  ],
+  "patches": [
+    {
+      "group": "retail-stable",
+      "alert": "CVE-2026-1000",
+      "fixed_version": "1.4.1",
+      "available_at": "2026-11-03T15:00:00+08:00"
+    },
+    {
+      "group": "retail-legacy",
+      "alert": "CVE-2026-1000",
+      "fixed_version": "0.9.4",
+      "available_at": "2026-12-10T15:00:00+08:00"
+    }
+  ]
+}

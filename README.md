@@ -32,6 +32,7 @@ with support from Google, and is currently maintained under the
   * [Environment variables](#environment-variables)
   * [Exit codes](#exit-codes)
   * [Dry runs](#dry-runs)
+  * [Remediation calendars](#remediation-calendars)
 * [Examples](#examples)
 * [Troubleshooting](#troubleshooting)
 * [Tips and Tricks](#tips-and-tricks)
@@ -142,7 +143,10 @@ usage: pip-audit [-h] [-V] [-l] [-r REQUIREMENT] [--locked] [-f FORMAT]
                  [--timeout TIMEOUT] [--path PATH] [-v] [--fix]
                  [--require-hashes] [--index-url INDEX_URL]
                  [--extra-index-url URL] [--skip-editable] [--no-deps]
-                 [-o FILE] [--ignore-vuln ID] [--disable-pip]
+                 [-o FILE] [--remediation-calendar FILE] [--as-of DATE]
+                 [--remediation-output FILE]
+                 [--remediation-format {json,markdown}] [--weekly-report]
+                 [--ignore-vuln ID] [--disable-pip]
                  [project_path]
 
 audit the Python environment for dependencies with known vulnerabilities
@@ -220,6 +224,22 @@ options:
                         False)
   -o FILE, --output FILE
                         output results to the given file (default: stdout)
+  --remediation-calendar FILE
+                        emit a replayable remediation calendar from the given
+                        saved JSON/TOML file; the report is written beside the
+                        normal audit results (default: None)
+  --as-of DATE          reference date or ISO 8601 timestamp used to replay
+                        the remediation calendar; date-only values are
+                        interpreted as the start of the day in the calendar
+                        timezone (default: None)
+  --remediation-output FILE
+                        write the remediation calendar to the given file
+                        instead of stdout (default: None)
+  --remediation-format {json,markdown}
+                        format for the remediation calendar (choices: json,
+                        markdown) (default: json)
+  --weekly-report       add week-by-week snapshots, each recomputed at its own
+                        cutoff, to the remediation calendar (default: False)
   --ignore-vuln ID      ignore a specific vulnerability by its vulnerability
                         ID; this option can be used multiple times (default:
                         [])
@@ -266,6 +286,124 @@ an audit (or fix) step is actually performed.
 * In fix mode, `pip-audit --fix --dry-run` performs the auditing step and prints
   out the fix behavior (i.e., which dependencies would be upgraded or skipped)
   that *would have been performed*.
+
+### Remediation calendars
+
+`pip-audit` can replay a saved remediation calendar next to the normal audit
+result. The calendar is fully local: it accepts a JSON or TOML file containing
+fictional maintenance windows, version groups, and patch-availability moments,
+and never consults a service or the wall clock.
+
+The replay keeps three moments separate for every version group/alert pair:
+
+* `first_seen`: when the group first observed the alert.
+* `actionable_at`: the first instant at which a fix exists **and** a maintenance
+  window is open (or the next window after the patch arrives).
+* `due_at` / `due_date`: the end of the SLA, counted in business days from
+  `actionable_at`. Weekends and calendar holidays are skipped.
+
+Maintenance calendars are versioned. Each version has an `effective_at`; replay
+uses the version in effect at each date. A calendar saved later cannot rewrite
+windows or holidays that have already passed: it only changes the schedule from
+its effective moment onwards. A report replayed before a version takes effect
+does not see that version at all, including in projected dates. The report
+includes a digest of the effective inputs and the reference date, so the same
+inputs and `--as-of` reproduce the same output.
+
+Example input:
+
+```json
+{
+  "schema_version": 1,
+  "timezone": "Asia/Shanghai",
+  "maintenance_calendars": [
+    {
+      "effective_at": "2026-11-01T00:00:00+08:00",
+      "windows": [{"weekdays": ["tue", "thu"], "start": "02:00", "end": "06:00"}],
+      "holidays": ["2026-11-19"]
+    },
+    {
+      "effective_at": "2026-11-20T00:00:00+08:00",
+      "windows": [{"weekdays": ["tue", "thu", "sat"], "start": "01:00", "end": "05:00"}],
+      "holidays": []
+    }
+  ],
+  "version_groups": [
+    {
+      "id": "retail-stable",
+      "line": "retail",
+      "package": "demo-pkg",
+      "versions": ["1.4.0"],
+      "alerts": [
+        {
+          "id": "CVE-2026-1000",
+          "first_seen": "2026-11-03T09:00:00+08:00",
+          "sla_business_days": 10
+        }
+      ]
+    },
+    {
+      "id": "retail-legacy",
+      "line": "legacy",
+      "package": "demo-pkg",
+      "versions": ["0.9.3"],
+      "alerts": [
+        {
+          "id": "CVE-2026-1000",
+          "first_seen": "2026-11-03T09:00:00+08:00",
+          "sla_business_days": 10
+        }
+      ]
+    }
+  ],
+  "patches": [
+    {
+      "group": "retail-stable",
+      "alert": "CVE-2026-1000",
+      "fixed_version": "1.4.1",
+      "available_at": "2026-11-03T15:00:00+08:00"
+    },
+    {
+      "group": "retail-legacy",
+      "alert": "CVE-2026-1000",
+      "fixed_version": "0.9.4",
+      "available_at": "2026-12-10T15:00:00+08:00"
+    }
+  ]
+}
+```
+
+Replay it as of a reference date:
+
+```console
+$ pip-audit -r requirements.txt -f json \
+    --remediation-calendar remediation.json \
+    --as-of 2026-11-27 --weekly-report
+```
+
+With `-f json` and both reports on stdout, the calendar is merged under the
+top-level `"remediation"` key next to `"dependencies"` and `"fixes"`. Use
+`--remediation-output FILE` for a separate artifact (JSON by default, or
+Markdown with `--remediation-format markdown`).
+
+In the example above, the 2026-11-19 holiday pushes `retail-stable` past its
+deadline, so the 2026-11-27 report marks it `overdue`; `retail-legacy` remains
+`waiting_patch` until its 2026-12-10 patch arrives.
+
+`--weekly-report` adds one snapshot per ISO week. Each snapshot is recomputed at
+its own cutoff (Sunday 23:59:59), with the final, partial week cut off at
+`--as-of`. This is the report to hand to scheduling: a group can be
+`waiting_patch` in one week, `actionable` after the fix and a window arrive, and
+`overdue` after the deadline, without any stored state being rewritten.
+
+The statuses are:
+
+* `waiting_patch`: no patch is recorded, or its `available_at` is after the
+  reference date.
+* `waiting_window`: a patch exists, but the next maintenance window is still in
+  the future.
+* `actionable`: the fix can be applied now and the deadline has not passed.
+* `overdue`: the fix was actionable, but the deadline has passed.
 
 ## Examples
 
