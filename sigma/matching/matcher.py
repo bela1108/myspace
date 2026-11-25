@@ -28,16 +28,25 @@ class SigmaMatcher:
         self,
         collection: SigmaCollection,
         pipeline: ProcessingPipeline | None = None,
+        processing_pipeline: ProcessingPipeline | None = None,
         max_workers: int | None = None,
         max_events_per_match: int | None = 100,
         max_correlation_state: int | None = None,
     ) -> None:
         self._compiler = MatchCompiler()
+        pipeline = pipeline if pipeline is not None else processing_pipeline
+        self.pipeline = pipeline
+        self.processing_pipeline = pipeline
 
-        # Apply pipeline if provided
+        # Apply pipeline if provided. Each apply() resets the pipeline-owned tracking
+        # object, so retain the object belonging to each rule for its match output.
+        rule_tracking: dict[int, Any] = {}
+        rule_processing_items: dict[int, set[str]] = {}
         if pipeline is not None:
             for rule in collection.rules:
                 pipeline.apply(rule)
+                rule_tracking[id(rule)] = pipeline.field_mappings
+                rule_processing_items[id(rule)] = set(pipeline.applied_ids)
 
         # Build dispatch table and correlation matchers
         self._dispatch: dict[tuple[str | None, str | None, str | None], list[SigmaRuleMatcher]] = (
@@ -50,7 +59,15 @@ class SigmaMatcher:
 
         for rule in collection.rules:
             if isinstance(rule, SigmaRule):
-                rm = SigmaRuleMatcher(rule, self._compiler)
+                tracking = rule_tracking.get(id(rule))
+                applied_ids = rule_processing_items.get(id(rule), set())
+                rm = SigmaRuleMatcher(
+                    rule,
+                    self._compiler,
+                    processing_tracking=tracking,
+                    processing_items=applied_ids,
+                    processing_pipeline=pipeline,
+                )
                 self._all_rule_matchers.append(rm)
                 key = (
                     rule.logsource.category,

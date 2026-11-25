@@ -332,7 +332,12 @@ class FieldMappingTransformationBase(DetectionItemTransformation):
                 )
         if field_match or fieldref_match:  # field name was changed or field reference was mapped
             if self._pipeline is not None and mapping is not None:
-                self._pipeline.field_mappings.add_mapping(field, mapping)
+                processing_item_id = getattr(self.processing_item, "identifier", None)
+                self._pipeline.field_mappings.add_mapping(
+                    field,
+                    mapping,
+                    processing_item_id=processing_item_id,
+                )
             return result
         return None  # no replacement was made
 

@@ -52,7 +52,36 @@ class SigmaCorrelationRuleMatcher:
 
         window_matches = self._state.get_window(group_key, match.timestamp)
         result = self._evaluate(window_matches, group_key, match.timestamp)
+        for correlation_match in result:
+            correlation_match.merge_source_tracking(window_matches)
+            self._record_alias_provenance(correlation_match)
         return result
+
+    def _record_alias_provenance(self, match: SigmaMatch) -> None:
+        """Attach correlation alias merges to a correlation match's provenance graph."""
+        from sigma.processing.provenance import FieldProvenanceGraph
+        from sigma.processing.tracking import FieldMappingTracking
+
+        if match.provenance is None:
+            match.provenance = FieldProvenanceGraph()
+        if match.processing_tracking is None:
+            tracker = FieldMappingTracking()
+            tracker.provenance = match.provenance
+            match.processing_tracking = tracker
+            match.field_mappings = tracker
+            match.field_mapping_tracking = tracker
+            match.tracking = tracker
+
+        for alias_name, alias_def in self.rule.aliases.aliases.items():
+            mapping = {
+                getattr(rule_ref, "reference", str(rule_ref)): field_name
+                for rule_ref, field_name in alias_def.mapping.items()
+            }
+            match.provenance.add_alias_merge(
+                alias_name,
+                mapping=mapping,
+                rule_reference=getattr(self.rule, "name", None),
+            )
 
     def _extract_group_key(self, match: SigmaMatch) -> tuple[Any, ...]:
         """Extract group-by field values from match events."""
