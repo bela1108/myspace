@@ -8,6 +8,7 @@ import logging
 from minidump.minidumpfile import MinidumpFile
 from minidump.common_structs import hexdump
 from minidump.minidumpshell import MinidumpShell
+from minidump.dumpcompare import CollectionIntent, compare_dumps
 from minidump._version import __banner__
 
 
@@ -31,6 +32,11 @@ def run():
 	parser.add_argument('--all', action='store_true', help='Show all info')
 	parser.add_argument('-r', '--read-addr', type=lambda x: int(x,0), help='Dump a memory region from the process\'s addres space')
 	parser.add_argument('-s', '--read-size', type=lambda x: int(x,0), default = 0x20, help='Dump a memory region from the process\'s addres space')
+	parser.add_argument('--compare', metavar='OTHER_DUMP', help='Read-only comparison of this dump against another dump that reuses the same process ID (e.g. lightweight vs full dump across a process restart)')
+	parser.add_argument('--pid', type=lambda x: int(x,0), default=None, help='Expected process ID for the comparison')
+	parser.add_argument('--generation', type=lambda x: int(x,0), default=None, help='Expected process generation number (ProcessCreateTime) of the collection')
+	parser.add_argument('--window-start', type=lambda x: int(x,0), default=None, help='Start of the collection window (epoch seconds)')
+	parser.add_argument('--window-end', type=lambda x: int(x,0), default=None, help='End of the collection window (epoch seconds)')
 
 	args = parser.parse_args()
 	if args.verbose == 0:
@@ -41,6 +47,17 @@ def run():
 		logging.basicConfig(level=1)
 
 	print(__banner__)
+
+	if args.compare is not None:
+		intent = CollectionIntent(
+			process_id = args.pid,
+			generation = args.generation,
+			window_start = args.window_start,
+			window_end = args.window_end,
+		)
+		report = compare_dumps(intent, [args.minidumpfile, args.compare])
+		print(str(report))
+		return
 
 	if args.interactive:
 		shell = MinidumpShell()
