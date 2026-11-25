@@ -112,6 +112,61 @@ Windows Shortcut Information:
 }
 ```
 
+## Offline DistributedLinkTracker lineage
+
+The parser exposes the two DROID identity pairs from each `TrackerDataBlock`:
+`droid_volume_identifier`/`droid_file_identifier` (current) and
+`birth_droid_volume_identifier`/`birth_droid_file_identifier` (original).
+`LnkParse3.lineage` reconciles those pairs across local samples without any
+network lookup.
+
+A migration or copy edge is proposed only when an older observation's current
+identity equals a newer observation's birth identity. A shared current identity
+is reported as identity sharing (`snapshot_reuse` or an ambiguous
+`continuation`), so repeated backups are not silently collapsed. Caller
+metadata is used as constraints:
+
+- `collection_order` must not go backwards.
+- Hardware generation must not go from newer to older for migration/copy edges.
+- LNK header timestamps can only reject an edge whose target predates its
+  source. They never create an edge.
+- All equally supported predecessors are retained in `ties` and `branches`.
+
+```python
+import LnkParse3
+
+samples = [
+    {"sample_id": "backup-a", "path": "tests/samples/sample9", "machine_identifier": "old-pc"},
+    {"sample_id": "backup-b", "path": "tests/samples/sample9", "machine_identifier": "old-pc"},
+    # ... a newer sample whose birth identifiers match backup-a's current pair
+]
+
+result = LnkParse3.build_lineage(
+    samples,
+    hardware_generations={"old-pc": 1, "new-pc": 2},
+    collection_order=["backup-a", "backup-b", "backup-c", "backup-d"],
+)
+print(result.to_dict()["ties"])           # tied predecessors are preserved
+LnkParse3.export_lineage(result, "lineage.json")
+LnkParse3.export_lineage_edges(result, "edges.jsonl", format="jsonl")
+```
+
+Each edge carries `provenance` with the source sample, the exact
+`droid_*`/`birth_droid_*` fields compared, and every collection-order,
+hardware-generation, and header-time constraint checked. The four local
+observations in `tests/lineage/four_samples.json` and the four binary LNK
+files under `tests/lineage/samples/` (manifest: `tests/lineage/four_samples_lnk.json`)
+intentionally include `backup-a` and `backup-b` as tied predecessors of
+`backup-c`; review tools can inspect the tie instead of guessing which snapshot
+is the continuation.
+
+The manifest can also be processed from the command line:
+
+```console
+$ python -m LnkParse3.lineage tests/lineage/four_samples.json \
+    --output lineage.json --include-snapshot-edges
+```
+
 # Extracted data
 
 List of data in LNK structure and their current status of implementation.

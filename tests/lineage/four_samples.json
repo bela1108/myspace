@@ -1,0 +1,91 @@
+{
+  "description": "Four local observations: two backup snapshots of the same old identity, one migration onto a new generation, and one follow-on copy. backup-c intentionally has two equally supported predecessors.",
+  "collection_order": [
+    "backup-a",
+    "backup-b",
+    "backup-c",
+    "backup-d"
+  ],
+  "hardware_generations": {
+    "desk-old": 1,
+    "desk-new": 2
+  },
+  "generation_order": {
+    "desk-old": 1,
+    "desk-new": 2
+  },
+  "samples": [
+    {
+      "sample_id": "backup-a",
+      "source": "backup-2023-01",
+      "collection_batch": "backup-2023-01",
+      "machine_identifier": "desk-old",
+      "header": {
+        "creation_time": "2020-01-01T00:00:00+00:00",
+        "access_time": "2020-01-02T00:00:00+00:00",
+        "modified_time": "2020-01-02T00:00:00+00:00"
+      },
+      "tracker": {
+        "machine_identifier": "desk-old",
+        "droid_volume_identifier": "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA",
+        "droid_file_identifier": "11111111-1111-1111-1111-111111111111",
+        "birth_droid_volume_identifier": "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA",
+        "birth_droid_file_identifier": "11111111-1111-1111-1111-111111111111"
+      }
+    },
+    {
+      "sample_id": "backup-b",
+      "source": "backup-2023-01",
+      "collection_batch": "backup-2023-01",
+      "machine_identifier": "desk-old",
+      "header": {
+        "creation_time": "2020-01-01T00:00:00+00:00",
+        "access_time": "2020-01-02T00:00:00+00:00",
+        "modified_time": "2020-01-02T00:00:00+00:00"
+      },
+      "tracker": {
+        "machine_identifier": "desk-old",
+        "droid_volume_identifier": "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA",
+        "droid_file_identifier": "11111111-1111-1111-1111-111111111111",
+        "birth_droid_volume_identifier": "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA",
+        "birth_droid_file_identifier": "11111111-1111-1111-1111-111111111111"
+      }
+    },
+    {
+      "sample_id": "backup-c",
+      "source": "backup-2023-02",
+      "collection_batch": "backup-2023-02",
+      "machine_identifier": "desk-new",
+      "header": {
+        "creation_time": "2021-01-01T00:00:00+00:00",
+        "access_time": "2021-01-02T00:00:00+00:00",
+        "modified_time": "2021-01-02T00:00:00+00:00"
+      },
+      "tracker": {
+        "machine_identifier": "desk-new",
+        "droid_volume_identifier": "BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB",
+        "droid_file_identifier": "22222222-2222-2222-2222-222222222222",
+        "birth_droid_volume_identifier": "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA",
+        "birth_droid_file_identifier": "11111111-1111-1111-1111-111111111111"
+      }
+    },
+    {
+      "sample_id": "backup-d",
+      "source": "backup-2023-03",
+      "collection_batch": "backup-2023-03",
+      "machine_identifier": "desk-new",
+      "header": {
+        "creation_time": "2022-01-01T00:00:00+00:00",
+        "access_time": "2022-01-02T00:00:00+00:00",
+        "modified_time": "2022-01-02T00:00:00+00:00"
+      },
+      "tracker": {
+        "machine_identifier": "desk-new",
+        "droid_volume_identifier": "CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCCCC",
+        "droid_file_identifier": "33333333-3333-3333-3333-333333333333",
+        "birth_droid_volume_identifier": "BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB",
+        "birth_droid_file_identifier": "22222222-2222-2222-2222-222222222222"
+      }
+    }
+  ]
+}

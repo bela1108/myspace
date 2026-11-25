@@ -1,0 +1,39 @@
+{
+  "description": "Four binary LNK samples; backup-a and backup-b are tied predecessors of backup-c.",
+  "collection_order": [
+    "backup-a",
+    "backup-b",
+    "backup-c",
+    "backup-d"
+  ],
+  "hardware_generations": {
+    "desk-old": 1,
+    "desk-new": 2
+  },
+  "samples": [
+    {
+      "sample_id": "backup-a",
+      "path": "tests/lineage/samples/backup-a.lnk",
+      "machine_identifier": "desk-old",
+      "collection_batch": "backup-2023-01"
+    },
+    {
+      "sample_id": "backup-b",
+      "path": "tests/lineage/samples/backup-b.lnk",
+      "machine_identifier": "desk-old",
+      "collection_batch": "backup-2023-01"
+    },
+    {
+      "sample_id": "backup-c",
+      "path": "tests/lineage/samples/backup-c.lnk",
+      "machine_identifier": "desk-new",
+      "collection_batch": "backup-2023-02"
+    },
+    {
+      "sample_id": "backup-d",
+      "path": "tests/lineage/samples/backup-d.lnk",
+      "machine_identifier": "desk-new",
+      "collection_batch": "backup-2023-03"
+    }
+  ]
+}

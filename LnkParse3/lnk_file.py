@@ -60,6 +60,38 @@ class LnkFile:
     def force_no_link_info(self):
         return bool("ForceNoLinkInfo" in self.header.link_flags())
 
+    def distributed_trackers(self):
+        """Return all DistributedLinkTracker blocks present in this shortcut."""
+        if not getattr(self, "extras", None):
+            return []
+        return [
+            extra
+            for extra in self.extras
+            if getattr(extra, "name", lambda: None)() == "DISTRIBUTED_LINK_TRACKER_BLOCK"
+        ]
+
+    def distributed_tracker(self):
+        """Return the first DistributedLinkTracker block, if any."""
+        trackers = self.distributed_trackers()
+        return trackers[0] if trackers else None
+
+    distributed_link_tracker = distributed_tracker
+
+    def get_distributed_tracker(self):
+        return self.distributed_tracker()
+
+    get_distributed_link_tracker = get_distributed_tracker
+
+    def tracker_identity(self):
+        """Return normalized current/original DROID identifiers for this file."""
+        from LnkParse3.lineage import parse_tracker_identity
+
+        return parse_tracker_identity(self)
+
+    get_tracker_identity = tracker_identity
+    distributed_tracker_identity = tracker_identity
+    lineage_identity = tracker_identity
+
     def process(self):
         index = 0
 

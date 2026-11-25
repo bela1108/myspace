@@ -104,3 +104,48 @@ class DistributedTracker(LnkExtraBase):
         tmp["birth_droid_volume_identifier"] = self.droid_birth_volume_id()
         tmp["birth_droid_file_identifier"] = self.droid_birth_file_id()
         return tmp
+
+    def current_identity(self):
+        """Return the current DROID volume/file pair as a normalized mapping."""
+        from LnkParse3.lineage import DroidIdentity
+
+        return DroidIdentity(self.droid_volume_id(), self.droid_file_id())
+
+    def original_identity(self):
+        """Return the birth/original DROID volume/file pair."""
+        from LnkParse3.lineage import DroidIdentity
+
+        return DroidIdentity(self.droid_birth_volume_id(), self.droid_birth_file_id())
+
+    birth_identity = original_identity
+
+    def has_current_identity(self):
+        return self.current_identity().is_complete
+
+    def has_original_identity(self):
+        return self.original_identity().is_complete
+
+    def identity_status(self):
+        """Classify this block as original, derived, or unknown-origin."""
+        current = self.current_identity()
+        original = self.original_identity()
+        if not current.is_complete or not original.is_complete:
+            return "unknown_origin"
+        if current.key == original.key:
+            return "original"
+        return "derived"
+
+    def lineage_identity(self):
+        """Return the normalized current/original identities in one mapping."""
+        current = self.current_identity()
+        original = self.original_identity()
+        return {
+            "machine_identifier": self.machine_id(),
+            "current": current.as_dict(),
+            "original": original.as_dict() if original.is_complete else None,
+            "birth": original.as_dict() if original.is_complete else None,
+            "current_key": current.key_text,
+            "original_key": original.key_text if original.is_complete else None,
+            "status": self.identity_status(),
+            "is_original": self.identity_status() == "original",
+        }

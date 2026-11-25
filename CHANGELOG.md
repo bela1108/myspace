@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) since v1.0.0.
 
 ## [Unreleased]
+### Added
+- Offline DistributedLinkTracker lineage reconciliation with current/original DROID
+  identities, caller-supplied collection order and hardware generations, header-time
+  constraints, preserved tied predecessors, and provenance-bearing edge export.
 
 ## [1.6.0] - 2026-02-27
 ### Added
