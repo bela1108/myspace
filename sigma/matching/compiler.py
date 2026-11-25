@@ -13,6 +13,7 @@ from sigma.conditions import (
     ConditionValueExpression,
 )
 from sigma.rule.rule import SigmaRule
+from sigma.matching.values import MISSING
 from sigma.types import (
     CompareOperators,
     SigmaBool,
@@ -58,7 +59,12 @@ class MatchCompiler:
             expr = "(" + " or ".join(parts) + ")"
 
         func_code = f"def _match(data, raw):\n    return {expr}\n"
-        namespace: dict[str, Any] = {"__builtins__": {"str": str}}
+        namespace: dict[str, Any] = {
+            "__builtins__": {"str": str},
+            "_field_text": _field_text,
+            "_field_number": _field_number,
+            "_MISSING": MISSING,
+        }
         namespace.update(closures)
         code_obj = compile(func_code, "<sigma_matcher>", "exec")
         exec(code_obj, namespace)  # noqa: S102
@@ -83,7 +89,7 @@ class MatchCompiler:
 
     def _compile_field_value(self, field_name: str, value: Any, closures: dict[str, Any]) -> str:
         if isinstance(value, SigmaNull):
-            return f"(data.get({field_name!r}) is None)"
+            return f"({field_name!r} in data and data[{field_name!r}] is None)"
 
         elif isinstance(value, SigmaBool):
             bool_val = bool(value)
@@ -99,13 +105,37 @@ class MatchCompiler:
             ref_field = value.field
             if value.starts_with and value.ends_with:
                 # contains
-                return f"(str(data.get({ref_field!r}, '')) in str(data.get({field_name!r}, '')))"
+                field_text = f"_ref_contains_field_{len(closures)}"
+                ref_text = f"_ref_contains_ref_{len(closures)}"
+                return (
+                    f"(({field_text} := _field_text(data, {field_name!r})) is not _MISSING "
+                    f"and ({ref_text} := _field_text(data, {ref_field!r})) is not _MISSING "
+                    f"and {ref_text} in {field_text})"
+                )
             elif value.starts_with:
-                return f"(str(data.get({field_name!r}, '')).startswith(str(data.get({ref_field!r}, ''))))"
+                field_text = f"_ref_start_field_{len(closures)}"
+                ref_text = f"_ref_start_ref_{len(closures)}"
+                return (
+                    f"(({field_text} := _field_text(data, {field_name!r})) is not _MISSING "
+                    f"and ({ref_text} := _field_text(data, {ref_field!r})) is not _MISSING "
+                    f"and {field_text}.startswith({ref_text}))"
+                )
             elif value.ends_with:
-                return f"(str(data.get({field_name!r}, '')).endswith(str(data.get({ref_field!r}, ''))))"
+                field_text = f"_ref_end_field_{len(closures)}"
+                ref_text = f"_ref_end_ref_{len(closures)}"
+                return (
+                    f"(({field_text} := _field_text(data, {field_name!r})) is not _MISSING "
+                    f"and ({ref_text} := _field_text(data, {ref_field!r})) is not _MISSING "
+                    f"and {field_text}.endswith({ref_text}))"
+                )
             else:
-                return f"(data.get({field_name!r}) == data.get({ref_field!r}))"
+                left_var = f"_ref_left_{len(closures)}"
+                right_var = f"_ref_right_{len(closures)}"
+                return (
+                    f"(({left_var} := _field_value(data, {field_name!r})) is not _MISSING "
+                    f"and ({right_var} := _field_value(data, {ref_field!r})) is not _MISSING "
+                    f"and {left_var} == {right_var})"
+                )
 
         elif isinstance(value, SigmaCompareExpression):
             num_val = value.number.number
@@ -117,7 +147,11 @@ class MatchCompiler:
                 CompareOperators.NEQ: "!=",
             }
             op_str = op_map[value.op]
-            return f"(data.get({field_name!r}, 0) {op_str} {num_val!r})"
+            value_var = f"_number_value_{len(closures)}"
+            return (
+                f"(({value_var} := _field_number(data, {field_name!r})) is not _MISSING "
+                f"and {value_var} {op_str} {num_val!r})"
+            )
 
         elif isinstance(value, SigmaCIDRExpression):
             var_name = f"_cidr_{len(closures)}"
@@ -138,7 +172,11 @@ class MatchCompiler:
             for flag in value.flags:
                 flags |= value.sigma_to_python_flags[flag]
             closures[var_name] = re.compile(str(value.regexp), flags)
-            return f"({var_name}.search(str(data.get({field_name!r}, ''))) is not None)"
+            text_var = f"_regex_text_{len(closures)}"
+            return (
+                f"(({text_var} := _field_text(data, {field_name!r})) is not _MISSING "
+                f"and {var_name}.search({text_var}) is not None)"
+            )
 
         elif isinstance(value, SigmaNumber):
             num = value.number
@@ -165,18 +203,29 @@ class MatchCompiler:
         if not value.contains_special():
             # Plain string equality
             plain = str(value)
+            text_var = f"_plain_text_{len(closures)}"
             if case_sensitive:
-                return f"(str(data.get({field_name!r}, '')) == {plain!r})"
+                return (
+                    f"(({text_var} := _field_text(data, {field_name!r})) is not _MISSING "
+                    f"and {text_var} == {plain!r})"
+                )
             else:
                 lower_val = plain.lower()
-                return f"(str(data.get({field_name!r}, '')).lower() == {lower_val!r})"
+                return (
+                    f"(({text_var} := _field_text(data, {field_name!r})) is not _MISSING "
+                    f"and {text_var}.lower() == {lower_val!r})"
+                )
         else:
             # Contains wildcards - compile to regex
             regex_str = self._sigma_string_to_regex(value)
             flags = 0 if case_sensitive else re.IGNORECASE
             var_name = f"_pat_{len(closures)}"
             closures[var_name] = re.compile(regex_str, flags)
-            return f"({var_name}.search(str(data.get({field_name!r}, ''))) is not None)"
+            text_var = f"_pattern_text_{len(closures)}"
+            return (
+                f"(({text_var} := _field_text(data, {field_name!r})) is not _MISSING "
+                f"and {var_name}.search({text_var}) is not None)"
+            )
 
     def _sigma_string_to_regex(self, value: SigmaString) -> str:
         """Convert a SigmaString with wildcards to a regex pattern (anchored)."""
@@ -223,6 +272,33 @@ class MatchCompiler:
             return "(" + " or ".join(sub_parts) + ")"
         else:
             return "False"
+
+
+def _field_text(data: dict[str, Any], field_name: str) -> Any:
+    if field_name not in data:
+        return MISSING
+    value = data[field_name]
+    if value is None:
+        return MISSING
+    if isinstance(value, str):
+        return value
+    return str(value)
+
+
+def _field_number(data: dict[str, Any], field_name: str) -> Any:
+    if field_name not in data:
+        return MISSING
+    value = data[field_name]
+    if value is None or value == "":
+        return MISSING
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, (int, float)):
+        return value
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return MISSING
 
 
 def _try_cidr(value: Any, network: Any) -> bool:

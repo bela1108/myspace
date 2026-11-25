@@ -183,7 +183,7 @@ detection:
     condition: selection
 """
         assert len(self._match(yaml_str, {"field": None})) == 1
-        assert len(self._match(yaml_str, {"other": "val"})) == 1  # field not present = None
+        assert len(self._match(yaml_str, {"other": "val"})) == 0  # missing is not explicit null
         assert len(self._match(yaml_str, {"field": "something"})) == 0
 
     def test_boolean(self):

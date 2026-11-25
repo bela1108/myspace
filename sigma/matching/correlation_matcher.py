@@ -19,6 +19,7 @@ from sigma.correlations import (
 from sigma.matching.event import Event
 from sigma.matching.match import SigmaMatch
 from sigma.matching.state import SlidingWindowState
+from sigma.matching.values import MISSING
 
 
 class SigmaCorrelationRuleMatcher:
@@ -62,12 +63,15 @@ class SigmaCorrelationRuleMatcher:
         values: list[Any] = []
         event = match.events[0] if match.events else None
         if event is None:
-            return tuple(None for _ in self.rule.group_by)
+            return tuple(MISSING for _ in self.rule.group_by)
 
         for field_name in self.rule.group_by:
             # Check aliases
             resolved_field = self._resolve_alias(field_name, match)
-            values.append(event.data.get(resolved_field))
+            if resolved_field not in event.data:
+                values.append(MISSING)
+            else:
+                values.append(event.data[resolved_field])
         return tuple(values)
 
     def _resolve_alias(self, field_name: str, match: SigmaMatch) -> str:
