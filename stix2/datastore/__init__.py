@@ -16,6 +16,14 @@ from abc import ABCMeta, abstractmethod
 import uuid
 
 from stix2.datastore.filters import Filter, FilterSet
+from stix2.datastore.disclosure import (
+    external_observable_difference,
+    observable_diff,
+    observable_difference,
+    stable_equivalent_output,
+    stable_output,
+    stable_view,
+)
 from stix2.utils import deduplicate
 
 
@@ -711,3 +719,31 @@ class CompositeDataSource(DataSource):
 
     def get_all_data_sources(self):
         return self.data_sources
+
+
+def _stable_equivalent_output(self, identity=None, **kwargs):
+    from stix2.datastore.disclosure import stable_equivalent_output
+    return stable_equivalent_output(self, identity=identity, **kwargs)
+
+
+def _observable_difference(self, other=None, *args, **kwargs):
+    from stix2.datastore.disclosure import observable_difference
+    return observable_difference(self, other, *args, **kwargs)
+
+
+def _disclosure_page(self, query=None, identity=None, **kwargs):
+    from stix2.disclosure import paginate, stable_equivalent_output
+    if kwargs.pop("stable", False):
+        return stable_equivalent_output(self, identity=identity, query=query, **kwargs)
+    objects = self.query([] if query is None else query)
+    return paginate(objects, **kwargs)
+
+
+for _cls in (DataStoreMixin, DataSource):
+    _cls.stable_equivalent_output = _stable_equivalent_output
+    _cls.stable_output = _stable_equivalent_output
+    _cls.stable_view = _stable_equivalent_output
+    _cls.disclosure_page = _disclosure_page
+    _cls.observable_difference = _observable_difference
+    _cls.observable_diff = _observable_difference
+    _cls.external_observable_difference = _observable_difference

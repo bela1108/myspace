@@ -19,7 +19,7 @@ Note:
 |
 """
 
-from stix2.markings import granular_markings, object_markings
+from stix2.markings import differential, disclosure, granular_markings, object_markings
 
 
 def get_markings(obj, selectors=None, inherited=False, descendants=False, marking_ref=True, lang=True):
@@ -253,3 +253,16 @@ _MarkingsMixin.remove_markings = remove_markings
 _MarkingsMixin.add_markings = add_markings
 _MarkingsMixin.clear_markings = clear_markings
 _MarkingsMixin.is_marked = is_marked
+
+
+observable_difference = disclosure.observable_difference
+observable_diff = disclosure.observable_diff
+external_observable_difference = disclosure.external_observable_difference
+marking_summary = disclosure.marking_summary
+stable_marking_output = disclosure.stable_marking_output
+stable_summary = disclosure.stable_summary
+
+_MarkingsMixin.observable_difference = observable_difference
+_MarkingsMixin.observable_diff = observable_diff
+_MarkingsMixin.external_observable_difference = external_observable_difference
+_MarkingsMixin.marking_summary = marking_summary
