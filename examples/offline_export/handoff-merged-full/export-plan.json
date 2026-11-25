@@ -1,0 +1,447 @@
+{
+  "mirror": "/Users/bill/领域专项项目/state/ds-approved-20261124/myspace/workspaces/ds20261122-myspace-defpy-024/examples/offline_export/tiny-mirror",
+  "assurance_level": "full",
+  "status": "ready",
+  "mergeable": true,
+  "sufficient": true,
+  "requests": [
+    {
+      "request_id": "repair-review-one",
+      "targets": [
+        "approved/repair-target-one.bin"
+      ],
+      "found": true,
+      "complete": true,
+      "approved": true,
+      "roles": [
+        "root",
+        "timestamp",
+        "snapshot",
+        "targets",
+        "parent",
+        "update-a"
+      ],
+      "shared_prefix": [
+        "root",
+        "timestamp",
+        "snapshot",
+        "targets",
+        "parent"
+      ],
+      "records": [
+        {
+          "role": "root",
+          "ref": "metadata/root.json",
+          "status": "ready",
+          "required": true,
+          "sha256": "a3a59ce8491e241601d2a0601b25581e1e60b880a7cf1b486b486968645fd37b",
+          "size": 1913,
+          "via_requests": [
+            "repair-review-one",
+            "repair-review-two"
+          ],
+          "detail": null,
+          "signature_status": "ok"
+        },
+        {
+          "role": "timestamp",
+          "ref": "metadata/timestamp.json",
+          "status": "ready",
+          "required": true,
+          "sha256": "972e1828b7085d80ab3d5fe1bf57573a43e5ea8bde77ee32956b5658971d849d",
+          "size": 559,
+          "via_requests": [
+            "repair-review-one",
+            "repair-review-two"
+          ],
+          "detail": null,
+          "signature_status": "ok"
+        },
+        {
+          "role": "snapshot",
+          "ref": "metadata/snapshot.json",
+          "status": "ready",
+          "required": true,
+          "sha256": "5e3999437310c3156fcc5a11030e6bb92ed10f5d62ca8d2e2f1e5ca0e93bedb9",
+          "size": 1062,
+          "via_requests": [
+            "repair-review-one",
+            "repair-review-two"
+          ],
+          "detail": null,
+          "signature_status": "ok"
+        },
+        {
+          "role": "targets",
+          "ref": "metadata/targets.json",
+          "status": "ready",
+          "required": true,
+          "sha256": "a1ff0b0af83bde2229a54a4e9f8e3cbccdd422813d3815e3ff7b56f962cd3cf5",
+          "size": 913,
+          "via_requests": [
+            "repair-review-one",
+            "repair-review-two"
+          ],
+          "detail": null,
+          "signature_status": "ok"
+        },
+        {
+          "role": "parent",
+          "ref": "metadata/parent.json",
+          "status": "ready",
+          "required": true,
+          "sha256": "c17474a5539448ab1d72ed5468546f8909a44747a0e4d8b14bbb8f9b7fbec470",
+          "size": 1420,
+          "via_requests": [
+            "repair-review-one",
+            "repair-review-two"
+          ],
+          "detail": null,
+          "signature_status": "ok"
+        },
+        {
+          "role": "update-a",
+          "ref": "metadata/update-a.json",
+          "status": "ready",
+          "required": true,
+          "sha256": "bb71017f4e3cdca38c0ebbe67e44d5c1735fda6fc04ce49538644c30a68b99d0",
+          "size": 704,
+          "via_requests": [
+            "repair-review-one"
+          ],
+          "detail": null,
+          "signature_status": "ok"
+        }
+      ],
+      "missing": [],
+      "unattested_scope": [
+        {
+          "request_id": null,
+          "target": null,
+          "scope": "target_artifact_bytes",
+          "cause": "out_of_material_scope",
+          "claim": "target files themselves are outside the role-file export; only signed target metadata/hashes are handed off",
+          "blocked_by": []
+        }
+      ],
+      "resolutions": [
+        {
+          "target": "approved/repair-target-one.bin",
+          "found": true,
+          "chain": [
+            "targets",
+            "parent",
+            "update-a"
+          ],
+          "hit_role": "update-a",
+          "edges": [
+            [
+              "targets",
+              "parent"
+            ],
+            [
+              "parent",
+              "update-a"
+            ]
+          ],
+          "error": null
+        }
+      ]
+    },
+    {
+      "request_id": "repair-review-two",
+      "targets": [
+        "approved/repair-target-two.bin"
+      ],
+      "found": true,
+      "complete": true,
+      "approved": true,
+      "roles": [
+        "root",
+        "timestamp",
+        "snapshot",
+        "targets",
+        "parent",
+        "update-b"
+      ],
+      "shared_prefix": [
+        "root",
+        "timestamp",
+        "snapshot",
+        "targets",
+        "parent"
+      ],
+      "records": [
+        {
+          "role": "root",
+          "ref": "metadata/root.json",
+          "status": "ready",
+          "required": true,
+          "sha256": "a3a59ce8491e241601d2a0601b25581e1e60b880a7cf1b486b486968645fd37b",
+          "size": 1913,
+          "via_requests": [
+            "repair-review-two"
+          ],
+          "detail": null,
+          "signature_status": "ok"
+        },
+        {
+          "role": "timestamp",
+          "ref": "metadata/timestamp.json",
+          "status": "ready",
+          "required": true,
+          "sha256": "972e1828b7085d80ab3d5fe1bf57573a43e5ea8bde77ee32956b5658971d849d",
+          "size": 559,
+          "via_requests": [
+            "repair-review-two"
+          ],
+          "detail": null,
+          "signature_status": "ok"
+        },
+        {
+          "role": "snapshot",
+          "ref": "metadata/snapshot.json",
+          "status": "ready",
+          "required": true,
+          "sha256": "5e3999437310c3156fcc5a11030e6bb92ed10f5d62ca8d2e2f1e5ca0e93bedb9",
+          "size": 1062,
+          "via_requests": [
+            "repair-review-two"
+          ],
+          "detail": null,
+          "signature_status": "ok"
+        },
+        {
+          "role": "targets",
+          "ref": "metadata/targets.json",
+          "status": "ready",
+          "required": true,
+          "sha256": "a1ff0b0af83bde2229a54a4e9f8e3cbccdd422813d3815e3ff7b56f962cd3cf5",
+          "size": 913,
+          "via_requests": [
+            "repair-review-two"
+          ],
+          "detail": null,
+          "signature_status": "ok"
+        },
+        {
+          "role": "parent",
+          "ref": "metadata/parent.json",
+          "status": "ready",
+          "required": true,
+          "sha256": "c17474a5539448ab1d72ed5468546f8909a44747a0e4d8b14bbb8f9b7fbec470",
+          "size": 1420,
+          "via_requests": [
+            "repair-review-two"
+          ],
+          "detail": null,
+          "signature_status": "ok"
+        },
+        {
+          "role": "update-b",
+          "ref": "metadata/update-b.json",
+          "status": "ready",
+          "required": true,
+          "sha256": "579993fdbe857ca994b2032e5c081bc16810b605529d63b53761568c85818fd6",
+          "size": 704,
+          "via_requests": [
+            "repair-review-two"
+          ],
+          "detail": null,
+          "signature_status": "ok"
+        }
+      ],
+      "missing": [],
+      "unattested_scope": [
+        {
+          "request_id": "repair-review-two",
+          "target": null,
+          "scope": "target_artifact_bytes",
+          "cause": "out_of_material_scope",
+          "claim": "target files themselves are outside the role-file export; only signed target metadata/hashes are handed off",
+          "blocked_by": []
+        }
+      ],
+      "resolutions": [
+        {
+          "target": "approved/repair-target-two.bin",
+          "found": true,
+          "chain": [
+            "targets",
+            "parent",
+            "update-b"
+          ],
+          "hit_role": "update-b",
+          "edges": [
+            [
+              "targets",
+              "parent"
+            ],
+            [
+              "parent",
+              "update-b"
+            ]
+          ],
+          "error": null
+        }
+      ]
+    }
+  ],
+  "minimal_roles": [
+    "root",
+    "timestamp",
+    "snapshot",
+    "targets",
+    "parent",
+    "update-a",
+    "update-b"
+  ],
+  "shared_roles": [
+    "root",
+    "timestamp",
+    "snapshot",
+    "targets",
+    "parent"
+  ],
+  "role_records": [
+    {
+      "role": "root",
+      "ref": "metadata/root.json",
+      "status": "ready",
+      "required": true,
+      "sha256": "a3a59ce8491e241601d2a0601b25581e1e60b880a7cf1b486b486968645fd37b",
+      "size": 1913,
+      "via_requests": [
+        "repair-review-one",
+        "repair-review-two"
+      ],
+      "detail": null,
+      "signature_status": "ok"
+    },
+    {
+      "role": "timestamp",
+      "ref": "metadata/timestamp.json",
+      "status": "ready",
+      "required": true,
+      "sha256": "972e1828b7085d80ab3d5fe1bf57573a43e5ea8bde77ee32956b5658971d849d",
+      "size": 559,
+      "via_requests": [
+        "repair-review-one",
+        "repair-review-two"
+      ],
+      "detail": null,
+      "signature_status": "ok"
+    },
+    {
+      "role": "snapshot",
+      "ref": "metadata/snapshot.json",
+      "status": "ready",
+      "required": true,
+      "sha256": "5e3999437310c3156fcc5a11030e6bb92ed10f5d62ca8d2e2f1e5ca0e93bedb9",
+      "size": 1062,
+      "via_requests": [
+        "repair-review-one",
+        "repair-review-two"
+      ],
+      "detail": null,
+      "signature_status": "ok"
+    },
+    {
+      "role": "targets",
+      "ref": "metadata/targets.json",
+      "status": "ready",
+      "required": true,
+      "sha256": "a1ff0b0af83bde2229a54a4e9f8e3cbccdd422813d3815e3ff7b56f962cd3cf5",
+      "size": 913,
+      "via_requests": [
+        "repair-review-one",
+        "repair-review-two"
+      ],
+      "detail": null,
+      "signature_status": "ok"
+    },
+    {
+      "role": "parent",
+      "ref": "metadata/parent.json",
+      "status": "ready",
+      "required": true,
+      "sha256": "c17474a5539448ab1d72ed5468546f8909a44747a0e4d8b14bbb8f9b7fbec470",
+      "size": 1420,
+      "via_requests": [
+        "repair-review-one",
+        "repair-review-two"
+      ],
+      "detail": null,
+      "signature_status": "ok"
+    },
+    {
+      "role": "update-a",
+      "ref": "metadata/update-a.json",
+      "status": "ready",
+      "required": true,
+      "sha256": "bb71017f4e3cdca38c0ebbe67e44d5c1735fda6fc04ce49538644c30a68b99d0",
+      "size": 704,
+      "via_requests": [
+        "repair-review-one"
+      ],
+      "detail": null,
+      "signature_status": "ok"
+    },
+    {
+      "role": "update-b",
+      "ref": "metadata/update-b.json",
+      "status": "ready",
+      "required": true,
+      "sha256": "579993fdbe857ca994b2032e5c081bc16810b605529d63b53761568c85818fd6",
+      "size": 704,
+      "via_requests": [
+        "repair-review-two"
+      ],
+      "detail": null,
+      "signature_status": "ok"
+    }
+  ],
+  "missing": [],
+  "unattested_scope": [
+    {
+      "request_id": null,
+      "target": null,
+      "scope": "target_artifact_bytes",
+      "cause": "out_of_material_scope",
+      "claim": "target files themselves are outside the role-file export; only signed target metadata/hashes are handed off",
+      "blocked_by": []
+    }
+  ],
+  "rejected_substitutes": [],
+  "excluded_roles": [
+    "nightly"
+  ],
+  "handoff_files": [
+    "metadata/root.json",
+    "metadata/timestamp.json",
+    "metadata/snapshot.json",
+    "metadata/targets.json",
+    "metadata/parent.json",
+    "metadata/update-a.json",
+    "metadata/update-b.json"
+  ],
+  "certified_handoff_files": [
+    "metadata/root.json",
+    "metadata/timestamp.json",
+    "metadata/snapshot.json",
+    "metadata/targets.json",
+    "metadata/parent.json",
+    "metadata/update-a.json",
+    "metadata/update-b.json"
+  ],
+  "required_files": [
+    "metadata/root.json",
+    "metadata/timestamp.json",
+    "metadata/snapshot.json",
+    "metadata/targets.json",
+    "metadata/parent.json",
+    "metadata/update-a.json",
+    "metadata/update-b.json"
+  ],
+  "warnings": []
+}

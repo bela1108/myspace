@@ -1,0 +1,12 @@
+{
+  "description": "Repair contract review material release list",
+  "transferable_materials": [
+    "metadata/root.json",
+    "metadata/timestamp.json",
+    "metadata/snapshot.json",
+    "metadata/targets.json",
+    "metadata/parent.json",
+    "metadata/update-a.json",
+    "metadata/update-b.json"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+ "alias_for": "root",
+ "role": "root",
+ "signed": false,
+ "note": "Unsigned delegation-style alias; not export proof."
+}

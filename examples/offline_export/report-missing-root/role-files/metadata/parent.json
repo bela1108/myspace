@@ -1,0 +1,57 @@
+{
+ "signatures": [
+  {
+   "keyid": "33b28e2307be5fd81bcbeef3d127d06de987768773e9ea47a1f4fc98e98dd281",
+   "sig": "179b9faba9fdb14b10c656b3c2c7a974077e9b2fd1aff5105f50801378949a56150688038cf2991894027c59e2cfc563e8f65d751bf526c07ab1da6e34451600"
+  }
+ ],
+ "signed": {
+  "_type": "targets",
+  "delegations": {
+   "keys": {
+    "09e60b9523eb656dd4750db9b6c8965dcbe1093c85882a9dc079e35a2a0250da": {
+     "keytype": "ed25519",
+     "keyval": {
+      "public": "a49b031a9ea7f762a144caba3439b50b9fa5e27a4184c63aa4e9f7644c6a7292"
+     },
+     "scheme": "ed25519"
+    },
+    "1ccc5fbc6c0b0eebe17a09634cd1b6a7f49f3d7904a8fd6d1642c9087c5b56a0": {
+     "keytype": "ed25519",
+     "keyval": {
+      "public": "3c7aa8befc53a079da1b988f308e1d9bf3dc6c1ec2dc7ae6cdf775819f78aa2c"
+     },
+     "scheme": "ed25519"
+    }
+   },
+   "roles": [
+    {
+     "keyids": [
+      "09e60b9523eb656dd4750db9b6c8965dcbe1093c85882a9dc079e35a2a0250da"
+     ],
+     "name": "update-a",
+     "paths": [
+      "approved/repair-target-one.bin"
+     ],
+     "terminating": true,
+     "threshold": 1
+    },
+    {
+     "keyids": [
+      "1ccc5fbc6c0b0eebe17a09634cd1b6a7f49f3d7904a8fd6d1642c9087c5b56a0"
+     ],
+     "name": "update-b",
+     "paths": [
+      "approved/repair-target-two.bin"
+     ],
+     "terminating": true,
+     "threshold": 1
+    }
+   ]
+  },
+  "expires": "2031-01-01T00:00:00Z",
+  "spec_version": "1.0.0",
+  "targets": {},
+  "version": 1
+ }
+}

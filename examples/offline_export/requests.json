@@ -1,0 +1,16 @@
+[
+  {
+    "request_id": "repair-review-one",
+    "target": "approved/repair-target-one.bin",
+    "approved_roles": [
+      "update-a"
+    ]
+  },
+  {
+    "request_id": "repair-review-two",
+    "target": "approved/repair-target-two.bin",
+    "approved_roles": [
+      "update-b"
+    ]
+  }
+]

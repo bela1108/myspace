@@ -1,0 +1,9 @@
+{
+  "transferable_materials": [
+    "*",
+    {
+      "path": "metadata/root.json",
+      "signatures": false
+    }
+  ]
+}

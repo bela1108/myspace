@@ -1,0 +1,19 @@
+{
+  "transferable_materials": [
+    "*"
+  ],
+  "denied_materials": [
+    "metadata/root.json"
+  ],
+  "substitutes": [
+    {
+      "role": "root",
+      "unsigned_alias": "metadata/root.alias",
+      "digests": [
+        {
+          "ref": "metadata/root.json.sha256"
+        }
+      ]
+    }
+  ]
+}

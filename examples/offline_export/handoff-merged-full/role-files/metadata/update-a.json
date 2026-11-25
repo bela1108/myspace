@@ -1,0 +1,23 @@
+{
+ "signatures": [
+  {
+   "keyid": "09e60b9523eb656dd4750db9b6c8965dcbe1093c85882a9dc079e35a2a0250da",
+   "sig": "8e45496f918cb4637722ccc8099179fbb7e0a662491f89e37cea16f29e853c2c0e2b505d2f2305c34c8cac486427bc4db1d6661b37c6b8ccaa139ab982463e03"
+  }
+ ],
+ "signed": {
+  "_type": "targets",
+  "expires": "2031-01-01T00:00:00Z",
+  "spec_version": "1.0.0",
+  "targets": {
+   "approved/repair-target-one.bin": {
+    "hashes": {
+     "sha256": "5565c3bb3974bf9f71d2c1118c63ac2538cf5d4305aa7d3aa7383e34869724ae",
+     "sha512": "1a56bd1d4970ece2520f69f78beb23c1bb799f6c48b48dccd007d5b6c5bb715ddde8be763966f17c994578b390c0d1d1df6079a2ad1e9a3a11b347f1c44d28c5"
+    },
+    "length": 43
+   }
+  },
+  "version": 1
+ }
+}

@@ -1,0 +1,39 @@
+{
+ "signatures": [
+  {
+   "keyid": "4c4cf7895575ed938ffb046a46887b453acb0af4677d3120ac14a439ac7f7cf1",
+   "sig": "d1abdaaa44413147db1fba0f10f13c39ad4473f0ec1139cade3daf2e46785f062c69b9ea57d5fe3bdd73d498f270ac0cc7d394ba34dc266a12fff38f6de82108"
+  }
+ ],
+ "signed": {
+  "_type": "targets",
+  "delegations": {
+   "keys": {
+    "33b28e2307be5fd81bcbeef3d127d06de987768773e9ea47a1f4fc98e98dd281": {
+     "keytype": "ed25519",
+     "keyval": {
+      "public": "eaccf6695b6f18da9fd81cfc2e3a78fd227c04bd21e65fe8e427ff90c80acd29"
+     },
+     "scheme": "ed25519"
+    }
+   },
+   "roles": [
+    {
+     "keyids": [
+      "33b28e2307be5fd81bcbeef3d127d06de987768773e9ea47a1f4fc98e98dd281"
+     ],
+     "name": "parent",
+     "paths": [
+      "approved/*"
+     ],
+     "terminating": false,
+     "threshold": 1
+    }
+   ]
+  },
+  "expires": "2031-01-01T00:00:00Z",
+  "spec_version": "1.0.0",
+  "targets": {},
+  "version": 1
+ }
+}
