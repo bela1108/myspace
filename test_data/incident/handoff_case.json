@@ -1,0 +1,194 @@
+{
+  "review_sla_days": 30,
+  "findings": [
+    {
+      "finding_id": "F-1001",
+      "type": "AWS Access Key",
+      "hashed_secret": "aaaa1111bbbb2222cccc3333dddd4444eeee5555",
+      "filename": "src/payments/charges.py",
+      "line_number": 12
+    },
+    {
+      "finding_id": "F-1002",
+      "type": "Private Key",
+      "hashed_secret": "ffff6666gggg7777hhhh8888iiii9999jjjj0000",
+      "filename": "src/payments/refunds.py",
+      "line_number": 30
+    },
+    {
+      "finding_id": "F-1003",
+      "type": "Slack Token",
+      "hashed_secret": "0000kkkk1111llll2222mmmm3333nnnn4444oooo",
+      "filename": "src/legacy/old.py",
+      "line_number": 7
+    }
+  ],
+  "ownership": [
+    {
+      "record_id": "OWN-PAY-1",
+      "path_prefix": "src/payments",
+      "team": "payments-team",
+      "effective_from": "2026-01-01T00:00:00",
+      "effective_to": "2026-06-01T00:00:00",
+      "source": "CODEOWNERS"
+    },
+    {
+      "record_id": "OWN-PLAT-2",
+      "path_prefix": "src/platform",
+      "team": "platform-team",
+      "effective_from": "2026-01-01T00:00:00",
+      "effective_to": null,
+      "source": "CODEOWNERS"
+    },
+    {
+      "record_id": "OWN-PAY-3",
+      "path_prefix": "src/payments",
+      "team": "payments-guild",
+      "effective_from": "2026-06-01T00:00:00",
+      "effective_to": null,
+      "source": "CODEOWNERS"
+    },
+    {
+      "record_id": "OWN-LEGACY-4",
+      "path_prefix": "src/legacy",
+      "team": "legacy-team",
+      "effective_from": "2026-01-01T00:00:00",
+      "effective_to": null,
+      "source": "CODEOWNERS"
+    }
+  ],
+  "exemptions": [
+    {
+      "exemption_id": "EX-501",
+      "finding_id": "F-1001",
+      "path": "src/payments/charges.py",
+      "granted_at": "2026-02-05T00:00:00",
+      "expires_at": "2026-03-05T00:00:00",
+      "justification": "rotating key in sprint 14"
+    },
+    {
+      "exemption_id": "EX-502",
+      "finding_id": "F-1002",
+      "path": "src/payments/refunds.py",
+      "granted_at": "2026-02-10T00:00:00",
+      "expires_at": "2026-12-31T00:00:00",
+      "justification": "vendor key, ticket SEC-99"
+    },
+    {
+      "exemption_id": "EX-503",
+      "finding_id": "F-1003",
+      "path": "src/legacy/old.py",
+      "granted_at": "2026-02-01T00:00:00",
+      "expires_at": "2026-05-01T00:00:00",
+      "justification": "deprecated service shutdown",
+      "revoked_at": "2026-03-20T00:00:00"
+    }
+  ],
+  "events": [
+    {
+      "event_id": "E01",
+      "event_type": "finding_introduced",
+      "timestamp": "2026-02-01T09:00:00",
+      "finding_id": "F-1001",
+      "to_path": "src/payments/charges.py"
+    },
+    {
+      "event_id": "E02",
+      "event_type": "finding_introduced",
+      "timestamp": "2026-02-01T09:05:00",
+      "finding_id": "F-1002",
+      "to_path": "src/payments/refunds.py"
+    },
+    {
+      "event_id": "E03",
+      "event_type": "finding_introduced",
+      "timestamp": "2026-02-01T09:10:00",
+      "finding_id": "F-1003",
+      "to_path": "src/legacy/old.py"
+    },
+    {
+      "event_id": "E04",
+      "event_type": "exemption_granted",
+      "timestamp": "2026-02-05T10:00:00",
+      "finding_id": "F-1001",
+      "exemption_id": "EX-501"
+    },
+    {
+      "event_id": "E05",
+      "event_type": "exemption_granted",
+      "timestamp": "2026-02-10T10:00:00",
+      "finding_id": "F-1002",
+      "exemption_id": "EX-502"
+    },
+    {
+      "event_id": "E13",
+      "event_type": "suppress",
+      "timestamp": "2026-02-12T00:00:00",
+      "finding_id": "F-1002",
+      "from_path": "src/payments/refunds.py",
+      "exemption_id": "EX-502"
+    },
+    {
+      "event_id": "E10",
+      "event_type": "exemption_revoked",
+      "timestamp": "2026-03-20T00:00:00",
+      "finding_id": "F-1003",
+      "exemption_id": "EX-503"
+    },
+    {
+      "event_id": "E06",
+      "event_type": "code_moved",
+      "timestamp": "2026-04-15T08:00:00",
+      "finding_id": "F-1001",
+      "from_path": "src/payments/charges.py",
+      "to_path": "src/platform/billing/charges.py"
+    },
+    {
+      "event_id": "E07",
+      "event_type": "suppress",
+      "timestamp": "2026-04-16T09:00:00",
+      "finding_id": "F-1001",
+      "from_path": "src/platform/billing/charges.py",
+      "exemption_id": "EX-501"
+    },
+    {
+      "event_id": "E14",
+      "event_type": "suppress",
+      "timestamp": "2026-04-20T00:00:00",
+      "finding_id": "F-1001",
+      "from_path": "src/platform/billing/charges.py",
+      "exemption_id": "EX-501"
+    },
+    {
+      "event_id": "E08",
+      "event_type": "finding_forked",
+      "timestamp": "2026-05-10T09:00:00",
+      "finding_id": "F-1002",
+      "from_path": "src/payments/refunds.py",
+      "to_path": "src/platform/billing/refunds_copy.py"
+    },
+    {
+      "event_id": "E09",
+      "event_type": "suppress",
+      "timestamp": "2026-05-11T09:00:00",
+      "finding_id": "F-1002",
+      "from_path": "src/platform/billing/refunds_copy.py",
+      "exemption_id": "EX-502"
+    },
+    {
+      "event_id": "E11",
+      "event_type": "ownership_changed",
+      "timestamp": "2026-06-02T00:00:00",
+      "finding_id": "F-1002",
+      "from_path": "src/payments/refunds.py"
+    },
+    {
+      "event_id": "E12",
+      "event_type": "suppress",
+      "timestamp": "2026-07-01T00:00:00",
+      "finding_id": "F-1003",
+      "from_path": "src/legacy/old.py",
+      "exemption_id": "EX-503"
+    }
+  ]
+}

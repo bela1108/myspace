@@ -1,0 +1,344 @@
+{
+  "audit_trail": [
+    {
+      "action": "finding_introduced",
+      "decision": "registered",
+      "event_id": "E01",
+      "evidence": {
+        "ownership_source": "ownership_table"
+      },
+      "exemption_id": null,
+      "finding_id": "F-1001",
+      "ownership_record_id": "OWN-PAY-1",
+      "path": "src/payments/charges.py",
+      "reason": "detect-secrets finding first registered",
+      "review_deadline": "2026-03-03T09:00:00",
+      "sequence": 0,
+      "state_after": "open",
+      "state_before": null,
+      "team": "payments-team",
+      "timestamp": "2026-02-01T09:00:00"
+    },
+    {
+      "action": "finding_introduced",
+      "decision": "registered",
+      "event_id": "E02",
+      "evidence": {
+        "ownership_source": "ownership_table"
+      },
+      "exemption_id": null,
+      "finding_id": "F-1002",
+      "ownership_record_id": "OWN-PAY-1",
+      "path": "src/payments/refunds.py",
+      "reason": "detect-secrets finding first registered",
+      "review_deadline": "2026-03-03T09:05:00",
+      "sequence": 1,
+      "state_after": "open",
+      "state_before": null,
+      "team": "payments-team",
+      "timestamp": "2026-02-01T09:05:00"
+    },
+    {
+      "action": "finding_introduced",
+      "decision": "registered",
+      "event_id": "E03",
+      "evidence": {
+        "ownership_source": "ownership_table"
+      },
+      "exemption_id": null,
+      "finding_id": "F-1003",
+      "ownership_record_id": "OWN-LEGACY-4",
+      "path": "src/legacy/old.py",
+      "reason": "detect-secrets finding first registered",
+      "review_deadline": "2026-03-03T09:10:00",
+      "sequence": 2,
+      "state_after": "open",
+      "state_before": null,
+      "team": "legacy-team",
+      "timestamp": "2026-02-01T09:10:00"
+    },
+    {
+      "action": "exemption_granted",
+      "decision": "exemption_applied",
+      "event_id": "E04",
+      "evidence": {
+        "expires_at": "2026-03-05T00:00:00"
+      },
+      "exemption_id": "EX-501",
+      "finding_id": "F-1001",
+      "ownership_record_id": "OWN-PAY-1",
+      "path": "src/payments/charges.py",
+      "reason": "time-limited exemption EX-501 attached; expires 2026-03-05T00:00:00",
+      "review_deadline": "2026-03-05T00:00:00",
+      "sequence": 3,
+      "state_after": "exempt",
+      "state_before": null,
+      "team": "payments-team",
+      "timestamp": "2026-02-05T10:00:00"
+    },
+    {
+      "action": "exemption_granted",
+      "decision": "exemption_applied",
+      "event_id": "E05",
+      "evidence": {
+        "expires_at": "2026-12-31T00:00:00"
+      },
+      "exemption_id": "EX-502",
+      "finding_id": "F-1002",
+      "ownership_record_id": "OWN-PAY-1",
+      "path": "src/payments/refunds.py",
+      "reason": "time-limited exemption EX-502 attached; expires 2026-12-31T00:00:00",
+      "review_deadline": "2026-12-31T00:00:00",
+      "sequence": 4,
+      "state_after": "exempt",
+      "state_before": null,
+      "team": "payments-team",
+      "timestamp": "2026-02-10T10:00:00"
+    },
+    {
+      "action": "suppress",
+      "decision": "suppressed",
+      "event_id": "E13",
+      "evidence": {
+        "exemption_status": "active"
+      },
+      "exemption_id": "EX-502",
+      "finding_id": "F-1002",
+      "ownership_record_id": "OWN-PAY-1",
+      "path": "src/payments/refunds.py",
+      "reason": "active exemption covers this occurrence",
+      "review_deadline": "2026-12-31T00:00:00",
+      "sequence": 5,
+      "state_after": "suppressed",
+      "state_before": "open",
+      "team": "payments-team",
+      "timestamp": "2026-02-12T00:00:00"
+    },
+    {
+      "action": "exemption_revoked",
+      "decision": "exemption_revoked",
+      "event_id": "E10",
+      "evidence": {},
+      "exemption_id": "EX-503",
+      "finding_id": "F-1003",
+      "ownership_record_id": "OWN-LEGACY-4",
+      "path": "src/legacy/old.py",
+      "reason": "revocation recorded for inactive EX-503",
+      "review_deadline": "2026-03-03T09:10:00",
+      "sequence": 6,
+      "state_after": "open",
+      "state_before": "open",
+      "team": "legacy-team",
+      "timestamp": "2026-03-20T00:00:00"
+    },
+    {
+      "action": "code_moved",
+      "decision": "moved",
+      "event_id": "E06",
+      "evidence": {
+        "ownership_source": "ownership_table",
+        "previous_path": "src/payments/charges.py"
+      },
+      "exemption_id": null,
+      "finding_id": "F-1001",
+      "ownership_record_id": "OWN-PLAT-2",
+      "path": "src/platform/billing/charges.py",
+      "reason": "code moved src/payments/charges.py -> src/platform/billing/charges.py; exemptions do not travel with the code",
+      "review_deadline": "2026-03-05T00:00:00",
+      "sequence": 7,
+      "state_after": "open",
+      "state_before": "open",
+      "team": "platform-team",
+      "timestamp": "2026-04-15T08:00:00"
+    },
+    {
+      "action": "suppress",
+      "decision": "suppression_rejected",
+      "event_id": "E07",
+      "evidence": {
+        "exemption_status": "expired"
+      },
+      "exemption_id": "EX-501",
+      "finding_id": "F-1001",
+      "ownership_record_id": "OWN-PLAT-2",
+      "path": "src/platform/billing/charges.py",
+      "reason": "exemption EX-501 is bound to src/payments/charges.py, not current path src/platform/billing/charges.py",
+      "review_deadline": "2026-03-05T00:00:00",
+      "sequence": 8,
+      "state_after": "open",
+      "state_before": "open",
+      "team": "platform-team",
+      "timestamp": "2026-04-16T09:00:00"
+    },
+    {
+      "action": "suppress",
+      "decision": "suppression_rejected",
+      "event_id": "E14",
+      "evidence": {
+        "exemption_status": "expired"
+      },
+      "exemption_id": "EX-501",
+      "finding_id": "F-1001",
+      "ownership_record_id": "OWN-PLAT-2",
+      "path": "src/platform/billing/charges.py",
+      "reason": "exemption EX-501 is bound to src/payments/charges.py, not current path src/platform/billing/charges.py",
+      "review_deadline": "2026-03-05T00:00:00",
+      "sequence": 9,
+      "state_after": "open",
+      "state_before": "open",
+      "team": "platform-team",
+      "timestamp": "2026-04-20T00:00:00"
+    },
+    {
+      "action": "finding_forked",
+      "decision": "forked",
+      "event_id": "E08",
+      "evidence": {
+        "forked_from": "src/payments/refunds.py",
+        "ownership_source": "ownership_table"
+      },
+      "exemption_id": null,
+      "finding_id": "F-1002",
+      "ownership_record_id": "OWN-PLAT-2",
+      "path": "src/platform/billing/refunds_copy.py",
+      "reason": "finding duplicated from src/payments/refunds.py to src/platform/billing/refunds_copy.py; the two occurrences are independent and cannot share an exemption",
+      "review_deadline": "2026-12-31T00:00:00",
+      "sequence": 10,
+      "state_after": "open",
+      "state_before": null,
+      "team": "platform-team",
+      "timestamp": "2026-05-10T09:00:00"
+    },
+    {
+      "action": "suppress",
+      "decision": "suppression_rejected",
+      "event_id": "E09",
+      "evidence": {
+        "exemption_status": "active"
+      },
+      "exemption_id": "EX-502",
+      "finding_id": "F-1002",
+      "ownership_record_id": "OWN-PLAT-2",
+      "path": "src/platform/billing/refunds_copy.py",
+      "reason": "exemption EX-502 is bound to src/payments/refunds.py, not current path src/platform/billing/refunds_copy.py",
+      "review_deadline": "2026-12-31T00:00:00",
+      "sequence": 11,
+      "state_after": "open",
+      "state_before": "open",
+      "team": "platform-team",
+      "timestamp": "2026-05-11T09:00:00"
+    },
+    {
+      "action": "ownership_changed",
+      "decision": "owner_assigned",
+      "event_id": "E11",
+      "evidence": {
+        "ownership_source": "ownership_table",
+        "previous_team": "payments-team"
+      },
+      "exemption_id": null,
+      "finding_id": "F-1002",
+      "ownership_record_id": "OWN-PAY-3",
+      "path": "src/payments/refunds.py",
+      "reason": "responsibility transferred payments-team -> payments-guild; review deadline unchanged",
+      "review_deadline": "2026-12-31T00:00:00",
+      "sequence": 12,
+      "state_after": "suppressed",
+      "state_before": "suppressed",
+      "team": "payments-guild",
+      "timestamp": "2026-06-02T00:00:00"
+    },
+    {
+      "action": "suppress",
+      "decision": "suppression_rejected",
+      "event_id": "E12",
+      "evidence": {
+        "exemption_status": "revoked"
+      },
+      "exemption_id": "EX-503",
+      "finding_id": "F-1003",
+      "ownership_record_id": "OWN-LEGACY-4",
+      "path": "src/legacy/old.py",
+      "reason": "exemption EX-503 is revoked",
+      "review_deadline": "2026-03-03T09:10:00",
+      "sequence": 13,
+      "state_after": "open",
+      "state_before": "open",
+      "team": "legacy-team",
+      "timestamp": "2026-07-01T00:00:00"
+    }
+  ],
+  "findings": [
+    {
+      "active_exemption": null,
+      "active_exemption_id": null,
+      "born_at": "2026-02-01T09:00:00",
+      "finding_id": "F-1001",
+      "forked_from": null,
+      "last_event_id": "E06",
+      "ownership_record_id": "OWN-PLAT-2",
+      "path": "src/platform/billing/charges.py",
+      "review_deadline": "2026-03-05T00:00:00",
+      "review_overdue": true,
+      "state": "overdue",
+      "team": "platform-team"
+    },
+    {
+      "active_exemption": {
+        "exemption_id": "EX-502",
+        "expires_at": "2026-12-31T00:00:00",
+        "granted_at": "2026-02-10T00:00:00",
+        "justification": "vendor key, ticket SEC-99"
+      },
+      "active_exemption_id": "EX-502",
+      "born_at": "2026-02-01T09:05:00",
+      "finding_id": "F-1002",
+      "forked_from": null,
+      "last_event_id": "E11",
+      "ownership_record_id": "OWN-PAY-3",
+      "path": "src/payments/refunds.py",
+      "review_deadline": "2026-12-31T00:00:00",
+      "review_overdue": false,
+      "state": "suppressed",
+      "team": "payments-guild"
+    },
+    {
+      "active_exemption": null,
+      "active_exemption_id": null,
+      "born_at": "2026-05-10T09:00:00",
+      "finding_id": "F-1002",
+      "forked_from": "src/payments/refunds.py",
+      "last_event_id": "E08",
+      "ownership_record_id": "OWN-PLAT-2",
+      "path": "src/platform/billing/refunds_copy.py",
+      "review_deadline": "2026-12-31T00:00:00",
+      "review_overdue": false,
+      "state": "pending",
+      "team": "platform-team"
+    },
+    {
+      "active_exemption": null,
+      "active_exemption_id": null,
+      "born_at": "2026-02-01T09:10:00",
+      "finding_id": "F-1003",
+      "forked_from": null,
+      "last_event_id": "E10",
+      "ownership_record_id": "OWN-LEGACY-4",
+      "path": "src/legacy/old.py",
+      "review_deadline": "2026-03-03T09:10:00",
+      "review_overdue": true,
+      "state": "overdue",
+      "team": "legacy-team"
+    }
+  ],
+  "generated_at": "2026-07-01T00:00:00",
+  "summary": {
+    "events_replayed": 14,
+    "exempt_total": 0,
+    "findings_total": 3,
+    "occurrences_total": 4,
+    "open_total": 3,
+    "overdue_total": 2,
+    "suppressed_total": 1
+  }
+}
