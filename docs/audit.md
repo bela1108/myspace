@@ -263,3 +263,71 @@ $ detect-secrets audit --report --only-false .secret.baseline
     }
 ]
 ```
+
+## Scheduling Manual Review
+
+When several teams share the review load, you can distribute pending (unlabelled) findings
+across reviewer groups offline with the `--schedule` flag. Each baseline passed to `audit`
+is treated as a separate project, and reviewer groups are described in a JSON file:
+
+```bash
+$ cat groups.json
+[
+    {
+        "name": "team-shared",
+        "weekly_hours": 4.0,
+        "projects": ["projA/.secrets.baseline", "projB/.secrets.baseline"]
+    },
+    {
+        "name": "team-a",
+        "weekly_hours": 2.0,
+        "projects": ["projA/.secrets.baseline"]
+    }
+]
+$ detect-secrets audit projA/.secrets.baseline projB/.secrets.baseline \
+    --schedule --groups groups.json
+```
+
+Each reviewer group has a weekly hour cap (`weekly_hours`), and a set of projects it is
+permitted to receive findings for. A finding that appears in several projects is only
+reviewed once -- it consumes review time from a single group -- but that group must be
+permitted to receive *every* project the finding appears in. The estimated review time
+per finding defaults to 0.5 hours, and can be tuned with `--review-hours`.
+
+The output is a machine-readable plan: randomized task IDs, per-group capacity usage,
+and any infeasible gap (demand that could not be scheduled). The output never contains
+secret values or stable fingerprints of findings, so plans cannot be correlated across
+runs, or traced back to the baseline.
+
+```bash
+{
+    "capacity": {
+        "team-a": {
+            "assigned_hours": 0.5,
+            "remaining_hours": 1.5,
+            "weekly_hours": 2.0
+        },
+        "team-shared": {
+            "assigned_hours": 1.0,
+            "remaining_hours": 3.0,
+            "weekly_hours": 4.0
+        }
+    },
+    "gaps": {
+        "projects": {},
+        "unscheduled_hours": 0,
+        "unscheduled_tasks": 0
+    },
+    "tasks": [
+        {
+            "group": "team-shared",
+            "hours": 0.5,
+            "projects": [
+                "projA/.secrets.baseline",
+                "projB/.secrets.baseline"
+            ],
+            "task_id": "b83b7dc12eca4ebab24d50821a005b73"
+        }
+    ]
+}
+```

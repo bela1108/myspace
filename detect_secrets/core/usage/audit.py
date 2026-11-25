@@ -24,6 +24,7 @@ def add_audit_action(parent: argparse._SubParsersAction) -> argparse.ArgumentPar
     _add_mode_parser(parser)
     _add_report_module(parser)
     _add_statistics_module(parser)
+    _add_scheduler_module(parser)
     return cast(argparse.ArgumentParser, parser)
 
 
@@ -52,6 +53,16 @@ def _add_mode_parser(parser: argparse.ArgumentParser) -> None:
         action='store_true',
         help=(
             'Displays a report with the secrets detected'
+        ),
+    )
+
+    parser.add_argument(
+        '--schedule',
+        action='store_true',
+        help=(
+            'Offline: distributes pending review work across reviewer '
+            'groups, respecting weekly hour caps and per-project receive '
+            'permissions. Accepts multiple baselines (one per project).'
         ),
     )
 
@@ -99,6 +110,33 @@ def _add_statistics_module(parent: argparse.ArgumentParser) -> None:
     )
 
 
+def _add_scheduler_module(parent: argparse.ArgumentParser) -> None:
+    parser = parent.add_argument_group(
+        title='scheduler',
+        description=(
+            'Plan manual review work offline across reviewer groups. '
+            'To be used with the schedule mode (--schedule).'
+        ),
+    )
+
+    parser.add_argument(
+        '--groups',
+        metavar='FILENAME',
+        help=(
+            'Path to a JSON file describing reviewer groups: a list of '
+            'objects with "name", "weekly_hours" and "projects" keys.'
+        ),
+    )
+
+    parser.add_argument(
+        '--review-hours',
+        type=float,
+        default=0.5,
+        metavar='HOURS',
+        help='Estimated review time per candidate, in hours (default: 0.5).',
+    )
+
+
 def parse_args(args: argparse.Namespace) -> None:
     if args.action != 'audit':
         return
@@ -107,6 +145,11 @@ def parse_args(args: argparse.Namespace) -> None:
         raise argparse.ArgumentTypeError(
             '--diff mode requires two files to compare with each other.',
         )
+    elif args.schedule:
+        if not args.groups:
+            raise argparse.ArgumentTypeError(
+                '--schedule mode requires --groups.',
+            )
     elif not args.diff and len(args.filename) != 1:
         raise argparse.ArgumentTypeError(
             'Can only specify one baseline at a time.',

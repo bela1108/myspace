@@ -142,6 +142,13 @@ def handle_audit_action(args: argparse.Namespace) -> None:
                     sort_keys=True,
                 ),
             )
+        elif args.schedule:
+            schedule = audit.scheduler.schedule_from_files(
+                args.filename,
+                groups=audit.scheduler.load_groups_from_file(args.groups),
+                review_hours_per_secret=args.review_hours,
+            )
+            print(json.dumps(schedule.json(), indent=2, sort_keys=True))
         else:
             # Starts interactive session.
             if args.diff:
