@@ -16,6 +16,7 @@ from regipy.plugins.utils import run_relevant_plugins
 from regipy.recovery import apply_transaction_logs
 from regipy.regdiff import compare_hives
 from regipy.registry import RegistryHive
+from regipy.security_compare import compare_security_descriptors, render_security_report
 from regipy.utils import _setup_logging, calculate_xor32_checksum
 
 logger = logging.getLogger(__name__)
@@ -317,11 +318,34 @@ def list_plugins():
     required=False,
 )
 @click.option("-v", "--verbose", is_flag=True, default=False, help="Verbosity")
-def reg_diff(first_hive_path, second_hive_path, output_path, verbose):
+@click.option(
+    "--security", "include_security", is_flag=True, default=False, help="Include key-level security descriptor differences"
+)
+@click.option(
+    "--security-report",
+    "security_report_path",
+    type=click.Path(exists=False, dir_okay=False, resolve_path=True),
+    required=False,
+    help="Write the layered security comparison as JSON or Markdown",
+)
+def reg_diff(first_hive_path, second_hive_path, output_path, verbose, include_security, security_report_path):
     _setup_logging(verbose=verbose)
     REGDIFF_HEADERS = ["difference", "first_hive", "second_hive", "description"]
 
-    found_differences = compare_hives(first_hive_path, second_hive_path, verbose=verbose)
+    security_report = None
+    if security_report_path:
+        security_report = compare_security_descriptors(first_hive_path, second_hive_path)
+        report_format = "json" if str(security_report_path).lower().endswith(".json") else "markdown"
+        report_content = render_security_report(security_report, output_format=report_format)
+        with open(security_report_path, "w", encoding="utf-8") as report_file:
+            report_file.write(report_content)
+
+    found_differences = compare_hives(
+        first_hive_path,
+        second_hive_path,
+        verbose=verbose,
+        include_security=include_security,
+    )
     click.secho(f"Comparing {os.path.basename(first_hive_path)} vs {os.path.basename(second_hive_path)}")
 
     if output_path:

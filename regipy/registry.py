@@ -1,6 +1,7 @@
 import binascii
 import datetime as dt
 import logging
+import os
 from dataclasses import asdict, dataclass, field
 from io import BytesIO
 from typing import Any, Optional, Union
@@ -142,6 +143,7 @@ class RegistryHive:
 
         self.partial_hive_path = None
         self.hive_type = None
+        self.hive_path = os.fspath(hive_path)
 
         with open(hive_path, "rb") as f:
             self._stream = BytesIO(f.read())
@@ -387,6 +389,9 @@ class NKRecord:
         stream.seek(cell.offset)
         self.header = CM_KEY_NODE.parse_stream(stream)  # type: ignore[union-attr]
         self._stream = stream
+        self.cell_offset = cell.offset
+        # Cell.offset points just after the 4-byte cell size and "nk" signature.
+        self.nk_offset = cell.offset - 6 - REGF_HEADER_SIZE
 
         # Sometimes the key names are ASCII and sometimes UTF-16 little endian
         if self.header.flags.KEY_COMP_NAME:

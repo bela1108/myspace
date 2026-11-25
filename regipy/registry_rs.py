@@ -173,6 +173,7 @@ class RegistryHive:
         """
         self.partial_hive_path = None
         self.hive_type = None
+        self.hive_path = str(hive_path)
 
         try:
             self._hive = regipy_rs.RegistryHive(str(hive_path))

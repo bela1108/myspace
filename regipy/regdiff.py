@@ -4,6 +4,7 @@ from typing import Any
 
 from regipy.exceptions import RegistryKeyNotFoundException
 from regipy.registry import NKRecord, RegistryHive
+from regipy.security_compare import compare_security_descriptors, security_report_to_differences
 from regipy.utils import calculate_sha1, convert_wintime
 
 logger = logging.getLogger(__name__)
@@ -52,7 +53,7 @@ def _get_name_value_tuples(subkey: NKRecord) -> set[tuple[str, Any]]:
     return values_tuple
 
 
-def compare_hives(first_hive_path, second_hive_path, verbose=False):
+def compare_hives(first_hive_path, second_hive_path, verbose=False, **options):
     # The list will contain tuples, in the following format: (Difference type, first value, second value, description)
     found_differences = []
 
@@ -147,4 +148,20 @@ def compare_hives(first_hive_path, second_hive_path, verbose=False):
                         )
 
                 # We do not compare subkeys for each subkey, because we would have detected those.
+    include_security = bool(
+        options.pop("include_security", False)
+        or options.pop("security", False)
+        or options.pop("compare_security", False)
+        or options.pop("include_security_descriptors", False)
+    )
+    security_options = options.pop("security_options", {}) or {}
+
+    if include_security:
+        security_report = compare_security_descriptors(
+            first_hive_path,
+            second_hive_path,
+            **security_options,
+        )
+        found_differences.extend(security_report_to_differences(security_report))
+
     return found_differences
