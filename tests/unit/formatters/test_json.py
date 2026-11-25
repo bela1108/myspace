@@ -113,3 +113,107 @@ class JsonFormatterTests(testtools.TestCase):
             self.assertIn("candidates", data["results"][0])
             self.assertIn("more_info", data["results"][0])
             self.assertIsNotNone(data["results"][0]["more_info"])
+
+    def test_baseline_filter_and_json_report(self):
+        old_path = "audit_handoff/legacy_placeholder.py"
+        new_path = "audit_handoff/followup_placeholder.py"
+
+        baseline_report = {
+            "results": [
+                {
+                    "code": "placeholder_value = 1\n",
+                    "filename": old_path,
+                    "issue_severity": constants.LOW,
+                    "issue_cwe": {},
+                    "issue_confidence": constants.MEDIUM,
+                    "issue_text": "registered placeholder finding",
+                    "test_name": "placeholder_check",
+                    "test_id": "B998",
+                    "line_number": 3,
+                    "line_range": [3],
+                }
+            ]
+        }
+        self.manager.populate_baseline(json.dumps(baseline_report))
+
+        def mock_issue(
+            path, test_id, line_number, severity, confidence, text
+        ):
+            mocked = mock.Mock(spec=issue.Issue)
+            mocked.filter.return_value = True
+            mocked.fname = path
+            mocked.test = "placeholder_check"
+            mocked.test_id = test_id
+            mocked.lineno = line_number
+            mocked.severity = severity
+            mocked.cwe = issue.Cwe(issue.Cwe.NOTSET)
+            mocked.confidence = confidence
+            mocked.text = text
+            mocked.as_dict.return_value = {
+                "filename": path,
+                "test_name": "placeholder_check",
+                "test_id": test_id,
+                "issue_severity": severity,
+                "issue_cwe": {},
+                "issue_confidence": confidence,
+                "issue_text": text,
+                "line_number": line_number,
+                "line_range": [line_number],
+                "code": "",
+            }
+            return mocked
+
+        old_issue = mock_issue(
+            old_path,
+            "B998",
+            3,
+            constants.LOW,
+            constants.MEDIUM,
+            "registered placeholder finding",
+        )
+        new_issue = mock_issue(
+            new_path,
+            "B999",
+            8,
+            constants.MEDIUM,
+            constants.HIGH,
+            "independent placeholder finding",
+        )
+        self.manager.results = [old_issue, new_issue]
+
+        filtered = self.manager.filter_results(
+            constants.LOW, constants.LOW
+        )
+
+        self.assertIsInstance(filtered, collections.OrderedDict)
+        self.assertEqual([new_issue], list(filtered))
+        self.assertEqual([new_issue], filtered[new_issue])
+
+        self.manager.metrics = metrics.Metrics()
+        self.manager.metrics.data["_totals"]["SEVERITY.LOW"] = 1
+        self.manager.metrics.data["_totals"]["SEVERITY.MEDIUM"] = 1
+
+        with open(self.tmp_fname, "w") as report_file:
+            b_json.report(
+                self.manager,
+                report_file,
+                constants.LOW,
+                constants.LOW,
+            )
+
+        with open(self.tmp_fname) as report_file:
+            report = json.load(report_file)
+
+        self.assertEqual(
+            [new_path],
+            [item["filename"] for item in report["results"]],
+        )
+        retained = report["results"][0]
+        self.assertEqual("B999", retained["test_id"])
+        self.assertEqual(
+            "independent placeholder finding", retained["issue_text"]
+        )
+        self.assertNotIn("candidates", retained)
+        self.assertEqual(
+            1, report["metrics"]["_totals"]["SEVERITY.LOW"]
+        )
