@@ -1,0 +1,279 @@
+{
+  "policy_switch": {
+    "internal_audit": {
+      "added": [
+        {
+          "cases": [
+            "case-b"
+          ],
+          "kind": "subject_grant",
+          "rule_id": "group-a-case-b",
+          "subjects": [
+            "case-group-a"
+          ]
+        }
+      ],
+      "changed_cases": [
+        "case-b"
+      ],
+      "changed_rule_ids": [
+        "group-a-case-b"
+      ],
+      "changed_subjects": [
+        "case-group-a"
+      ],
+      "modified": [],
+      "new_version": "2026.11-b",
+      "old_version": "2026.11-a",
+      "removed": [],
+      "version_changed": true
+    },
+    "receiver_notice": {
+      "added": [
+        {
+          "id": "indicator--31f019f8-a0a7-5f5e-8b4c-2c2ccef9bea5",
+          "label": "case-b-indicator-1",
+          "type": "indicator"
+        },
+        {
+          "id": "indicator--334c71bc-c8f1-51c4-a358-8933787b7256",
+          "label": "case-b-indicator-4",
+          "type": "indicator"
+        },
+        {
+          "id": "indicator--4060c42a-0b1b-54c2-941d-074f9a9a042d",
+          "label": "case-b-indicator-3",
+          "type": "indicator"
+        },
+        {
+          "id": "indicator--5e252c90-0010-5d0f-b778-1a2554e9bd95",
+          "label": "case-b-indicator-2",
+          "type": "indicator"
+        },
+        {
+          "id": "indicator--93247f43-41fa-5788-9221-f3b398f1c244",
+          "label": "case-b-indicator-0",
+          "type": "indicator"
+        },
+        {
+          "id": "indicator--a6545f2b-c1fb-5a97-a896-7fa891ad663b",
+          "label": "case-b-indicator-5",
+          "type": "indicator"
+        },
+        {
+          "id": "relationship--b8719580-836e-578a-924c-9344fa76bc53",
+          "type": "relationship"
+        },
+        {
+          "id": "threat-actor--6311d92d-805d-55ea-a9ca-61a49e954bb8",
+          "label": "case-b Actor",
+          "type": "threat-actor"
+        }
+      ],
+      "changed": true,
+      "message": "8 object(s) added.",
+      "removed": [],
+      "subject": "case-group-a",
+      "summary_after": {
+        "by_type": {
+          "identity": 2,
+          "indicator": 10,
+          "malware": 1,
+          "relationship": 3,
+          "report": 1,
+          "threat-actor": 2
+        },
+        "total": 19
+      },
+      "summary_before": {
+        "by_type": {
+          "identity": 2,
+          "indicator": 4,
+          "malware": 1,
+          "relationship": 2,
+          "report": 1,
+          "threat-actor": 1
+        },
+        "total": 11
+      }
+    },
+    "receiver_notice_has_private_case_c": false,
+    "receiver_notice_has_rule_ids": false,
+    "removal_audit": {
+      "added": [],
+      "changed_cases": [
+        "case-a"
+      ],
+      "changed_rule_ids": [
+        "group-a-case-a"
+      ],
+      "changed_subjects": [
+        "case-group-a"
+      ],
+      "modified": [],
+      "new_version": "2026.11-c",
+      "old_version": "2026.11-a",
+      "removed": [
+        {
+          "cases": [
+            "case-a"
+          ],
+          "kind": "subject_grant",
+          "rule_id": "group-a-case-a",
+          "subjects": [
+            "case-group-a"
+          ]
+        }
+      ],
+      "version_changed": true
+    },
+    "removal_notice": {
+      "added": [],
+      "changed": true,
+      "message": "5 object(s) removed, 1 object(s) updated.",
+      "removed": [
+        {
+          "id": "indicator--6cd1d328-8802-5259-8e39-50ff44d8acc4",
+          "label": "case-a-indicator-1",
+          "type": "indicator"
+        },
+        {
+          "id": "indicator--a3152ed6-aa99-5e0e-964b-402b7d9289d0",
+          "label": "case-a-indicator-2",
+          "type": "indicator"
+        },
+        {
+          "id": "indicator--ac58d8fb-26d1-5b89-b62b-a11a7f5b52a0",
+          "label": "case-a-indicator-0",
+          "type": "indicator"
+        },
+        {
+          "id": "relationship--2a91f734-0d26-558b-ba62-e740e53c8f72",
+          "type": "relationship"
+        },
+        {
+          "id": "threat-actor--24cea87e-b9b1-59b5-a3c7-e75b480062e6",
+          "label": "case-a Actor",
+          "type": "threat-actor"
+        }
+      ],
+      "subject": "case-group-a",
+      "summary_after": {
+        "by_type": {
+          "identity": 2,
+          "indicator": 1,
+          "malware": 1,
+          "relationship": 1,
+          "report": 1
+        },
+        "total": 6
+      },
+      "summary_before": {
+        "by_type": {
+          "identity": 2,
+          "indicator": 4,
+          "malware": 1,
+          "relationship": 2,
+          "report": 1,
+          "threat-actor": 1
+        },
+        "total": 11
+      },
+      "updated": [
+        {
+          "id": "report--719b3c5d-4756-5e96-935d-02a97058d57c",
+          "label": "Public Report",
+          "type": "report"
+        }
+      ]
+    },
+    "unchanged_subject_notice": {
+      "added": [],
+      "changed": false,
+      "message": "No visible objects changed.",
+      "removed": [],
+      "subject": "case-group-b",
+      "summary_after": {
+        "by_type": {
+          "identity": 2,
+          "indicator": 7,
+          "malware": 1,
+          "relationship": 2,
+          "report": 1,
+          "threat-actor": 1
+        },
+        "total": 14
+      },
+      "summary_before": {
+        "by_type": {
+          "identity": 2,
+          "indicator": 7,
+          "malware": 1,
+          "relationship": 2,
+          "report": 1,
+          "threat-actor": 1
+        },
+        "total": 14
+      }
+    }
+  },
+  "regression": {
+    "bundle_id": "bundle--f5543b6b-9250-5d4d-af62-fa06320cb0df",
+    "bundle_identical": true,
+    "pagination": {
+      "identical": true,
+      "page_count": 3,
+      "page_digests_a": [
+        "8e0d9ff2912bedf7d803eb86e654aea15d58e25ed6be469d8b1f67da951397ad",
+        "af422dfad3fb32869c2ef8c0ef0d59fe8062303c2bc26bc0e538db7408d03686",
+        "e66ec299f87eed5897a61031ecfef99ce4f54c8dcc69ec5dd6179b081e2e788e"
+      ],
+      "page_digests_b": [
+        "8e0d9ff2912bedf7d803eb86e654aea15d58e25ed6be469d8b1f67da951397ad",
+        "af422dfad3fb32869c2ef8c0ef0d59fe8062303c2bc26bc0e538db7408d03686",
+        "e66ec299f87eed5897a61031ecfef99ce4f54c8dcc69ec5dd6179b081e2e788e"
+      ],
+      "page_size": 2
+    },
+    "private_ids_absent": true,
+    "public_object_ids": [
+      "identity--2bf451ad-4827-52ed-aecc-aed686bd904a",
+      "identity--ae572c6c-cda4-570a-9ab4-ba4f77dcbf7c",
+      "indicator--92acf261-5237-5b38-a2d5-7ace7ebf4fb1",
+      "malware--0ccda9cf-24d3-5ca0-bbe0-d67b5ed2f732",
+      "relationship--803d3030-2569-520f-a619-4701f151c74f",
+      "report--719b3c5d-4756-5e96-935d-02a97058d57c"
+    ],
+    "public_subgraph_fixed": true,
+    "references": [
+      {
+        "property": "source_ref",
+        "source_id": "relationship--803d3030-2569-520f-a619-4701f151c74f",
+        "target_id": "indicator--92acf261-5237-5b38-a2d5-7ace7ebf4fb1"
+      },
+      {
+        "property": "target_ref",
+        "source_id": "relationship--803d3030-2569-520f-a619-4701f151c74f",
+        "target_id": "malware--0ccda9cf-24d3-5ca0-bbe0-d67b5ed2f732"
+      },
+      {
+        "property": "object_refs[0]",
+        "source_id": "report--719b3c5d-4756-5e96-935d-02a97058d57c",
+        "target_id": "indicator--92acf261-5237-5b38-a2d5-7ace7ebf4fb1"
+      }
+    ],
+    "references_identical": true,
+    "subject": "outsider",
+    "summary": {
+      "by_type": {
+        "identity": 2,
+        "indicator": 1,
+        "malware": 1,
+        "relationship": 1,
+        "report": 1
+      },
+      "total": 6
+    },
+    "summary_identical": true
+  }
+}
