@@ -27,6 +27,9 @@
 
 import datetime
 import fnmatch
+import hashlib
+import hmac
+import json
 import logging
 import os
 
@@ -45,11 +48,15 @@ import in_toto.settings
 from in_toto.exceptions import (
     BadReturnValueError,
     LayoutExpiredError,
+    MaterialSetMismatchError,
+    ReviewCutoffError,
     RuleVerificationError,
+    SamplingVerificationError,
     SignatureVerificationError,
     ThresholdVerificationError,
 )
 from in_toto.formats import _check_parameter_dict, _check_public_keys
+from in_toto.models.link import Link
 from in_toto.models.metadata import Metadata
 
 # Inherits from in_toto base logger (c.f. in_toto.log)
@@ -1640,3 +1647,1451 @@ def in_toto_verify(  # noqa: PLR0913, PLR0917, RUF100
     # This is mostly relevant if the currently verified supply chain is embedded
     # in another supply chain
     return get_summary_link(layout, reduced_chain_link_dict, step_name)
+
+
+SAMPLING_PROTOCOL_VERSION = "in-toto-batch-review/v1"
+SAMPLING_ALGORITHM = "hmac-sha256-rank-v1"
+FIXED_BATCH_SEED = "in-toto-fixed-batch-seed/v1"
+DEFAULT_BATCH_SEED = FIXED_BATCH_SEED
+DEFAULT_SAMPLE_SIZE = 2
+
+
+class _AttributeDict(dict):
+    """Dictionary with read/write attribute access for known fields."""
+
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError as exc:
+            raise AttributeError(name) from exc
+
+    def __setattr__(self, name, value):
+        self[name] = value
+
+
+class SamplingPolicy(_AttributeDict):
+    """Fixed ex-ante batch sampling agreement."""
+
+    def __init__(self, seed=None, sample_size=None, cutoff=None, **kwargs):
+        data = {}
+        if isinstance(seed, dict):
+            data.update(seed)
+            if sample_size is not None:
+                data.setdefault("sample_size", sample_size)
+            if cutoff is not None:
+                data.setdefault("cutoff", cutoff)
+        else:
+            data.update(kwargs)
+            if seed is not None:
+                data["seed"] = seed
+            if sample_size is not None:
+                data["sample_size"] = sample_size
+            if cutoff is not None:
+                data["cutoff"] = cutoff
+
+        if data.get("sample_size") is None:
+            data["sample_size"] = data.pop("size", DEFAULT_SAMPLE_SIZE)
+        data.setdefault("seed", FIXED_BATCH_SEED)
+        if data.get("cutoff") is None:
+            data["cutoff"] = data.pop(
+                "release_cutoff", data.pop("deadline", None)
+            )
+        data.setdefault("threshold", 1)
+        data.setdefault("artifact_type", "materials")
+        data.setdefault("reviewers", [])
+        data.setdefault("algorithm", SAMPLING_ALGORITHM)
+        super().__init__(data)
+        self.validate()
+
+    @classmethod
+    def read(cls, source):
+        if isinstance(source, cls):
+            return source
+        if isinstance(source, dict):
+            return cls(**source)
+        if isinstance(source, (str, os.PathLike)):
+            with open(source, encoding="utf-8") as handle:
+                return cls(**json.load(handle))
+        raise securesystemslib.exceptions.FormatError(
+            "Sampling policy must be a dictionary or JSON path"
+        )
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls.read(data)
+
+    def validate(self):
+        if not isinstance(self.get("seed"), str) or not self["seed"]:
+            raise securesystemslib.exceptions.FormatError(
+                "Sampling policy seed must be a non-empty string"
+            )
+        size = self.get("sample_size")
+        if not isinstance(size, int) or isinstance(size, bool) or size < 1:
+            raise securesystemslib.exceptions.FormatError(
+                "Sampling policy sample_size must be a positive integer"
+            )
+        if self.get("cutoff") is not None:
+            parse_review_timestamp(self["cutoff"], "cutoff")
+        threshold = self.get("threshold")
+        if (
+            not isinstance(threshold, int)
+            or isinstance(threshold, bool)
+            or threshold < 1
+        ):
+            raise securesystemslib.exceptions.FormatError(
+                "Sampling policy threshold must be a positive integer"
+            )
+
+    @property
+    def digest(self):
+        return hashlib.sha256(
+            _canonical_json(dict(sorted(self.items())))
+        ).hexdigest()
+
+
+class SamplingDraw(_AttributeDict):
+    """Recomputable deterministic draw sheet."""
+
+    @classmethod
+    def from_dict(cls, data):
+        if not isinstance(data, dict):
+            raise securesystemslib.exceptions.FormatError(
+                "Draw sheet must be a dictionary"
+            )
+        return cls(data)
+
+    @classmethod
+    def read(cls, source):
+        if isinstance(source, cls):
+            return source
+        if isinstance(source, dict):
+            return cls.from_dict(source)
+        if isinstance(source, (str, os.PathLike)):
+            with open(source, encoding="utf-8") as handle:
+                return cls.from_dict(json.load(handle))
+        raise securesystemslib.exceptions.FormatError(
+            "Draw sheet must be a dictionary or JSON path"
+        )
+
+    @classmethod
+    def load(cls, path):
+        return cls.read(path)
+
+    def dump(self, path):
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(self.to_dict(), handle, indent=2, sort_keys=True)
+            handle.write("\n")
+
+    def to_dict(self):
+        return dict(self)
+
+
+DrawSheet = SamplingDraw
+SampleDraw = SamplingDraw
+
+
+class SamplingResult(_AttributeDict):
+    """Result of a batch sampling review, including late evidence."""
+
+    @property
+    def passed(self):
+        return bool(self.get("passed", self.get("valid", False)))
+
+    @property
+    def valid(self):
+        return self.passed
+
+    @property
+    def ok(self):
+        return self.passed
+
+    def __bool__(self):
+        return self.passed
+
+    def raise_for_status(self):
+        if self.passed:
+            return self
+        result = self
+        if result.get("changes") or result.get("full_set_changed"):
+            raise MaterialSetMismatchError(
+                "Signed material full set does not match the batch draw",
+                result=result,
+            )
+        if result.get("late") and not result.get("accepted"):
+            raise ReviewCutoffError(
+                "All review confirmations are late for the release cutoff",
+                result=result,
+            )
+        raise SamplingVerificationError(
+            "Sampling review verification failed", result=result
+        )
+
+    def dump(self, path):
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(dict(self), handle, indent=2, sort_keys=True)
+            handle.write("\n")
+
+
+def _canonical_json(data):
+    return json.dumps(
+        data, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ).encode("utf-8")
+
+
+def parse_review_timestamp(value, field="timestamp"):
+    """Parse an ISO 8601 timestamp and return UTC-aware datetime."""
+    if isinstance(value, datetime.datetime):
+        parsed = value
+    elif isinstance(value, (int, float)) and not isinstance(value, bool):
+        parsed = datetime.datetime.fromtimestamp(value, tz=tz.tzutc())
+    elif isinstance(value, str):
+        try:
+            parsed = iso8601.parse_date(value)
+        except iso8601.ParseError as exc:
+            raise securesystemslib.exceptions.FormatError(
+                f"Malformed ISO 8601 timestamp in {field!r}: {value!r}"
+            ) from exc
+    else:
+        raise securesystemslib.exceptions.FormatError(
+            f"{field} must be an ISO 8601 string or datetime"
+        )
+
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=tz.tzutc())
+    return parsed.astimezone(tz.tzutc())
+
+
+def _isoformat(value):
+    return parse_review_timestamp(value).isoformat().replace("+00:00", "Z")
+
+
+def verify_review_time(
+    reviewed_at=None,
+    cutoff=None,
+    *,
+    review_time=None,
+    timestamp=None,
+    deadline=None,
+    release_cutoff=None,
+    raise_on_late=True,
+    **_kwargs,
+):
+    """Check whether a confirmation is at or before the review cutoff."""
+    reviewed_at = reviewed_at or review_time or timestamp
+    cutoff = cutoff or deadline or release_cutoff
+    if reviewed_at is None or cutoff is None:
+        raise securesystemslib.exceptions.FormatError(
+            "Both reviewed_at and cutoff are required"
+        )
+
+    reviewed_dt = parse_review_timestamp(reviewed_at, "reviewed_at")
+    cutoff_dt = parse_review_timestamp(cutoff, "cutoff")
+    on_time = reviewed_dt <= cutoff_dt
+    verification = SamplingResult(
+        passed=on_time,
+        valid=on_time,
+        on_time=on_time,
+        late=not on_time,
+        status="on-time" if on_time else "late",
+        reviewed_at=_isoformat(reviewed_dt),
+        cutoff=_isoformat(cutoff_dt),
+    )
+    if not on_time and raise_on_late:
+        raise ReviewCutoffError(
+            "Review confirmation arrived after the release cutoff",
+            result=verification,
+        )
+    return verification
+
+
+check_review_time = verify_review_time
+verify_review_timestamp = verify_review_time
+verify_review_cutoff = verify_review_time
+
+
+def is_review_on_time(reviewed_at, cutoff):
+    return bool(
+        verify_review_time(reviewed_at, cutoff, raise_on_late=False).on_time
+    )
+
+
+def _normalize_hashes(hashes):
+    """Normalize an in-toto hash dictionary or bare SHA-256 hex string."""
+    if isinstance(hashes, str):
+        return {"sha256": hashes.strip().lower()}
+    if not isinstance(hashes, dict):
+        raise securesystemslib.exceptions.FormatError(
+            "Artifact hashes must be a string or dictionary"
+        )
+
+    normalized = {}
+    for algorithm, digest in hashes.items():
+        if not isinstance(algorithm, str) or not isinstance(digest, str):
+            raise securesystemslib.exceptions.FormatError(
+                "Artifact hash algorithms and digests must be strings"
+            )
+        normalized[algorithm.lower()] = digest.strip().lower()
+    return dict(sorted(normalized.items()))
+
+
+def _hash_file(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return {"sha256": digest.hexdigest()}
+
+
+def _artifact_name(path, base_dir=None):
+    if base_dir:
+        return os.path.relpath(path, base_dir).replace(os.sep, "/")
+    if os.path.isabs(path):
+        return os.path.basename(path)
+    return path.replace(os.sep, "/")
+
+
+def normalize_material_set(materials=None, *, base_dir=None, **_kwargs):
+    """Normalize a name-to-hash mapping, paths, or a directory of text files."""
+    if materials is None:
+        return {}
+
+    if isinstance(materials, (str, os.PathLike)):
+        path = os.fspath(materials)
+        if os.path.isdir(path):
+            collected = {}
+            for root, _dirs, files in os.walk(path):
+                for filename in sorted(files):
+                    file_path = os.path.join(root, filename)
+                    name = _artifact_name(file_path, path)
+                    collected[name] = _hash_file(file_path)
+            return dict(sorted(collected.items()))
+        name = _artifact_name(path, base_dir)
+        return {name: _hash_file(path)}
+
+    if isinstance(materials, (Link, Metadata)):
+        return collect_signed_material_set(materials, base_dir=base_dir)
+
+    if isinstance(materials, (list, tuple, set)):
+        normalized = {}
+        for index, item in enumerate(materials):
+            if isinstance(item, str):
+                if os.path.exists(item):
+                    name = _artifact_name(item, base_dir)
+                    hashes = _hash_file(item)
+                else:
+                    name = item
+                    raise securesystemslib.exceptions.FormatError(
+                        f"Material path does not exist: {item}"
+                    )
+            elif isinstance(item, (list, tuple)) and len(item) == 2:
+                name, hashes = item
+                hashes = _normalize_hashes(hashes)
+            elif isinstance(item, dict):
+                name = item.get("name") or item.get("artifact")
+                if not name:
+                    raise securesystemslib.exceptions.FormatError(
+                        f"Material entry {index} is missing its name"
+                    )
+                hashes = item.get("hashes") or item.get("artifact_hashes")
+                if hashes is None and os.path.exists(name):
+                    hashes = _hash_file(name)
+                else:
+                    hashes = _normalize_hashes(hashes)
+            else:
+                raise securesystemslib.exceptions.FormatError(
+                    f"Unsupported material entry at index {index}"
+                )
+            normalized[name] = hashes
+        return dict(sorted(normalized.items()))
+
+    if isinstance(materials, dict):
+        if _looks_like_link_collection(materials):
+            return collect_signed_material_set(materials, base_dir=base_dir)
+        normalized = {}
+        for name, hashes in materials.items():
+            if hashes is None and base_dir:
+                hashes = _hash_file(os.path.join(base_dir, name))
+            else:
+                hashes = _normalize_hashes(hashes)
+            normalized[name] = hashes
+        return dict(sorted(normalized.items()))
+
+    raise securesystemslib.exceptions.FormatError(
+        "Materials must be a mapping, list, directory, Link, or Metadata"
+    )
+
+
+def _link_payload(candidate):
+    if hasattr(candidate, "get_payload"):
+        try:
+            candidate = candidate.get_payload()
+        except Exception:  # noqa: BLE001
+            return None
+    if hasattr(candidate, "signed") and hasattr(candidate.signed, "materials"):
+        return candidate.signed
+    if hasattr(candidate, "materials"):
+        return candidate
+    if isinstance(candidate, dict):
+        if isinstance(candidate.get("signed"), dict):
+            return candidate["signed"]
+        if "materials" in candidate:
+            return candidate
+    return None
+
+
+def _looks_like_link_collection(value):
+    if not isinstance(value, dict):
+        return False
+    payload = _link_payload(value)
+    if payload is not None:
+        return True
+    for item in value.values():
+        if _link_payload(item) is not None:
+            return True
+        if isinstance(item, dict):
+            if any(_link_payload(child) is not None for child in item.values()):
+                return True
+    return False
+
+
+def _iter_link_payloads(source, seen=None):
+    if seen is None:
+        seen = set()
+    source_id = id(source)
+    if source_id in seen:
+        return
+    seen.add(source_id)
+
+    payload = _link_payload(source)
+    if payload is not None:
+        yield payload
+        return
+
+    if isinstance(source, dict):
+        for value in source.values():
+            yield from _iter_link_payloads(value, seen)
+    elif isinstance(source, (list, tuple, set)):
+        for value in source:
+            yield from _iter_link_payloads(value, seen)
+
+
+def collect_signed_material_set(
+    links=None,
+    steps=None,
+    *,
+    material_type="materials",
+    artifact_type=None,
+    raise_on_conflict=True,
+    **_kwargs,
+):
+    """Collect the complete signed material set from verified in-toto links."""
+    selected_type = artifact_type or material_type or "materials"
+    types = (
+        ("materials", "products")
+        if selected_type == "both"
+        else (selected_type,)
+    )
+    selected_steps = set(steps or [])
+    sources = links
+    if selected_steps and isinstance(links, dict):
+        sources = [links.get(step) for step in selected_steps]
+
+    full_set = {}
+    for link in _iter_link_payloads(sources):
+        for current_type in types:
+            artifacts = getattr(link, current_type, None)
+            if artifacts is None and isinstance(link, dict):
+                artifacts = link.get(current_type, {})
+            if not isinstance(artifacts, dict):
+                continue
+            for path, hashes in artifacts.items():
+                artifact_id = (
+                    current_type + ":" + path
+                    if selected_type == "both"
+                    else path
+                )
+                normalized = _normalize_hashes(hashes)
+                existing = full_set.get(artifact_id)
+                if existing is not None and existing != normalized:
+                    if raise_on_conflict:
+                        raise MaterialSetMismatchError(
+                            "Verified links disagree about material "
+                            + repr(artifact_id)
+                        )
+                    continue
+                full_set[artifact_id] = normalized
+    return dict(sorted(full_set.items()))
+
+
+collect_signed_materials = collect_signed_material_set
+collect_material_full_set = collect_signed_material_set
+
+
+def material_set_digest(materials=None, **kwargs):
+    """Return the SHA-256 digest of the canonical complete material set."""
+    normalized = normalize_material_set(materials, **kwargs)
+    return hashlib.sha256(_canonical_json(normalized)).hexdigest()
+
+
+full_set_digest = material_set_digest
+compute_full_set_digest = material_set_digest
+signed_materials_digest = material_set_digest
+
+
+def diff_material_sets(expected=None, current=None, **kwargs):
+    """Return added, removed, and hash-replaced material names."""
+    if current is None and expected is not None:
+        expected, current = current, expected
+    expected_set = normalize_material_set(expected, **kwargs)
+    current_set = normalize_material_set(current, **kwargs)
+    expected_names = set(expected_set)
+    current_names = set(current_set)
+    replaced = sorted(
+        name
+        for name in expected_names & current_names
+        if expected_set[name] != current_set[name]
+    )
+    return {
+        "added": sorted(current_names - expected_names),
+        "removed": sorted(expected_names - current_names),
+        "replaced": replaced,
+        "changed": sorted((current_names ^ expected_names) | set(replaced)),
+        "unchanged": sorted(
+            name
+            for name in expected_names & current_names
+            if expected_set[name] == current_set[name]
+        ),
+    }
+
+
+diff_full_sets = diff_material_sets
+
+
+def verify_full_material_set(
+    materials=None,
+    expected=None,
+    *,
+    expected_digest=None,
+    recorded_digest=None,
+    full_set_digest=None,
+    raise_on_mismatch=True,
+    **kwargs,
+):
+    """Recheck the entire signed set, including materials not sampled."""
+    current = normalize_material_set(materials, **kwargs)
+    current_digest = hashlib.sha256(_canonical_json(current)).hexdigest()
+    baseline_digest = expected_digest or recorded_digest or full_set_digest
+    changes = {}
+    baseline_expected = None
+
+    if expected is not None:
+        baseline_expected = normalize_material_set(expected, **kwargs)
+        expected_digest_from_set = hashlib.sha256(
+            _canonical_json(baseline_expected)
+        ).hexdigest()
+        if baseline_digest is None:
+            baseline_digest = expected_digest_from_set
+        changes = diff_material_sets(baseline_expected, current, **kwargs)
+
+    digest_matches = baseline_digest in (None, current_digest)
+    if changes:
+        set_matches = not (
+            changes["added"] or changes["removed"] or changes["replaced"]
+        )
+    else:
+        set_matches = True
+
+    valid = digest_matches and set_matches
+    result = SamplingResult(
+        passed=valid,
+        valid=valid,
+        current_digest=current_digest,
+        full_set_digest=current_digest,
+        expected_digest=baseline_digest,
+        changes=changes,
+        added=changes.get("added", []),
+        removed=changes.get("removed", []),
+        replaced_materials=changes.get("replaced", []),
+        full_set_changed=not valid and baseline_digest is not None,
+        requires_full_set_review=not valid and baseline_digest is not None,
+    )
+    if not valid and raise_on_mismatch:
+        result.raise_for_status()
+    return result
+
+
+verify_material_full_set = verify_full_material_set
+verify_signed_material_full_set = verify_full_material_set
+verify_material_set = verify_full_material_set
+
+
+def _draw_policy(seed, sample_size, cutoff, policy, kwargs):
+    if policy is not None:
+        return SamplingPolicy.read(policy)
+
+    if isinstance(seed, SamplingPolicy):
+        return seed
+
+    if isinstance(seed, dict) and (
+        "seed" in seed
+        or "cutoff" in seed
+        or "release_cutoff" in seed
+        or "sample_size" in seed
+        or "size" in seed
+    ):
+        return SamplingPolicy.read(seed)
+
+    return SamplingPolicy(
+        seed=seed,
+        sample_size=sample_size or kwargs.pop("size", None),
+        cutoff=cutoff or kwargs.pop("release_cutoff", None),
+        **kwargs,
+    )
+
+
+def compute_sample_draw(
+    seed=None,
+    materials=None,
+    sample_size=None,
+    *,
+    cutoff=None,
+    policy=None,
+    base_dir=None,
+    **kwargs,
+):
+    """Compute a fixed-seed HMAC ranking over the complete material set."""
+    policy_like = isinstance(seed, SamplingPolicy) or (
+        isinstance(seed, dict)
+        and (
+            "seed" in seed
+            or "cutoff" in seed
+            or "release_cutoff" in seed
+            or "sample_size" in seed
+            or "size" in seed
+        )
+    )
+    if materials is None and seed is not None and not policy_like:
+        materials = seed
+        seed = None
+    elif (policy_like and materials is not None) or policy_like:
+        policy = seed
+        seed = None
+
+    policy_obj = _draw_policy(seed, sample_size, cutoff, policy, kwargs)
+    normalized = normalize_material_set(materials, base_dir=base_dir)
+    if not normalized:
+        raise SamplingVerificationError(
+            "Cannot draw a sample from an empty signed material set"
+        )
+
+    current_digest = hashlib.sha256(_canonical_json(normalized)).hexdigest()
+    ranked = []
+    for name, hashes in normalized.items():
+        rank_message = {
+            "algorithm": policy_obj.algorithm,
+            "full_set_digest": current_digest,
+            "material": name,
+            "hashes": hashes,
+        }
+        rank = hmac.new(
+            policy_obj.seed.encode("utf-8"),
+            _canonical_json(rank_message),
+            hashlib.sha256,
+        ).hexdigest()
+        ranked.append(
+            {
+                "material": name,
+                "name": name,
+                "hashes": hashes,
+                "rank": rank,
+            }
+        )
+
+    ranked.sort(key=lambda entry: (entry["rank"], entry["name"]))
+    draw_size = min(policy_obj.sample_size, len(ranked))
+    selection = ranked[:draw_size]
+    selected = [entry["name"] for entry in selection]
+    cutoff_value = policy_obj.get("cutoff")
+    cutoff_iso = _isoformat(cutoff_value) if cutoff_value else None
+
+    draw_digest = hashlib.sha256(
+        _canonical_json(
+            {
+                "protocol": SAMPLING_PROTOCOL_VERSION,
+                "algorithm": policy_obj.algorithm,
+                "seed": policy_obj.seed,
+                "cutoff": cutoff_iso,
+                "sample_size": draw_size,
+                "full_set_digest": current_digest,
+                "selected": selected,
+                "selection": selection,
+            }
+        )
+    ).hexdigest()
+
+    return SamplingDraw(
+        protocol=SAMPLING_PROTOCOL_VERSION,
+        version=SAMPLING_PROTOCOL_VERSION,
+        algorithm=policy_obj.algorithm,
+        seed=policy_obj.seed,
+        batch_seed=policy_obj.seed,
+        cutoff=cutoff_iso,
+        release_cutoff=cutoff_iso,
+        sample_size=draw_size,
+        requested_sample_size=policy_obj.sample_size,
+        full_set=normalized,
+        materials=normalized,
+        full_set_digest=current_digest,
+        selected=selected,
+        sample=selected,
+        selection=selection,
+        draw_digest=draw_digest,
+        sample_digest=draw_digest,
+        digest=draw_digest,
+        policy=dict(policy_obj),
+        policy_digest=policy_obj.digest,
+    )
+
+
+compute_draw_sheet = compute_sample_draw
+create_draw_sheet = compute_sample_draw
+fixed_batch_sample = compute_sample_draw
+derive_fixed_sample = compute_sample_draw
+select_materials_for_review = compute_sample_draw
+
+
+def recompute_draw_sheet(draw_sheet, materials=None, **kwargs):
+    """Recompute a draw from its fixed seed and signed full set."""
+    draw = SamplingDraw.read(draw_sheet)
+    source_materials = (
+        materials
+        if materials is not None
+        else draw.get("full_set") or draw.get("materials")
+    )
+    return compute_sample_draw(
+        seed=draw.get("seed") or draw.get("batch_seed"),
+        materials=source_materials,
+        sample_size=draw.get("sample_size"),
+        cutoff=draw.get("cutoff") or draw.get("release_cutoff"),
+        **kwargs,
+    )
+
+
+def verify_draw_sheet(
+    draw_sheet=None,
+    materials=None,
+    *,
+    full_set=None,
+    raise_on_invalid=True,
+    **kwargs,
+):
+    """Verify that a draw sheet is reproducible from seed and full set."""
+    recorded = SamplingDraw.read(draw_sheet)
+    source_materials = materials if materials is not None else full_set
+    recomputed = recompute_draw_sheet(recorded, source_materials, **kwargs)
+    digest_matches = recorded.get("draw_digest") in (
+        None,
+        recomputed.draw_digest,
+    )
+    set_matches = recorded.get("full_set_digest") in (
+        None,
+        recomputed.full_set_digest,
+    )
+    selected_matches = recorded.get("selected") in (
+        None,
+        recomputed.selected,
+    ) and recorded.get("sample") in (None, recomputed.sample)
+    valid = digest_matches and set_matches and selected_matches
+    result = SamplingResult(
+        passed=valid,
+        valid=valid,
+        draw=recomputed,
+        draw_sheet=recomputed,
+        selected=recomputed.selected,
+        full_set_digest=recomputed.full_set_digest,
+        draw_digest=recomputed.draw_digest,
+        digest=recomputed.draw_digest,
+    )
+    if not valid and raise_on_invalid:
+        raise SamplingVerificationError(
+            "Draw sheet is not reproducible from seed and full set",
+            result=result,
+        )
+    return result
+
+
+def _first_review_field(raw, names):
+    for name in names:
+        value = raw.get(name)
+        if value not in (None, ""):
+            return value
+    return None
+
+
+def verify_sampling_review(  # noqa: PLR0912, PLR0913, PLR0915
+    materials=None,
+    confirmations=None,
+    cutoff=None,
+    *,
+    seed=None,
+    sample_size=DEFAULT_SAMPLE_SIZE,
+    threshold=1,
+    expected_full_set_digest=None,
+    recorded_full_set_digest=None,
+    expected_draw_digest=None,
+    draw_sheet=None,
+    base_dir=None,
+    raise_on_failure=True,
+    review_metadata=None,
+    write_draw_sheet=None,
+    write_result=None,
+    **kwargs,
+):
+    """Verify deterministic sampling, the complete signed set, and timing."""
+    cutoff = (
+        cutoff
+        or kwargs.pop("deadline", None)
+        or kwargs.pop("release_cutoff", None)
+    )
+    if confirmations is None:
+        confirmations = (
+            review_metadata
+            if review_metadata is not None
+            else kwargs.pop("reviews", None)
+        )
+
+    recorded_draw = None
+    if draw_sheet is not None:
+        recorded_draw = SamplingDraw.read(draw_sheet)
+        expected_full_set_digest = (
+            expected_full_set_digest or recorded_draw.full_set_digest
+        )
+        expected_draw_digest = expected_draw_digest or recorded_draw.draw_digest
+        seed = seed or recorded_draw.get("seed")
+        if sample_size == DEFAULT_SAMPLE_SIZE:
+            sample_size = recorded_draw.get("sample_size", sample_size)
+        cutoff = cutoff or recorded_draw.get("cutoff")
+
+    seed = seed or FIXED_BATCH_SEED
+    normalized = normalize_material_set(materials, base_dir=base_dir)
+    baseline_materials = None
+    if recorded_draw is not None:
+        baseline_materials = recorded_draw.get("full_set") or recorded_draw.get(
+            "materials"
+        )
+    full_check = verify_full_material_set(
+        normalized,
+        expected=baseline_materials,
+        expected_digest=(expected_full_set_digest or recorded_full_set_digest),
+        raise_on_mismatch=False,
+    )
+    draw = compute_sample_draw(
+        seed=seed,
+        materials=normalized,
+        sample_size=sample_size,
+        cutoff=cutoff,
+        base_dir=base_dir,
+        threshold=threshold,
+        **kwargs,
+    )
+
+    draw_matches = True
+    if expected_draw_digest is not None:
+        draw_matches = expected_draw_digest == draw.draw_digest
+    if recorded_draw is not None:
+        draw_matches = draw_matches and (
+            recorded_draw.get("selected") in (None, draw.selected)
+        )
+
+    accepted = {}
+    accepted_records = []
+    late_records = []
+    invalid_records = []
+
+    for raw in _iter_confirmations(confirmations):
+        artifact = _first_review_field(
+            raw,
+            ("artifact", "material", "name", "path", "target", "filename"),
+        )
+        reviewed_at = _first_review_field(
+            raw,
+            (
+                "reviewed_at",
+                "review_time",
+                "timestamp",
+                "confirmed_at",
+                "signed_at",
+                "time",
+            ),
+        )
+        reviewer = _first_review_field(
+            raw, ("reviewer", "reviewer_id", "keyid", "key_id", "signer")
+        )
+        record = {
+            "artifact": artifact,
+            "reviewed_at": reviewed_at,
+            "reviewer": reviewer,
+        }
+
+        if artifact not in draw.selected:
+            invalid_records.append(
+                {**record, "reason": "Confirmation is not for a drawn material"}
+            )
+            continue
+
+        binding_error = None
+        raw_full_digest = _first_review_field(
+            raw, ("full_set_digest", "material_set_digest")
+        )
+        raw_draw_digest = _first_review_field(
+            raw, ("draw_digest", "draw_sheet_digest", "sample_digest")
+        )
+        raw_cutoff = _first_review_field(
+            raw, ("cutoff", "release_cutoff", "deadline")
+        )
+        if raw_full_digest and raw_full_digest != draw.full_set_digest:
+            binding_error = "Confirmation is bound to another material full set"
+        elif raw_draw_digest and raw_draw_digest != draw.draw_digest:
+            binding_error = "Confirmation is bound to another sample draw"
+        elif raw_cutoff:
+            try:
+                if _isoformat(raw_cutoff) != _isoformat(cutoff):
+                    binding_error = "Confirmation is bound to another cutoff"
+            except securesystemslib.exceptions.FormatError:
+                binding_error = "Confirmation has a malformed cutoff binding"
+        elif raw.get("signature_valid") is False:
+            binding_error = "Review signature is not valid"
+
+        if binding_error:
+            invalid_records.append({**record, "reason": binding_error})
+            continue
+
+        try:
+            timing = verify_review_time(
+                reviewed_at, cutoff, raise_on_late=False
+            )
+        except securesystemslib.exceptions.FormatError as exc:
+            invalid_records.append({**record, "reason": str(exc)})
+            continue
+
+        record.update(
+            {
+                "reviewed_at": timing.reviewed_at,
+                "cutoff": timing.cutoff,
+                "status": timing.status,
+                "full_set_digest": draw.full_set_digest,
+                "draw_digest": draw.draw_digest,
+            }
+        )
+        if timing.late:
+            late_records.append(record)
+            continue
+
+        accepted.setdefault(artifact, []).append(record)
+        accepted_records.append(record)
+
+    missing = []
+    for artifact in draw.selected:
+        records = accepted.get(artifact, [])
+        distinct_reviewers = {
+            record.get("reviewer") or id(record) for record in records
+        }
+        if len(distinct_reviewers) < threshold:
+            missing.append(artifact)
+
+    valid = (
+        bool(normalized)
+        and full_check.passed
+        and draw_matches
+        and not missing
+        and not invalid_records
+    )
+    status = "passed" if valid else "failed"
+    result = SamplingResult(
+        passed=valid,
+        valid=valid,
+        status=status,
+        seed=seed,
+        batch_seed=seed,
+        cutoff=_isoformat(cutoff) if cutoff else None,
+        release_cutoff=_isoformat(cutoff) if cutoff else None,
+        sample_size=draw.sample_size,
+        threshold=threshold,
+        selected=draw.selected,
+        sample=draw.selected,
+        draw=draw,
+        draw_sheet=draw,
+        full_set=normalized,
+        materials=normalized,
+        full_set_digest=draw.full_set_digest,
+        draw_digest=draw.draw_digest,
+        digest=draw.draw_digest,
+        expected_draw_digest=expected_draw_digest,
+        draw_matches=draw_matches,
+        changes=full_check.changes,
+        added=full_check.added,
+        removed=full_check.removed,
+        replaced_materials=full_check.replaced_materials,
+        full_set_changed=full_check.full_set_changed,
+        requires_full_set_review=bool(full_check.full_set_changed),
+        accepted=accepted,
+        accepted_reviews=accepted_records,
+        on_time_reviews=accepted_records,
+        late=late_records,
+        late_reviews=late_records,
+        recheck_queue=late_records,
+        missing=missing,
+        invalid=invalid_records,
+    )
+
+    if write_draw_sheet:
+        draw.dump(write_draw_sheet)
+    if write_result:
+        result.dump(write_result)
+    if raise_on_failure:
+        result.raise_for_status()
+    return result
+
+
+verify_batch_review = verify_sampling_review
+verify_batch_sampling = verify_sampling_review
+verify_sampling_protocol = verify_sampling_review
+verify_release_sampling = verify_sampling_review
+check_sampling_acceptance = verify_sampling_review
+
+
+def verify_sampling_acceptance(
+    policy=None,
+    full_set=None,
+    review_metadata=None,
+    review_confirmations=None,
+    draw_sheet=None,
+    raise_on_failure=True,
+    write_draw_sheet=None,
+    write_result=None,
+    **kwargs,
+):
+    """Policy-shaped compatibility wrapper around verify_sampling_review."""
+    if (
+        policy is None
+        and isinstance(full_set, dict)
+        and ("seed" in full_set or "cutoff" in full_set)
+    ):
+        policy, full_set = full_set, None
+
+    policy_obj = (
+        SamplingPolicy.read(policy)
+        if policy is not None
+        else SamplingPolicy(
+            seed=kwargs.pop("seed", None),
+            sample_size=kwargs.pop("sample_size", kwargs.pop("size", None)),
+            cutoff=kwargs.pop(
+                "cutoff",
+                kwargs.pop("release_cutoff", kwargs.pop("deadline", None)),
+            ),
+            threshold=kwargs.pop("threshold", 1),
+        )
+    )
+    return verify_sampling_review(
+        full_set,
+        review_confirmations
+        if review_confirmations is not None
+        else review_metadata,
+        policy_obj.get("cutoff"),
+        seed=policy_obj.seed,
+        sample_size=policy_obj.sample_size,
+        threshold=policy_obj.threshold,
+        draw_sheet=draw_sheet,
+        raise_on_failure=raise_on_failure,
+        write_draw_sheet=write_draw_sheet,
+        write_result=write_result,
+        **kwargs,
+    )
+
+
+verify_sampling_for_links = verify_sampling_acceptance
+
+
+def _confirmation_mapping(item):
+    if isinstance(item, (Link, Metadata)) or hasattr(item, "get_payload"):
+        try:
+            payload = (
+                item.get_payload() if hasattr(item, "get_payload") else item
+            )
+        except Exception:  # noqa: BLE001
+            payload = item
+        byproducts = getattr(payload, "byproducts", None)
+        if byproducts is None and isinstance(payload, dict):
+            byproducts = payload.get("byproducts", {})
+        raw = dict(byproducts) if isinstance(byproducts, dict) else {}
+        if isinstance(payload, dict):
+            for key, value in payload.items():
+                if key != "byproducts":
+                    raw.setdefault(key, value)
+        return raw
+
+    if hasattr(item, "byproducts"):
+        byproducts = item.byproducts
+        raw = dict(byproducts) if isinstance(byproducts, dict) else {}
+        return raw
+
+    if isinstance(item, dict):
+        raw = dict(item)
+        byproducts = raw.get("byproducts")
+        if isinstance(byproducts, dict):
+            merged = dict(byproducts)
+            nested = merged.get("sampling")
+            if isinstance(nested, dict):
+                merged.update(nested)
+            merged.update(raw)
+            return merged
+        return raw
+
+    if isinstance(item, str):
+        return {"reviewed_at": item}
+
+    raise securesystemslib.exceptions.FormatError(
+        "Review confirmation must be a mapping, Link, Metadata, or timestamp"
+    )
+
+
+def _iter_confirmations(confirmations):
+    if confirmations is None:
+        return
+
+    if isinstance(confirmations, dict):
+        looks_like_record = any(
+            key in confirmations
+            for key in (
+                "artifact",
+                "material",
+                "name",
+                "path",
+                "reviewed_at",
+                "review_time",
+                "timestamp",
+                "confirmed_at",
+            )
+        )
+        if looks_like_record:
+            yield confirmations
+            return
+
+        for artifact, value in confirmations.items():
+            if isinstance(value, (list, tuple, set)):
+                for item in value:
+                    raw = _confirmation_mapping(item)
+                    raw.setdefault("artifact", artifact)
+                    yield raw
+            else:
+                raw = _confirmation_mapping(value)
+                raw.setdefault("artifact", artifact)
+                yield raw
+        return
+
+    if isinstance(confirmations, (list, tuple, set)):
+        for item in confirmations:
+            yield from _iter_confirmations(item)
+        return
+
+    yield _confirmation_mapping(confirmations)
+
+
+def _first_review_field(raw, names):
+    for name in names:
+        value = raw.get(name)
+        if value not in (None, ""):
+            return value
+    return None
+
+
+def _review_mapping(item):
+    if hasattr(item, "get_payload"):
+        try:
+            item = item.get_payload()
+        except Exception:  # noqa: BLE001
+            item = None
+
+    if hasattr(item, "byproducts"):
+        byproducts = item.byproducts or {}
+        raw = dict(byproducts) if isinstance(byproducts, dict) else {}
+    elif isinstance(item, dict):
+        raw = dict(item)
+    elif isinstance(item, str):
+        raw = {"reviewed_at": item}
+    else:
+        raise securesystemslib.exceptions.FormatError(
+            "Review confirmation must be a mapping, Link, Metadata, or time"
+        )
+
+    nested = raw.get("sampling")
+    if isinstance(nested, dict):
+        merged = dict(nested)
+        merged.update(raw)
+        raw = merged
+
+    byproducts = raw.get("byproducts")
+    if isinstance(byproducts, dict):
+        merged = dict(byproducts)
+        merged.update(raw)
+        raw = merged
+    return raw
+
+
+def _iter_review_confirmations(confirmations):
+    if confirmations is None:
+        return
+
+    if isinstance(confirmations, dict):
+        looks_like_record = any(
+            key in confirmations
+            for key in (
+                "artifact",
+                "material",
+                "name",
+                "path",
+                "target",
+                "reviewed_at",
+                "review_time",
+                "timestamp",
+                "confirmed_at",
+            )
+        )
+        if looks_like_record:
+            yield confirmations
+            return
+
+        for artifact, value in confirmations.items():
+            if isinstance(value, (list, tuple, set)):
+                for item in value:
+                    raw = _review_mapping(item)
+                    raw.setdefault("artifact", artifact)
+                    yield raw
+            else:
+                raw = _review_mapping(value)
+                raw.setdefault("artifact", artifact)
+                yield raw
+        return
+
+    if isinstance(confirmations, (list, tuple, set)):
+        for item in confirmations:
+            yield _review_mapping(item)
+        return
+
+    yield _review_mapping(confirmations)
+
+
+def _normalize_review_confirmation(item, draw, cutoff_dt):
+    raw = _review_mapping(item)
+    artifact = _first_review_field(
+        raw,
+        (
+            "artifact",
+            "material",
+            "material_name",
+            "name",
+            "path",
+            "target",
+            "filename",
+        ),
+    )
+    reviewed_at = _first_review_field(
+        raw,
+        (
+            "reviewed_at",
+            "review_time",
+            "review_timestamp",
+            "timestamp",
+            "confirmed_at",
+            "confirmation_time",
+            "signed_at",
+            "time",
+        ),
+    )
+    reviewer = _first_review_field(
+        raw, ("reviewer", "reviewer_id", "keyid", "key_id", "signer")
+    )
+    draw_digest = _first_review_field(
+        raw,
+        ("draw_digest", "draw_sheet_digest", "sample_digest"),
+    )
+    full_set_digest = _first_review_field(
+        raw, ("full_set_digest", "materials_digest", "set_digest")
+    )
+    confirmation_cutoff = _first_review_field(
+        raw, ("cutoff", "release_cutoff", "deadline")
+    )
+    seed = _first_review_field(raw, ("seed", "batch_seed"))
+
+    if reviewed_at is None:
+        raise SamplingVerificationError(
+            "Review confirmation is missing its review timestamp"
+        )
+    reviewed_dt = parse_review_timestamp(reviewed_at, "reviewed_at")
+
+    selected = list(draw.get("selected", []))
+    if artifact is None:
+        if len(selected) == 1:
+            artifact = selected[0]
+        else:
+            raise SamplingVerificationError(
+                "Review confirmation is missing its sampled artifact name"
+            )
+
+    artifact = str(artifact)
+    artifact_candidates = {artifact}
+    if ":" in artifact:
+        artifact_candidates.add(artifact.split(":", 1)[1])
+    artifact_candidates.update(
+        candidate
+        for candidate in selected
+        if candidate.endswith("/" + artifact) or candidate == artifact
+    )
+    matched = artifact_candidates.intersection(selected)
+    if not matched:
+        raise SamplingVerificationError(
+            "Review confirmation references an artifact not in the draw: "
+            + artifact
+        )
+    artifact = sorted(matched)[0]
+
+    expected_draw_digest = draw.get("draw_digest") or draw.get("sample_digest")
+    if (
+        draw_digest
+        and expected_draw_digest
+        and draw_digest != expected_draw_digest
+    ):
+        raise SamplingVerificationError(
+            "Review confirmation is bound to a different sampling draw"
+        )
+    if (
+        full_set_digest
+        and draw.get("full_set_digest")
+        and full_set_digest != draw["full_set_digest"]
+    ):
+        raise SamplingVerificationError(
+            "Review confirmation is bound to a different material full set"
+        )
+    if confirmation_cutoff and cutoff_dt is not None:
+        confirmation_cutoff_dt = parse_review_timestamp(
+            confirmation_cutoff, "cutoff"
+        )
+        if confirmation_cutoff_dt != cutoff_dt:
+            raise SamplingVerificationError(
+                "Review confirmation is bound to a different release cutoff"
+            )
+    if seed and draw.get("seed") and seed != draw["seed"]:
+        raise SamplingVerificationError(
+            "Review confirmation is bound to a different batch seed"
+        )
+    if raw.get("signature_valid") is False or raw.get("verified") is False:
+        raise SignatureVerificationError(
+            "Review confirmation signature was not verified"
+        )
+
+    on_time = cutoff_dt is None or reviewed_dt <= cutoff_dt
+    return {
+        "artifact": artifact,
+        "reviewer": reviewer,
+        "reviewed_at": _isoformat(reviewed_dt),
+        "on_time": on_time,
+        "late": not on_time,
+        "status": "on-time" if on_time else "late",
+        "draw_digest": draw_digest or expected_draw_digest,
+        "full_set_digest": full_set_digest or draw.get("full_set_digest"),
+    }
+
+
+BATCH_SEED = FIXED_BATCH_SEED
+SAMPLING_SEED = FIXED_BATCH_SEED
+
+
+def get_fixed_batch_seed(batch_id=None):
+    """Return the protocol seed, optionally namespaced by batch identifier."""
+    if batch_id in (None, ""):
+        return FIXED_BATCH_SEED
+    return f"{FIXED_BATCH_SEED}/{batch_id}"
+
+
+def verify_batch_seed(
+    seed=None,
+    expected_seed=None,
+    *,
+    draw_sheet=None,
+    raise_on_mismatch=True,
+):
+    """Ensure a draw/confirmation still uses the pre-agreed batch seed."""
+    recorded = SamplingDraw.read(draw_sheet) if draw_sheet else None
+    expected = (
+        expected_seed
+        or (recorded.get("seed") if recorded else None)
+        or FIXED_BATCH_SEED
+    )
+    actual = seed or (recorded.get("seed") if recorded else FIXED_BATCH_SEED)
+    valid = hmac.compare_digest(str(actual), str(expected))
+    result = SamplingResult(
+        passed=valid,
+        valid=valid,
+        seed=actual,
+        expected_seed=expected,
+        batch_seed=actual,
+    )
+    if not valid and raise_on_mismatch:
+        raise SamplingVerificationError(
+            "Batch seed does not match the fixed protocol seed",
+            result=result,
+        )
+    return result
+
+
+verify_fixed_batch_seed = verify_batch_seed
+
+
+def verify_signed_materials(
+    metadata=None,
+    keys_dict=None,
+    materials=None,
+    **kwargs,
+):
+    """Verify build/link signatures when keys are supplied, then hash the set."""
+    signatures_verified = False
+    if keys_dict is not None:
+        verify_metadata_signatures(metadata, keys_dict)
+        signatures_verified = True
+
+    source = materials if materials is not None else metadata
+    material_set = normalize_material_set(source, **kwargs)
+    digest = hashlib.sha256(_canonical_json(material_set)).hexdigest()
+    return SamplingResult(
+        passed=True,
+        valid=True,
+        signatures_verified=signatures_verified,
+        materials=material_set,
+        full_set=material_set,
+        full_set_digest=digest,
+    )
+
+
+verify_signed_build_materials = verify_signed_materials
+
+
+def verify_signed_build_and_review(
+    metadata=None,
+    keys_dict=None,
+    **sampling_kwargs,
+):
+    """Verify the build signature first and then enforce sampling review."""
+    verify_metadata_signatures(metadata, keys_dict)
+    return verify_sampling_review(**sampling_kwargs)
+
+
+verify_build_signature_and_sampling = verify_signed_build_and_review
+
+
+def select_sample(*args, **kwargs):
+    """Return only the deterministic selected material names."""
+    return compute_sample_draw(*args, **kwargs).selected
+
+
+sample_materials = select_sample
+deterministic_sample = select_sample

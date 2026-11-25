@@ -1,0 +1,18 @@
+Sampling review: replacement blocked
+====================================
+
+scenario: an unsampled material was replaced before full-set recheck
+coverage_label: 替换 / replacement blocked
+fixed_seed: fixed-batch-seed-2026-q4 (library default: in-toto-fixed-batch-seed/v1)
+review_cutoff: 2026-11-25T12:00:00Z
+
+verdict: BLOCKED
+full_set_digest: 7b4ce10abf083a3240f265c37da55127a00d65006ba1122b672a56c58009b13e
+draw_digest: 7b7f68df4d36f265e1e366d25b5da789038ee743b5b4c58e8fbda6cd8cc2c823
+selected: 03-checksums.txt, 04-release-readme.txt
+missing: 03-checksums.txt, 04-release-readme.txt
+replaced_materials: 01-build-notes.txt
+late_confirmations_retained: 0
+
+replaced_unsampled_material: 01-build-notes.txt
+action: recompute seed draw over the new complete set

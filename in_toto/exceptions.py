@@ -41,3 +41,19 @@ class PrefixError(Error):
 
 class InvalidMetadata(Error):  # noqa: N818
     """Indicates that the metadata is not valid."""
+
+
+class SamplingVerificationError(Error):
+    """Base class for release sampling verification failures."""
+
+    def __init__(self, message="Sampling verification failed.", result=None):
+        super().__init__(message)
+        self.result = result
+
+
+class MaterialSetMismatchError(SamplingVerificationError):
+    """The signed material full set changed after the batch was drawn."""
+
+
+class ReviewCutoffError(SamplingVerificationError):
+    """A review confirmation was produced after the release cutoff."""

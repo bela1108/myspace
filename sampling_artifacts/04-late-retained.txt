@@ -1,0 +1,19 @@
+Sampling review: late confirmation retained
+===========================================
+
+scenario: confirmation after cutoff cannot release this batch
+coverage_label: 迟到 / late confirmation retained
+fixed_seed: fixed-batch-seed-2026-q4 (library default: in-toto-fixed-batch-seed/v1)
+review_cutoff: 2026-11-25T12:00:00Z
+
+verdict: BLOCKED
+full_set_digest: 0944d85fbcc01a4e08ae6813bdf5754968dc71c0752c8bc2754dfd453359902e
+draw_digest: 588c19cb0d29236d0ceaa59d56757ef00fa9e7db6e05c9464eb55cc9f5fadcd6
+selected: 04-release-readme.txt, 02-source-list.txt
+missing: 04-release-readme.txt, 02-source-list.txt
+replaced_materials: (none)
+late_confirmations_retained: 2
+
+late_time: 2026-11-25T12:30:00Z
+recheck_queue: 04-release-readme.txt, 02-source-list.txt
+policy: retain late evidence for a later review cycle
