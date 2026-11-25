@@ -34,6 +34,9 @@ from ..exception.model import InvalidConfidenceException, InvalidValueException
 from ..schema.schema import SchemaVersion1Dot5, SchemaVersion1Dot6, SchemaVersion1Dot7
 from . import Copyright
 from .bom_ref import BomRef
+from .coverage import CoverageReconciliation, _CoverageReconciliationSerializationHelper
+from .coverage import *  # noqa: F401,F403
+from .coverage import reconcile_coverage as _reconcile_coverage
 from .license import License, LicenseRepository, _LicenseRepositorySerializationHelper
 
 
@@ -654,12 +657,24 @@ class ComponentEvidence:
         callstack: Optional[CallStack] = None,
         licenses: Optional[Iterable[License]] = None,
         copyright: Optional[Iterable[Copyright]] = None,
+        coverage: Optional[CoverageReconciliation] = None,
+        coverage_reconciliation: Optional[CoverageReconciliation] = None,
+        coverage_report: Optional[CoverageReconciliation] = None,
+        coverage_check: Optional[CoverageReconciliation] = None,
+        evidence_coverage: Optional[CoverageReconciliation] = None,
     ) -> None:
         self.identity = identity or []
         self.occurrences = occurrences or []
         self.callstack = callstack
         self.licenses = licenses or []
         self.copyright = copyright or []
+        coverage_value = coverage
+        for alias in (
+            coverage_reconciliation, coverage_report, coverage_check, evidence_coverage,
+        ):
+            if coverage_value is None and alias is not None:
+                coverage_value = alias
+        self.coverage = coverage_value
 
     @property
     @serializable.view(SchemaVersion1Dot5)
@@ -743,6 +758,42 @@ class ComponentEvidence:
     def copyright(self, copyright: Iterable[Copyright]) -> None:
         self._copyright = SortedSet(copyright)
 
+    @property
+    @serializable.type_mapping(_CoverageReconciliationSerializationHelper)
+    @serializable.xml_sequence(6)
+    def coverage(self) -> Optional[CoverageReconciliation]:
+        """Coverage reconciliation bound to directory or file objects."""
+        return self._coverage
+
+    @coverage.setter
+    def coverage(self, coverage: Any) -> None:
+        if coverage is None or isinstance(coverage, CoverageReconciliation):
+            self._coverage = coverage
+        elif isinstance(coverage, str):
+            self._coverage = CoverageReconciliation.from_json(coverage)
+        elif isinstance(coverage, dict):
+            self._coverage = CoverageReconciliation.from_dict(coverage)
+        else:
+            raise TypeError(f'coverage must be a CoverageReconciliation, dict, JSON string, or None: {coverage!r}')
+
+    def reconcile_coverage(self, manifest: Any = None, **kwargs: Any) -> CoverageReconciliation:
+        """Reconcile occurrence samples and manifest scope, then attach the report."""
+        report = _reconcile_coverage(self, manifest=manifest, **kwargs)
+        self.coverage = report
+        return report
+
+    def check_coverage(self, manifest: Any = None, **kwargs: Any) -> CoverageReconciliation:
+        """Alias for :meth:`reconcile_coverage`."""
+        return self.reconcile_coverage(manifest=manifest, **kwargs)
+
+    def coverage_check(self, manifest: Any = None, **kwargs: Any) -> CoverageReconciliation:
+        """Alias for :meth:`reconcile_coverage`."""
+        return self.reconcile_coverage(manifest=manifest, **kwargs)
+
+    def add_coverage(self, manifest: Any = None, **kwargs: Any) -> CoverageReconciliation:
+        """Alias for :meth:`reconcile_coverage`."""
+        return self.reconcile_coverage(manifest=manifest, **kwargs)
+
     def __comparable_tuple(self) -> _ComparableTuple:
         return _ComparableTuple((
             _ComparableTuple(self.licenses),
@@ -750,6 +801,7 @@ class ComponentEvidence:
             self.callstack,
             _ComparableTuple(self.identity),
             _ComparableTuple(self.occurrences),
+            self.coverage,
         ))
 
     def __eq__(self, other: object) -> bool:

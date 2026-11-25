@@ -36,6 +36,7 @@ from cyclonedx.model import AttachedText, ExternalReference, HashType, XsUri
 from cyclonedx.model.bom import Bom, BomMetaData, DistributionConstraints, TlpClassification
 from cyclonedx.model.component import Component, Patch, Pedigree
 from cyclonedx.model.component_evidence import ComponentEvidence, Identity as CEIdentity, Method as CEMethod
+from cyclonedx.model.coverage import CoverageCategory, CoverageObjectType
 from cyclonedx.model.crypto import (
     AlgorithmProperties,
     CryptoProperties,
@@ -975,6 +976,26 @@ class TestEnumProtocolPropertiesType(_EnumTestCase):
                 ) for ppt in ProtocolPropertiesType
             ])
         super()._test_cases_render(bom, of, sv)
+
+
+class TestEnumCoverageCategory(_EnumTestCase):
+
+    def test_values(self) -> None:
+        self.assertEqual('whole_package', CoverageCategory.WHOLE_PACKAGE.value)
+        self.assertEqual('declared_scope', CoverageCategory.DECLARED_SCOPE.value)
+        self.assertEqual('unlocated', CoverageCategory.UNLOCATED.value)
+
+    def test_normalizes_aliases(self) -> None:
+        self.assertIs(CoverageCategory.WHOLE_PACKAGE, CoverageCategory('package-wide'))
+        self.assertIs(CoverageCategory.DECLARED_SCOPE, CoverageCategory('declared'))
+        self.assertIs(CoverageCategory.UNLOCATED, CoverageCategory('unlocatable'))
+
+
+class TestEnumCoverageObjectType(_EnumTestCase):
+
+    def test_values(self) -> None:
+        self.assertEqual('directory', CoverageObjectType.DIRECTORY.value)
+        self.assertEqual('file', CoverageObjectType.FILE.value)
 
 
 # add new test cases above this line
