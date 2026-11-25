@@ -7,5 +7,11 @@ from .cvss3 import CVSS3
 from .cvss4 import CVSS4
 from .exceptions import CVSS2Error, CVSS3Error, CVSS4Error, CVSSError
 from .interactive import ask_interactively
+from .offline_review import (
+    CONSISTENT,
+    INSUFFICIENT_EVIDENCE,
+    POSSIBLE_TIE,
+    check_ranking_evidence,
+)
 
 __version__ = "3.6"

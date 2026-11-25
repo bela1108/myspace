@@ -98,3 +98,35 @@ To run all tests using all supported versions of Python 2 and Python 3 installed
 
     $ tox
     $ tox -e py311   # Run tests using a specific version of Python
+
+    from cvss import check_ranking_evidence, POSSIBLE_TIE
+
+    disclosed_rankings = {
+        'remediation': ['CVE-A', 'CVE-B'],
+        'supplier': [['CVE-A', 'CVE-B']],
+    }
+    reviewed_vectors = {
+        'CVE-A': 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+        'CVE-B': 'CVSS:3.1/AV:A/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+    }
+    tie_rules = {'CVSS:3.1': {'allow_ties': True, 'tolerance': 0.0}}
+    status, reason = check_ranking_evidence(
+        disclosed_rankings, reviewed_vectors, tie_rules
+    )
+    assert status == POSSIBLE_TIE
+
+The offline ranking check computes scores locally for comparison only. Its result does not
+include scores or reviewed vectors, so internal metrics are not disclosed in a public result.
+from cvss.offline_ranking import check_ranking
+
+    # Offline ranking check. Scores and reviewed vectors are not returned.
+    verdict = check_ranking(
+        ['CVE-1', 'CVE-2'],
+        {'supplier': [{'CVE-1', 'CVE-2'}]},
+        {
+            'CVE-1': 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+            'CVE-2': 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+        },
+        {'3.1': {'score_type': 'base', 'allow_ties': True}},
+    )
+    print(verdict)
