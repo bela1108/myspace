@@ -1,0 +1,11 @@
+security:
+  - src_ip
+  - dst_ip
+  - user
+  - process_name
+ops:
+  - host
+  - service
+  - event_code
+  - status
+

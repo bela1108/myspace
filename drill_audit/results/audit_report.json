@@ -1,0 +1,546 @@
+{
+  "summaries": [
+    {
+      "id": "SUM-01",
+      "title": "登录失败源地址聚类",
+      "team": "security",
+      "group_by": [
+        "src_ip"
+      ],
+      "alerts": 42,
+      "field_results": [
+        {
+          "field": "src_ip",
+          "status": "confirmed",
+          "allowed_field": "src_ip",
+          "support": [
+            "gen1",
+            "gen2"
+          ],
+          "note": "规范允许字段，两代配置均无需改写",
+          "resolved": {
+            "gen1": [
+              "src_ip"
+            ],
+            "gen2": [
+              "src_ip"
+            ]
+          }
+        }
+      ],
+      "status": "confirmed"
+    },
+    {
+      "id": "SUM-02",
+      "title": "外部连接源聚类",
+      "team": "security",
+      "group_by": [
+        "source_ip"
+      ],
+      "alerts": 17,
+      "field_results": [
+        {
+          "field": "source_ip",
+          "status": "confirmed",
+          "allowed_field": "src_ip",
+          "support": [
+            "gen1",
+            "gen2"
+          ],
+          "note": "两代配置均支持该别名",
+          "resolved": {
+            "gen1": [
+              "src_ip"
+            ],
+            "gen2": [
+              "src_ip"
+            ]
+          }
+        }
+      ],
+      "status": "confirmed"
+    },
+    {
+      "id": "SUM-03",
+      "title": "主机负载异常分组",
+      "team": "ops",
+      "group_by": [
+        "client"
+      ],
+      "alerts": 9,
+      "field_results": [
+        {
+          "field": "client",
+          "status": "confirmed",
+          "allowed_field": "host",
+          "support": [
+            "gen1"
+          ],
+          "note": "仅上一代配置(gen1)支持该别名",
+          "resolved": {
+            "gen1": [
+              "host"
+            ],
+            "gen2": [
+              "client"
+            ]
+          }
+        }
+      ],
+      "status": "confirmed"
+    },
+    {
+      "id": "SUM-04",
+      "title": "外部节点告警聚合",
+      "team": "security",
+      "group_by": [
+        "origin"
+      ],
+      "alerts": 23,
+      "field_results": [
+        {
+          "field": "origin",
+          "status": "candidates",
+          "candidates": [
+            {
+              "allowed_field": "dst_ip",
+              "support": [
+                "gen2"
+              ]
+            },
+            {
+              "allowed_field": "src_ip",
+              "support": [
+                "gen1"
+              ]
+            }
+          ],
+          "note": "多种别名/映射指向多个允许字段，保留全部候选",
+          "resolved": {
+            "gen1": [
+              "src_ip"
+            ],
+            "gen2": [
+              "dst_ip"
+            ]
+          }
+        }
+      ],
+      "status": "candidates"
+    },
+    {
+      "id": "SUM-05",
+      "title": "对端通信聚类",
+      "team": "security",
+      "group_by": [
+        "peer"
+      ],
+      "alerts": 31,
+      "field_results": [
+        {
+          "field": "peer",
+          "status": "candidates",
+          "candidates": [
+            {
+              "allowed_field": "dst_ip",
+              "support": [
+                "gen2"
+              ]
+            },
+            {
+              "allowed_field": "src_ip",
+              "support": [
+                "gen2"
+              ]
+            }
+          ],
+          "note": "多种别名/映射指向多个允许字段，保留全部候选",
+          "resolved": {
+            "gen1": [
+              "peer"
+            ],
+            "gen2": [
+              "dst_ip",
+              "src_ip"
+            ]
+          }
+        }
+      ],
+      "status": "candidates"
+    },
+    {
+      "id": "SUM-06",
+      "title": "工作站离线分组",
+      "team": "ops",
+      "group_by": [
+        "workstation_id"
+      ],
+      "alerts": 5,
+      "field_results": [
+        {
+          "field": "workstation_id",
+          "status": "source_lost",
+          "note": "两代配置均无此别名，且非规范允许字段",
+          "resolved": {
+            "gen1": [
+              "workstation_id"
+            ],
+            "gen2": [
+              "workstation_id"
+            ]
+          }
+        }
+      ],
+      "status": "source_lost"
+    },
+    {
+      "id": "SUM-07",
+      "title": "服务重启分组",
+      "team": "ops",
+      "group_by": [
+        "host",
+        "service"
+      ],
+      "alerts": 12,
+      "field_results": [
+        {
+          "field": "host",
+          "status": "confirmed",
+          "allowed_field": "host",
+          "support": [
+            "gen1",
+            "gen2"
+          ],
+          "note": "规范允许字段，两代配置均无需改写",
+          "resolved": {
+            "gen1": [
+              "host"
+            ],
+            "gen2": [
+              "host"
+            ]
+          }
+        },
+        {
+          "field": "service",
+          "status": "confirmed",
+          "allowed_field": "service",
+          "support": [
+            "gen1",
+            "gen2"
+          ],
+          "note": "规范允许字段，两代配置均无需改写",
+          "resolved": {
+            "gen1": [
+              "service"
+            ],
+            "gen2": [
+              "service"
+            ]
+          }
+        }
+      ],
+      "status": "confirmed"
+    }
+  ],
+  "records": [
+    {
+      "id": "REC-101",
+      "team": "ops",
+      "fields": {
+        "client_host": "web-07",
+        "svc": "nginx"
+      },
+      "note": "换版后采集器直报",
+      "field_results": [
+        {
+          "field": "client_host",
+          "status": "confirmed",
+          "allowed_field": "host",
+          "support": [
+            "gen2"
+          ],
+          "note": "仅现行配置(gen2)支持该别名",
+          "resolved": {
+            "gen1": [
+              "client_host"
+            ],
+            "gen2": [
+              "host"
+            ]
+          }
+        },
+        {
+          "field": "svc",
+          "status": "confirmed",
+          "allowed_field": "service",
+          "support": [
+            "gen1",
+            "gen2"
+          ],
+          "note": "两代配置均支持该别名",
+          "resolved": {
+            "gen1": [
+              "service"
+            ],
+            "gen2": [
+              "service"
+            ]
+          }
+        }
+      ],
+      "status": "confirmed"
+    },
+    {
+      "id": "REC-102",
+      "team": "ops",
+      "fields": {
+        "client": "db-02",
+        "result": "degraded"
+      },
+      "note": "换版前遗留格式",
+      "field_results": [
+        {
+          "field": "client",
+          "status": "confirmed",
+          "allowed_field": "host",
+          "support": [
+            "gen1"
+          ],
+          "note": "仅上一代配置(gen1)支持该别名",
+          "resolved": {
+            "gen1": [
+              "host"
+            ],
+            "gen2": [
+              "client"
+            ]
+          }
+        },
+        {
+          "field": "result",
+          "status": "confirmed",
+          "allowed_field": "status",
+          "support": [
+            "gen1"
+          ],
+          "note": "仅上一代配置(gen1)支持该别名",
+          "resolved": {
+            "gen1": [
+              "status"
+            ],
+            "gen2": [
+              "result"
+            ]
+          }
+        }
+      ],
+      "status": "confirmed"
+    },
+    {
+      "id": "REC-103",
+      "team": "security",
+      "fields": {
+        "origin": "10.0.8.21",
+        "account_name": "alice"
+      },
+      "note": "别名 origin 在两代配置中含义不同",
+      "field_results": [
+        {
+          "field": "origin",
+          "status": "candidates",
+          "candidates": [
+            {
+              "allowed_field": "dst_ip",
+              "support": [
+                "gen2"
+              ]
+            },
+            {
+              "allowed_field": "src_ip",
+              "support": [
+                "gen1"
+              ]
+            }
+          ],
+          "note": "多种别名/映射指向多个允许字段，保留全部候选",
+          "resolved": {
+            "gen1": [
+              "src_ip"
+            ],
+            "gen2": [
+              "dst_ip"
+            ]
+          }
+        },
+        {
+          "field": "account_name",
+          "status": "confirmed",
+          "allowed_field": "user",
+          "support": [
+            "gen1",
+            "gen2"
+          ],
+          "note": "两代配置均支持该别名",
+          "resolved": {
+            "gen1": [
+              "user"
+            ],
+            "gen2": [
+              "user"
+            ]
+          }
+        }
+      ],
+      "status": "candidates"
+    },
+    {
+      "id": "REC-104",
+      "team": "security",
+      "fields": {
+        "peer": "203.0.113.9",
+        "proc": "curl"
+      },
+      "note": "peer 在现行配置下为一对多映射",
+      "field_results": [
+        {
+          "field": "peer",
+          "status": "candidates",
+          "candidates": [
+            {
+              "allowed_field": "dst_ip",
+              "support": [
+                "gen2"
+              ]
+            },
+            {
+              "allowed_field": "src_ip",
+              "support": [
+                "gen2"
+              ]
+            }
+          ],
+          "note": "多种别名/映射指向多个允许字段，保留全部候选",
+          "resolved": {
+            "gen1": [
+              "peer"
+            ],
+            "gen2": [
+              "dst_ip",
+              "src_ip"
+            ]
+          }
+        },
+        {
+          "field": "proc",
+          "status": "confirmed",
+          "allowed_field": "process_name",
+          "support": [
+            "gen1",
+            "gen2"
+          ],
+          "note": "两代配置均支持该别名",
+          "resolved": {
+            "gen1": [
+              "process_name"
+            ],
+            "gen2": [
+              "process_name"
+            ]
+          }
+        }
+      ],
+      "status": "candidates"
+    },
+    {
+      "id": "REC-105",
+      "team": "ops",
+      "fields": {
+        "workstation_id": "WS-118",
+        "event_status": "ok"
+      },
+      "note": "workstation_id 来源待查",
+      "field_results": [
+        {
+          "field": "workstation_id",
+          "status": "source_lost",
+          "note": "两代配置均无此别名，且非规范允许字段",
+          "resolved": {
+            "gen1": [
+              "workstation_id"
+            ],
+            "gen2": [
+              "workstation_id"
+            ]
+          }
+        },
+        {
+          "field": "event_status",
+          "status": "confirmed",
+          "allowed_field": "status",
+          "support": [
+            "gen2"
+          ],
+          "note": "仅现行配置(gen2)支持该别名",
+          "resolved": {
+            "gen1": [
+              "event_status"
+            ],
+            "gen2": [
+              "status"
+            ]
+          }
+        }
+      ],
+      "status": "source_lost"
+    },
+    {
+      "id": "REC-106",
+      "team": "security",
+      "fields": {
+        "user": "bob",
+        "source_ip": "198.51.100.7"
+      },
+      "note": "规范字段与两代别名混用",
+      "field_results": [
+        {
+          "field": "user",
+          "status": "confirmed",
+          "allowed_field": "user",
+          "support": [
+            "gen1",
+            "gen2"
+          ],
+          "note": "规范允许字段，两代配置均无需改写",
+          "resolved": {
+            "gen1": [
+              "user"
+            ],
+            "gen2": [
+              "user"
+            ]
+          }
+        },
+        {
+          "field": "source_ip",
+          "status": "confirmed",
+          "allowed_field": "src_ip",
+          "support": [
+            "gen1",
+            "gen2"
+          ],
+          "note": "两代配置均支持该别名",
+          "resolved": {
+            "gen1": [
+              "src_ip"
+            ],
+            "gen2": [
+              "src_ip"
+            ]
+          }
+        }
+      ],
+      "status": "confirmed"
+    }
+  ]
+}

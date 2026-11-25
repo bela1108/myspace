@@ -1,0 +1,38 @@
+records:
+  - id: REC-101
+    team: ops
+    fields:
+      client_host: web-07
+      svc: nginx
+    note: 换版后采集器直报
+  - id: REC-102
+    team: ops
+    fields:
+      client: db-02
+      result: degraded
+    note: 换版前遗留格式
+  - id: REC-103
+    team: security
+    fields:
+      origin: 10.0.8.21
+      account_name: alice
+    note: 别名 origin 在两代配置中含义不同
+  - id: REC-104
+    team: security
+    fields:
+      peer: 203.0.113.9
+      proc: curl
+    note: peer 在现行配置下为一对多映射
+  - id: REC-105
+    team: ops
+    fields:
+      workstation_id: WS-118
+      event_status: ok
+    note: workstation_id 来源待查
+  - id: REC-106
+    team: security
+    fields:
+      user: bob
+      source_ip: 198.51.100.7
+    note: 规范字段与两代别名混用
+

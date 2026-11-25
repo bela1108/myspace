@@ -1,0 +1,45 @@
+summaries:
+  - id: SUM-01
+    title: 登录失败源地址聚类
+    team: security
+    group_by:
+      - src_ip
+    alerts: 42
+  - id: SUM-02
+    title: 外部连接源聚类
+    team: security
+    group_by:
+      - source_ip
+    alerts: 17
+  - id: SUM-03
+    title: 主机负载异常分组
+    team: ops
+    group_by:
+      - client
+    alerts: 9
+  - id: SUM-04
+    title: 外部节点告警聚合
+    team: security
+    group_by:
+      - origin
+    alerts: 23
+  - id: SUM-05
+    title: 对端通信聚类
+    team: security
+    group_by:
+      - peer
+    alerts: 31
+  - id: SUM-06
+    title: 工作站离线分组
+    team: ops
+    group_by:
+      - workstation_id
+    alerts: 5
+  - id: SUM-07
+    title: 服务重启分组
+    team: ops
+    group_by:
+      - host
+      - service
+    alerts: 12
+

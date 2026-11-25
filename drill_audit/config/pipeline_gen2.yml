@@ -1,0 +1,38 @@
+name: drill-normalization-gen2
+priority: 20
+transformations:
+  - id: gen2/rename-source-ip
+    type: field_name_mapping
+    mapping:
+      source_ip: src_ip
+  - id: gen2/rename-client-host
+    type: field_name_mapping
+    mapping:
+      client_host: host
+  - id: gen2/rename-account-name
+    type: field_name_mapping
+    mapping:
+      account_name: user
+  - id: gen2/rename-proc
+    type: field_name_mapping
+    mapping:
+      proc: process_name
+  - id: gen2/rename-svc
+    type: field_name_mapping
+    mapping:
+      svc: service
+  - id: gen2/rename-event-status
+    type: field_name_mapping
+    mapping:
+      event_status: status
+  - id: gen2/rename-origin
+    type: field_name_mapping
+    mapping:
+      origin: dst_ip
+  - id: gen2/split-peer
+    type: field_name_mapping
+    mapping:
+      peer:
+        - src_ip
+        - dst_ip
+
