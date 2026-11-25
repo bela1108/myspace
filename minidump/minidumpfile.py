@@ -79,6 +79,20 @@ class MinidumpFile:
 	def get_reader(self):
 		return MinidumpFileReader(self)
 
+	def investigate(self, path):
+		"""
+		Read-only impact analysis entry point.
+
+		path is an :class:"minidump.analysis.InvestigationPath" or a
+		string specification accepted by
+		:meth:"InvestigationPath.from_string". The dump is not modified and
+		the returned report never contains raw memory bytes, only stream
+		metadata, reference liveness and required/substitutable/explanatory
+		classifications for the requested investigation path.
+		"""
+		from minidump.analysis import MinidumpImpactAnalyzer
+		return MinidumpImpactAnalyzer(self).analyze(path)
+
 	def _parse(self):
 		self.__parse_header()
 		self.__parse_directories()

@@ -29,6 +29,8 @@ def run():
 	parser.add_argument('--misc', action='store_true', help='Show misc info')
 	parser.add_argument('--peb', action='store_true', help='Show PEB info')
 	parser.add_argument('--all', action='store_true', help='Show all info')
+	parser.add_argument('--investigate', help='Read-only impact analysis for an investigation path (crash, threads, or comma separated stages: directory,exception,thread,context,stack,module,system,metadata)')
+	parser.add_argument('--json', action='store_true', help='Emit the investigation report as JSON instead of text')
 	parser.add_argument('-r', '--read-addr', type=lambda x: int(x,0), help='Dump a memory region from the process\'s addres space')
 	parser.add_argument('-s', '--read-size', type=lambda x: int(x,0), default = 0x20, help='Dump a memory region from the process\'s addres space')
 
@@ -40,7 +42,8 @@ def run():
 	else:
 		logging.basicConfig(level=1)
 
-	print(__banner__)
+	if not (args.investigate and args.json):
+		print(__banner__)
 
 	if args.interactive:
 		shell = MinidumpShell()
@@ -50,6 +53,16 @@ def run():
 	else:
 
 		mf = MinidumpFile.parse(args.minidumpfile)
+
+		if args.investigate:
+			report = mf.investigate(args.investigate)
+			if args.json:
+				import json
+				print(json.dumps(report.to_dict(), indent=2, sort_keys=True))
+			else:
+				print(str(report))
+			return
+
 		reader = mf.get_reader()
 
 		if args.all or args.threads:

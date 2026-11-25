@@ -34,3 +34,22 @@ Of course it only works if you are running it as administrator or a use that has
 
 # Installing
 ```python3 setup.py install```
+
+# Read-only impact analysis (stream trimming)
+When minidumps are compressed or trimmed, individual streams can be dropped. The package ships a strictly read-only analyzer that answers, for a caller supplied investigation path, whether a stream is required, substitutable (a sibling stream or a degraded path carries the same evidence) or merely explanatory. It reverse-looks-up directory entries, threads, exception records and stack/context location descriptors, and reports dangling references where a directory entry survived but its backing data no longer resolves inside the file. No process memory bytes are ever read or returned; only RVA/size/virtual-address metadata and status flags are reported.
+
+Library entry point:
+```
+from minidump.minidumpfile import MinidumpFile
+mf = MinidumpFile.parse("sample.dmp")
+report = mf.investigate("crash")   # or "threads", or "directory,thread,context,stack"
+print(report.verdict)                # full / partial reconstruction possible, or blocked
+print(report.to_dict())              # machine readable, memory-content free
+```
+CLI:
+```
+minidump --investigate crash sample.dmp            # human readable report
+minidump --investigate crash --json sample.dmp     # pure JSON (no banner)
+```
+
+The verdict distinguishes a fully reconstructable dump, a partially reconstructable dump (a substitutable stream such as the module or memory list is missing) and a blocked dump (a required stream is absent or its entry dangles).
