@@ -9,12 +9,18 @@ from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
+from urllib.parse import urljoin
 
 # Imports
 import urllib3
 
 import tuf
 from tuf.api import exceptions
+from tuf.ngclient._internal.fetch_policy import (
+    REASON_REDIRECT_LIMIT,
+    FetchPolicy,
+    FetchPolicyError,
+)
 from tuf.ngclient._internal.proxy import ProxyEnvironment
 from tuf.ngclient.fetcher import FetcherInterface
 
@@ -23,6 +29,8 @@ if TYPE_CHECKING:
 
 # Globals
 logger = logging.getLogger(__name__)
+
+_REDIRECT_STATUSES = frozenset({301, 302, 303, 307, 308})
 
 
 # Classes
@@ -40,10 +48,12 @@ class Urllib3Fetcher(FetcherInterface):
         socket_timeout: int = 30,
         chunk_size: int = 400000,
         app_user_agent: str | None = None,
+        fetch_policy: FetchPolicy | None = None,
     ) -> None:
         # Default settings
         self.socket_timeout: int = socket_timeout  # seconds
         self.chunk_size: int = chunk_size  # bytes
+        self.fetch_policy: FetchPolicy | None = fetch_policy
 
         # Create User-Agent.
         ua = f"python-tuf/{tuf.__version__}"
@@ -72,19 +82,12 @@ class Urllib3Fetcher(FetcherInterface):
         # urllib3 as:
         #  - connect timeout (max delay before first byte is received)
         #  - read (gap) timeout (max delay between bytes received)
-        try:
-            response = self._proxy_env.request(
-                "GET",
-                url,
-                preload_content=False,
-                timeout=urllib3.Timeout(self.socket_timeout),
-            )
-        except urllib3.exceptions.MaxRetryError as e:
-            if isinstance(e.reason, urllib3.exceptions.TimeoutError):
-                raise exceptions.SlowRetrievalError from e
-            # Any other reason (e.g. TLS or connection error): let the original
-            # error propagate instead of falling through to an unbound response.
-            raise
+        if self.fetch_policy is None:
+            # Preserve the historical urllib3 call, including its default
+            # redirect behavior.
+            response = self._request(url, redirect=None)
+        else:
+            response = self._fetch_with_policy(self.fetch_policy, url)
 
         if response.status >= 400:
             response.close()
@@ -94,6 +97,58 @@ class Urllib3Fetcher(FetcherInterface):
             )
 
         return self._chunks(response)
+
+    def _request(
+        self, url: str, *, redirect: bool | None
+    ) -> urllib3.response.BaseHTTPResponse:
+        """Perform one HTTP request while preserving timeout mapping."""
+        request_kwargs: dict[str, object] = {
+            "preload_content": False,
+            "timeout": urllib3.Timeout(self.socket_timeout),
+        }
+        if redirect is not None:
+            request_kwargs["redirect"] = redirect
+
+        try:
+            return self._proxy_env.request("GET", url, **request_kwargs)
+        except urllib3.exceptions.MaxRetryError as e:
+            if isinstance(e.reason, urllib3.exceptions.TimeoutError):
+                raise exceptions.SlowRetrievalError from e
+            # Any other reason (e.g. TLS or connection error): let the original
+            # error propagate instead of falling through to an unbound response.
+            raise
+
+    def _fetch_with_policy(
+        self, policy: FetchPolicy, url: str
+    ) -> urllib3.response.BaseHTTPResponse:
+        """Follow redirects manually so every hop can be authorized."""
+        current_url = url
+        for followed in range(policy.max_redirects + 1):
+            normalized = policy.inspect(current_url)
+            response = self._request(current_url, redirect=False)
+
+            if response.status in _REDIRECT_STATUSES:
+                location = response.getheader("Location")
+                if location:
+                    if followed >= policy.max_redirects:
+                        response.close()
+                        raise FetchPolicyError(
+                            REASON_REDIRECT_LIMIT,
+                            "Refusing to follow more than "
+                            f"{policy.max_redirects} redirect(s)",
+                            final_url=normalized.resolved_url,
+                            normalized_path=normalized.path,
+                        )
+
+                    response.close()
+                    current_url = urljoin(current_url, location)
+                    continue
+
+            return response
+
+        raise AssertionError(
+            "redirect policy loop exited unexpectedly"
+        )  # pragma: no cover
 
     def _chunks(
         self, response: urllib3.response.BaseHTTPResponse
