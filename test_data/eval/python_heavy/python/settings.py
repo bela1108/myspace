@@ -1,0 +1,6 @@
+# Synthetic evaluation fixture: application settings with real-looking tokens.
+AWS_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE"
+AWS_SECRET_ACCESS_KEY = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+GITHUB_TOKEN = "ghp_000000000000000000000000000000000000"
+SLACK_TOKEN = "xoxb-0000000000-0000000000-0000000000-000000000000000000"
+password = "plain-human-readable-passphrase"

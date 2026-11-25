@@ -1,0 +1,89 @@
+{
+  "name": "python-heavy",
+  "files": [
+    {
+      "path": "python/settings.py",
+      "family": "python",
+      "labels": [
+        {
+          "line": 2,
+          "start": 21,
+          "end": 41,
+          "kind": "aws-id"
+        },
+        {
+          "line": 3,
+          "start": 25,
+          "end": 65,
+          "kind": "aws-secret"
+        },
+        {
+          "line": 4,
+          "start": 16,
+          "end": 56,
+          "kind": "github"
+        },
+        {
+          "line": 5,
+          "start": 15,
+          "end": 71,
+          "kind": "slack"
+        },
+        {
+          "line": 6,
+          "start": 12,
+          "end": 43,
+          "kind": "weak-password"
+        }
+      ]
+    },
+    {
+      "path": "python/billing.py",
+      "family": "python",
+      "labels": [
+        {
+          "line": 3,
+          "start": 15,
+          "end": 55,
+          "kind": "generic-hex"
+        },
+        {
+          "line": 4,
+          "start": 18,
+          "end": 58,
+          "kind": "stripe"
+        }
+      ]
+    },
+    {
+      "path": "config/service.env",
+      "family": "config",
+      "labels": [
+        {
+          "line": 1,
+          "start": 17,
+          "end": 24,
+          "kind": "db-password"
+        },
+        {
+          "line": 2,
+          "start": 13,
+          "end": 53,
+          "kind": "github"
+        }
+      ]
+    },
+    {
+      "path": "docs/onboarding.md",
+      "family": "docs",
+      "labels": [
+        {
+          "line": 3,
+          "start": 33,
+          "end": 41,
+          "kind": "docs-mention"
+        }
+      ]
+    }
+  ]
+}

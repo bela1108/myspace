@@ -1,0 +1,77 @@
+{
+  "name": "doc-heavy",
+  "files": [
+    {
+      "path": "python/deploy.py",
+      "family": "python",
+      "labels": [
+        {
+          "line": 2,
+          "start": 13,
+          "end": 53,
+          "kind": "github"
+        }
+      ]
+    },
+    {
+      "path": "config/app.env",
+      "family": "config",
+      "labels": [
+        {
+          "line": 1,
+          "start": 17,
+          "end": 24,
+          "kind": "db-password"
+        },
+        {
+          "line": 2,
+          "start": 10,
+          "end": 50,
+          "kind": "github"
+        }
+      ]
+    },
+    {
+      "path": "docs/runbook.md",
+      "family": "docs",
+      "labels": [
+        {
+          "line": 3,
+          "start": 19,
+          "end": 39,
+          "kind": "aws-id"
+        },
+        {
+          "line": 4,
+          "start": 21,
+          "end": 77,
+          "kind": "slack"
+        },
+        {
+          "line": 5,
+          "start": 21,
+          "end": 61,
+          "kind": "github"
+        },
+        {
+          "line": 6,
+          "start": 16,
+          "end": 56,
+          "kind": "stripe-test"
+        },
+        {
+          "line": 7,
+          "start": 16,
+          "end": 23,
+          "kind": "weak-password"
+        },
+        {
+          "line": 8,
+          "start": 23,
+          "end": 63,
+          "kind": "generic-hex"
+        }
+      ]
+    }
+  ]
+}
