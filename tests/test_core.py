@@ -341,6 +341,38 @@ class TestRuleParser(unittest.TestCase):
             else:
                 raise AssertionError(self.unhandled_rule.format(rulename))
 
+    def test_tag_and_metadata_locations_do_not_leak_between_rules(self):
+        marker = 'review_marker'
+        input_string = f'''
+        rule TagRule : {marker}
+        {{
+            condition:
+                false
+        }}
+
+        rule MetadataRule
+        {{
+            meta:
+                review_note = "{marker}"
+            condition:
+                false
+        }}
+        '''
+
+        result = self.parser.parse_string(input_string)
+
+        tag_rule, metadata_rule = result
+        expected_tag_locations = {'tags': [marker]}
+        expected_metadata_locations = {'metadata': [{'review_note': marker}]}
+
+        self.assertEqual(tag_rule['rule_name'], 'TagRule')
+        self.assertEqual(tag_rule['tags'], expected_tag_locations['tags'])
+        self.assertNotIn('metadata', tag_rule)
+
+        self.assertEqual(metadata_rule['rule_name'], 'MetadataRule')
+        self.assertEqual(metadata_rule['metadata'], expected_metadata_locations['metadata'])
+        self.assertNotIn('tags', metadata_rule)
+
     def test_strings(self):
         input_string = self.data.joinpath('string_ruleset.yar').read_text()
 
