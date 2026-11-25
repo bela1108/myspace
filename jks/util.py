@@ -71,6 +71,48 @@ class UnsupportedKeyFormatException(KeystoreException):
     """Signifies that the key format was an unsupported type."""
     pass
 
+class UnsupportedKeyAlgorithmException(KeystoreException):
+    """Signifies that a key or certificate uses an algorithm that the supplied verifier does not support."""
+    pass
+
+class EmptyCertificateChainException(KeystoreException):
+    """Signifies that a private key entry has no leaf certificate and therefore cannot be verified."""
+    pass
+
+class LocalCertificateVerifier(object):
+    """Abstract base class for caller-provided local verifiers used by
+    :meth:`jks.jks.PrivateKeyEntry.verify_certificate`.
+
+    A verifier receives only data that is required to establish whether the
+    private key in an entry corresponds to the leaf certificate declared in
+    its certificate chain. Implementations must never log, persist, or
+    otherwise expose the private key material or any passphrase they receive.
+    """
+
+    def supports_algorithm(self, algorithm_oid):
+        """
+        :param tuple algorithm_oid: The OID of the key algorithm, as a tuple of integers.
+        :returns: ``True`` if this verifier is able to check keys of the given algorithm.
+        :rtype: bool
+        """
+        raise NotImplementedError("Abstract method")
+
+    def verify(self, private_key_pkcs8, leaf_certificate, algorithm_oid):
+        """
+        Check whether ``private_key_pkcs8`` corresponds to the public key
+        carried in ``leaf_certificate``.
+
+        :param bytes private_key_pkcs8: DER-encoded PKCS#8 ``PrivateKeyInfo`` of the entry private key.
+        :param bytes leaf_certificate: DER-encoded X.509 leaf certificate declared by the entry.
+        :param tuple algorithm_oid: The OID of the key algorithm, as a tuple of integers.
+
+        :returns: ``True`` if the certificate public key matches the private key, ``False`` otherwise.
+        :rtype: bool
+        :raises UnsupportedKeyAlgorithmException: If ``algorithm_oid`` is not supported by this verifier.
+        """
+        raise NotImplementedError("Abstract method")
+
+
 class AbstractKeystore(object):
     """
     Abstract superclass for keystores.

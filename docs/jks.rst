@@ -106,3 +106,37 @@ Entry types
                   a :class:`~jks.util.NotYetDecryptedException`. See also ``try_decrypt_keys`` on :meth:`jks.jks.KeyStore.loads`.
 
         An integer containing the size of the key, in bits. For DES and 3DES keys, the sizes 64 bits resp. 192 bits are returned.
+Certificate identity verification
+----------------------------------
+
+For archiving workflows where a certificate chain may have been re-pasted
+from another source, the library offers an explicitly authorized, single-entry
+check that confirms whether the private key of an entry corresponds to the
+leaf certificate declared in its chain.
+
+The check is driven by a caller-supplied local verifier, so the library itself
+does not need to implement any public-key cryptography. A verifier receives
+only the data required to establish the relationship and must not expose the
+private key or any passphrase.
+
+.. autoclass:: jks.util.LocalCertificateVerifier
+    :members:
+    :show-inheritance:
+
+.. autoclass:: CertificateVerificationResult
+    :members:
+    :show-inheritance:
+
+The verifier is invoked through :meth:`PrivateKeyEntry.verify_certificate` or
+the :meth:`KeyStore.verify_entry` convenience wrapper. The three distinct
+failure modes are reported separately:
+
+    - A wrong entry passphrase raises :class:`~jks.util.DecryptionFailureException`.
+    - A complete entry whose algorithm the verifier cannot handle raises
+      :class:`~jks.util.UnsupportedKeyAlgorithmException`.
+    - A genuine key/certificate mismatch is returned as a
+      :class:`CertificateVerificationResult` with status
+      :attr:`~CertificateVerificationResult.MISMATCHED`.
+
+Result objects and exception messages contain only public certificate data
+and never include private key material or passphrases.

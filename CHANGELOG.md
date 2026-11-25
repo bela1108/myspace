@@ -8,6 +8,11 @@ submitted by active PyJKS users.
 
 PyJKS uses the [CalVer](https://calver.org) versioning scheme (`YY.MINOR.MICRO`).
 
+Unreleased
+-----------
+
+* Add an explicitly authorized single-entry identity check (PrivateKeyEntry.verify_certificate / KeyStore.verify_entry) that uses a caller-provided local verifier to confirm whether a private key corresponds to its declared leaf certificate, returning public certificate identity and a matched/mismatched status; wrong passwords, unsupported algorithms, and genuine mismatches are reported distinctly without exposing private keys or passphrases.
+
 v20.0.0
 -------
 *(April 18, 2020)*

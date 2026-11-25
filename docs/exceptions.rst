@@ -12,4 +12,5 @@ Exception types
               BadKeystoreFormatException, BadDataLengthException, BadPaddingException, BadHashCheckException,
               DecryptionFailureException, UnsupportedKeystoreVersionException, UnexpectedJavaTypeException,
               UnexpectedAlgorithmException, UnexpectedKeyEncodingException, UnsupportedKeystoreTypeException,
-              UnsupportedKeystoreEntryTypeException, UnsupportedKeyFormatException
+              UnsupportedKeystoreEntryTypeException, UnsupportedKeyFormatException,
+              UnsupportedKeyAlgorithmException, EmptyCertificateChainException

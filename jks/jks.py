@@ -33,8 +33,10 @@ import javaobj
 import time
 from pyasn1.codec.ber import encoder, decoder
 from pyasn1_modules import rfc5208
+from pyasn1_modules import rfc2459
 from pyasn1_modules.rfc2459 import AlgorithmIdentifier
-from pyasn1.type import univ, namedtype
+from pyasn1.type import univ, namedtype, char
+from pyasn1.error import PyAsn1Error
 from . import rfc2898
 from . import sun_crypto
 from .util import *
@@ -50,6 +52,93 @@ __version__ = ".".join(str(x) for x in __version_info__ if str(x))
 MAGIC_NUMBER_JKS = b4.pack(0xFEEDFEED)
 MAGIC_NUMBER_JCEKS = b4.pack(0xCECECECE)
 SIGNATURE_WHITENING = b"Mighty Aphrodite"
+
+
+class CertificateVerificationResult(object):
+    """Public, safe-to-share outcome of an explicit key-to-certificate verification.
+
+    The attributes of this class contain only information derived from the
+    public leaf certificate and the verification outcome; no private key
+    material or passphrase is ever included in an instance or in any
+    exception raised during verification.
+    """
+
+    MATCHED = "matched"
+    """The private key corresponds to the public key in the declared leaf certificate."""
+
+    MISMATCHED = "mismatched"
+    """The private key does not correspond to the public key in the declared leaf certificate."""
+
+    def __init__(self, alias, status, leaf_certificate, subject_dn, serial_number, sha1_fingerprint, sha256_fingerprint):
+        self.alias = alias
+        """Alias of the verified keystore entry."""
+        self.status = status
+        """Verification status; one of :attr:`MATCHED` or :attr:`MISMATCHED`."""
+        self.leaf_certificate = leaf_certificate
+        """DER-encoded X.509 leaf certificate declared by the entry (public data)."""
+        self.subject_dn = subject_dn
+        """RFC 4514-style string representation of the leaf certificate subject DN."""
+        self.serial_number = serial_number
+        """Certificate serial number formatted as an uppercase hexadecimal string."""
+        self.sha1_fingerprint = sha1_fingerprint
+        """SHA-1 fingerprint of the DER-encoded leaf certificate, as an uppercase hexadecimal string."""
+        self.sha256_fingerprint = sha256_fingerprint
+        """SHA-256 fingerprint of the DER-encoded leaf certificate, as an uppercase hexadecimal string."""
+
+    @property
+    def matched(self):
+        """``True`` if and only if :attr:`status` equals :attr:`MATCHED`."""
+        return self.status == self.MATCHED
+
+    def __repr__(self):
+        return "CertificateVerificationResult(alias=%r, status=%r, subject_dn=%r, serial_number=%r)" % (self.alias, self.status, self.subject_dn, self.serial_number)
+
+
+def _format_hex(value):
+    return "".join("{:02X}".format(b) for b in bytearray(value))
+
+
+def _format_name(name):
+    """Render an rfc2459 Name as an RFC 4514-style string. Falls back to a
+    generic representation for unknown attribute types or non-string values."""
+    oid_names = {
+        (2,5,4,3):  "CN",
+        (2,5,4,6):  "C",
+        (2,5,4,7):  "L",
+        (2,5,4,8):  "ST",
+        (2,5,4,10): "O",
+        (2,5,4,11): "OU",
+    }
+    if hasattr(name, "getComponent"):
+        name = name.getComponent()
+    components = []
+    for rdn in name:
+        for atv in rdn:
+            oid = atv["type"].asTuple()
+            key = oid_names.get(oid, ".".join(str(x) for x in oid))
+            value = atv["value"]
+            raw = value.asOctets() if hasattr(value, "asOctets") else bytes(bytearray(value))
+            rendered = None
+            for string_type in (char.UTF8String, char.PrintableString, char.IA5String):
+                try:
+                    decoded, _ = decoder.decode(raw, asn1Spec=string_type())
+                    rendered = str(decoded)
+                    break
+                except PyAsn1Error:
+                    pass
+            if rendered is None:
+                rendered = _format_hex(raw)
+            components.append("%s=%s" % (key, rendered))
+    return ",".join(components)
+
+
+def _read_leaf_identity(cert_der):
+    """Extract only public identity information from a DER-encoded X.509 certificate."""
+    cert, _ = decoder.decode(cert_der, asn1Spec=rfc2459.Certificate())
+    tbs = cert["tbsCertificate"]
+    subject = _format_name(tbs["subject"])
+    serial_hex = format(int(tbs["serialNumber"]), "X")
+    return subject, serial_hex
 
 
 class TrustedCertEntry(AbstractKeystoreEntry):
@@ -253,6 +342,55 @@ class PrivateKeyEntry(AbstractKeystoreEntry):
         self._algorithm_oid = None
 
     is_decrypted.__doc__ = AbstractKeystoreEntry.is_decrypted.__doc__
+
+    def verify_certificate(self, key_password, verifier):
+        """Explicitly verify whether this entry private key corresponds to the
+        leaf certificate declared in its certificate chain.
+
+        This is an explicitly authorized, single-entry check: it requires the
+        caller to supply both the entry passphrase and a local verifier
+        (a subclass of :class:`jks.util.LocalCertificateVerifier`). Only the
+        public certificate identity and the verification status are returned;
+        the private key and the passphrase are never placed in the result or
+        in any exception message.
+
+        :param str key_password: The passphrase protecting this private key entry.
+        :param verifier: Caller-supplied local verifier implementing
+                         :class:`jks.util.LocalCertificateVerifier`.
+
+        :returns: A :class:`CertificateVerificationResult` describing the public
+                  identity of the leaf certificate and the match status.
+
+        :raises DecryptionFailureException: If ``key_password`` is incorrect.
+        :raises UnsupportedKeyAlgorithmException: If the verifier does not support the key algorithm.
+        :raises EmptyCertificateChainException: If the entry has no certificate chain.
+        """
+        self.decrypt(key_password)
+
+        if not self.cert_chain:
+            raise EmptyCertificateChainException("Private key entry %r has no certificate chain; no leaf certificate available to verify" % self.alias)
+
+        leaf_certificate = self.cert_chain[0][1]
+
+        if not verifier.supports_algorithm(self.algorithm_oid):
+            raise UnsupportedKeyAlgorithmException("Verifier does not support key algorithm OID %s for entry %r" % (".".join(str(x) for x in self.algorithm_oid), self.alias))
+
+        matched = verifier.verify(self.pkey_pkcs8, leaf_certificate, self.algorithm_oid)
+        status = CertificateVerificationResult.MATCHED if matched else CertificateVerificationResult.MISMATCHED
+
+        subject_dn, serial_number = _read_leaf_identity(leaf_certificate)
+        sha1_fingerprint = _format_hex(hashlib.sha1(leaf_certificate).digest())
+        sha256_fingerprint = _format_hex(hashlib.sha256(leaf_certificate).digest())
+
+        return CertificateVerificationResult(
+            alias=self.alias,
+            status=status,
+            leaf_certificate=leaf_certificate,
+            subject_dn=subject_dn,
+            serial_number=serial_number,
+            sha1_fingerprint=sha1_fingerprint,
+            sha256_fingerprint=sha256_fingerprint,
+        )
 
 
 class SecretKeyEntry(AbstractKeystoreEntry):
@@ -631,6 +769,31 @@ class KeyStore(AbstractKeystore):
 
     def __init__(self, store_type, entries):
         super(KeyStore, self).__init__(store_type, entries)
+
+    def verify_entry(self, alias, key_password, verifier):
+        """Convenience wrapper around :meth:`PrivateKeyEntry.verify_certificate`
+        for a single, explicitly named entry of this keystore.
+
+        :param str alias: Alias of the private key entry to verify.
+        :param str key_password: The passphrase protecting that private key entry.
+        :param verifier: Caller-supplied local verifier implementing
+                         :class:`jks.util.LocalCertificateVerifier`.
+
+        :returns: A :class:`CertificateVerificationResult` describing the public
+                  identity of the leaf certificate and the match status.
+
+        :raises KeyError: If no entry with the given alias exists.
+        :raises UnsupportedKeystoreEntryTypeException: If the named entry is not a :class:`PrivateKeyEntry`.
+        :raises DecryptionFailureException: If ``key_password`` is incorrect.
+        :raises UnsupportedKeyAlgorithmException: If the verifier does not support the key algorithm.
+        :raises EmptyCertificateChainException: If the entry has no certificate chain.
+        """
+        if alias not in self.entries:
+            raise KeyError("No keystore entry found with alias %r" % alias)
+        entry = self.entries[alias]
+        if not isinstance(entry, PrivateKeyEntry):
+            raise UnsupportedKeystoreEntryTypeException("Entry %r is of type %s; only PrivateKeyEntry entries can be verified" % (alias, type(entry).__name__))
+        return entry.verify_certificate(key_password, verifier)
 
     @property
     def certs(self):
