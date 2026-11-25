@@ -594,6 +594,47 @@ class TestSerialization(unittest.TestCase):
         targets = Targets.from_dict(copy.deepcopy(case_dict))
         self.assertDictEqual(case_dict, targets.to_dict())
 
+    def test_targets_custom_purpose_roundtrip(self) -> None:
+        # Offline regression: two archived artifacts share identical
+        # content (same length and hashes) but were approved for
+        # different release purposes recorded in "custom". Serializing
+        # and reading back must preserve each purpose per target path.
+        length = 12
+        hashes = {"sha256": "abc"}
+        md = Metadata(
+            Targets(
+                targets={
+                    "dist/app-linux.tar.gz": TargetFile(
+                        length,
+                        hashes,
+                        "dist/app-linux.tar.gz",
+                        {"custom": {"purpose": "internal-qa"}},
+                    ),
+                    "dist/app-windows.tar.gz": TargetFile(
+                        length,
+                        hashes,
+                        "dist/app-windows.tar.gz",
+                        {"custom": {"purpose": "public-release"}},
+                    ),
+                }
+            )
+        )
+
+        read_back = Metadata.from_bytes(md.to_bytes())
+        self.assertIsInstance(read_back.signed, Targets)
+        targets = read_back.signed.targets
+
+        # Independent human expectations for each artifact.
+        linux = targets["dist/app-linux.tar.gz"]
+        self.assertEqual(linux.length, 12)
+        self.assertEqual(linux.hashes, {"sha256": "abc"})
+        self.assertEqual(linux.custom, {"purpose": "internal-qa"})
+
+        windows = targets["dist/app-windows.tar.gz"]
+        self.assertEqual(windows.length, 12)
+        self.assertEqual(windows.hashes, {"sha256": "abc"})
+        self.assertEqual(windows.custom, {"purpose": "public-release"})
+
 
 # Run unit test.
 if __name__ == "__main__":
