@@ -198,6 +198,7 @@ Available Plugins
 **BCD Plugins:**
 
 * ``boot_entry_list`` - Lists Windows BCD boot entries
+* ``boot_selection`` - Resolves BCD roles, default entry, display order and a verifiable selection path
 
 **USRCLASS Plugins:**
 

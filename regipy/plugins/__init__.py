@@ -1,6 +1,7 @@
 # flake8: noqa
 from .amcache.amcache import AmCachePlugin
 from .bcd.boot_entry_list import BootEntryListPlugin
+from .bcd.boot_selection import BootSelectionPlugin
 from .ntuser.installed_programs_ntuser import InstalledProgramsNTUserPlugin
 from .ntuser.network_drives import NetworkDrivesPlugin
 from .ntuser.persistence import NTUserPersistencePlugin

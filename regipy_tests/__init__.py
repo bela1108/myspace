@@ -22,6 +22,7 @@ from .validation.validation_tests import boot_key_plugin_validation
 from .validation.validation_tests import host_domain_name_plugin_validation
 from .validation.validation_tests import domain_sid_plugin_validation
 from .validation.validation_tests import boot_entry_list_plugin_validation
+from .validation.validation_tests import boot_selection_validation
 from .validation.validation_tests import wdigest_plugin_validation
 from .validation.validation_tests import winrar_plugin_validation
 from .validation.validation_tests import network_drives_plugin_validation
