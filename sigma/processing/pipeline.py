@@ -22,6 +22,10 @@ from typing import (
 from sigma.processing.condition_expressions import ConditionExpression, parse_condition_expression
 from sigma.processing.conditions.base import ProcessingCondition
 from sigma.processing.finalization import Finalizer, NestedFinalizer, finalizers
+from sigma.processing.inversion import (
+    FieldMappingInversionReport,
+    check_field_mapping_inversion,
+)
 from sigma.processing.templates import TemplateBase
 from sigma.processing.tracking import FieldMappingTracking
 from sigma.processing.transformations import transformations
@@ -985,6 +989,13 @@ class ProcessingPipeline:
         for finalizer in self.finalizers:
             output = finalizer.apply(output)
         return output
+
+    def check_field_mapping_inversion(
+        self,
+        rules: list[SigmaRule] | tuple[SigmaRule, ...],
+    ) -> FieldMappingInversionReport:
+        """Report reversible, merged and uncovered rule field mappings."""
+        return check_field_mapping_inversion(self, rules)
 
     def track_field_processing_items(
         self, src_field: str, dest_field: list[str], processing_item_id: str | None
