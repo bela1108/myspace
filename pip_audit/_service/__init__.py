@@ -14,6 +14,15 @@ from .interface import (
 )
 from .osv import OsvService
 from .pypi import PyPIService
+from .status import (
+    CacheFreshness,
+    CacheState,
+    CacheStatus,
+    SourceAvailability,
+    SourceSnapshot,
+    SourceState,
+    SourceStatus,
+)
 
 __all__ = [
     "EcosystemsService",
@@ -22,6 +31,13 @@ __all__ = [
     "ResolvedDependency",
     "ServiceError",
     "SkippedDependency",
+    "CacheFreshness",
+    "CacheState",
+    "CacheStatus",
+    "SourceAvailability",
+    "SourceSnapshot",
+    "SourceState",
+    "SourceStatus",
     "VulnerabilityResult",
     "VulnerabilityService",
     "OsvService",

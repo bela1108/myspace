@@ -138,7 +138,8 @@ python -m pip_audit --help
 usage: pip-audit [-h] [-V] [-l] [-r REQUIREMENT] [--locked] [-f FORMAT]
                  [-s SERVICE] [--osv-url OSV_URL] [-d] [-S]
                  [--desc [{on,off,auto}]] [--aliases [{on,off,auto}]]
-                 [--cache-dir CACHE_DIR] [--progress-spinner {on,off}]
+                 [--cache-dir CACHE_DIR] [--source-snapshot FILE]
+                 [--no-source-snapshot] [--progress-spinner {on,off}]
                  [--timeout TIMEOUT] [--path PATH] [-v] [--fix]
                  [--require-hashes] [--index-url INDEX_URL]
                  [--extra-index-url URL] [--skip-editable] [--no-deps]
@@ -190,6 +191,10 @@ options:
   --cache-dir CACHE_DIR
                         the directory to use as an HTTP cache for PyPI; uses
                         the `pip` HTTP cache by default (default: None)
+  --source-snapshot FILE
+                        persist source availability and cache snapshots for
+                        same-input reruns (default: None)
+  --no-source-snapshot  disable persistent source snapshots (default: False)
   --progress-spinner {on,off}
                         display a progress spinner (default: on)
   --timeout TIMEOUT     set the socket timeout (default: 15)

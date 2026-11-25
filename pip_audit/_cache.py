@@ -9,6 +9,8 @@ import os
 import shutil
 import subprocess
 import sys
+from datetime import datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Any
@@ -21,6 +23,7 @@ from packaging.version import Version
 from platformdirs import user_cache_path
 
 from pip_audit._service.interface import ServiceError
+from pip_audit._service.status import CacheFreshness, CacheStatus
 
 logger = logging.getLogger(__name__)
 
@@ -175,4 +178,63 @@ def caching_session(cache_dir: Path | None, *, use_pip: bool = False) -> request
     return CacheControl(
         inner_session,
         cache=_SafeFileCache(_get_cache_dir(cache_dir, use_pip=use_pip)),
+    )
+
+
+def cache_status_for_response(source_name: str, response: Any) -> CacheStatus:
+    """
+    Build cache freshness metadata from a CacheControl/requests response.
+    """
+    now = datetime.now(timezone.utc)
+    headers = getattr(response, "headers", {})
+    from_cache = bool(getattr(response, "from_cache", False))
+
+    age_seconds: float | None = None
+    age_header = headers.get("Age") if hasattr(headers, "get") else None
+    if age_header is not None:
+        try:
+            age_seconds = float(age_header)
+        except (TypeError, ValueError):
+            age_seconds = None
+
+    ttl_seconds: int | None = None
+    cache_control = headers.get("Cache-Control", "") if hasattr(headers, "get") else ""
+    for directive in str(cache_control).split(","):
+        key, _separator, value = directive.strip().partition("=")
+        if key.lower() == "max-age" and value:
+            try:
+                ttl_seconds = int(value)
+            except ValueError:
+                ttl_seconds = None
+            break
+
+    cached_at: datetime | None = None
+    if age_seconds is not None:
+        cached_at = now - timedelta(seconds=age_seconds)
+    else:
+        date_header = headers.get("Date") if hasattr(headers, "get") else None
+        if date_header is not None:
+            try:
+                cached_date = parsedate_to_datetime(date_header)
+                if cached_date.tzinfo is None:
+                    cached_date = cached_date.replace(tzinfo=timezone.utc)
+                cached_at = cached_date
+            except (TypeError, ValueError):
+                cached_at = None
+
+    if not from_cache:
+        freshness = CacheFreshness.MISS
+    elif age_seconds is not None and ttl_seconds is not None:
+        freshness = CacheFreshness.FRESH if age_seconds < ttl_seconds else CacheFreshness.STALE
+    else:
+        freshness = CacheFreshness.UNKNOWN
+
+    return CacheStatus(
+        source=source_name,
+        freshness=freshness,
+        checked_at=now,
+        cached_at=cached_at,
+        age_seconds=age_seconds,
+        ttl_seconds=ttl_seconds,
+        from_cache=from_cache,
     )

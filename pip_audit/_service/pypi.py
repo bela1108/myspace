@@ -12,7 +12,7 @@ from typing import cast
 import requests
 from packaging.version import InvalidVersion, Version
 
-from pip_audit._cache import caching_session
+from pip_audit._cache import cache_status_for_response, caching_session
 from pip_audit._service.interface import (
     ConnectionError,
     Dependency,
@@ -31,6 +31,8 @@ class PyPIService(VulnerabilityService):
     An implementation of `VulnerabilityService` that uses PyPI to provide Python
     package vulnerability information.
     """
+
+    source_name = "pypi"
 
     def __init__(
         self, cache_dir: Path | None = None, timeout: int | None = None, **kwargs: dict
@@ -62,6 +64,7 @@ class PyPIService(VulnerabilityService):
 
         try:
             response: requests.Response = self.session.get(url=url, timeout=self.timeout)
+            self.cache_status = cache_status_for_response(self.source_name, response)
             response.raise_for_status()
         except requests.TooManyRedirects:
             # This should never happen with a healthy PyPI instance, but might

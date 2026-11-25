@@ -14,6 +14,8 @@ from typing import Any, NewType
 from packaging.utils import canonicalize_name
 from packaging.version import Version
 
+from pip_audit._service.status import CacheStatus
+
 VulnerabilityID = NewType("VulnerabilityID", str)
 
 
@@ -156,6 +158,9 @@ class VulnerabilityService(ABC):
     """
     Represents an abstract provider of Python package vulnerability information.
     """
+
+    source_name: str = "vulnerability-service"
+    cache_status: CacheStatus | None = None
 
     @abstractmethod
     def query(

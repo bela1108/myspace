@@ -9,6 +9,7 @@ from typing import Any, cast
 
 import pip_audit._fix as fix
 import pip_audit._service as service
+from pip_audit._result import AuditReport, AuditResult
 
 from .interface import VulnerabilityFormat
 
@@ -50,10 +51,47 @@ class JsonFormat(VulnerabilityFormat):
 
         See `VulnerabilityFormat.format`.
         """
-        output_json = {
-            "dependencies": [self._format_dep(dep, vulns) for dep, vulns in result.items()],
+        rich_result: AuditResult | None = None
+        if isinstance(result, AuditResult):
+            rich_result = result
+        elif isinstance(result, AuditReport):
+            rich_result = result.audit_result
+
+        if rich_result is not None:
+            dependency_json = [
+                self._format_dep(dep, vulns) for dep, vulns in rich_result.results.items()
+            ]
+        else:
+            dependency_json = [self._format_dep(dep, vulns) for dep, vulns in result.items()]
+
+        output_json: dict[str, Any] = {
+            "dependencies": dependency_json,
             "fixes": [self._format_fix(f) for f in fixes],
         }
+
+        if rich_result is not None:
+            sources_json = {
+                name: snapshot.to_dict() for name, snapshot in rich_result.sources.items()
+            }
+            cache_json = {
+                name: status.to_dict() for name, status in rich_result.cache_statuses.items()
+            }
+            confirmed_json = [entry for entry in dependency_json if entry.get("vulns")]
+            unqueried_json = [item.to_dict() for item in rich_result.unqueried]
+            output_json.update(
+                {
+                    "schema_version": "2.0",
+                    "input_digest": rich_result.input_digest,
+                    "sources": sources_json,
+                    "source_availability": sources_json,
+                    "caches": cache_json,
+                    "cache_freshness": cache_json,
+                    "vulnerabilities": confirmed_json,
+                    "confirmed_vulnerabilities": confirmed_json,
+                    "unqueried": unqueried_json,
+                    "unqueried_objects": unqueried_json,
+                }
+            )
         return json.dumps(output_json)
 
     def _format_dep(

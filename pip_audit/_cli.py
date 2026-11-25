@@ -14,6 +14,8 @@ from contextlib import ExitStack, contextmanager
 from pathlib import Path
 from typing import IO, NoReturn, cast
 
+from platformdirs import user_cache_path
+
 from pip_audit import __version__
 from pip_audit._audit import AuditOptions, Auditor
 from pip_audit._dependency_source import (
@@ -32,6 +34,7 @@ from pip_audit._format import (
     MarkdownFormat,
     VulnerabilityFormat,
 )
+from pip_audit._result import AuditReport, SnapshotStore
 from pip_audit._service import EcosystemsService, OsvService, PyPIService
 from pip_audit._service.interface import ConnectionError as VulnServiceConnectionError
 from pip_audit._service.interface import (
@@ -65,6 +68,14 @@ def _output_io(name: Path) -> Iterator[IO[str]]:  # pragma: no cover
     else:
         with name.open("w") as io:
             yield io
+
+
+def _default_snapshot_path(cache_dir: Path | None) -> Path:
+    if cache_dir is not None:
+        return cache_dir / "source-snapshots.json"
+    return (
+        user_cache_path("pip-audit", appauthor=False, ensure_exists=True) / "source-snapshots.json"
+    )
 
 
 @enum.unique
@@ -295,6 +306,18 @@ def _parser() -> argparse.ArgumentParser:  # pragma: no cover
         "--cache-dir",
         type=Path,
         help="the directory to use as an HTTP cache for PyPI; uses the `pip` HTTP cache by default",
+    )
+    parser.add_argument(
+        "--source-snapshot",
+        type=Path,
+        metavar="FILE",
+        default=os.environ.get("PIP_AUDIT_SOURCE_SNAPSHOT"),
+        help="persist source availability and cache snapshots for same-input reruns",
+    )
+    parser.add_argument(
+        "--no-source-snapshot",
+        action="store_true",
+        help="disable persistent source snapshots",
     )
     parser.add_argument(
         "--progress-spinner",
@@ -542,8 +565,20 @@ def audit() -> None:  # pragma: no cover
         # `--dry-run` only affects the auditor if `--fix` is also not supplied,
         # since the combination of `--dry-run` and `--fix` implies that the user
         # wants to dry-run the "fix" step instead of the "audit" step
-        auditor = Auditor(service, options=AuditOptions(dry_run=args.dry_run and not args.fix))
+        if args.no_source_snapshot:
+            snapshot_store = SnapshotStore()
+        elif args.source_snapshot is not None:
+            snapshot_store = SnapshotStore(Path(args.source_snapshot))
+        else:
+            snapshot_store = SnapshotStore(_default_snapshot_path(args.cache_dir))
 
+        auditor = Auditor(
+            service,
+            options=AuditOptions(dry_run=args.dry_run and not args.fix),
+            snapshot_store=snapshot_store,
+        )
+
+        audit_report: AuditReport | None = None
         result: dict[Dependency, list[VulnerabilityResult]] = {}
         pkg_count = 0
         vuln_count = 0
@@ -551,7 +586,14 @@ def audit() -> None:  # pragma: no cover
         vuln_ignore_count = 0
         vulns_to_ignore = set(args.ignore_vulns)
         try:
-            for spec, vulns in auditor.audit(source):
+            if hasattr(auditor, "audit_report"):
+                audit_report = auditor.audit_report(source)
+                result = audit_report
+                audit_items = audit_report.items()
+            else:
+                audit_items = auditor.audit(source)
+
+            for spec, vulns in audit_items:
                 if spec.is_skipped():
                     spec = cast(SkippedDependency, spec)
                     if args.strict:
@@ -613,6 +655,9 @@ def audit() -> None:  # pragma: no cover
                         fix = SkippedFixVersion(fix.dep, skip_reason)
                 fixes.append(fix)
 
+    incomplete = audit_report is not None and audit_report.incomplete
+    unqueried_count = len(audit_report.unqueried) if audit_report is not None else 0
+
     if vuln_count > 0:
         if vuln_ignore_count:
             ignored = f", ignored {vuln_ignore_count}"
@@ -634,10 +679,23 @@ def audit() -> None:  # pragma: no cover
         print(summary_msg, file=sys.stderr)
         with _output_io(args.output) as io:
             print(formatter.format(result, fixes), file=io)
+        if incomplete:
+            print(
+                f"Audit incomplete: {unqueried_count} dependency-source query(s) failed; "
+                "see the sources and unqueried segments",
+                file=sys.stderr,
+            )
+            sys.exit(1)
         if pkg_count != fixed_pkg_count:
             sys.exit(1)
     else:
-        summary_msg = "No known vulnerabilities found"
+        if incomplete:
+            summary_msg = (
+                "Audit incomplete: no confirmed vulnerabilities from available sources; "
+                f"{unqueried_count} query(s) failed"
+            )
+        else:
+            summary_msg = "No known vulnerabilities found"
         if vuln_ignore_count:
             summary_msg += f", {vuln_ignore_count} ignored"
 
@@ -647,6 +705,13 @@ def audit() -> None:  # pragma: no cover
         )
         # If our output format is a "manifest" format we always emit it,
         # even if nothing other than a dependency summary is present.
-        if skip_count > 0 or formatter.is_manifest:
+        if skip_count > 0 or incomplete or formatter.is_manifest:
             with _output_io(args.output) as io:
                 print(formatter.format(result, fixes), file=io)
+        if incomplete:
+            print(
+                f"Audit incomplete: {unqueried_count} dependency-source query(s) failed; "
+                "see the sources and unqueried segments",
+                file=sys.stderr,
+            )
+            sys.exit(1)

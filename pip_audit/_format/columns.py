@@ -141,7 +141,59 @@ class ColumnsFormat(VulnerabilityFormat):
                     columns_string += "\n"
                 columns_string += row
 
+        source_rows = self._format_source_rows(result)
+        if source_rows:
+            source_rows.insert(0, ["Source", "Availability", "Cache", "Detail"])
+            source_strings, source_sizes = tabulate(source_rows)
+            source_strings.insert(1, " ".join("-" * size for size in source_sizes))
+            if columns_string:
+                columns_string += "\n"
+            for row in source_strings:
+                columns_string += "\n" + row
+
+        unqueried_rows = self._format_unqueried_rows(result)
+        if unqueried_rows:
+            unqueried_rows.insert(0, ["Name", "Source", "Reason"])
+            unqueried_strings, unqueried_sizes = tabulate(unqueried_rows)
+            unqueried_strings.insert(1, " ".join("-" * size for size in unqueried_sizes))
+            if columns_string:
+                columns_string += "\n"
+            for row in unqueried_strings:
+                columns_string += "\n" + row
+
         return columns_string
+
+    @staticmethod
+    def _format_source_rows(
+        result: dict[service.Dependency, list[service.VulnerabilityResult]],
+    ) -> list[list[Any]]:
+        sources = getattr(result, "sources", None)
+        if not sources:
+            return []
+
+        rows: list[list[Any]] = []
+        for source in sources.values():
+            cache = source.cache.freshness.value if source.cache is not None else "unknown"
+            detail = source.error or ""
+            rows.append([source.name, source.availability.value, cache, detail])
+        return rows
+
+    @staticmethod
+    def _format_unqueried_rows(
+        result: dict[service.Dependency, list[service.VulnerabilityResult]],
+    ) -> list[list[Any]]:
+        unqueried = getattr(result, "unqueried", None)
+        if not unqueried:
+            return []
+
+        return [
+            [
+                item.canonical_name,
+                item.source if item.source is not None else "-",
+                item.reason,
+            ]
+            for item in unqueried
+        ]
 
     def _format_vuln(
         self,

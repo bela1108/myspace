@@ -232,3 +232,88 @@ def test_environment_variable(monkeypatch):
     assert args.output == Path("/tmp/fake")
     assert not args.progress_spinner
     assert args.vulnerability_service == VulnerabilityServiceChoice.Osv
+
+
+def test_partial_source_json_report(monkeypatch, capsys):
+    import json
+
+    from packaging.version import Version
+
+    from pip_audit._audit import Auditor
+    from pip_audit._service.interface import (
+        ConnectionError,
+        ResolvedDependency,
+        VulnerabilityResult,
+        VulnerabilityService,
+    )
+    from pip_audit._service.status import CacheFreshness, CacheStatus
+
+    foo = ResolvedDependency(name="foo", version=Version("1.0.1"))
+    bar = ResolvedDependency(name="bar", version=Version("2.0.0"))
+
+    class GoodService(VulnerabilityService):
+        source_name = "good"
+        cache_status = CacheStatus(
+            source="good",
+            freshness=CacheFreshness.FRESH,
+            from_cache=True,
+            age_seconds=5,
+            ttl_seconds=60,
+        )
+
+        def query(self, spec):
+            if spec.name == "foo":
+                return spec, [
+                    VulnerabilityResult(
+                        id="FAKE-1",
+                        description="fake",
+                        fix_versions=[Version("1.1.0")],
+                        aliases=set(),
+                    )
+                ]
+            return spec, []
+
+    class BadService(VulnerabilityService):
+        source_name = "bad"
+        cache_status = CacheStatus(source="bad", freshness=CacheFreshness.STALE)
+
+        def query(self, spec):
+            raise ConnectionError("bad source down")
+
+    source = pretend.stub(collect=pretend.call_recorder(lambda: iter([foo, bar])))
+    monkeypatch.setattr(pip_audit._cli, "PipSource", lambda *args, **kwargs: source)
+
+    class FakeAuditor(Auditor):
+        def __init__(self, *args, **kwargs):
+            super().__init__(
+                services={"good": GoodService(), "bad": BadService()},
+                options=kwargs.get("options"),
+                snapshot_store=kwargs.get("snapshot_store"),
+            )
+
+    monkeypatch.setattr(pip_audit._cli, "Auditor", FakeAuditor)
+
+    parser = pip_audit._cli._parser()
+    monkeypatch.setattr(
+        pip_audit._cli,
+        "_parse_args",
+        lambda *args: parser.parse_args(
+            ["-f", "json", "--progress-spinner", "off", "--no-source-snapshot"]
+        ),
+    )
+
+    try:
+        pip_audit._cli.audit()
+    except SystemExit as exc:
+        assert exc.code == 1
+    else:
+        raise AssertionError("partial audit must exit non-zero")
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["sources"]["good"]["available"] is True
+    assert payload["sources"]["bad"]["available"] is False
+    assert payload["cache_freshness"]["good"]["freshness"] == "fresh"
+    assert payload["cache_freshness"]["bad"]["freshness"] == "stale"
+    assert [item["id"] for item in payload["confirmed_vulnerabilities"][0]["vulns"]] == ["FAKE-1"]
+    assert len(payload["unqueried"]) == 2
+    assert {item["source"] for item in payload["unqueried"]} == {"bad"}

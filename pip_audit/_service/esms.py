@@ -14,7 +14,7 @@ import requests
 from packaging.specifiers import SpecifierSet
 from packaging.version import Version
 
-from pip_audit._cache import caching_session
+from pip_audit._cache import cache_status_for_response, caching_session
 from pip_audit._service.interface import (
     ConnectionError,
     Dependency,
@@ -33,6 +33,8 @@ class EcosystemsService(VulnerabilityService):
     An implementation of `VulnerabilityService` that uses Ecosyste.ms to provide Python
     package vulnerability information.
     """
+
+    source_name = "esms"
 
     def __init__(
         self,
@@ -73,6 +75,7 @@ class EcosystemsService(VulnerabilityService):
                 f"{url}?{urlencode(query)}",
                 timeout=self.timeout,
             )
+            self.cache_status = cache_status_for_response(self.source_name, response)
             response.raise_for_status()
         except requests.ConnectTimeout:
             raise ConnectionError("Could not connect to ESMS' vulnerability feed")
