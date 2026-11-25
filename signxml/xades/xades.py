@@ -465,6 +465,7 @@ class XAdESVerifier(XAdESProcessor, XMLVerifier):
                     signed_xml=verify_result.signed_xml,
                     signature_xml=verify_result.signature_xml,
                     signature_key=verify_result.signature_key,
+                    signed_node_proof=verify_result.signed_node_proof,
                     signed_properties=self._verify_signed_properties(verify_result),
                 )
                 break

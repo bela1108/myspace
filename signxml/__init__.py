@@ -9,6 +9,6 @@ from .external import ExternalSigningKey, SigningRequest
 from .processor import XMLSignatureProcessor
 from .signer import SignatureReference, XMLSigner
 from .util import namespaces
-from .verifier import SignatureConfiguration, VerifyResult, XMLVerifier
+from .verifier import SignatureConfiguration, SignedNodeProof, VerifyResult, XMLVerifier
 
 methods = SignatureConstructionMethod

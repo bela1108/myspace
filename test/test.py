@@ -37,6 +37,7 @@ from signxml import (
     SignatureConstructionMethod,
     SignatureMethod,
     SignatureReference,
+    SignedNodeProof,
     SigningRequest,
     VerifyResult,
     XMLSignatureProcessor,
@@ -425,6 +426,73 @@ class TestVerifyXML(unittest.TestCase, LoadExampleKeys):
 
         self.assertEqual(ThreadedProcessor.schema_files, calls)
         self.assertTrue(all(result is results[0] for result in results))
+
+
+class TestSignedNodeProof(unittest.TestCase):
+    envelope = (
+        '<Envelope xmlns="urn:business">'
+        "<Header><Order Id='order-evil'><Amount>0</Amount></Order></Header>"
+        "<Body><Order Id='order-1'><Amount>100</Amount></Order></Body>"
+        "</Envelope>"
+    )
+    proof = SignedNodeProof(
+        node_id="order-1",
+        reference_uri="#order-1",
+        namespace="urn:business",
+        consumption_path="/{urn:business}Envelope/{urn:business}Body/{urn:business}Order",
+    )
+
+    def _sign(self, xml=None, reference_uri="order-1"):
+        root = etree.fromstring(xml or self.envelope)
+        return XMLSigner(signature_algorithm=SignatureMethod.HMAC_SHA256).sign(
+            root, key=b"secret", reference_uri=reference_uri
+        )
+
+    def _verify(self, signed, config):
+        return XMLVerifier().verify(signed, hmac_key=b"secret", expect_config=config)
+
+    def test_signed_node_proof_binds_business_node(self):
+        signed = self._sign()
+        # A naive name-based lookup would consume the unsigned attacker-controlled node.
+        self.assertEqual(signed.find(".//{urn:business}Order").get("Id"), "order-evil")
+        config = SignatureConfiguration(
+            require_x509=False, require_signed_node_proof=True, signed_node_proof=self.proof
+        )
+        result = self._verify(signed, config)
+        self.assertEqual(result.signed_node_proof, self.proof)
+        self.assertEqual(result.signed_xml.find("{urn:business}Amount").text, "100")
+
+    def test_signed_node_proof_rejects_wrong_selection(self):
+        signed = self._sign()
+        mismatched_proofs = [
+            replace(self.proof, node_id="order-evil"),
+            replace(self.proof, reference_uri="#order-evil"),
+            replace(self.proof, namespace="urn:attacker"),
+            replace(self.proof, consumption_path="/{urn:business}Envelope/{urn:business}Header/{urn:business}Order"),
+        ]
+        for proof in mismatched_proofs:
+            with self.subTest(proof=proof):
+                config = SignatureConfiguration(require_x509=False, signed_node_proof=proof)
+                with self.assertRaisesRegex(InvalidInput, "Signed node proof mismatch"):
+                    self._verify(signed, config)
+
+    def test_signed_node_proof_required_but_missing(self):
+        signed = self._sign()
+        config = SignatureConfiguration(require_x509=False, require_signed_node_proof=True)
+        with self.assertRaisesRegex(InvalidInput, "signed node proof is required"):
+            self._verify(signed, config)
+
+    def test_signed_node_proof_refuses_to_guess_between_candidates(self):
+        xml = (
+            '<Envelope xmlns="urn:business"><Body>'
+            "<Order Id='order-1'><Amount>100</Amount></Order>"
+            "<Order Id='order-2'><Amount>0</Amount></Order>"
+            "</Body></Envelope>"
+        )
+        signed = self._sign(xml)
+        config = SignatureConfiguration(require_x509=False, signed_node_proof=self.proof)
+        with self.assertRaisesRegex(InvalidInput, "refusing to guess"):
+            self._verify(signed, config)
 
 
 class TestDSASignatureEncoding(unittest.TestCase):

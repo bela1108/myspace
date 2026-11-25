@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from base64 import b64decode
 from collections.abc import Iterable
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from typing import Any, Callable, cast
 from warnings import warn
@@ -33,6 +33,45 @@ from .util import (
     ds_tag,
     namespaces,
 )
+
+
+@dataclass(frozen=True)
+class SignedNodeProof:
+    """
+    An explicit, application-supplied proof binding the cryptographically signed node to the node that
+    business logic intends to consume. Signature verification alone does not tell the application which
+    document node was signed, so applications that locate data by name or path (rather than using the
+    :class:`VerifyResult` contents directly) can accidentally consume an unsigned same-named node injected
+    by an attacker. When a proof is configured via
+    :attr:`SignatureConfiguration.signed_node_proof`, the verifier checks that the node actually covered
+    by the signature reference matches every declared attribute below, and that the declared
+    ``consumption_path`` identifies exactly one node in the document. If multiple candidate nodes match,
+    verification fails instead of guessing.
+    """
+
+    node_id: str
+    """
+    Expected value of the ID attribute (see ``id_attribute``) carried by the signed node.
+    """
+
+    reference_uri: str
+    """
+    Expected value of the ``URI`` attribute of the signature ``Reference`` element covering the node
+    (for example ``"#order-1"``). Only same-document references (empty or fragment URIs) are supported.
+    """
+
+    namespace: str
+    """
+    Expected namespace URI of the signed node's tag (use an empty string for nodes without a namespace).
+    """
+
+    consumption_path: str
+    """
+    Expected path from the document root to the node the application will consume, expressed as
+    ``/{namespace}LocalName`` segments (for example ``"/{urn:example}Envelope/{urn:example}Order"``).
+    The path must resolve to exactly one node in the verified document; if multiple candidates match,
+    verification fails rather than selecting one arbitrarily.
+    """
 
 
 @dataclass(frozen=True)
@@ -106,6 +145,22 @@ class SignatureConfiguration:
     fixed, and not added to the Transforms. This setting can be used to validate signatures in those use-cases.
     """
 
+    signed_node_proof: SignedNodeProof | None = None
+    """
+    An optional :class:`SignedNodeProof` declaring which document node the application intends to consume.
+    When set, verification only succeeds if the node covered by the signature reference matches the declared
+    ID, reference URI, namespace, and consumption path, and the consumption path is unambiguous within the
+    document. This protects against signature wrapping attacks where an unsigned same-named node is placed
+    where business logic would read it.
+    """
+
+    require_signed_node_proof: bool = False
+    """
+    If ``True``, verification fails unless a :class:`SignedNodeProof` is supplied via ``signed_node_proof``.
+    Use this to make the business node selection proof mandatory for all verifications performed with this
+    configuration.
+    """
+
 
 _DEFAULT_SIGNATURE_CONFIG = SignatureConfiguration()
 
@@ -131,6 +186,9 @@ class VerifyResult:
 
     signature_key: bytes
     "The cryptographic key that was used to verify the signature, in PEM format (for asymmetric keys) or raw secret bytes (for HMAC keys)"
+
+    signed_node_proof: SignedNodeProof | None = field(default=None, kw_only=True)
+    "The :class:`SignedNodeProof` that was validated against the signed node, or None if no proof was configured"
 
 
 class XMLVerifier(XMLSignatureProcessor):
@@ -504,6 +562,12 @@ class XMLVerifier(XMLSignatureProcessor):
             self.config = replace(expect_config, **deprecated_kwargs)
         self._parser = parser
 
+        if self.config.require_signed_node_proof and self.config.signed_node_proof is None:
+            raise InvalidInput(
+                "A signed node proof is required by configuration (require_signed_node_proof=True), "
+                "but no signed_node_proof was provided"
+            )
+
         if x509_cert or cert_resolver:
             self.config = replace(self.config, require_x509=True)
 
@@ -706,6 +770,8 @@ class XMLVerifier(XMLSignatureProcessor):
         if b64decode(digest_value.text) != self._get_digest(payload_c14n, digest_alg):
             raise InvalidDigest(f"Digest mismatch for reference {index} ({reference.get('URI')})")
 
+        signed_node_proof = self._verify_signed_node_proof(root, reference, payload)
+
         # We return the signed XML (and only that) to ensure no access to unsigned data happens.
         # Note it is essential to roundtrip the payload and render it from canonicalized XML, to avoid returning
         # untrusted comments, avoid text nodes being broken up even after comments are excised, etc.
@@ -720,7 +786,56 @@ class XMLVerifier(XMLSignatureProcessor):
             signature_key = signature_key_used
         else:
             signature_key = signature_key_used.public_bytes(Encoding.PEM, PublicFormat.SubjectPublicKeyInfo)
-        return VerifyResult(payload_c14n, payload_c14n_xml, signature, signature_key=signature_key)
+        return VerifyResult(
+            payload_c14n, payload_c14n_xml, signature, signature_key=signature_key, signed_node_proof=signed_node_proof
+        )
+
+    def _get_consumption_path(self, node):
+        segments = []
+        while node is not None:
+            segments.append(node.tag)
+            node = node.getparent()
+        return "/" + "/".join(reversed(segments))
+
+    def _verify_signed_node_proof(self, root, reference, payload):
+        proof = self.config.signed_node_proof
+        if proof is None:
+            return None
+        uri = reference.get("URI")
+        if uri != proof.reference_uri:
+            raise InvalidInput(
+                f"Signed node proof mismatch: reference URI is {uri!r}, expected {proof.reference_uri!r}"
+            )
+        if not (uri == "" or uri.startswith("#")) or not isinstance(payload, etree._Element):
+            raise InvalidInput("Signed node proofs are only supported for same-document references to XML elements")
+        id_values = [value for value in (payload.get(attr) for attr in self.id_attributes) if value is not None]
+        if proof.node_id not in id_values:
+            raise InvalidInput(
+                f"Signed node proof mismatch: signed node has ID attribute value(s) {id_values}, "
+                f"expected {proof.node_id!r}"
+            )
+        namespace = etree.QName(payload.tag).namespace or ""
+        if namespace != proof.namespace:
+            raise InvalidInput(
+                f"Signed node proof mismatch: signed node namespace is {namespace!r}, expected {proof.namespace!r}"
+            )
+        path = self._get_consumption_path(payload)
+        if path != proof.consumption_path:
+            raise InvalidInput(
+                f"Signed node proof mismatch: signed node consumption path is {path!r}, "
+                f"expected {proof.consumption_path!r}"
+            )
+        candidates = [
+            node
+            for node in root.iter()
+            if isinstance(node.tag, str) and self._get_consumption_path(node) == proof.consumption_path
+        ]
+        if len(candidates) != 1:
+            raise InvalidInput(
+                f"Signed node proof is ambiguous: {len(candidates)} nodes match consumption path "
+                f"{proof.consumption_path!r}; refusing to guess which node to consume"
+            )
+        return proof
 
     def validate_schema(self, signature):
         last_exception = None
