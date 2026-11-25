@@ -37,3 +37,11 @@ Complex Validation
 .. literalinclude:: ../examples/complex_validation.py
   :language: python
   :linenos:
+
+
+Archive Reconciliation
+----------------------
+
+.. literalinclude:: ../examples/reconcile_archive.py
+  :language: python
+  :linenos:

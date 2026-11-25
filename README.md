@@ -34,6 +34,17 @@ Complete documentation is available on [Read the Docs][link_rtfd]. This includes
 - Integration Guides
 - Best Practices
 
+## Archive reconciliation
+
+`cyclonedx.reconcile` provides a deterministic, traceable audit of a read-only
+archive manifest against CycloneDX component declarations and explicit exclusion
+decisions. It handles layered container locations, digest fan-out, shared
+locations, re-audits after decision changes, and separate reporting for
+archive-only records, declaration-only records, and confirmed exclusions.
+
+See [Archive reconciliation](docs/reconciliation.rst) and
+`examples/reconcile_archive.py`.
+
 ## Python Support
 
 We endeavour to support all functionality for all [current actively supported Python versions](https://www.python.org/downloads/).

@@ -1,0 +1,839 @@
+{
+  "bomFormat": "CycloneDX",
+  "components": [
+    {
+      "bom-ref": "pkg:generic/app-core@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/app/main.py"
+          },
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/app/bootstrap.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "f12910e73258e24350b3df7fb960ea1018b787c351a75bedde9e92f1b5a08955"
+        },
+        {
+          "alg": "SHA-256",
+          "content": "300c831ae653baf3c588fa1ae5705bca5a9edfb49d66adfc9ecec6c6d0432b53"
+        }
+      ],
+      "name": "app-core",
+      "purl": "pkg:generic/app-core@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/crypto-core@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/lib/crypto/cipher.py"
+          },
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/lib/crypto/kdf.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "0c9e78e0bb6d71d7b49c11824cb519f9ffaab0e2a3bcf5fc8890a428830c3252"
+        },
+        {
+          "alg": "SHA-256",
+          "content": "cdbcbd9a1e5aaf6d17334b543be6b80904ae69522d8a9ef1d57da012510588d2"
+        }
+      ],
+      "name": "crypto-core",
+      "purl": "pkg:generic/crypto-core@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/plugin-loader@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/plugins/loader.py"
+          },
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/plugins/registry.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "812bb203a6a19234f213f0a90ef2b727ebb5de1b8898f6945046349bcbf3cec9"
+        },
+        {
+          "alg": "SHA-256",
+          "content": "b3ae57d329a6fa3a2f3386f5e7f73da5521352a476dfd0aa28ede25892eee15f"
+        }
+      ],
+      "name": "plugin-loader",
+      "purl": "pkg:generic/plugin-loader@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/requests-core@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/vendor/requests/__init__.py"
+          },
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/vendor/requests/sessions.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "eb42a74ae82f8dbc9c206cea1ef9b73036c75fa554ca7d9479767973413defe1"
+        },
+        {
+          "alg": "SHA-256",
+          "content": "6d89cc0f89d274bd3885d7f8ff273d77e914460d286fbf3c893c1c3599c344f2"
+        }
+      ],
+      "name": "requests-core",
+      "purl": "pkg:generic/requests-core@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/app-audit@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/app/audit.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "6a981f2ef8d78c5da9140881e3597f18cf44852cf856fa3ff642306c08b22c11"
+        }
+      ],
+      "name": "app-audit",
+      "purl": "pkg:generic/app-audit@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/app-cli@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/app/cli.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "9dd728e4b13327e2b3fb19b006da4898f30f4c0ed99d52c57482c09e8c83d6b7"
+        }
+      ],
+      "name": "app-cli",
+      "purl": "pkg:generic/app-cli@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/app-health@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/app/health.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "ca330b858799c590124544d0d7a7b46d2878829209a26160917fd41dcd0fdaa3"
+        }
+      ],
+      "name": "app-health",
+      "purl": "pkg:generic/app-health@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/app-middleware@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/app/middleware.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "de2f0d847deb8a3feeec80f8746928d851f8f21a6719623cd40184dd966d3410"
+        }
+      ],
+      "name": "app-middleware",
+      "purl": "pkg:generic/app-middleware@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/app-routes@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/app/routes.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "a0341959b6ea86ff373d422568050efc37ddbbc172df0b6cce58ba4b4ae7ecb1"
+        }
+      ],
+      "name": "app-routes",
+      "purl": "pkg:generic/app-routes@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/app-settings@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/app/settings.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "8df2ff69b1c7e82a2bbe103a6ef1af1094ec7ae048ca2902f8c974d6b37f3d95"
+        }
+      ],
+      "name": "app-settings",
+      "purl": "pkg:generic/app-settings@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/app-telemetry@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/app/telemetry.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "9d44883ff41828f2d923fe57c7ffaa267a16c2fd25ea0bde0b8a84643a2c3591"
+        }
+      ],
+      "name": "app-telemetry",
+      "purl": "pkg:generic/app-telemetry@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/app-util@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/app/util.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "45459e61c460a969d97d38d00dcc1b8b5d6d51e322367917865984084eeff4a1"
+        }
+      ],
+      "name": "app-util",
+      "purl": "pkg:generic/app-util@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/app-version@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/app/version.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "d4094e69627bb7611464092bfb183bfd7a9d445953173224739999b2aec9fd7d"
+        }
+      ],
+      "name": "app-version",
+      "purl": "pkg:generic/app-version@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/crypto-digest@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/lib/crypto/digest.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "c4988b34ca76cabdc0b22d1a2b8a7589d0109f0e207c1b0c20edb074c12aa76f"
+        }
+      ],
+      "name": "crypto-digest",
+      "purl": "pkg:generic/crypto-digest@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/crypto-random@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/lib/crypto/random.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "d4f00c5a8d5b2bcd6374b89181ff7fd6a82a2561bef91002624ee55829e24344"
+        }
+      ],
+      "name": "crypto-random",
+      "purl": "pkg:generic/crypto-random@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/net-http@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/lib/net/http.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "a715ec4132816c07be4d67565976575979f5f4fbb6d7361f32734739ac097a1f"
+        }
+      ],
+      "name": "net-http",
+      "purl": "pkg:generic/net-http@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/net-proxy@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/lib/net/proxy.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "a24ac024576d8763824168271f8efb80f0ea923f81423739d6d4bfeb12050f32"
+        }
+      ],
+      "name": "net-proxy",
+      "purl": "pkg:generic/net-proxy@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/net-tls@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/lib/net/tls.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "b89e2f49f20d35baf71cb2ad3fe84e33fcfaa6b7bb53fe2fcf66709adc34c89c"
+        }
+      ],
+      "name": "net-tls",
+      "purl": "pkg:generic/net-tls@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/net-url@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/lib/net/url.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "1f315f19a8e4a375f22df2e64af84830dda1fc6c68c178cf12e84d22d8f76e18"
+        }
+      ],
+      "name": "net-url",
+      "purl": "pkg:generic/net-url@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/storage-blob@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/lib/storage/blob.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "1876a6ace90fbd074380fbe18adfedd05565b2cfcd7b3a604df93a7be15a548b"
+        }
+      ],
+      "name": "storage-blob",
+      "purl": "pkg:generic/storage-blob@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/storage-cache@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/lib/storage/cache.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "bc58ae7fbea86060e54e73d8501b92280261d55c6df9295ad057b3f8e170c42c"
+        }
+      ],
+      "name": "storage-cache",
+      "purl": "pkg:generic/storage-cache@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/storage-index@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/lib/storage/index.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "12aeba9ed686ec3f727112187c8f023426e4eb4c8aaa7aec3350398e0efd0c2e"
+        }
+      ],
+      "name": "storage-index",
+      "purl": "pkg:generic/storage-index@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/storage-lock@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/lib/storage/lock.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "dad1aaffa301c83dd3a2e1c3d910150dcbb343abc1a476e93f38ca83a40ed23d"
+        }
+      ],
+      "name": "storage-lock",
+      "purl": "pkg:generic/storage-lock@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/text-encoding@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/lib/text/encoding.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "ed4de9a1f67e1586a8dcb1569f1cfa2b04f6f4e56397e2a54fc90d75d7cee636"
+        }
+      ],
+      "name": "text-encoding",
+      "purl": "pkg:generic/text-encoding@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/text-format@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/lib/text/format.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "743b57ede17e2dbf266718f65eed03ac37639a732d077bafe175be2efce723de"
+        }
+      ],
+      "name": "text-format",
+      "purl": "pkg:generic/text-format@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/text-tokenizer@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/lib/text/tokenizer.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "2f5e7d1f2d2ce227ee0a2ee9e450ae013aae8a970cfc06d9dfa1b28f51bc83e6"
+        }
+      ],
+      "name": "text-tokenizer",
+      "purl": "pkg:generic/text-tokenizer@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/text-unicode@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/lib/text/unicode.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "c9c6ef6f24f406929623c46b935c085ba46765cba8c110e5af3c2a84d9725419"
+        }
+      ],
+      "name": "text-unicode",
+      "purl": "pkg:generic/text-unicode@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/plugin-auth@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/plugins/auth.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "62ed5b41ef60c2afb09b15c02f6d98f88127a52eefb546406a7b68cbd5a34216"
+        }
+      ],
+      "name": "plugin-auth",
+      "purl": "pkg:generic/plugin-auth@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/plugin-hooks@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/plugins/hooks.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "4e141e609f2d24380f68e131f3116832fd418f7c2fa6fab2907d5585a8c8b003"
+        }
+      ],
+      "name": "plugin-hooks",
+      "purl": "pkg:generic/plugin-hooks@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/plugin-manifest@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/plugins/manifest.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "caa325c5bd6dde5374af2cdc544651fce444e00aab51f1e4a55a1b06b493ce59"
+        }
+      ],
+      "name": "plugin-manifest",
+      "purl": "pkg:generic/plugin-manifest@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/plugin-metrics@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/plugins/metrics.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "c151980d8767caf9a6f8095dbb456903c8469ea1c2bb67dd0b53d4f1a12faa0d"
+        }
+      ],
+      "name": "plugin-metrics",
+      "purl": "pkg:generic/plugin-metrics@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/plugin-sandbox@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/plugins/sandbox.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "834310dc81e6237dea5a1c9eddac198f9e3d2084dde03981abe8a9d1e52f7f8c"
+        }
+      ],
+      "name": "plugin-sandbox",
+      "purl": "pkg:generic/plugin-sandbox@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/runtime-core@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/vendor/runtime/shared.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "a7f381b4c4ad195c0a827782eac91533fe530931fd78961d9f2b853b56d65473"
+        }
+      ],
+      "name": "runtime-core",
+      "purl": "pkg:generic/runtime-core@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/runtime-compat@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/vendor/runtime/shared.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "a7f381b4c4ad195c0a827782eac91533fe530931fd78961d9f2b853b56d65473"
+        }
+      ],
+      "name": "runtime-compat",
+      "purl": "pkg:generic/runtime-compat@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/runtime-system@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/vendor/runtime/core.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "3007f313683e0308b3aed79fb963d9851d65767a0d89c0f57a8cc193eacaecca"
+        }
+      ],
+      "name": "runtime-system",
+      "purl": "pkg:generic/runtime-system@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/runtime-threading@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/vendor/runtime/threading.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "769b18b2da6c356749e908bed2d6d64c91e77ddb6f47c9ab5761ac0dc89c6749"
+        }
+      ],
+      "name": "runtime-threading",
+      "purl": "pkg:generic/runtime-threading@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/openssl-license@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/vendor/openssl/LICENSE.txt"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "e62697f5a3b57725f95aa48c41d08ce3040288eb284588c7b6135acefea9afdc"
+        }
+      ],
+      "name": "openssl-license",
+      "purl": "pkg:generic/openssl-license@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/openssl-readme@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/vendor/openssl/README.txt"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "8aee2bf930277888b955249dcc98d6a8660b3dbc00291730d49a013875c56960"
+        }
+      ],
+      "name": "openssl-readme",
+      "purl": "pkg:generic/openssl-readme@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/optional-codec@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/lib/codec/av1.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "954b8ca1eeae3307c36df3887f674b0ee03b1e655f4d63194ab34c004b6923d9"
+        }
+      ],
+      "name": "optional-codec",
+      "purl": "pkg:generic/optional-codec@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:generic/ghost-helper@1.0.0",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "release-1.0.tar!/payload/runtime.tar!/lib/helpers/ghost.py"
+          }
+        ]
+      },
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "1cf4890bf2875163b748f9456d3df16c4fc7b74924707f5c5e8f43feaae6b951"
+        }
+      ],
+      "name": "ghost-helper",
+      "purl": "pkg:generic/ghost-helper@1.0.0",
+      "type": "file",
+      "version": "1.0.0"
+    }
+  ],
+  "metadata": {
+    "timestamp": "2026-11-20T00:00:00Z"
+  },
+  "serialNumber": "urn:uuid:2d0c3b3e-6f0e-4b8c-9f6e-6a5b3c2d1e0f",
+  "specVersion": "1.7",
+  "version": 1
+}

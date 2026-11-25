@@ -1,0 +1,755 @@
+{
+  "archive": "release-1.0.tar",
+  "entries": [
+    {
+      "containers": [
+        "release-1.0.tar"
+      ],
+      "entry_id": "F001",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "5aa9fe59f0d9b12435b4b2f46ecdaf020832a2abb523f917b3893e4e39625f5c"
+        }
+      ],
+      "media_type": "application/json",
+      "path": "META-INF/MANIFEST.json",
+      "size": 96
+    },
+    {
+      "containers": [
+        "release-1.0.tar"
+      ],
+      "entry_id": "F002",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "5a52cbe95247c484462fae5b75d94d305f7a02af6ebc497acf5a51bbca6405ae"
+        }
+      ],
+      "media_type": "application/vnd.cyclonedx+json",
+      "path": "META-INF/sbom.cdx.json",
+      "size": 22111
+    },
+    {
+      "containers": [
+        "release-1.0.tar"
+      ],
+      "entry_id": "F003",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "4bb502a593b7f55a452702d2d1fb20ff4a3967ae4ad8a43edf7eaef6ab7e2bb5"
+        }
+      ],
+      "media_type": "application/x-tar",
+      "path": "payload/runtime.tar",
+      "size": 51200
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F004",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "6a981f2ef8d78c5da9140881e3597f18cf44852cf856fa3ff642306c08b22c11"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "app/audit.py",
+      "size": 46
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F005",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "300c831ae653baf3c588fa1ae5705bca5a9edfb49d66adfc9ecec6c6d0432b53"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "app/bootstrap.py",
+      "size": 50
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F006",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "9dd728e4b13327e2b3fb19b006da4898f30f4c0ed99d52c57482c09e8c83d6b7"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "app/cli.py",
+      "size": 44
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F007",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "44778ced7070b93313377be9defd5d63925cf441dc99b1bf1fd3a1d8d324baa2"
+        }
+      ],
+      "media_type": "application/json",
+      "path": "app/config/release.json",
+      "size": 57
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F008",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "ca330b858799c590124544d0d7a7b46d2878829209a26160917fd41dcd0fdaa3"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "app/health.py",
+      "size": 47
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F009",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "f12910e73258e24350b3df7fb960ea1018b787c351a75bedde9e92f1b5a08955"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "app/main.py",
+      "size": 45
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F010",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "de2f0d847deb8a3feeec80f8746928d851f8f21a6719623cd40184dd966d3410"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "app/middleware.py",
+      "size": 51
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F011",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "a0341959b6ea86ff373d422568050efc37ddbbc172df0b6cce58ba4b4ae7ecb1"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "app/routes.py",
+      "size": 47
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F012",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "8df2ff69b1c7e82a2bbe103a6ef1af1094ec7ae048ca2902f8c974d6b37f3d95"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "app/settings.py",
+      "size": 49
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F013",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "9d44883ff41828f2d923fe57c7ffaa267a16c2fd25ea0bde0b8a84643a2c3591"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "app/telemetry.py",
+      "size": 50
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F014",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "45459e61c460a969d97d38d00dcc1b8b5d6d51e322367917865984084eeff4a1"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "app/util.py",
+      "size": 45
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F015",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "d4094e69627bb7611464092bfb183bfd7a9d445953173224739999b2aec9fd7d"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "app/version.py",
+      "size": 48
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F016",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "0c9e78e0bb6d71d7b49c11824cb519f9ffaab0e2a3bcf5fc8890a428830c3252"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "lib/crypto/cipher.py",
+      "size": 54
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F017",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "c4988b34ca76cabdc0b22d1a2b8a7589d0109f0e207c1b0c20edb074c12aa76f"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "lib/crypto/digest.py",
+      "size": 54
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F018",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "cdbcbd9a1e5aaf6d17334b543be6b80904ae69522d8a9ef1d57da012510588d2"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "lib/crypto/kdf.py",
+      "size": 51
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F019",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "d4f00c5a8d5b2bcd6374b89181ff7fd6a82a2561bef91002624ee55829e24344"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "lib/crypto/random.py",
+      "size": 54
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F020",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "a715ec4132816c07be4d67565976575979f5f4fbb6d7361f32734739ac097a1f"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "lib/net/http.py",
+      "size": 49
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F021",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "a24ac024576d8763824168271f8efb80f0ea923f81423739d6d4bfeb12050f32"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "lib/net/proxy.py",
+      "size": 50
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F022",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "b89e2f49f20d35baf71cb2ad3fe84e33fcfaa6b7bb53fe2fcf66709adc34c89c"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "lib/net/tls.py",
+      "size": 48
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F023",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "1f315f19a8e4a375f22df2e64af84830dda1fc6c68c178cf12e84d22d8f76e18"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "lib/net/url.py",
+      "size": 48
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F024",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "1876a6ace90fbd074380fbe18adfedd05565b2cfcd7b3a604df93a7be15a548b"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "lib/storage/blob.py",
+      "size": 53
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F025",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "bc58ae7fbea86060e54e73d8501b92280261d55c6df9295ad057b3f8e170c42c"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "lib/storage/cache.py",
+      "size": 54
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F026",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "12aeba9ed686ec3f727112187c8f023426e4eb4c8aaa7aec3350398e0efd0c2e"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "lib/storage/index.py",
+      "size": 54
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F027",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "dad1aaffa301c83dd3a2e1c3d910150dcbb343abc1a476e93f38ca83a40ed23d"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "lib/storage/lock.py",
+      "size": 53
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F028",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "ed4de9a1f67e1586a8dcb1569f1cfa2b04f6f4e56397e2a54fc90d75d7cee636"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "lib/text/encoding.py",
+      "size": 54
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F029",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "743b57ede17e2dbf266718f65eed03ac37639a732d077bafe175be2efce723de"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "lib/text/format.py",
+      "size": 52
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F030",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "2f5e7d1f2d2ce227ee0a2ee9e450ae013aae8a970cfc06d9dfa1b28f51bc83e6"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "lib/text/tokenizer.py",
+      "size": 55
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F031",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "c9c6ef6f24f406929623c46b935c085ba46765cba8c110e5af3c2a84d9725419"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "lib/text/unicode.py",
+      "size": 53
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F032",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "62ed5b41ef60c2afb09b15c02f6d98f88127a52eefb546406a7b68cbd5a34216"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "plugins/auth.py",
+      "size": 49
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F033",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "4e141e609f2d24380f68e131f3116832fd418f7c2fa6fab2907d5585a8c8b003"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "plugins/hooks.py",
+      "size": 50
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F034",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "e18b03b0d142ed24387d1af5f6d4f6de70d70c93025161c6511cb6251b6e7c45"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "plugins/legacy_compat.py",
+      "size": 58
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F035",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "812bb203a6a19234f213f0a90ef2b727ebb5de1b8898f6945046349bcbf3cec9"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "plugins/loader.py",
+      "size": 51
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F036",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "caa325c5bd6dde5374af2cdc544651fce444e00aab51f1e4a55a1b06b493ce59"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "plugins/manifest.py",
+      "size": 53
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F037",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "c151980d8767caf9a6f8095dbb456903c8469ea1c2bb67dd0b53d4f1a12faa0d"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "plugins/metrics.py",
+      "size": 52
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F038",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "b3ae57d329a6fa3a2f3386f5e7f73da5521352a476dfd0aa28ede25892eee15f"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "plugins/registry.py",
+      "size": 53
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F039",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "834310dc81e6237dea5a1c9eddac198f9e3d2084dde03981abe8a9d1e52f7f8c"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "plugins/sandbox.py",
+      "size": 52
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F040",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "e62697f5a3b57725f95aa48c41d08ce3040288eb284588c7b6135acefea9afdc"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "vendor/openssl/LICENSE.txt",
+      "size": 60
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F041",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "8aee2bf930277888b955249dcc98d6a8660b3dbc00291730d49a013875c56960"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "vendor/openssl/README.txt",
+      "size": 59
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F042",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "eb42a74ae82f8dbc9c206cea1ef9b73036c75fa554ca7d9479767973413defe1"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "vendor/requests/__init__.py",
+      "size": 61
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F043",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "6d89cc0f89d274bd3885d7f8ff273d77e914460d286fbf3c893c1c3599c344f2"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "vendor/requests/sessions.py",
+      "size": 61
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F044",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "eb42a74ae82f8dbc9c206cea1ef9b73036c75fa554ca7d9479767973413defe1"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "vendor/requests_copy/__init__.py",
+      "size": 61
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F045",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "3007f313683e0308b3aed79fb963d9851d65767a0d89c0f57a8cc193eacaecca"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "vendor/runtime/core.py",
+      "size": 56
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F046",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "a7f381b4c4ad195c0a827782eac91533fe530931fd78961d9f2b853b56d65473"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "vendor/runtime/shared.py",
+      "size": 58
+    },
+    {
+      "containers": [
+        "release-1.0.tar",
+        "payload/runtime.tar"
+      ],
+      "entry_id": "F047",
+      "hashes": [
+        {
+          "algorithm": "SHA-256",
+          "value": "769b18b2da6c356749e908bed2d6d64c91e77ddb6f47c9ab5761ac0dc89c6749"
+        }
+      ],
+      "media_type": "text/x-python",
+      "path": "vendor/runtime/threading.py",
+      "size": 61
+    }
+  ],
+  "format_version": 1
+}

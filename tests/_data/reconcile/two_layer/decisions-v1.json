@@ -1,0 +1,40 @@
+{
+  "decisions": [
+    {
+      "decided_at": "2026-11-18",
+      "decided_by": "Forensics Board",
+      "decision_id": "EX-001",
+      "entry_ids": [
+        "F001"
+      ],
+      "rationale": "Packaging metadata is not a shipped component.",
+      "revision": 1,
+      "status": "approved",
+      "target": "archive-record"
+    },
+    {
+      "component_refs": [
+        "pkg:generic/optional-codec@1.0.0"
+      ],
+      "decided_at": "2026-11-18",
+      "decided_by": "Forensics Board",
+      "decision_id": "EX-002",
+      "rationale": "Optional codec is intentionally not shipped on this platform.",
+      "revision": 1,
+      "status": "approved",
+      "target": "component-declaration"
+    },
+    {
+      "decided_at": "2026-11-18",
+      "decided_by": "Forensics Board",
+      "decision_id": "EX-003",
+      "entry_ids": [
+        "F002"
+      ],
+      "rationale": "SBOM envelope is packaging, not a component artifact.",
+      "revision": 1,
+      "status": "approved",
+      "target": "archive-record"
+    }
+  ]
+}
