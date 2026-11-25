@@ -1,0 +1,53 @@
+{
+  "source": "osv-offline",
+  "version": "2026-11-01",
+  "packages": {
+    "foo": {
+      "1.0.0": {
+        "advisories": [
+          {
+            "id": "CVE-2026-0001",
+            "aliases": [],
+            "description": "CVE branch retained after the CVE/GHSA split",
+            "fix_versions": ["1.1.0"],
+            "withdrawn": false
+          },
+          {
+            "id": "GHSA-aaaa-1111-bbbb",
+            "aliases": [],
+            "description": "GHSA branch split out as a separate risk",
+            "fix_versions": ["1.1.0"],
+            "withdrawn": false
+          }
+        ]
+      },
+      "1.0.1": {
+        "advisories": [
+          {
+            "id": "CVE-2026-0002",
+            "aliases": ["GHSA-cccc-2222-dddd"],
+            "description": "advisory retracted after further analysis",
+            "fix_versions": ["1.2.0"],
+            "withdrawn": true
+          }
+        ]
+      },
+      "2.0.0": {
+        "unavailable": true
+      }
+    },
+    "bar": {
+      "1.0.0": {
+        "advisories": [
+          {
+            "id": "CVE-2026-0004",
+            "aliases": ["GHSA-gggg-4444-hhhh"],
+            "description": "advisory on a different package",
+            "fix_versions": ["1.0.1"],
+            "withdrawn": false
+          }
+        ]
+      }
+    }
+  }
+}

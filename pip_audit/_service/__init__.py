@@ -12,10 +12,20 @@ from .interface import (
     VulnerabilityResult,
     VulnerabilityService,
 )
+from .offline import (
+    AdvisoryEntry,
+    AdvisorySnapshot,
+    OfflineSnapshotService,
+    SnapshotFeedResult,
+)
 from .osv import OsvService
 from .pypi import PyPIService
 
 __all__ = [
+    "AdvisoryEntry",
+    "AdvisorySnapshot",
+    "OfflineSnapshotService",
+    "SnapshotFeedResult",
     "EcosystemsService",
     "ConnectionError",
     "Dependency",
