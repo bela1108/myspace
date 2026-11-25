@@ -14,6 +14,7 @@ import bandit
 from bandit.core import config as b_config
 from bandit.core import constants
 from bandit.core import manager as b_manager
+from bandit.core import source_map as b_source_map
 from bandit.core import utils
 
 BASE_CONFIG = "bandit.yaml"
@@ -365,6 +366,15 @@ def main():
         help="path to a .bandit file that supplies command line arguments",
     )
     parser.add_argument(
+        "--source-map",
+        dest="source_map",
+        action="store",
+        default=None,
+        help="path to a JSON source map projecting generated files back to "
+        "their templates or hand-written sources; findings keep their real "
+        "scan location and gain projected source references",
+    )
+    parser.add_argument(
         "--exit-zero",
         action="store_true",
         dest="exit_zero",
@@ -627,6 +637,14 @@ def main():
         LOG.error(e)
         sys.exit(2)
 
+    source_map = None
+    if args.source_map is not None:
+        try:
+            source_map = b_source_map.SourceMap.load(args.source_map)
+        except b_source_map.SourceMapError as exc:
+            LOG.error("Could not load source map: %s", exc)
+            sys.exit(2)
+
     b_mgr = b_manager.BanditManager(
         b_conf,
         args.agg_type,
@@ -635,6 +653,7 @@ def main():
         verbose=args.verbose,
         quiet=args.quiet,
         ignore_nosec=args.ignore_nosec,
+        source_map=source_map,
     )
 
     if args.baseline is not None:

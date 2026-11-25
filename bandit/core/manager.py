@@ -41,6 +41,7 @@ class BanditManager:
         quiet=False,
         profile=None,
         ignore_nosec=False,
+        source_map=None,
     ):
         """Get logger, config, AST handler, and result store ready
 
@@ -63,6 +64,9 @@ class BanditManager:
         self.b_conf = config
         self.files_list = []
         self.excluded_files = []
+        # source map supplied by the caller, if any
+        self.source_map = source_map
+        self._file_line_counts = {}
         self.b_ma = b_meta_ast.BanditMetaAst()
         self.skipped = []
         self.results = []
@@ -295,6 +299,10 @@ class BanditManager:
         # reflect any files which may have been skipped
         self.files_list = new_files_list
 
+        # project findings back to source/template locations when a map was
+        # provided; the original scan evidence on each Issue is not modified
+        self.apply_source_map()
+
         # do final aggregation of metrics
         self.metrics.aggregate()
 
@@ -303,6 +311,7 @@ class BanditManager:
             # parse the current file
             data = fdata.read()
             lines = data.splitlines()
+            self._file_line_counts[fname] = len(lines)
             self.metrics.begin(fname)
             self.metrics.count_locs(lines)
             # nosec_lines is a dict of line number -> set of tests to ignore
@@ -365,6 +374,25 @@ class BanditManager:
         score = res.process(data)
         self.results.extend(res.tester.results)
         return score
+
+    def apply_source_map(self):
+        """Attach projected source references to every scanned finding.
+
+        Only runs when a :class:`~bandit.core.source_map.SourceMap` was
+        supplied.  Findings keep their real generated-file location; the map
+        only adds a ``source_refs`` list of candidate locations (including
+        explicit invalid/unmapped records) so baselines can continue to use
+        the original scan evidence.
+        """
+        if self.source_map is None:
+            return
+        for result in self.results:
+            result.source_refs = self.source_map.project(
+                result.fname,
+                result.lineno,
+                linerange=result.linerange,
+                line_count=self._file_line_counts.get(result.fname),
+            )
 
 
 def _get_files_from_dir(

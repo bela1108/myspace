@@ -104,6 +104,10 @@ class Issue:
         self.col_offset = col_offset
         self.end_col_offset = end_col_offset
         self.linerange = []
+        # Projection back to template/hand-written sources, populated by a
+        # source map.  None means no map was applied; the real scan location
+        # above is always retained regardless of the projection.
+        self.source_refs = None
 
     def __str__(self):
         return (
@@ -216,6 +220,8 @@ class Issue:
 
         if with_code:
             out["code"] = self.get_code(max_lines=max_lines)
+        if self.source_refs is not None:
+            out["source_refs"] = [ref.as_dict() for ref in self.source_refs]
         return out
 
     def from_dict(self, data, with_code=True):
@@ -231,6 +237,9 @@ class Issue:
         self.linerange = data["line_range"]
         self.col_offset = data.get("col_offset", 0)
         self.end_col_offset = data.get("end_col_offset", 0)
+        # Baselines are read and written using the original scan evidence.
+        # Projected source references are never reconstructed here.
+        self.source_refs = None
 
 
 def cwe_from_dict(data):

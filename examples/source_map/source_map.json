@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "generated_files": {
+    "examples/source_map/generated_app.py": [
+      {
+        "generated_start": 7,
+        "generated_end": 7,
+        "source_file": "examples/source_map/templates/imports.tmpl",
+        "source_line": 2
+      },
+      {
+        "generated_start": 12,
+        "generated_end": 14,
+        "source_file": "examples/source_map/templates/command.tmpl",
+        "source_start": 1,
+        "source_end": 3
+      },
+      {
+        "generated_start": 18,
+        "generated_end": 22,
+        "source_file": "examples/source_map/templates/config.tmpl",
+        "source_start": 2,
+        "source_end": 6
+      }
+    ]
+  }
+}
