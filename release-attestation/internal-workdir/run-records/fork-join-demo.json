@@ -1,0 +1,50 @@
+[
+  {
+    "forks_agree": true,
+    "interpretation": "both independent reviewers reproduced the same PASS: every public claim is re-derivable from the signed materials alone",
+    "merged_verdict": "PASS",
+    "reviewers": [
+      {
+        "exit_code": 0,
+        "failed_checks": [],
+        "overall": "PASS",
+        "reviewer": "reviewer-a"
+      },
+      {
+        "exit_code": 0,
+        "failed_checks": [],
+        "overall": "PASS",
+        "reviewer": "reviewer-b"
+      }
+    ],
+    "scenario": "intact-bundle"
+  },
+  {
+    "forks_agree": true,
+    "interpretation": "chain does not hold on public evidence; the failed checks name the exact edge/step at which verification stops",
+    "merged_verdict": "FAIL",
+    "reviewers": [
+      {
+        "exit_code": 1,
+        "failed_checks": [
+          "manifest:write-code.776a00e2.link",
+          "link-present:write-code",
+          "match-edge:match:write-code->package:foo.py"
+        ],
+        "overall": "FAIL",
+        "reviewer": "reviewer-a"
+      },
+      {
+        "exit_code": 1,
+        "failed_checks": [
+          "manifest:write-code.776a00e2.link",
+          "link-present:write-code",
+          "match-edge:match:write-code->package:foo.py"
+        ],
+        "overall": "FAIL",
+        "reviewer": "reviewer-b"
+      }
+    ],
+    "scenario": "intermediate-link-removed (write-code.776a00e2.link)"
+  }
+]

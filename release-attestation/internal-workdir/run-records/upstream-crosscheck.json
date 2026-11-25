@@ -1,0 +1,15 @@
+{
+  "functionary_keyids": [
+    "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498",
+    "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5"
+  ],
+  "in_toto_verify": "PASS",
+  "inspections": [
+    "untar"
+  ],
+  "layout_signer_keyid": "2f685fa7546f1856b123223ab086b3def14c89d24eef18f49c32508c2f60e241",
+  "steps": [
+    "write-code",
+    "package"
+  ]
+}

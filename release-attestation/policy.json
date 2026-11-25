@@ -1,0 +1,35 @@
+{
+  "allowed_artifact_names": [
+    "foo.py",
+    "foo.tar.gz"
+  ],
+  "allowed_steps": [
+    "write-code",
+    "package"
+  ],
+  "boundary_rules": [
+    "Only links whose step name is in allowed_steps may be cited.",
+    "Only artifact names in allowed_artifact_names may be cited; every other material/product entry is dropped.",
+    "The untar inspection has no signed link in evidence_sources; any claim about it is out of the provable boundary.",
+    "Internal working paths outside the evidence bundle are never emitted."
+  ],
+  "disclosable_hash_algorithms": [
+    "sha256"
+  ],
+  "disclosure_scope": "Customer-facing disclosure whitelist for the derived attestation report. Anything not listed is out of scope and must not appear in public outputs.",
+  "evidence_source_dirs": [
+    "tests/demo_files"
+  ],
+  "excluded_evidence_variants": [
+    "GPG-signed functionary variant (unrelated product line)",
+    "DSSE envelope variant (unrelated packaging channel)"
+  ],
+  "exclusion_reason": "outside the disclosed product/step scope; retained internally but never cited in public outputs",
+  "layout_template": "tests/demo_files/demo.layout.template",
+  "policy_id": "RA-2026-1121-foo-targz-v2",
+  "redact_fields": [
+    "byproducts",
+    "environment"
+  ],
+  "release_package": "foo.tar.gz"
+}

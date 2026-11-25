@@ -1,0 +1,62 @@
+{
+  "boundary_note": "inspection items listed in report.boundaries are intentionally not asserted: no signed link exists for them in this bundle",
+  "bundle_id": "RA-2026-1121-foo-targz-v2",
+  "checks": [
+    {
+      "check": "manifest:attestation-report.json",
+      "detail": "sha256 matches manifest",
+      "ok": true
+    },
+    {
+      "check": "manifest:disclosed-keys.json",
+      "detail": "sha256 matches manifest",
+      "ok": true
+    },
+    {
+      "check": "manifest:foo.tar.gz",
+      "detail": "sha256 matches manifest",
+      "ok": true
+    },
+    {
+      "check": "manifest:package.2f89b927.link",
+      "detail": "sha256 matches manifest",
+      "ok": true
+    },
+    {
+      "check": "manifest:write-code.776a00e2.link",
+      "detail": "sha256 matches manifest",
+      "ok": true
+    },
+    {
+      "check": "link-signature:package",
+      "detail": "verified with key 2f89b9272acf...",
+      "ok": true
+    },
+    {
+      "check": "link-digest:package",
+      "detail": "file sha256 matches report",
+      "ok": true
+    },
+    {
+      "check": "link-signature:write-code",
+      "detail": "verified with key 776a00e29f35...",
+      "ok": true
+    },
+    {
+      "check": "link-digest:write-code",
+      "detail": "file sha256 matches report",
+      "ok": true
+    },
+    {
+      "check": "match-edge:match:write-code->package:foo.py",
+      "detail": "MATCH re-derived, hashes equal",
+      "ok": true
+    },
+    {
+      "check": "release-package:foo.tar.gz",
+      "detail": "sha256 matches package link product",
+      "ok": true
+    }
+  ],
+  "overall": "PASS"
+}

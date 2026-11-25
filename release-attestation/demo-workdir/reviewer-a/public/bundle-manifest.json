@@ -1,0 +1,26 @@
+{
+  "bundle_id": "RA-2026-1121-foo-targz-v2",
+  "files": [
+    [
+      "attestation-report.json",
+      "01045717f2a1269d39760e85fce438d24b92e8d315ef5a31f0077b3536ec9d53"
+    ],
+    [
+      "disclosed-keys.json",
+      "f8da71426f5f054a708865b801111692b7ecc0d7404c2a5ca32461509b9279fb"
+    ],
+    [
+      "foo.tar.gz",
+      "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355"
+    ],
+    [
+      "package.2f89b927.link",
+      "edca24f9af6c18d64fd2d7df18bf6aa699097801c664944deedd86fe5fe991d6"
+    ],
+    [
+      "write-code.776a00e2.link",
+      "e8f73126f06097c5982ca98f5470994c85c603a3a5bdf7897be5e4bd30e055b8"
+    ]
+  ],
+  "verification_entrypoint": "scripts/verify_report.py"
+}

@@ -1,0 +1,138 @@
+{
+  "boundaries": [
+    {
+      "item_type": "inspection",
+      "layout_item": "untar",
+      "reason": "inspection rules are evaluated at verification time on the verifier's machine; no signed link for this item exists in the disclosed materials, so its outcome cannot be attested from signatures alone",
+      "rule_count": 2
+    }
+  ],
+  "claims": [
+    {
+      "artifact_sha256": "74dc3727c6e89308b39e4dfedf787e37841198b1fa165a27c013544a60502549",
+      "claim_id": "create:write-code:foo.py",
+      "evidence": [
+        "write-code.776a00e2.link"
+      ],
+      "statement": "step 'write-code' created product 'foo.py'; no input materials were recorded for this step"
+    },
+    {
+      "artifact_sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355",
+      "claim_id": "create:package:foo.tar.gz",
+      "evidence": [
+        "package.2f89b927.link"
+      ],
+      "statement": "step 'package' created product 'foo.tar.gz'"
+    },
+    {
+      "artifact_sha256": "74dc3727c6e89308b39e4dfedf787e37841198b1fa165a27c013544a60502549",
+      "claim_id": "match:package:foo.py",
+      "evidence": [
+        "package.2f89b927.link",
+        "write-code.776a00e2.link"
+      ],
+      "statement": "material 'foo.py' consumed by step 'package' is byte-identical (sha256) to the product of step 'write-code'"
+    }
+  ],
+  "excluded_evidence": [
+    {
+      "item": "GPG-signed functionary variant (unrelated product line)",
+      "reason": "outside the disclosed product/step scope; retained internally but never cited in public outputs"
+    },
+    {
+      "item": "DSSE envelope variant (unrelated packaging channel)",
+      "reason": "outside the disclosed product/step scope; retained internally but never cited in public outputs"
+    }
+  ],
+  "match_edges": [
+    {
+      "artifact": "foo.py",
+      "consumed_by_engine": [
+        "foo.py"
+      ],
+      "downstream_material_sha256": "74dc3727c6e89308b39e4dfedf787e37841198b1fa165a27c013544a60502549",
+      "downstream_step": "package",
+      "edge_id": "match:write-code->package:foo.py",
+      "engine": "in_toto.verifylib.verify_match_rule",
+      "evidence": [
+        "package.2f89b927.link",
+        "write-code.776a00e2.link"
+      ],
+      "hashes_equal": true,
+      "rule": [
+        "MATCH",
+        "foo.py",
+        "WITH",
+        "PRODUCTS",
+        "FROM",
+        "write-code"
+      ],
+      "upstream_product_sha256": "74dc3727c6e89308b39e4dfedf787e37841198b1fa165a27c013544a60502549",
+      "upstream_step": "write-code"
+    }
+  ],
+  "report_version": 1,
+  "scope": {
+    "allowed_artifacts": [
+      "foo.py",
+      "foo.tar.gz"
+    ],
+    "disclosable_steps": [
+      "package",
+      "write-code"
+    ],
+    "release_package": "foo.tar.gz"
+  },
+  "signed_materials": [
+    {
+      "canonical_payload_sha256": "744af54795e69422a21ef5e6f477f17d7732ed89116ef471f80c98fce98ed476",
+      "file_sha256": "edca24f9af6c18d64fd2d7df18bf6aa699097801c664944deedd86fe5fe991d6",
+      "material_file": "package.2f89b927.link",
+      "materials": {
+        "foo.py": {
+          "sha256": "74dc3727c6e89308b39e4dfedf787e37841198b1fa165a27c013544a60502549"
+        }
+      },
+      "products": {
+        "foo.tar.gz": {
+          "sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355"
+        }
+      },
+      "recorded_command": [
+        "tar",
+        "zcvf",
+        "foo.tar.gz",
+        "foo.py"
+      ],
+      "return_value": 0,
+      "signature_hex": "66365d379d66a2e76d39a1f048847826393127572ba43bead96419499b02561a08e1cb06cf91f2addd87c30a01f776a8ccc599574bc9a2bd519558351f56cffa61ac4f994d0d491204ff54707937e15f9abfa97c5bda1ec1ae2a2afea63f808613f4fb343b85a5a455b668b95fa3a11cb9b34219d4d6af2dd4e80a9af01023954a8813b510a6ff6041c3af52056d021fabbc975211b0d8ee7a429a6c22efde583d8ac0719fd657b398a3e02cc711897acbe8cadf32d54f47012aa44621728ede42c3bc95c662f9c1211df4e18da8e0f6b2de358700cea5db1e76fc61ef5a90bcebcc883eed2272e5ca1c8cbb09b868613b839266cd3ae346ce88439bdb5bb4c69dcb7398f4373f2b051adb3d44d11ef1b70c7189aa5c0e6906bf7be1228dc553390024c9c796316067fda7d63cf60bfac86ef2e13bbd8e4c3575683673f7cdf4639c3a5dc225fc0c040dbd9962a6ff51913b240544939ce2d32a5e84792c0acfa94ee07e88e474bf4937558d107c6ecdef5b5b3a7f3a44a657662bbc1046df3a",
+      "signature_verified_against_layout_key": true,
+      "signing_keyid": "2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498",
+      "step": "package"
+    },
+    {
+      "canonical_payload_sha256": "06f628b639034f66bcc025548b23138117ba3adf412040515454da50e4e32f3d",
+      "file_sha256": "e8f73126f06097c5982ca98f5470994c85c603a3a5bdf7897be5e4bd30e055b8",
+      "material_file": "write-code.776a00e2.link",
+      "materials": {},
+      "products": {
+        "foo.py": {
+          "sha256": "74dc3727c6e89308b39e4dfedf787e37841198b1fa165a27c013544a60502549"
+        }
+      },
+      "recorded_command": [],
+      "return_value": null,
+      "signature_hex": "ba2899895d769db034b898e27104a3f8d6cfca4f482c55fc68283cf34feede07966f9d6a32ea283215d373d8b3f2d5b7c7b02546f2cb55751eb347069cd4225da7d5829491aef18405380e21a74b04859c4db41e33133b2aae323c84e95d081a544d58940396f94d49fb718637025a3b7d0b9d4fb3d0ae2a604cb4f45c4cb001e20c411a9832851916b3a2e21d2e29a4d33300a848cd968b588bce7483f6f751ee95c2eb6c18c4e2978be6bdd9eb63b9436e434b38c7f37a7c9f444744a250470262e9ea408e65b96608a6b7748ead175d5b3894a20f258046c769e94e50da4145052dc9bb736196edcb86d79857437d4994a7ec9f022fae3c16645605ae03e4f3408f29818dcaec0ff3e513a5fab6906877ea5e4c92bfa0967913ce70ddeb598e73cb8799ce80d1bf2b88e53d1264f0a36d3549be86b2dff39592a59d4982176d04f5f2d7170a13f5f37ee471493be1eb9a30e002e77e9046b29aa1c1363ca46e4a2ae2f96dd780d0132469815e3fe1ab6db11b570e9411d0968482ac02d2cc",
+      "signature_verified_against_layout_key": true,
+      "signing_keyid": "776a00e29f3559e0141b3b096f696abc6cfb0c657ab40f441132b345b08453f5",
+      "step": "write-code"
+    }
+  ],
+  "verification_basis": {
+    "layout_step_names": [
+      "package",
+      "write-code"
+    ],
+    "note": "each link signature was verified against the functionary public key embedded in the layout"
+  }
+}

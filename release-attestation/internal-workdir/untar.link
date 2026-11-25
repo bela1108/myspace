@@ -1,0 +1,80 @@
+{
+ "signatures": [],
+ "signed": {
+  "_type": "link",
+  "byproducts": {
+   "return-value": 0,
+   "stderr": "",
+   "stdout": ""
+  },
+  "command": [
+   "python",
+   "./scripts/tar",
+   "xfz",
+   "foo.tar.gz"
+  ],
+  "environment": {},
+  "materials": {
+   "demo.layout.template": {
+    "sha256": "3276a2055cf7f7888303e91bb5d11a0fc768fda0838cf9148ad31077e8115017"
+   },
+   "foo.tar.gz": {
+    "sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355"
+   },
+   "run-records/fork-join-demo.json": {
+    "sha256": "0fbfb76c80323b909c0c806098664fe041a0cb4ff97ce4c83c0e92f4b6b41483"
+   },
+   "run-records/public-verify-intact.json": {
+    "sha256": "9fce64cbf50b2b1c815251e0547286412c1f1dfe64b8f58fa6164c8f8d999afc"
+   },
+   "run-records/upstream-crosscheck.json": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+   },
+   "scripts/expr": {
+    "sha256": "788948e73d2b535949320b98684d867b7b30e32666b44088c905585f12693d78"
+   },
+   "scripts/tar": {
+    "sha256": "6df27f46262a370f893f577100e522165d77bd4e87c1c336f2ff73d3299aac07"
+   },
+   "scripts/touch": {
+    "sha256": "b91eb5df55e39b18b6e50ab75c6eec1601c08abb0ba0bbe9177cce4261718e47"
+   },
+   "signed.layout": {
+    "sha256": "6a5a15df8d8fe71ff9aa006a91b4bd0e4685fc5c5f5f87ceb6567899e0c560ee"
+   }
+  },
+  "name": "untar",
+  "products": {
+   "demo.layout.template": {
+    "sha256": "3276a2055cf7f7888303e91bb5d11a0fc768fda0838cf9148ad31077e8115017"
+   },
+   "foo.py": {
+    "sha256": "74dc3727c6e89308b39e4dfedf787e37841198b1fa165a27c013544a60502549"
+   },
+   "foo.tar.gz": {
+    "sha256": "52947cb78b91ad01fe81cd6aef42d1f6817e92b9e6936c1e5aabb7c98514f355"
+   },
+   "run-records/fork-join-demo.json": {
+    "sha256": "0fbfb76c80323b909c0c806098664fe041a0cb4ff97ce4c83c0e92f4b6b41483"
+   },
+   "run-records/public-verify-intact.json": {
+    "sha256": "9fce64cbf50b2b1c815251e0547286412c1f1dfe64b8f58fa6164c8f8d999afc"
+   },
+   "run-records/upstream-crosscheck.json": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+   },
+   "scripts/expr": {
+    "sha256": "788948e73d2b535949320b98684d867b7b30e32666b44088c905585f12693d78"
+   },
+   "scripts/tar": {
+    "sha256": "6df27f46262a370f893f577100e522165d77bd4e87c1c336f2ff73d3299aac07"
+   },
+   "scripts/touch": {
+    "sha256": "b91eb5df55e39b18b6e50ab75c6eec1601c08abb0ba0bbe9177cce4261718e47"
+   },
+   "signed.layout": {
+    "sha256": "6a5a15df8d8fe71ff9aa006a91b4bd0e4685fc5c5f5f87ceb6567899e0c560ee"
+   }
+  }
+ }
+}
