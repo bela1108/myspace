@@ -76,6 +76,7 @@ from tuf.api.metadata import (
     Signed,
     Snapshot,
     T,
+    TargetFile,
     Targets,
     Timestamp,
 )
@@ -146,6 +147,22 @@ class TrustedMetadataSet(abc.Mapping):
     def __len__(self) -> int:
         """Return number of ``Signed`` objects in ``TrustedMetadataSet``."""
         return len(self._trusted_set)
+
+    def iter_targets(self) -> Iterator[tuple[str, str, TargetFile]]:
+        """Yield ``(role, path, target)`` for trusted targets metadata.
+
+        Iteration follows the order in which roles were added to the trusted
+        set. Only data that has already passed TUF verification is returned;
+        this method never performs network or filesystem I/O.
+        """
+        for role, signed in self._trusted_set.items():
+            if isinstance(signed, Targets):
+                for path, target in signed.targets.items():
+                    yield role, path, target
+
+    def iter_roles(self) -> Iterator[tuple[str, Signed]]:
+        """Yield ``(role, signed)`` pairs in trusted-set insertion order."""
+        yield from self._trusted_set.items()
 
     def __iter__(self) -> Iterator[Signed]:
         """Return iterator over ``Signed`` objects in

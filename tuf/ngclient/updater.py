@@ -66,6 +66,11 @@ from urllib import parse
 from tuf.api import exceptions
 from tuf.api.metadata import Root, Snapshot, TargetFile, Targets, Timestamp
 from tuf.ngclient._internal.trusted_metadata_set import TrustedMetadataSet
+from tuf.ngclient.combination import (
+    ClientDownloadState,
+    CombinationPlan,
+    preflight_combination,
+)
 from tuf.ngclient.config import EnvelopeType, UpdaterConfig
 from tuf.ngclient.urllib3_fetcher import Urllib3Fetcher
 
@@ -103,7 +108,7 @@ class Updater:
         RepositoryError: Local root.json is invalid
     """
 
-    def __init__(  # noqa: PLR0917
+    def __init__(
         self,
         metadata_dir: str,
         metadata_base_url: str,
@@ -213,6 +218,183 @@ class Updater:
         if Targets.type not in self._trusted_set:
             self.refresh()
         return self._preorder_depth_first_walk(target_path)
+
+    def preflight_combination(
+        self,
+        candidate_targets: object = None,
+        interface_versions: object = None,
+        **kwargs: object,
+    ) -> CombinationPlan:
+        """Run the offline combination preflight on trusted metadata.
+
+        The preflight only inspects metadata already present in this
+        ``Updater``'s verified view. It never refreshes metadata and never
+        downloads a target: candidates that are not already part of the
+        verified view are reported as missing instead.
+
+        Args:
+            candidate_targets: Target paths, ``TargetFile`` objects, or
+                channel-to-target mappings. See
+                :func:`tuf.ngclient.combination.preflight_combination`.
+            interface_versions: Caller's interface-version declaration.
+            **kwargs: Additional options for the preflight, for example
+                ``config_version`` or ``allow_cycles``.
+
+        Returns:
+            A ``CombinationPlan`` containing either the adoptable closure and
+            dependency evidence or the earliest conflict.
+        """
+        candidate_targets = kwargs.pop("candidates", candidate_targets)
+        interface_versions = kwargs.pop("interfaces", interface_versions)
+        return preflight_combination(
+            self._trusted_set,
+            candidate_targets,
+            interface_versions,
+            **kwargs,
+        )
+
+    def preflight_target_combination(
+        self,
+        candidate_targets: object,
+        interface_versions: object = None,
+        **kwargs: object,
+    ) -> CombinationPlan:
+        """Alias for :meth:`preflight_combination`."""
+        return self.preflight_combination(
+            candidate_targets, interface_versions, **kwargs
+        )
+
+    def precheck_combination(
+        self,
+        candidate_targets: object,
+        interface_versions: object = None,
+        **kwargs: object,
+    ) -> CombinationPlan:
+        """Alias for :meth:`preflight_combination`."""
+        return self.preflight_combination(
+            candidate_targets, interface_versions, **kwargs
+        )
+
+    def check_combination(
+        self,
+        candidate_targets: object,
+        interface_versions: object = None,
+        **kwargs: object,
+    ) -> CombinationPlan:
+        """Alias for :meth:`preflight_combination`."""
+        return self.preflight_combination(
+            candidate_targets, interface_versions, **kwargs
+        )
+
+    def resolve_target_closure(
+        self,
+        candidate_targets: object,
+        interface_versions: object = None,
+        **kwargs: object,
+    ) -> CombinationPlan:
+        """Alias for :meth:`preflight_combination`."""
+        return self.preflight_combination(
+            candidate_targets, interface_versions, **kwargs
+        )
+
+    def preflight_targets(
+        self,
+        candidate_targets: object,
+        interface_versions: object = None,
+        **kwargs: object,
+    ) -> CombinationPlan:
+        """Alias for :meth:`preflight_combination`."""
+        return self.preflight_combination(
+            candidate_targets, interface_versions, **kwargs
+        )
+
+    def resolve_target_combination(
+        self,
+        candidate_targets: object,
+        interface_versions: object = None,
+        **kwargs: object,
+    ) -> CombinationPlan:
+        """Alias for :meth:`preflight_combination`."""
+        return self.preflight_combination(
+            candidate_targets, interface_versions, **kwargs
+        )
+
+    def check_target_combination(
+        self,
+        candidate_targets: object,
+        interface_versions: object = None,
+        **kwargs: object,
+    ) -> CombinationPlan:
+        """Alias for :meth:`preflight_combination`."""
+        return self.preflight_combination(
+            candidate_targets, interface_versions, **kwargs
+        )
+
+    def plan_target_combination(
+        self,
+        candidate_targets: object,
+        interface_versions: object = None,
+        **kwargs: object,
+    ) -> CombinationPlan:
+        """Alias for :meth:`preflight_combination`."""
+        return self.preflight_combination(
+            candidate_targets, interface_versions, **kwargs
+        )
+
+    def preflight(
+        self,
+        candidate_targets: object,
+        interface_versions: object = None,
+        **kwargs: object,
+    ) -> CombinationPlan:
+        """Alias for :meth:`preflight_combination`."""
+        return self.preflight_combination(
+            candidate_targets, interface_versions, **kwargs
+        )
+
+    def resolve_combination(
+        self,
+        candidate_targets: object,
+        interface_versions: object = None,
+        **kwargs: object,
+    ) -> CombinationPlan:
+        """Alias for :meth:`preflight_combination`."""
+        return self.preflight_combination(
+            candidate_targets, interface_versions, **kwargs
+        )
+
+    def plan_combination(
+        self,
+        candidate_targets: object,
+        interface_versions: object = None,
+        **kwargs: object,
+    ) -> CombinationPlan:
+        """Alias for :meth:`preflight_combination`."""
+        return self.preflight_combination(
+            candidate_targets, interface_versions, **kwargs
+        )
+
+    def download_state(self) -> ClientDownloadState:
+        """Return a read-only snapshot of the client's verified state.
+
+        The snapshot covers metadata roles/versions and the target identities
+        currently present in the trusted view. It can be used to assert that
+        an offline preflight did not mutate download state.
+        """
+        roles = tuple(
+            sorted(
+                (role, signed.version, signed.type)
+                for role, signed in self._trusted_set.iter_roles()
+            )
+        )
+        targets = tuple(
+            sorted(
+                f"{role}:{path}:{target.length}:"
+                + repr(sorted(target.hashes.items()))
+                for role, path, target in self._trusted_set.iter_targets()
+            )
+        )
+        return ClientDownloadState(roles, targets)
 
     def find_cached_target(
         self,

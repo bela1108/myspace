@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Added
+
+* ngclient: Add an offline combination preflight that resolves the
+  dependency closure of verified targets and reports identity, cycle,
+  interface-version, and shared-configuration conflicts.
+
 ### Changed
 
 * Add Python 3.15 to tested versions, remove 3.10 from tested versions.

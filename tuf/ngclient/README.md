@@ -6,6 +6,10 @@ This package provides modules for TUF client implementers.
 described in the TUF specification (see
 https://theupdateframework.github.io/specification/latest/#detailed-client-workflow)
 
+**tuf.ngclient.CombinationPreflight** resolves the transitive closure of a
+candidate set of verified targets and checks interface/config compatibility
+offline, before the application starts.
+
 **tuf.ngclient.FetcherInterface** is an abstract class that client
 implementers can implement a concrete class of in order to reuse their
 own networking/download libraries -- a Requests-based implementation is
