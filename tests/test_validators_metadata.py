@@ -90,6 +90,52 @@ def test_validator_identifier_uniqueness(rules_with_id_collision):
     ]
 
 
+@pytest.fixture
+def rules_same_id_distinct_categories():
+    return [
+        SigmaRule.from_yaml(f"""
+        title: Test {category}
+        id: 7c9a2f1e-3b4d-4e5f-9a0b-1c2d3e4f5a6b
+        status: test
+        logsource:
+            category: {category}
+        detection:
+            selection:
+                field: value
+            condition: selection
+        """)
+        for category in ("test_category_a", "test_category_b")
+    ]
+
+
+def test_validator_identifier_collision_with_distinct_categories(
+    rules_same_id_distinct_categories,
+):
+    rule_a, rule_b = rules_same_id_distinct_categories
+    assert rule_a.id == rule_b.id
+    assert rule_a.logsource.category == "test_category_a"
+    assert rule_b.logsource.category == "test_category_b"
+
+    existence_validator = IdentifierExistenceValidator()
+    assert existence_validator.validate(rule_a) == []
+    assert existence_validator.validate(rule_b) == []
+    assert existence_validator.finalize() == []
+
+    uniqueness_validator = IdentifierUniquenessValidator()
+    assert uniqueness_validator.validate(rule_a) == []
+    assert uniqueness_validator.validate(rule_b) == []
+    issues = uniqueness_validator.finalize()
+    assert issues == [
+        IdentifierCollisionIssue(
+            [rule_a, rule_b], UUID("7c9a2f1e-3b4d-4e5f-9a0b-1c2d3e4f5a6b")
+        )
+    ]
+    assert [rule.logsource.category for rule in issues[0].rules] == [
+        "test_category_a",
+        "test_category_b",
+    ]
+
+
 def test_validator_duplicate_title():
     validator = DuplicateTitleValidator()
     rule1 = SigmaRule.from_yaml("""
