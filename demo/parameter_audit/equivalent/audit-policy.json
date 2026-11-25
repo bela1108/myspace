@@ -1,0 +1,12 @@
+{
+  "command_aliases": {
+    "--input": "--input",
+    "--output": "--output",
+    "--source": "--input",
+    "--target": "--output"
+  },
+  "template_values": {
+    "materials/input.txt": "{input}",
+    "products/output.bin": "{output}"
+  }
+}

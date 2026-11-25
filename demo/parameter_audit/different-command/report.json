@@ -1,0 +1,169 @@
+{
+  "checks": {
+    "materials": {
+      "complete": true,
+      "digest_sets_match": true,
+      "hash_mismatches": [],
+      "left": {
+        "materials/input.txt": {
+          "sha256": "aa8e6b220f95cbe0357f637f7d47d4bade2ac3d57931b0d5c7922cd77e28a7fc"
+        }
+      },
+      "left_digests": [
+        "sha256:aa8e6b220f95cbe0357f637f7d47d4bade2ac3d57931b0d5c7922cd77e28a7fc"
+      ],
+      "match": true,
+      "missing_on_left": [],
+      "missing_on_right": [],
+      "path_aliases": {},
+      "records_equal": true,
+      "right": {
+        "materials/input.txt": {
+          "sha256": "aa8e6b220f95cbe0357f637f7d47d4bade2ac3d57931b0d5c7922cd77e28a7fc"
+        }
+      },
+      "right_digests": [
+        "sha256:aa8e6b220f95cbe0357f637f7d47d4bade2ac3d57931b0d5c7922cd77e28a7fc"
+      ]
+    },
+    "normalized_command": {
+      "left_normalized": [
+        "python3",
+        "build.py",
+        "--input",
+        "materials/input.txt",
+        "--output",
+        "products/output.bin"
+      ],
+      "left_raw": [
+        "python3",
+        "build.py",
+        "--source",
+        "materials/input.txt",
+        "--target",
+        "products/output.bin"
+      ],
+      "left_template": [
+        "python3",
+        "build.py",
+        "--input",
+        "{input}",
+        "--output",
+        "{output}"
+      ],
+      "match": false,
+      "right_normalized": [
+        "python3",
+        "build_debug.py",
+        "--input",
+        "materials/input.txt",
+        "--output",
+        "products/output.bin"
+      ],
+      "right_raw": [
+        "python3",
+        "build_debug.py",
+        "--input",
+        "materials/input.txt",
+        "--output",
+        "products/output.bin"
+      ],
+      "right_template": [
+        "python3",
+        "build_debug.py",
+        "--input",
+        "{input}",
+        "--output",
+        "{output}"
+      ],
+      "template_match": false
+    },
+    "products": {
+      "complete": true,
+      "digest_sets_match": true,
+      "hash_mismatches": [],
+      "left": {
+        "products/output.bin": {
+          "sha256": "5e8b3faa179b15878016fa57234f01b4e4ff2021c9f757001aac3fa586403aca"
+        }
+      },
+      "left_digests": [
+        "sha256:5e8b3faa179b15878016fa57234f01b4e4ff2021c9f757001aac3fa586403aca"
+      ],
+      "match": true,
+      "missing_on_left": [],
+      "missing_on_right": [],
+      "path_aliases": {},
+      "records_equal": true,
+      "right": {
+        "products/output.bin": {
+          "sha256": "5e8b3faa179b15878016fa57234f01b4e4ff2021c9f757001aac3fa586403aca"
+        }
+      },
+      "right_digests": [
+        "sha256:5e8b3faa179b15878016fa57234f01b4e4ff2021c9f757001aac3fa586403aca"
+      ]
+    },
+    "signatures": {
+      "keys_supplied": true,
+      "left": {
+        "claimed_keyids": [
+          "a8fd68a65fe32ef5e10a3e77ca67d3273d9c29c4577a15eb29f53292d491e1d0"
+        ],
+        "errors": [],
+        "status": "verified",
+        "verified": true,
+        "verified_keyids": [
+          "a8fd68a65fe32ef5e10a3e77ca67d3273d9c29c4577a15eb29f53292d491e1d0"
+        ]
+      },
+      "match": true,
+      "proven": true,
+      "right": {
+        "claimed_keyids": [
+          "a8fd68a65fe32ef5e10a3e77ca67d3273d9c29c4577a15eb29f53292d491e1d0"
+        ],
+        "errors": [],
+        "status": "verified",
+        "verified": true,
+        "verified_keyids": [
+          "a8fd68a65fe32ef5e10a3e77ca67d3273d9c29c4577a15eb29f53292d491e1d0"
+        ]
+      }
+    },
+    "step_identity": {
+      "left_name": "build-package",
+      "left_signer_keyids": [
+        "a8fd68a65fe32ef5e10a3e77ca67d3273d9c29c4577a15eb29f53292d491e1d0"
+      ],
+      "match": true,
+      "name_match": true,
+      "require_signer_overlap": false,
+      "right_name": "build-package",
+      "right_signer_keyids": [
+        "a8fd68a65fe32ef5e10a3e77ca67d3273d9c29c4577a15eb29f53292d491e1d0"
+      ],
+      "signer_overlap": true,
+      "type": "link"
+    }
+  },
+  "demo_title": "Different command template",
+  "equivalent": false,
+  "findings": [
+    {
+      "code": "COMMAND_MISMATCH",
+      "message": "Normalized commands differ; aliases/substitutions do not prove one template."
+    }
+  ],
+  "left": {
+    "path": "different-command/left.link",
+    "step_name": "build-package"
+  },
+  "primary_reason": "command_mismatch",
+  "right": {
+    "path": "different-command/right.link",
+    "step_name": "build-package"
+  },
+  "schema_version": "in-toto/parameter-audit/v1",
+  "verdict": "not_equivalent"
+}

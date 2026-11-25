@@ -1,0 +1,36 @@
+{
+ "signatures": [
+  {
+   "keyid": "a8fd68a65fe32ef5e10a3e77ca67d3273d9c29c4577a15eb29f53292d491e1d0",
+   "sig": "8c04e256884167bcdcdd8e898765b82f9123beff98315d5491edbfc0f40c5345202066860bd78aae8eedf937f7a843712711a2d610296cccef960ec916aca001"
+  }
+ ],
+ "signed": {
+  "_type": "link",
+  "byproducts": {
+   "return-value": 0,
+   "stderr": "",
+   "stdout": ""
+  },
+  "command": [
+   "python3",
+   "build.py",
+   "--input",
+   "materials/input.txt",
+   "--output",
+   "products/output.bin"
+  ],
+  "environment": {},
+  "materials": {
+   "materials/input.txt": {
+    "sha256": "aa8e6b220f95cbe0357f637f7d47d4bade2ac3d57931b0d5c7922cd77e28a7fc"
+   }
+  },
+  "name": "build-package",
+  "products": {
+   "products/output.bin": {
+    "sha256": "5e8b3faa179b15878016fa57234f01b4e4ff2021c9f757001aac3fa586403aca"
+   }
+  }
+ }
+}
