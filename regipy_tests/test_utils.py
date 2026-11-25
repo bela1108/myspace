@@ -7,6 +7,7 @@ import pytest
 
 from regipy.exceptions import RegistryKeyNotFoundException
 from regipy.plugins import utils as plugins_utils
+from regipy.plugins.software.networklist import parse_network_date
 from regipy.plugins.utils import extract_values, run_relevant_plugins
 
 
@@ -231,6 +232,47 @@ class TestExtractValues:
         )
 
         assert entry == {"date_created": None}
+
+    def test_inventory_mapping_retains_zero_none_and_known_key_path(self):
+        """Zero values, explicit ``None`` results, and preset metadata survive together."""
+        source_values = [
+            ("Description", 0),
+            ("DateCreated", b"\x00"),
+        ]
+        key = _make_mock_key(source_values)
+        key_path = (
+            r"\Microsoft\Windows NT\CurrentVersion\NetworkList\Profiles"
+            r"\{1EDE3981-5784-4C61-B5A7-CF328A10043E}"
+        )
+        entry = {"key_path": key_path}
+
+        extract_values(
+            key,
+            {
+                "Description": "description",
+                "DateCreated": ("date_created", parse_network_date),
+            },
+            entry,
+        )
+
+        assert [(value.name, value.value) for value in key.iter_values()] == source_values
+
+        expected_keys = ["key_path", "description", "date_created"]
+        expected_values = [key_path, 0, None]
+        assert list(entry.keys()) == expected_keys
+        assert [entry[output_key] for output_key in expected_keys] == expected_values
+
+        assert entry["key_path"] == key_path
+        assert type(entry["description"]) is int
+        assert entry["description"] == 0
+        assert "description" in entry
+        assert entry["date_created"] is None
+        assert "date_created" in entry
+        assert entry == {
+            "key_path": key_path,
+            "description": 0,
+            "date_created": None,
+        }
 
     def test_converter_with_integer_values(self):
         """Test various integer value conversions"""
