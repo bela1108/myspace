@@ -11,6 +11,7 @@ from tabulate import tabulate
 
 from regipy.cli_utils import _normalize_subkey_fields, get_filtered_subkeys
 from regipy.exceptions import RegistryKeyNotFoundException
+from regipy.history import analyze_recentdocs_history, analyze_typed_paths_history, compare_snapshots
 from regipy.plugins.plugin import PLUGINS
 from regipy.plugins.utils import run_relevant_plugins
 from regipy.recovery import apply_transaction_logs
@@ -382,3 +383,58 @@ def parse_transaction_log(hive_path, primary_log_path, secondary_log_path, outpu
             f"Recovered {recovered_dirty_pages_count} dirty pages. Restored hive is at {restored_hive_path}",
             fg="green",
         )
+
+
+@click.command()
+@click.argument("hive_paths", nargs=-1, type=click.Path(exists=True, dir_okay=False, resolve_path=True), required=True)
+@click.option(
+    "--observed-at",
+    "observed_at",
+    multiple=True,
+    help="Observation time for each hive, in the same order as the hive paths.",
+)
+@click.option(
+    "--plugin",
+    type=click.Choice(["recentdocs", "typed_paths", "generic"]),
+    default="generic",
+    show_default=True,
+    help="Artifact history to build.",
+)
+@click.option("--key", "key_paths", multiple=True, help="Key path for --plugin generic. May be repeated.")
+@click.option(
+    "-o",
+    "output_path",
+    type=click.Path(exists=False, dir_okay=False, resolve_path=True),
+    required=False,
+    help="Write JSON here instead of stdout.",
+)
+@click.option("-v", "--verbose", is_flag=True, default=False, help="Verbosity")
+def registry_history(hive_paths, observed_at, plugin, key_paths, output_path, verbose):
+    """Build per-value evidence timelines across historical hive snapshots."""
+    _setup_logging(verbose=verbose)
+    if observed_at:
+        if len(observed_at) != len(hive_paths):
+            raise click.UsageError("--observed-at must be given once per hive path")
+        snapshots = list(zip(observed_at, hive_paths))
+    else:
+        snapshots = list(hive_paths)
+
+    if plugin == "recentdocs":
+        report = analyze_recentdocs_history(snapshots)
+    elif plugin == "typed_paths":
+        report = analyze_typed_paths_history(snapshots)
+    else:
+        if not key_paths:
+            raise click.UsageError("--plugin generic requires at least one --key")
+        report = compare_snapshots(snapshots, key_paths)
+
+    result = json.dumps(report.to_dict(), indent=4)
+    if output_path:
+        try:
+            with open(output_path, "w") as output_file:
+                output_file.write(result)
+        except OSError as ex:
+            logger.error(f"Failed to write output file {output_path}: {ex}")
+            return
+    else:
+        click.echo(result)

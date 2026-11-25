@@ -6,6 +6,7 @@ import logging
 from typing import Any, Optional
 
 from regipy.exceptions import RegistryKeyNotFoundException
+from regipy.history import HistoryReportDict, analyze_recentdocs_history
 from regipy.hive_types import NTUSER_HIVE_TYPE
 from regipy.plugins.plugin import Plugin
 from regipy.utils import convert_wintime
@@ -50,6 +51,18 @@ class RecentDocsPlugin(Plugin):
     COMPATIBLE_HIVE = NTUSER_HIVE_TYPE
 
     def run(self):
+        if self.include_history:
+            return self.run_history()
+        return self._run_current()
+
+    def run_history(self, snapshots=None):
+        """Build per-value evidence timelines from the supplied snapshots."""
+        report = self.build_history_report(analyze_recentdocs_history, snapshots=snapshots)
+        self.set_history_report(report)
+        self.entries = HistoryReportDict(report)  # type: ignore[assignment]
+        return self.entries
+
+    def _run_current(self):
         logger.debug("Started RecentDocs Plugin...")
 
         try:

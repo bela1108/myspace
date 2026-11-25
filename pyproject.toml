@@ -64,6 +64,7 @@ regipy-dump = "regipy.cli:registry_dump"
 regipy-plugins-run = "regipy.cli:run_plugins"
 regipy-plugins-list = "regipy.cli:list_plugins"
 regipy-diff = "regipy.cli:reg_diff"
+regipy-history = "regipy.cli:registry_history"
 regipy-process-transaction-logs = "regipy.cli:parse_transaction_log"
 
 [project.urls]

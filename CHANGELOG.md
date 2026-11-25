@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Historical snapshot comparison for value-level evidence**
+  - New regipy.history module builds per-value timelines from snapshot observation bounds and keeps NK.LastWrite as a separate key-level clock
+  - Deleted-then-recreated keys produce generation breakpoints; parent-key-only LastWrite changes never create a value timestamp
+  - RecentDocs and TypedPaths accept snapshots/observed_at/include_history while their single-hive default output stays unchanged
+  - New regipy-history CLI command
+
 ## [6.5.2] - 2026-10-17
 
 ### Fixed

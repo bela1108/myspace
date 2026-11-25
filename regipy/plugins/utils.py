@@ -91,6 +91,9 @@ def run_relevant_plugins(
     plugins=None,
     include_unvalidated=False,
     continue_on_error=False,
+    snapshots=None,
+    observed_at=None,
+    include_history=False,
 ):
     """
     Execute the relevant plugins on the hive
@@ -106,11 +109,21 @@ def run_relevant_plugins(
                               {"error": "<message>"} and the run continues. If False (default),
                               the original behavior applies: ModuleNotFoundError is logged and
                               the plugin is skipped, and any other exception propagates.
+    :param snapshots: Optional snapshot collection for plugins that expose historical
+                      value evidence (RecentDocs, TypedPaths).
+    :param observed_at: Observation time of registry_hive when it is not part of snapshots.
+    :param include_history: Opt into history output for supporting plugins.
     :return: The result, as dict
     """
     plugin_results = {}
     for plugin_class in PLUGINS:
-        plugin = plugin_class(registry_hive, as_json=as_json)
+        plugin = plugin_class(
+            registry_hive,
+            as_json=as_json,
+            snapshots=snapshots,
+            observed_at=observed_at,
+            include_history=include_history,
+        )
 
         # If the list of plugins is defined, but the plugin is not in the list skip it.
         if plugins and plugin.NAME not in plugins:
