@@ -27,3 +27,6 @@ venv/
 pefile.code-workspace
 pefile.ipynb
 tests/test_files/*
+
+# Generated synthetic fixtures for the offline ABI reconciliation
+/abi_check/fixtures/generated/*
