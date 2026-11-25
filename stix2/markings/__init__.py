@@ -19,7 +19,7 @@ Note:
 |
 """
 
-from stix2.markings import granular_markings, object_markings
+from stix2.markings import disclosure, granular_markings, object_markings
 
 
 def get_markings(obj, selectors=None, inherited=False, descendants=False, marking_ref=True, lang=True):
