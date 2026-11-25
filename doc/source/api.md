@@ -41,3 +41,27 @@ documented [in-toto#663](https://github.com/in-toto/in-toto/issues/663).
 ```{eval-rst}
 .. autofunction:: in_toto.verifylib.in_toto_verify
 ```
+
+An optional offline separation-of-duties audit can be run on links that have
+already passed signature and threshold verification. It uses caller-provided
+signer affiliations and two-step separation constraints, and returns every
+retained role assignment, evidence alternative, and conflict. For example::
+
+    from in_toto.separation import verify_separation_policy
+
+    policy = {
+        "affiliations": {
+            "build-key": "build-team",
+            "accept-key": "acceptance-team",
+        },
+        "separation_constraints": [["build", "accept"]],
+    }
+    report = verify_separation_policy(layout, verified_links, policy)
+
+```{eval-rst}
+.. autofunction:: in_toto.separation.verify_separation_of_duties
+```
+
+```{eval-rst}
+.. autofunction:: in_toto.separation.verify_separation_policy
+```

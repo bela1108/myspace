@@ -19,6 +19,7 @@
 
 """
 
+import json
 import os
 import shutil
 import unittest
@@ -183,6 +184,38 @@ class TestInTotoVerifySubjectPublicKeyInfoKeys(CliTestCase, TmpDirMixin):
             "bad-link-dir",
             "--verification-keys",
         ] + self.public_key_paths
+        self.assert_cli_sys_exit(args, 1)
+
+    def test_main_separation_policy(self):
+        """Load an offline separation policy and report a shared domain."""
+        layout = Metadata.load("demo.layout")
+        write_keyid = layout.signed.steps[0].pubkeys[0]
+        package_keyid = layout.signed.steps[1].pubkeys[0]
+        policy = {
+            "affiliations": {
+                write_keyid: "build-team",
+                package_keyid: "accept-team",
+            },
+            "separation_constraints": [["write-code", "package"]],
+        }
+        with open("separation.json", "w", encoding="utf-8") as policy_file:
+            json.dump(policy, policy_file)
+
+        args = [
+            "--layout",
+            "demo.layout",
+            "--separation-policy",
+            "separation.json",
+            "--verification-keys",
+        ] + self.public_key_paths
+        self.assert_cli_sys_exit(args, 0)
+
+        policy["affiliations"] = {
+            write_keyid: "shared-team",
+            package_keyid: "shared-team",
+        }
+        with open("separation.json", "w", encoding="utf-8") as policy_file:
+            json.dump(policy, policy_file)
         self.assert_cli_sys_exit(args, 1)
 
 

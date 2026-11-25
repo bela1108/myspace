@@ -25,6 +25,7 @@
 """
 
 import argparse
+import json
 import logging
 import sys
 
@@ -116,6 +117,14 @@ for which the public part can be found in the GPG keyring at '~/.gnupg'.
       --gpg-home ~/.gnupg
 
 
+Verify the supply chain above and require the 'build' and 'accept' steps to be
+performed under independent control domains, using affiliations from
+'separation-policy.json'.
+
+  {parser.prog} --layout root.layout --verification-keys key_file.pub \\
+      --separation-policy separation-policy.json
+
+
 """
 
     named_args = parser.add_argument_group("required named arguments")
@@ -170,6 +179,21 @@ for which the public part can be found in the GPG keyring at '~/.gnupg'.
             "path to directory from which link metadata files for steps defined"
             " in the root layout should be loaded. If not passed, links are"
             " loaded from the current working directory."
+        ),
+    )
+
+    parser.add_argument(
+        "--separation-policy",
+        dest="separation_policy",
+        type=str,
+        metavar="<path>",
+        help=(
+            "path to an offline separation-of-duties policy in JSON format."
+            " The policy maps signer keyids to caller-provided affiliations and"
+            " lists pairs of steps that must not share a control domain."
+            " It is checked against links that already passed signature and"
+            " threshold verification. If the check fails, verification exits"
+            " with status 1 and reports the conflicting step pair."
         ),
     )
 
@@ -233,11 +257,17 @@ def main():
                 key = load_public_key_from_file(path)
                 layout_key_dict[key["keyid"]] = key
 
+        separation_policy = None
+        if args.separation_policy:
+            with open(args.separation_policy, encoding="utf-8") as policy_file:
+                separation_policy = json.load(policy_file)
+
         verifylib.in_toto_verify(
             layout,
             layout_key_dict,
             args.link_dir,
             inspect_timeout=args.inspect_timeout,
+            separation_policy=separation_policy,
         )
 
     except Exception as e:  # noqa: BLE001

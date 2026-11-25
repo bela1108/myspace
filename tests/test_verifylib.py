@@ -41,6 +41,7 @@ from in_toto.exceptions import (
     BadReturnValueError,
     LayoutExpiredError,
     RuleVerificationError,
+    SeparationVerificationError,
     SignatureVerificationError,
     ThresholdVerificationError,
 )
@@ -1055,6 +1056,41 @@ class TestInTotoVerify(unittest.TestCase, TmpDirMixin):
         layout = Metablock.load(self.layout_single_signed_path)
         layout_key_dict = {self.alice_pub["keyid"]: self.alice_pub}
         in_toto_verify(layout, layout_key_dict)
+
+    def test_verify_with_separation_policy(self):
+        """Pass or fail an optional offline separation audit."""
+        layout = Metablock.load(self.layout_single_signed_path)
+        layout_key_dict = {self.alice_pub["keyid"]: self.alice_pub}
+        write_keyid = layout.signed.steps[0].pubkeys[0]
+        package_keyid = layout.signed.steps[1].pubkeys[0]
+
+        policy = {
+            "affiliations": {
+                write_keyid: "build-team",
+                package_keyid: "accept-team",
+            },
+            "separation_constraints": [["write-code", "package"]],
+        }
+        in_toto_verify(
+            layout,
+            layout_key_dict,
+            separation_policy=policy,
+        )
+
+        policy["affiliations"] = {
+            write_keyid: "shared-team",
+            package_keyid: "shared-team",
+        }
+        with self.assertRaises(SeparationVerificationError) as raise_ctx:
+            in_toto_verify(
+                layout,
+                layout_key_dict,
+                separation_policy=policy,
+            )
+
+        self.assertIn("write-code", str(raise_ctx.exception))
+        self.assertIn("package", str(raise_ctx.exception))
+        self.assertFalse(raise_ctx.exception.report.satisfied)
 
     def test_verify_passing_double_signed_layout(self):
         """Test pass verification of double-signed layout."""

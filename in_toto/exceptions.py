@@ -22,6 +22,14 @@ class ThresholdVerificationError(Error):
     """Indicates that signature threshold verification failed."""
 
 
+class SeparationVerificationError(Error):
+    """Indicates that separation-of-duties verification failed."""
+
+    def __init__(self, message, report=None):
+        super().__init__(message)
+        self.report = report
+
+
 class BadReturnValueError(Error):
     """Indicates that a ran command exited with non-int or non-zero return
     value."""
