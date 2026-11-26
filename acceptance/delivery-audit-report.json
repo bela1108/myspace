@@ -1,0 +1,1297 @@
+{
+  "contract_id": "ODC-ICS-AUX-2026-055",
+  "old_contract_id": "ODC-ICS-AUX-2024-018",
+  "receipt_id": "RCPT-NARROW-055",
+  "inventory_filter": [
+    {
+      "inventory_id": "INV-BENCH-100",
+      "product_name": "ICS Bench Helper",
+      "product_version": "1.0.0",
+      "status": "eligible",
+      "reason": "",
+      "minimum_version": "1.0.0"
+    },
+    {
+      "inventory_id": "INV-BENCH-200",
+      "product_name": "ICS Bench Helper",
+      "product_version": "1.0.0",
+      "status": "eligible",
+      "reason": "",
+      "minimum_version": "1.0.0"
+    },
+    {
+      "inventory_id": "INV-BENCH-300",
+      "product_name": "ICS Bench Helper",
+      "product_version": "1.0.1",
+      "status": "eligible",
+      "reason": "",
+      "minimum_version": "1.0.0"
+    },
+    {
+      "inventory_id": "INV-BENCH-090",
+      "product_name": "ICS Bench Helper",
+      "product_version": "0.9.4",
+      "status": "excluded",
+      "reason": "below_version_floor",
+      "minimum_version": "1.0.0"
+    },
+    {
+      "inventory_id": "INV-CABLE-001",
+      "product_name": "Serial Cable Catalog",
+      "product_version": "3.2.0",
+      "status": "excluded",
+      "reason": "product_name_not_in_contract",
+      "minimum_version": null
+    }
+  ],
+  "batches": [
+    {
+      "batch_id": "LOT-X86-A",
+      "inventory_id": "INV-BENCH-100",
+      "provenance": {
+        "inventory_id": "INV-BENCH-100",
+        "batch_id": "LOT-X86-A",
+        "seal_id": "SEAL-20261127-A1",
+        "sealed_at": "2026-11-26T18:20:00+08:00",
+        "sealed_source": "封存批次 A / 32 位维护盘"
+      },
+      "checks": [
+        {
+          "check_id": "seal-hash",
+          "topic": "封存哈希",
+          "clause_id": null,
+          "status": "pass",
+          "expected": "518ceeea95b1472719d5095a8e894bde9ba6317a448e2193b6412f7ca23137c7",
+          "actual": "518ceeea95b1472719d5095a8e894bde9ba6317a448e2193b6412f7ca23137c7",
+          "detail": "hash mismatch indicates post-seal change"
+        },
+        {
+          "check_id": "machine-type",
+          "topic": "机器类型",
+          "clause_id": "CL-4.1",
+          "status": "pass",
+          "expected": [
+            "IMAGE_FILE_MACHINE_I386",
+            "IMAGE_FILE_MACHINE_AMD64"
+          ],
+          "actual": "IMAGE_FILE_MACHINE_I386",
+          "detail": ""
+        },
+        {
+          "check_id": "subsystem-version",
+          "topic": "子系统与版本",
+          "clause_id": "CL-4.2",
+          "status": "pass",
+          "expected": {
+            "allowed": [
+              "IMAGE_SUBSYSTEM_WINDOWS_CUI"
+            ],
+            "minimum_version": "6.1"
+          },
+          "actual": {
+            "subsystem": "IMAGE_SUBSYSTEM_WINDOWS_CUI",
+            "version": "6.1"
+          },
+          "detail": ""
+        },
+        {
+          "check_id": "image-declaration",
+          "topic": "映像声明",
+          "clause_id": "CL-4.3",
+          "status": "pass",
+          "expected": {
+            "minimum_image_version": "1.0",
+            "magic": "PE32",
+            "executable_image": true
+          },
+          "actual": {
+            "magic": "PE32",
+            "image_version": "1.0",
+            "executable_image": true,
+            "characteristics": [
+              "IMAGE_FILE_EXECUTABLE_IMAGE",
+              "IMAGE_FILE_32BIT_MACHINE"
+            ]
+          },
+          "detail": ""
+        },
+        {
+          "check_id": "receipt-value-machine",
+          "topic": "签收单记录值 machine",
+          "clause_id": null,
+          "status": "pass",
+          "expected": "IMAGE_FILE_MACHINE_I386",
+          "actual": "IMAGE_FILE_MACHINE_I386",
+          "detail": ""
+        },
+        {
+          "check_id": "receipt-value-subsystem",
+          "topic": "签收单记录值 subsystem",
+          "clause_id": null,
+          "status": "pass",
+          "expected": "IMAGE_SUBSYSTEM_WINDOWS_CUI",
+          "actual": "IMAGE_SUBSYSTEM_WINDOWS_CUI",
+          "detail": ""
+        },
+        {
+          "check_id": "receipt-value-subsystem_version",
+          "topic": "签收单记录值 subsystem_version",
+          "clause_id": null,
+          "status": "pass",
+          "expected": "6.1",
+          "actual": "6.1",
+          "detail": ""
+        }
+      ],
+      "errors": [],
+      "decision": "ready_to_accept",
+      "hold_reasons": [],
+      "product_name": "ICS Bench Helper",
+      "product_version": "1.0.0",
+      "artifact_path": "artifacts/empty_x86.exe",
+      "pe_observation": {
+        "file_name": "empty_x86.exe",
+        "file_size": 1024,
+        "sha256": "518ceeea95b1472719d5095a8e894bde9ba6317a448e2193b6412f7ca23137c7",
+        "machine": {
+          "code": 332,
+          "hex": "0x014C",
+          "name": "IMAGE_FILE_MACHINE_I386",
+          "architecture": "x86"
+        },
+        "magic": {
+          "code": 267,
+          "hex": "0x010B",
+          "name": "PE32"
+        },
+        "subsystem": {
+          "code": 3,
+          "name": "IMAGE_SUBSYSTEM_WINDOWS_CUI"
+        },
+        "subsystem_version": "6.1",
+        "image_version": "1.0",
+        "image_declaration": {
+          "magic": "PE32",
+          "image_version": "1.0",
+          "executable_image": true,
+          "characteristics": [
+            "IMAGE_FILE_EXECUTABLE_IMAGE",
+            "IMAGE_FILE_32BIT_MACHINE"
+          ]
+        },
+        "old_contract_uncovered_fields": {
+          "linker_version": "14.0",
+          "time_date_stamp": 0,
+          "number_of_sections": 1,
+          "checksum": 49672,
+          "dll_characteristics": [
+            "IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE",
+            "IMAGE_DLLCHARACTERISTICS_NX_COMPAT",
+            "IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE"
+          ],
+          "section_alignment": 4096,
+          "file_alignment": 512,
+          "size_of_image": 8192,
+          "loader_flags": 0
+        },
+        "header_values": {
+          "Machine": "IMAGE_FILE_MACHINE_I386",
+          "Magic": "PE32",
+          "Architecture": "x86",
+          "NumberOfSections": 1,
+          "TimeDateStamp": 0,
+          "Characteristics": [
+            "IMAGE_FILE_EXECUTABLE_IMAGE",
+            "IMAGE_FILE_32BIT_MACHINE"
+          ],
+          "Subsystem": "IMAGE_SUBSYSTEM_WINDOWS_CUI",
+          "SubsystemVersion": "6.1",
+          "ImageVersion": "1.0",
+          "OperatingSystemVersion": "6.1",
+          "LinkerVersion": "14.0",
+          "Win32VersionValue": 0,
+          "SizeOfImage": 8192,
+          "SizeOfHeaders": 512,
+          "CheckSum": 49672,
+          "SectionAlignment": 4096,
+          "FileAlignment": 512,
+          "DllCharacteristics": [
+            "IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE",
+            "IMAGE_DLLCHARACTERISTICS_NX_COMPAT",
+            "IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE"
+          ],
+          "LoaderFlags": 0
+        }
+      },
+      "receipt": {
+        "receipt_id": "RCPT-NARROW-055",
+        "attested_fields": [
+          "machine",
+          "subsystem",
+          "subsystem_version"
+        ]
+      }
+    },
+    {
+      "batch_id": "LOT-X64-B",
+      "inventory_id": "INV-BENCH-200",
+      "provenance": {
+        "inventory_id": "INV-BENCH-200",
+        "batch_id": "LOT-X64-B",
+        "seal_id": "SEAL-20261127-B2",
+        "sealed_at": "2026-11-26T18:25:00+08:00",
+        "sealed_source": "封存批次 B / 64 位操作员站盘"
+      },
+      "checks": [
+        {
+          "check_id": "seal-hash",
+          "topic": "封存哈希",
+          "clause_id": null,
+          "status": "pass",
+          "expected": "c395900125a664c84c8fd74347383ba2f19e9601cc8f1e0919f2267ceda90bbd",
+          "actual": "c395900125a664c84c8fd74347383ba2f19e9601cc8f1e0919f2267ceda90bbd",
+          "detail": "hash mismatch indicates post-seal change"
+        },
+        {
+          "check_id": "machine-type",
+          "topic": "机器类型",
+          "clause_id": "CL-4.1",
+          "status": "pass",
+          "expected": [
+            "IMAGE_FILE_MACHINE_I386",
+            "IMAGE_FILE_MACHINE_AMD64"
+          ],
+          "actual": "IMAGE_FILE_MACHINE_AMD64",
+          "detail": ""
+        },
+        {
+          "check_id": "subsystem-version",
+          "topic": "子系统与版本",
+          "clause_id": "CL-4.2",
+          "status": "pass",
+          "expected": {
+            "allowed": [
+              "IMAGE_SUBSYSTEM_WINDOWS_CUI"
+            ],
+            "minimum_version": "6.1"
+          },
+          "actual": {
+            "subsystem": "IMAGE_SUBSYSTEM_WINDOWS_CUI",
+            "version": "6.1"
+          },
+          "detail": ""
+        },
+        {
+          "check_id": "image-declaration",
+          "topic": "映像声明",
+          "clause_id": "CL-4.3",
+          "status": "pass",
+          "expected": {
+            "minimum_image_version": "1.0",
+            "magic": "PE32+",
+            "executable_image": true
+          },
+          "actual": {
+            "magic": "PE32+",
+            "image_version": "1.0",
+            "executable_image": true,
+            "characteristics": [
+              "IMAGE_FILE_EXECUTABLE_IMAGE",
+              "IMAGE_FILE_LARGE_ADDRESS_AWARE"
+            ]
+          },
+          "detail": ""
+        },
+        {
+          "check_id": "receipt-value-machine",
+          "topic": "签收单记录值 machine",
+          "clause_id": null,
+          "status": "pass",
+          "expected": "IMAGE_FILE_MACHINE_AMD64",
+          "actual": "IMAGE_FILE_MACHINE_AMD64",
+          "detail": ""
+        },
+        {
+          "check_id": "receipt-value-subsystem",
+          "topic": "签收单记录值 subsystem",
+          "clause_id": null,
+          "status": "pass",
+          "expected": "IMAGE_SUBSYSTEM_WINDOWS_CUI",
+          "actual": "IMAGE_SUBSYSTEM_WINDOWS_CUI",
+          "detail": ""
+        },
+        {
+          "check_id": "receipt-value-subsystem_version",
+          "topic": "签收单记录值 subsystem_version",
+          "clause_id": null,
+          "status": "pass",
+          "expected": "6.1",
+          "actual": "6.1",
+          "detail": ""
+        }
+      ],
+      "errors": [],
+      "decision": "ready_to_accept",
+      "hold_reasons": [],
+      "product_name": "ICS Bench Helper",
+      "product_version": "1.0.0",
+      "artifact_path": "artifacts/empty_x64.exe",
+      "pe_observation": {
+        "file_name": "empty_x64.exe",
+        "file_size": 1024,
+        "sha256": "c395900125a664c84c8fd74347383ba2f19e9601cc8f1e0919f2267ceda90bbd",
+        "machine": {
+          "code": 34404,
+          "hex": "0x8664",
+          "name": "IMAGE_FILE_MACHINE_AMD64",
+          "architecture": "x64"
+        },
+        "magic": {
+          "code": 523,
+          "hex": "0x020B",
+          "name": "PE32+"
+        },
+        "subsystem": {
+          "code": 3,
+          "name": "IMAGE_SUBSYSTEM_WINDOWS_CUI"
+        },
+        "subsystem_version": "6.1",
+        "image_version": "1.0",
+        "image_declaration": {
+          "magic": "PE32+",
+          "image_version": "1.0",
+          "executable_image": true,
+          "characteristics": [
+            "IMAGE_FILE_EXECUTABLE_IMAGE",
+            "IMAGE_FILE_LARGE_ADDRESS_AWARE"
+          ]
+        },
+        "old_contract_uncovered_fields": {
+          "linker_version": "14.0",
+          "time_date_stamp": 0,
+          "number_of_sections": 1,
+          "checksum": 47911,
+          "dll_characteristics": [
+            "IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE",
+            "IMAGE_DLLCHARACTERISTICS_NX_COMPAT",
+            "IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE"
+          ],
+          "section_alignment": 4096,
+          "file_alignment": 512,
+          "size_of_image": 8192,
+          "loader_flags": 0
+        },
+        "header_values": {
+          "Machine": "IMAGE_FILE_MACHINE_AMD64",
+          "Magic": "PE32+",
+          "Architecture": "x64",
+          "NumberOfSections": 1,
+          "TimeDateStamp": 0,
+          "Characteristics": [
+            "IMAGE_FILE_EXECUTABLE_IMAGE",
+            "IMAGE_FILE_LARGE_ADDRESS_AWARE"
+          ],
+          "Subsystem": "IMAGE_SUBSYSTEM_WINDOWS_CUI",
+          "SubsystemVersion": "6.1",
+          "ImageVersion": "1.0",
+          "OperatingSystemVersion": "6.1",
+          "LinkerVersion": "14.0",
+          "Win32VersionValue": 0,
+          "SizeOfImage": 8192,
+          "SizeOfHeaders": 512,
+          "CheckSum": 47911,
+          "SectionAlignment": 4096,
+          "FileAlignment": 512,
+          "DllCharacteristics": [
+            "IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE",
+            "IMAGE_DLLCHARACTERISTICS_NX_COMPAT",
+            "IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE"
+          ],
+          "LoaderFlags": 0
+        }
+      },
+      "receipt": {
+        "receipt_id": "RCPT-NARROW-055",
+        "attested_fields": [
+          "machine",
+          "subsystem",
+          "subsystem_version"
+        ]
+      }
+    },
+    {
+      "batch_id": "LOT-X64-C",
+      "inventory_id": "INV-BENCH-300",
+      "provenance": {
+        "inventory_id": "INV-BENCH-300",
+        "batch_id": "LOT-X64-C",
+        "seal_id": "SEAL-20261127-C3",
+        "sealed_at": "2026-11-26T18:31:00+08:00",
+        "sealed_source": "封存批次 C / 备用 64 位盘"
+      },
+      "checks": [
+        {
+          "check_id": "seal-hash",
+          "topic": "封存哈希",
+          "clause_id": null,
+          "status": "pass",
+          "expected": "c395900125a664c84c8fd74347383ba2f19e9601cc8f1e0919f2267ceda90bbd",
+          "actual": "c395900125a664c84c8fd74347383ba2f19e9601cc8f1e0919f2267ceda90bbd",
+          "detail": "hash mismatch indicates post-seal change"
+        },
+        {
+          "check_id": "machine-type",
+          "topic": "机器类型",
+          "clause_id": "CL-4.1",
+          "status": "pass",
+          "expected": [
+            "IMAGE_FILE_MACHINE_I386",
+            "IMAGE_FILE_MACHINE_AMD64"
+          ],
+          "actual": "IMAGE_FILE_MACHINE_AMD64",
+          "detail": ""
+        },
+        {
+          "check_id": "subsystem-version",
+          "topic": "子系统与版本",
+          "clause_id": "CL-4.2",
+          "status": "pass",
+          "expected": {
+            "allowed": [
+              "IMAGE_SUBSYSTEM_WINDOWS_CUI"
+            ],
+            "minimum_version": "6.1"
+          },
+          "actual": {
+            "subsystem": "IMAGE_SUBSYSTEM_WINDOWS_CUI",
+            "version": "6.1"
+          },
+          "detail": ""
+        },
+        {
+          "check_id": "image-declaration",
+          "topic": "映像声明",
+          "clause_id": "CL-4.3",
+          "status": "pass",
+          "expected": {
+            "minimum_image_version": "1.0",
+            "magic": "PE32+",
+            "executable_image": true
+          },
+          "actual": {
+            "magic": "PE32+",
+            "image_version": "1.0",
+            "executable_image": true,
+            "characteristics": [
+              "IMAGE_FILE_EXECUTABLE_IMAGE",
+              "IMAGE_FILE_LARGE_ADDRESS_AWARE"
+            ]
+          },
+          "detail": ""
+        }
+      ],
+      "errors": [],
+      "decision": "hold",
+      "hold_reasons": [
+        "not_listed_in_narrow_receipt"
+      ],
+      "product_name": "ICS Bench Helper",
+      "product_version": "1.0.1",
+      "artifact_path": "artifacts/empty_x64.exe",
+      "pe_observation": {
+        "file_name": "empty_x64.exe",
+        "file_size": 1024,
+        "sha256": "c395900125a664c84c8fd74347383ba2f19e9601cc8f1e0919f2267ceda90bbd",
+        "machine": {
+          "code": 34404,
+          "hex": "0x8664",
+          "name": "IMAGE_FILE_MACHINE_AMD64",
+          "architecture": "x64"
+        },
+        "magic": {
+          "code": 523,
+          "hex": "0x020B",
+          "name": "PE32+"
+        },
+        "subsystem": {
+          "code": 3,
+          "name": "IMAGE_SUBSYSTEM_WINDOWS_CUI"
+        },
+        "subsystem_version": "6.1",
+        "image_version": "1.0",
+        "image_declaration": {
+          "magic": "PE32+",
+          "image_version": "1.0",
+          "executable_image": true,
+          "characteristics": [
+            "IMAGE_FILE_EXECUTABLE_IMAGE",
+            "IMAGE_FILE_LARGE_ADDRESS_AWARE"
+          ]
+        },
+        "old_contract_uncovered_fields": {
+          "linker_version": "14.0",
+          "time_date_stamp": 0,
+          "number_of_sections": 1,
+          "checksum": 47911,
+          "dll_characteristics": [
+            "IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE",
+            "IMAGE_DLLCHARACTERISTICS_NX_COMPAT",
+            "IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE"
+          ],
+          "section_alignment": 4096,
+          "file_alignment": 512,
+          "size_of_image": 8192,
+          "loader_flags": 0
+        },
+        "header_values": {
+          "Machine": "IMAGE_FILE_MACHINE_AMD64",
+          "Magic": "PE32+",
+          "Architecture": "x64",
+          "NumberOfSections": 1,
+          "TimeDateStamp": 0,
+          "Characteristics": [
+            "IMAGE_FILE_EXECUTABLE_IMAGE",
+            "IMAGE_FILE_LARGE_ADDRESS_AWARE"
+          ],
+          "Subsystem": "IMAGE_SUBSYSTEM_WINDOWS_CUI",
+          "SubsystemVersion": "6.1",
+          "ImageVersion": "1.0",
+          "OperatingSystemVersion": "6.1",
+          "LinkerVersion": "14.0",
+          "Win32VersionValue": 0,
+          "SizeOfImage": 8192,
+          "SizeOfHeaders": 512,
+          "CheckSum": 47911,
+          "SectionAlignment": 4096,
+          "FileAlignment": 512,
+          "DllCharacteristics": [
+            "IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE",
+            "IMAGE_DLLCHARACTERISTICS_NX_COMPAT",
+            "IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE"
+          ],
+          "LoaderFlags": 0
+        }
+      }
+    }
+  ],
+  "provenance_groups": [
+    {
+      "header_signature": "57bf2f4521ba6a81b43b3c54541b6ca70ee42b1c77f83ea3ad13e3cee9475883",
+      "header_values": {
+        "Machine": "IMAGE_FILE_MACHINE_I386",
+        "Magic": "PE32",
+        "Architecture": "x86",
+        "NumberOfSections": 1,
+        "TimeDateStamp": 0,
+        "Characteristics": [
+          "IMAGE_FILE_EXECUTABLE_IMAGE",
+          "IMAGE_FILE_32BIT_MACHINE"
+        ],
+        "Subsystem": "IMAGE_SUBSYSTEM_WINDOWS_CUI",
+        "SubsystemVersion": "6.1",
+        "ImageVersion": "1.0",
+        "OperatingSystemVersion": "6.1",
+        "LinkerVersion": "14.0",
+        "Win32VersionValue": 0,
+        "SizeOfImage": 8192,
+        "SizeOfHeaders": 512,
+        "CheckSum": 49672,
+        "SectionAlignment": 4096,
+        "FileAlignment": 512,
+        "DllCharacteristics": [
+          "IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE",
+          "IMAGE_DLLCHARACTERISTICS_NX_COMPAT",
+          "IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE"
+        ],
+        "LoaderFlags": 0
+      },
+      "artifacts": [
+        {
+          "batch_id": "LOT-X86-A",
+          "file_name": "empty_x86.exe",
+          "sha256": "518ceeea95b1472719d5095a8e894bde9ba6317a448e2193b6412f7ca23137c7"
+        }
+      ],
+      "provenance": [
+        {
+          "inventory_id": "INV-BENCH-100",
+          "batch_id": "LOT-X86-A",
+          "seal_id": "SEAL-20261127-A1",
+          "sealed_at": "2026-11-26T18:20:00+08:00",
+          "sealed_source": "封存批次 A / 32 位维护盘"
+        }
+      ]
+    },
+    {
+      "header_signature": "f8951f544c9e26f59b892fdf9863997686dcd53148d0d224ec481c1ab9f0633c",
+      "header_values": {
+        "Machine": "IMAGE_FILE_MACHINE_AMD64",
+        "Magic": "PE32+",
+        "Architecture": "x64",
+        "NumberOfSections": 1,
+        "TimeDateStamp": 0,
+        "Characteristics": [
+          "IMAGE_FILE_EXECUTABLE_IMAGE",
+          "IMAGE_FILE_LARGE_ADDRESS_AWARE"
+        ],
+        "Subsystem": "IMAGE_SUBSYSTEM_WINDOWS_CUI",
+        "SubsystemVersion": "6.1",
+        "ImageVersion": "1.0",
+        "OperatingSystemVersion": "6.1",
+        "LinkerVersion": "14.0",
+        "Win32VersionValue": 0,
+        "SizeOfImage": 8192,
+        "SizeOfHeaders": 512,
+        "CheckSum": 47911,
+        "SectionAlignment": 4096,
+        "FileAlignment": 512,
+        "DllCharacteristics": [
+          "IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE",
+          "IMAGE_DLLCHARACTERISTICS_NX_COMPAT",
+          "IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE"
+        ],
+        "LoaderFlags": 0
+      },
+      "artifacts": [
+        {
+          "batch_id": "LOT-X64-B",
+          "file_name": "empty_x64.exe",
+          "sha256": "c395900125a664c84c8fd74347383ba2f19e9601cc8f1e0919f2267ceda90bbd"
+        },
+        {
+          "batch_id": "LOT-X64-C",
+          "file_name": "empty_x64.exe",
+          "sha256": "c395900125a664c84c8fd74347383ba2f19e9601cc8f1e0919f2267ceda90bbd"
+        }
+      ],
+      "provenance": [
+        {
+          "inventory_id": "INV-BENCH-200",
+          "batch_id": "LOT-X64-B",
+          "seal_id": "SEAL-20261127-B2",
+          "sealed_at": "2026-11-26T18:25:00+08:00",
+          "sealed_source": "封存批次 B / 64 位操作员站盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-300",
+          "batch_id": "LOT-X64-C",
+          "seal_id": "SEAL-20261127-C3",
+          "sealed_at": "2026-11-26T18:31:00+08:00",
+          "sealed_source": "封存批次 C / 备用 64 位盘"
+        }
+      ]
+    }
+  ],
+  "field_provenance": [
+    {
+      "field": "Machine",
+      "value": "IMAGE_FILE_MACHINE_I386",
+      "provenance": [
+        {
+          "inventory_id": "INV-BENCH-100",
+          "batch_id": "LOT-X86-A",
+          "seal_id": "SEAL-20261127-A1",
+          "sealed_at": "2026-11-26T18:20:00+08:00",
+          "sealed_source": "封存批次 A / 32 位维护盘"
+        }
+      ],
+      "source_count": 1
+    },
+    {
+      "field": "Machine",
+      "value": "IMAGE_FILE_MACHINE_AMD64",
+      "provenance": [
+        {
+          "inventory_id": "INV-BENCH-200",
+          "batch_id": "LOT-X64-B",
+          "seal_id": "SEAL-20261127-B2",
+          "sealed_at": "2026-11-26T18:25:00+08:00",
+          "sealed_source": "封存批次 B / 64 位操作员站盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-300",
+          "batch_id": "LOT-X64-C",
+          "seal_id": "SEAL-20261127-C3",
+          "sealed_at": "2026-11-26T18:31:00+08:00",
+          "sealed_source": "封存批次 C / 备用 64 位盘"
+        }
+      ],
+      "source_count": 2
+    },
+    {
+      "field": "Magic",
+      "value": "PE32",
+      "provenance": [
+        {
+          "inventory_id": "INV-BENCH-100",
+          "batch_id": "LOT-X86-A",
+          "seal_id": "SEAL-20261127-A1",
+          "sealed_at": "2026-11-26T18:20:00+08:00",
+          "sealed_source": "封存批次 A / 32 位维护盘"
+        }
+      ],
+      "source_count": 1
+    },
+    {
+      "field": "Magic",
+      "value": "PE32+",
+      "provenance": [
+        {
+          "inventory_id": "INV-BENCH-200",
+          "batch_id": "LOT-X64-B",
+          "seal_id": "SEAL-20261127-B2",
+          "sealed_at": "2026-11-26T18:25:00+08:00",
+          "sealed_source": "封存批次 B / 64 位操作员站盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-300",
+          "batch_id": "LOT-X64-C",
+          "seal_id": "SEAL-20261127-C3",
+          "sealed_at": "2026-11-26T18:31:00+08:00",
+          "sealed_source": "封存批次 C / 备用 64 位盘"
+        }
+      ],
+      "source_count": 2
+    },
+    {
+      "field": "Architecture",
+      "value": "x86",
+      "provenance": [
+        {
+          "inventory_id": "INV-BENCH-100",
+          "batch_id": "LOT-X86-A",
+          "seal_id": "SEAL-20261127-A1",
+          "sealed_at": "2026-11-26T18:20:00+08:00",
+          "sealed_source": "封存批次 A / 32 位维护盘"
+        }
+      ],
+      "source_count": 1
+    },
+    {
+      "field": "Architecture",
+      "value": "x64",
+      "provenance": [
+        {
+          "inventory_id": "INV-BENCH-200",
+          "batch_id": "LOT-X64-B",
+          "seal_id": "SEAL-20261127-B2",
+          "sealed_at": "2026-11-26T18:25:00+08:00",
+          "sealed_source": "封存批次 B / 64 位操作员站盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-300",
+          "batch_id": "LOT-X64-C",
+          "seal_id": "SEAL-20261127-C3",
+          "sealed_at": "2026-11-26T18:31:00+08:00",
+          "sealed_source": "封存批次 C / 备用 64 位盘"
+        }
+      ],
+      "source_count": 2
+    },
+    {
+      "field": "NumberOfSections",
+      "value": 1,
+      "provenance": [
+        {
+          "inventory_id": "INV-BENCH-100",
+          "batch_id": "LOT-X86-A",
+          "seal_id": "SEAL-20261127-A1",
+          "sealed_at": "2026-11-26T18:20:00+08:00",
+          "sealed_source": "封存批次 A / 32 位维护盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-200",
+          "batch_id": "LOT-X64-B",
+          "seal_id": "SEAL-20261127-B2",
+          "sealed_at": "2026-11-26T18:25:00+08:00",
+          "sealed_source": "封存批次 B / 64 位操作员站盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-300",
+          "batch_id": "LOT-X64-C",
+          "seal_id": "SEAL-20261127-C3",
+          "sealed_at": "2026-11-26T18:31:00+08:00",
+          "sealed_source": "封存批次 C / 备用 64 位盘"
+        }
+      ],
+      "source_count": 3
+    },
+    {
+      "field": "TimeDateStamp",
+      "value": 0,
+      "provenance": [
+        {
+          "inventory_id": "INV-BENCH-100",
+          "batch_id": "LOT-X86-A",
+          "seal_id": "SEAL-20261127-A1",
+          "sealed_at": "2026-11-26T18:20:00+08:00",
+          "sealed_source": "封存批次 A / 32 位维护盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-200",
+          "batch_id": "LOT-X64-B",
+          "seal_id": "SEAL-20261127-B2",
+          "sealed_at": "2026-11-26T18:25:00+08:00",
+          "sealed_source": "封存批次 B / 64 位操作员站盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-300",
+          "batch_id": "LOT-X64-C",
+          "seal_id": "SEAL-20261127-C3",
+          "sealed_at": "2026-11-26T18:31:00+08:00",
+          "sealed_source": "封存批次 C / 备用 64 位盘"
+        }
+      ],
+      "source_count": 3
+    },
+    {
+      "field": "Characteristics",
+      "value": [
+        "IMAGE_FILE_EXECUTABLE_IMAGE",
+        "IMAGE_FILE_32BIT_MACHINE"
+      ],
+      "provenance": [
+        {
+          "inventory_id": "INV-BENCH-100",
+          "batch_id": "LOT-X86-A",
+          "seal_id": "SEAL-20261127-A1",
+          "sealed_at": "2026-11-26T18:20:00+08:00",
+          "sealed_source": "封存批次 A / 32 位维护盘"
+        }
+      ],
+      "source_count": 1
+    },
+    {
+      "field": "Characteristics",
+      "value": [
+        "IMAGE_FILE_EXECUTABLE_IMAGE",
+        "IMAGE_FILE_LARGE_ADDRESS_AWARE"
+      ],
+      "provenance": [
+        {
+          "inventory_id": "INV-BENCH-200",
+          "batch_id": "LOT-X64-B",
+          "seal_id": "SEAL-20261127-B2",
+          "sealed_at": "2026-11-26T18:25:00+08:00",
+          "sealed_source": "封存批次 B / 64 位操作员站盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-300",
+          "batch_id": "LOT-X64-C",
+          "seal_id": "SEAL-20261127-C3",
+          "sealed_at": "2026-11-26T18:31:00+08:00",
+          "sealed_source": "封存批次 C / 备用 64 位盘"
+        }
+      ],
+      "source_count": 2
+    },
+    {
+      "field": "Subsystem",
+      "value": "IMAGE_SUBSYSTEM_WINDOWS_CUI",
+      "provenance": [
+        {
+          "inventory_id": "INV-BENCH-100",
+          "batch_id": "LOT-X86-A",
+          "seal_id": "SEAL-20261127-A1",
+          "sealed_at": "2026-11-26T18:20:00+08:00",
+          "sealed_source": "封存批次 A / 32 位维护盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-200",
+          "batch_id": "LOT-X64-B",
+          "seal_id": "SEAL-20261127-B2",
+          "sealed_at": "2026-11-26T18:25:00+08:00",
+          "sealed_source": "封存批次 B / 64 位操作员站盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-300",
+          "batch_id": "LOT-X64-C",
+          "seal_id": "SEAL-20261127-C3",
+          "sealed_at": "2026-11-26T18:31:00+08:00",
+          "sealed_source": "封存批次 C / 备用 64 位盘"
+        }
+      ],
+      "source_count": 3
+    },
+    {
+      "field": "SubsystemVersion",
+      "value": "6.1",
+      "provenance": [
+        {
+          "inventory_id": "INV-BENCH-100",
+          "batch_id": "LOT-X86-A",
+          "seal_id": "SEAL-20261127-A1",
+          "sealed_at": "2026-11-26T18:20:00+08:00",
+          "sealed_source": "封存批次 A / 32 位维护盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-200",
+          "batch_id": "LOT-X64-B",
+          "seal_id": "SEAL-20261127-B2",
+          "sealed_at": "2026-11-26T18:25:00+08:00",
+          "sealed_source": "封存批次 B / 64 位操作员站盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-300",
+          "batch_id": "LOT-X64-C",
+          "seal_id": "SEAL-20261127-C3",
+          "sealed_at": "2026-11-26T18:31:00+08:00",
+          "sealed_source": "封存批次 C / 备用 64 位盘"
+        }
+      ],
+      "source_count": 3
+    },
+    {
+      "field": "ImageVersion",
+      "value": "1.0",
+      "provenance": [
+        {
+          "inventory_id": "INV-BENCH-100",
+          "batch_id": "LOT-X86-A",
+          "seal_id": "SEAL-20261127-A1",
+          "sealed_at": "2026-11-26T18:20:00+08:00",
+          "sealed_source": "封存批次 A / 32 位维护盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-200",
+          "batch_id": "LOT-X64-B",
+          "seal_id": "SEAL-20261127-B2",
+          "sealed_at": "2026-11-26T18:25:00+08:00",
+          "sealed_source": "封存批次 B / 64 位操作员站盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-300",
+          "batch_id": "LOT-X64-C",
+          "seal_id": "SEAL-20261127-C3",
+          "sealed_at": "2026-11-26T18:31:00+08:00",
+          "sealed_source": "封存批次 C / 备用 64 位盘"
+        }
+      ],
+      "source_count": 3
+    },
+    {
+      "field": "OperatingSystemVersion",
+      "value": "6.1",
+      "provenance": [
+        {
+          "inventory_id": "INV-BENCH-100",
+          "batch_id": "LOT-X86-A",
+          "seal_id": "SEAL-20261127-A1",
+          "sealed_at": "2026-11-26T18:20:00+08:00",
+          "sealed_source": "封存批次 A / 32 位维护盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-200",
+          "batch_id": "LOT-X64-B",
+          "seal_id": "SEAL-20261127-B2",
+          "sealed_at": "2026-11-26T18:25:00+08:00",
+          "sealed_source": "封存批次 B / 64 位操作员站盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-300",
+          "batch_id": "LOT-X64-C",
+          "seal_id": "SEAL-20261127-C3",
+          "sealed_at": "2026-11-26T18:31:00+08:00",
+          "sealed_source": "封存批次 C / 备用 64 位盘"
+        }
+      ],
+      "source_count": 3
+    },
+    {
+      "field": "LinkerVersion",
+      "value": "14.0",
+      "provenance": [
+        {
+          "inventory_id": "INV-BENCH-100",
+          "batch_id": "LOT-X86-A",
+          "seal_id": "SEAL-20261127-A1",
+          "sealed_at": "2026-11-26T18:20:00+08:00",
+          "sealed_source": "封存批次 A / 32 位维护盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-200",
+          "batch_id": "LOT-X64-B",
+          "seal_id": "SEAL-20261127-B2",
+          "sealed_at": "2026-11-26T18:25:00+08:00",
+          "sealed_source": "封存批次 B / 64 位操作员站盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-300",
+          "batch_id": "LOT-X64-C",
+          "seal_id": "SEAL-20261127-C3",
+          "sealed_at": "2026-11-26T18:31:00+08:00",
+          "sealed_source": "封存批次 C / 备用 64 位盘"
+        }
+      ],
+      "source_count": 3
+    },
+    {
+      "field": "Win32VersionValue",
+      "value": 0,
+      "provenance": [
+        {
+          "inventory_id": "INV-BENCH-100",
+          "batch_id": "LOT-X86-A",
+          "seal_id": "SEAL-20261127-A1",
+          "sealed_at": "2026-11-26T18:20:00+08:00",
+          "sealed_source": "封存批次 A / 32 位维护盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-200",
+          "batch_id": "LOT-X64-B",
+          "seal_id": "SEAL-20261127-B2",
+          "sealed_at": "2026-11-26T18:25:00+08:00",
+          "sealed_source": "封存批次 B / 64 位操作员站盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-300",
+          "batch_id": "LOT-X64-C",
+          "seal_id": "SEAL-20261127-C3",
+          "sealed_at": "2026-11-26T18:31:00+08:00",
+          "sealed_source": "封存批次 C / 备用 64 位盘"
+        }
+      ],
+      "source_count": 3
+    },
+    {
+      "field": "SizeOfImage",
+      "value": 8192,
+      "provenance": [
+        {
+          "inventory_id": "INV-BENCH-100",
+          "batch_id": "LOT-X86-A",
+          "seal_id": "SEAL-20261127-A1",
+          "sealed_at": "2026-11-26T18:20:00+08:00",
+          "sealed_source": "封存批次 A / 32 位维护盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-200",
+          "batch_id": "LOT-X64-B",
+          "seal_id": "SEAL-20261127-B2",
+          "sealed_at": "2026-11-26T18:25:00+08:00",
+          "sealed_source": "封存批次 B / 64 位操作员站盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-300",
+          "batch_id": "LOT-X64-C",
+          "seal_id": "SEAL-20261127-C3",
+          "sealed_at": "2026-11-26T18:31:00+08:00",
+          "sealed_source": "封存批次 C / 备用 64 位盘"
+        }
+      ],
+      "source_count": 3
+    },
+    {
+      "field": "SizeOfHeaders",
+      "value": 512,
+      "provenance": [
+        {
+          "inventory_id": "INV-BENCH-100",
+          "batch_id": "LOT-X86-A",
+          "seal_id": "SEAL-20261127-A1",
+          "sealed_at": "2026-11-26T18:20:00+08:00",
+          "sealed_source": "封存批次 A / 32 位维护盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-200",
+          "batch_id": "LOT-X64-B",
+          "seal_id": "SEAL-20261127-B2",
+          "sealed_at": "2026-11-26T18:25:00+08:00",
+          "sealed_source": "封存批次 B / 64 位操作员站盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-300",
+          "batch_id": "LOT-X64-C",
+          "seal_id": "SEAL-20261127-C3",
+          "sealed_at": "2026-11-26T18:31:00+08:00",
+          "sealed_source": "封存批次 C / 备用 64 位盘"
+        }
+      ],
+      "source_count": 3
+    },
+    {
+      "field": "CheckSum",
+      "value": 49672,
+      "provenance": [
+        {
+          "inventory_id": "INV-BENCH-100",
+          "batch_id": "LOT-X86-A",
+          "seal_id": "SEAL-20261127-A1",
+          "sealed_at": "2026-11-26T18:20:00+08:00",
+          "sealed_source": "封存批次 A / 32 位维护盘"
+        }
+      ],
+      "source_count": 1
+    },
+    {
+      "field": "CheckSum",
+      "value": 47911,
+      "provenance": [
+        {
+          "inventory_id": "INV-BENCH-200",
+          "batch_id": "LOT-X64-B",
+          "seal_id": "SEAL-20261127-B2",
+          "sealed_at": "2026-11-26T18:25:00+08:00",
+          "sealed_source": "封存批次 B / 64 位操作员站盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-300",
+          "batch_id": "LOT-X64-C",
+          "seal_id": "SEAL-20261127-C3",
+          "sealed_at": "2026-11-26T18:31:00+08:00",
+          "sealed_source": "封存批次 C / 备用 64 位盘"
+        }
+      ],
+      "source_count": 2
+    },
+    {
+      "field": "SectionAlignment",
+      "value": 4096,
+      "provenance": [
+        {
+          "inventory_id": "INV-BENCH-100",
+          "batch_id": "LOT-X86-A",
+          "seal_id": "SEAL-20261127-A1",
+          "sealed_at": "2026-11-26T18:20:00+08:00",
+          "sealed_source": "封存批次 A / 32 位维护盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-200",
+          "batch_id": "LOT-X64-B",
+          "seal_id": "SEAL-20261127-B2",
+          "sealed_at": "2026-11-26T18:25:00+08:00",
+          "sealed_source": "封存批次 B / 64 位操作员站盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-300",
+          "batch_id": "LOT-X64-C",
+          "seal_id": "SEAL-20261127-C3",
+          "sealed_at": "2026-11-26T18:31:00+08:00",
+          "sealed_source": "封存批次 C / 备用 64 位盘"
+        }
+      ],
+      "source_count": 3
+    },
+    {
+      "field": "FileAlignment",
+      "value": 512,
+      "provenance": [
+        {
+          "inventory_id": "INV-BENCH-100",
+          "batch_id": "LOT-X86-A",
+          "seal_id": "SEAL-20261127-A1",
+          "sealed_at": "2026-11-26T18:20:00+08:00",
+          "sealed_source": "封存批次 A / 32 位维护盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-200",
+          "batch_id": "LOT-X64-B",
+          "seal_id": "SEAL-20261127-B2",
+          "sealed_at": "2026-11-26T18:25:00+08:00",
+          "sealed_source": "封存批次 B / 64 位操作员站盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-300",
+          "batch_id": "LOT-X64-C",
+          "seal_id": "SEAL-20261127-C3",
+          "sealed_at": "2026-11-26T18:31:00+08:00",
+          "sealed_source": "封存批次 C / 备用 64 位盘"
+        }
+      ],
+      "source_count": 3
+    },
+    {
+      "field": "DllCharacteristics",
+      "value": [
+        "IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE",
+        "IMAGE_DLLCHARACTERISTICS_NX_COMPAT",
+        "IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE"
+      ],
+      "provenance": [
+        {
+          "inventory_id": "INV-BENCH-100",
+          "batch_id": "LOT-X86-A",
+          "seal_id": "SEAL-20261127-A1",
+          "sealed_at": "2026-11-26T18:20:00+08:00",
+          "sealed_source": "封存批次 A / 32 位维护盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-200",
+          "batch_id": "LOT-X64-B",
+          "seal_id": "SEAL-20261127-B2",
+          "sealed_at": "2026-11-26T18:25:00+08:00",
+          "sealed_source": "封存批次 B / 64 位操作员站盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-300",
+          "batch_id": "LOT-X64-C",
+          "seal_id": "SEAL-20261127-C3",
+          "sealed_at": "2026-11-26T18:31:00+08:00",
+          "sealed_source": "封存批次 C / 备用 64 位盘"
+        }
+      ],
+      "source_count": 3
+    },
+    {
+      "field": "LoaderFlags",
+      "value": 0,
+      "provenance": [
+        {
+          "inventory_id": "INV-BENCH-100",
+          "batch_id": "LOT-X86-A",
+          "seal_id": "SEAL-20261127-A1",
+          "sealed_at": "2026-11-26T18:20:00+08:00",
+          "sealed_source": "封存批次 A / 32 位维护盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-200",
+          "batch_id": "LOT-X64-B",
+          "seal_id": "SEAL-20261127-B2",
+          "sealed_at": "2026-11-26T18:25:00+08:00",
+          "sealed_source": "封存批次 B / 64 位操作员站盘"
+        },
+        {
+          "inventory_id": "INV-BENCH-300",
+          "batch_id": "LOT-X64-C",
+          "seal_id": "SEAL-20261127-C3",
+          "sealed_at": "2026-11-26T18:31:00+08:00",
+          "sealed_source": "封存批次 C / 备用 64 位盘"
+        }
+      ],
+      "source_count": 3
+    }
+  ],
+  "external_clause_checks": [
+    {
+      "clause_id": "CL-5.2",
+      "title": "目标工控子系统资产绑定",
+      "evidence_key": "asset_subsystem_bindings",
+      "status": "unverifiable",
+      "reason": "required offline evidence is absent"
+    }
+  ],
+  "holds": [
+    {
+      "batch_id": "LOT-X64-C",
+      "reasons": [
+        "not_listed_in_narrow_receipt"
+      ],
+      "errors": []
+    }
+  ],
+  "unverifiable_clauses": [
+    {
+      "clause_id": "CL-5.2",
+      "title": "目标工控子系统资产绑定",
+      "evidence_key": "asset_subsystem_bindings",
+      "status": "unverifiable",
+      "reason": "required offline evidence is absent"
+    }
+  ],
+  "summary": {
+    "batch_count": 3,
+    "ready_to_accept": 2,
+    "hold_count": 1,
+    "unverifiable_clause_count": 1
+  }
+}

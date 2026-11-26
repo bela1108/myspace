@@ -1,0 +1,35 @@
+{
+  "receipt_id": "RCPT-NARROW-055",
+  "receipt_type": "narrow_scope_signoff",
+  "note": "本签收单只列 LOT-X86-A 与 LOT-X64-B，并只现场誊写机器类型和子系统版本；未列 LOT-X64-C，也不含 CL-5.2 资产绑定证据。",
+  "accepted_batches": [
+    {
+      "batch_id": "LOT-X86-A",
+      "quantity": 1,
+      "attested_fields": [
+        "machine",
+        "subsystem",
+        "subsystem_version"
+      ],
+      "recorded_values": {
+        "machine": "IMAGE_FILE_MACHINE_I386",
+        "subsystem": "IMAGE_SUBSYSTEM_WINDOWS_CUI",
+        "subsystem_version": "6.1"
+      }
+    },
+    {
+      "batch_id": "LOT-X64-B",
+      "quantity": 1,
+      "attested_fields": [
+        "machine",
+        "subsystem",
+        "subsystem_version"
+      ],
+      "recorded_values": {
+        "machine": "IMAGE_FILE_MACHINE_AMD64",
+        "subsystem": "IMAGE_SUBSYSTEM_WINDOWS_CUI",
+        "subsystem_version": "6.1"
+      }
+    }
+  ]
+}

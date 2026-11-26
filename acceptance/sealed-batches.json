@@ -1,0 +1,31 @@
+{
+  "batches": [
+    {
+      "batch_id": "LOT-X86-A",
+      "inventory_id": "INV-BENCH-100",
+      "seal_id": "SEAL-20261127-A1",
+      "sealed_at": "2026-11-26T18:20:00+08:00",
+      "source": "封存批次 A / 32 位维护盘",
+      "artifact": "artifacts/empty_x86.exe",
+      "sealed_sha256": "518ceeea95b1472719d5095a8e894bde9ba6317a448e2193b6412f7ca23137c7"
+    },
+    {
+      "batch_id": "LOT-X64-B",
+      "inventory_id": "INV-BENCH-200",
+      "seal_id": "SEAL-20261127-B2",
+      "sealed_at": "2026-11-26T18:25:00+08:00",
+      "source": "封存批次 B / 64 位操作员站盘",
+      "artifact": "artifacts/empty_x64.exe",
+      "sealed_sha256": "c395900125a664c84c8fd74347383ba2f19e9601cc8f1e0919f2267ceda90bbd"
+    },
+    {
+      "batch_id": "LOT-X64-C",
+      "inventory_id": "INV-BENCH-300",
+      "seal_id": "SEAL-20261127-C3",
+      "sealed_at": "2026-11-26T18:31:00+08:00",
+      "source": "封存批次 C / 备用 64 位盘",
+      "artifact": "artifacts/empty_x64.exe",
+      "sealed_sha256": "c395900125a664c84c8fd74347383ba2f19e9601cc8f1e0919f2267ceda90bbd"
+    }
+  ]
+}

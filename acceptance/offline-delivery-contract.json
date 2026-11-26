@@ -1,0 +1,57 @@
+{
+  "contract_id": "ODC-ICS-AUX-2026-055",
+  "title": "工控普通 Windows 辅助工具离线交付合同",
+  "site": "三号集控站维护网段",
+  "old_contract": {
+    "contract_id": "ODC-ICS-AUX-2024-018",
+    "covered_observation_keys": [
+      "machine",
+      "subsystem",
+      "subsystem_version",
+      "image_declaration",
+      "image_version"
+    ]
+  },
+  "products": [
+    {
+      "name": "ICS Bench Helper",
+      "minimum_version": "1.0.0",
+      "version_policy": "semantic-dotted-floor"
+    }
+  ],
+  "machine": {
+    "clause_id": "CL-4.1",
+    "topic": "特定机器类型",
+    "allowed": [
+      "IMAGE_FILE_MACHINE_I386",
+      "IMAGE_FILE_MACHINE_AMD64"
+    ]
+  },
+  "subsystem": {
+    "clause_id": "CL-4.2",
+    "topic": "维护终端子系统及最低版本",
+    "allowed": [
+      "IMAGE_SUBSYSTEM_WINDOWS_CUI"
+    ],
+    "minimum_version": "6.1"
+  },
+  "image_declaration": {
+    "clause_id": "CL-4.3",
+    "topic": "映像声明",
+    "minimum_image_version": "1.0",
+    "require_executable_image": true,
+    "architecture_magic": {
+      "IMAGE_FILE_MACHINE_I386": "PE32",
+      "IMAGE_FILE_MACHINE_AMD64": "PE32+"
+    }
+  },
+  "evidence_requirements": [
+    {
+      "clause_id": "CL-5.2",
+      "title": "目标工控子系统资产绑定",
+      "evidence_key": "asset_subsystem_bindings",
+      "pe_observable": false,
+      "description": "必须另附资产登记，证明批次只交给指定 DCS/PLC 维护子系统；PE 头不包含该组织绑定。"
+    }
+  ]
+}
