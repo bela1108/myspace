@@ -575,6 +575,61 @@ class Updater:
         return None
 
 
+    def preflight_combination(
+        self,
+        candidate_targets: object = None,
+        interface_versions: object = None,
+        **kwargs: object,
+    ) -> object:
+        from tuf.ngclient.combination import preflight_combination as run
+
+        view = kwargs.pop("metadata_view", None) or self._trusted_set
+        return run(view, candidate_targets, interface_versions, **kwargs)
+
+    def precheck_combination(self, *args: object, **kwargs: object) -> object:
+        return self.preflight_combination(*args, **kwargs)
+
+    def plan_combination(self, *args: object, **kwargs: object) -> object:
+        return self.preflight_combination(*args, **kwargs)
+
+    def resolve_combination(self, *args: object, **kwargs: object) -> object:
+        return self.preflight_combination(*args, **kwargs)
+
+    def download_state(self) -> object:
+        import hashlib
+
+        from tuf.ngclient.combination import ClientDownloadState
+
+        roles = tuple(
+            sorted(
+                (
+                    name,
+                    getattr(signed, "version", None),
+                    str(getattr(signed, "expires", "")),
+                )
+                for name, signed in self._trusted_set._trusted_set.items()
+            )
+        )
+        target_paths: list[str] = []
+        files: list[tuple[str, int, str]] = []
+        if self.target_dir and os.path.isdir(self.target_dir):
+            for root, _dirs, filenames in os.walk(self.target_dir):
+                for filename in filenames:
+                    full = os.path.join(root, filename)
+                    relative = os.path.relpath(full, self.target_dir)
+                    digest = hashlib.sha256()
+                    with open(full, "rb") as handle:
+                        for chunk in iter(lambda: handle.read(65536), b""):
+                            digest.update(chunk)
+                    target_paths.append(relative)
+                    files.append((relative, os.path.getsize(full), digest.hexdigest()))
+        return ClientDownloadState(
+            roles=roles,
+            targets=tuple(sorted(target_paths)),
+            files=tuple(sorted(files)),
+        )
+
+
 def _ensure_trailing_slash(url: str) -> str:
     """Return url guaranteed to end in a slash."""
     return url if url.endswith("/") else f"{url}/"

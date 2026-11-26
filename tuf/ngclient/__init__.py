@@ -16,3 +16,7 @@ __all__ = [  # noqa: PLE0604
     Updater.__name__,
     UpdaterConfig.__name__,
 ]
+
+from tuf.ngclient.combination import *  # noqa: F403
+from tuf.ngclient.combination import __all__ as _combination_all
+__all__ += _combination_all

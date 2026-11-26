@@ -84,6 +84,8 @@ from tuf.ngclient.config import EnvelopeType
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+    from tuf.api.metadata import TargetFile
+
     from securesystemslib.signer import Signature
 
 logger = logging.getLogger(__name__)
@@ -152,6 +154,24 @@ class TrustedMetadataSet(abc.Mapping):
         ``TrustedMetadataSet``.
         """
         return iter(self._trusted_set.values())
+
+    def iter_targets(self):
+        for role_name, signed in self._trusted_set.items():
+            if isinstance(signed, Targets):
+                for path, targetinfo in signed.targets.items():
+                    yield role_name, path, targetinfo
+
+    def iter_roles(self):
+        return iter(self._trusted_set.items())
+
+    def targets_roles(self):
+        return tuple(
+            name for name, signed in self._trusted_set.items()
+            if isinstance(signed, Targets)
+        )
+
+    def get_targets_roles(self):
+        return self.targets_roles()
 
     # Helper properties for top level metadata
     @property

@@ -1,0 +1,2273 @@
+pwd && ls -la && printf '\n--- files ---\n' && rg --files -g '!*.pyc' -g '!__pycache__' | head -200
+find tuf tests -maxdepth 2 -type f | sort && printf '\n--- git ---\n' && git log --oneline -8 && git status --short
+sed -n '1,260p' tuf/ngclient/updater.py
+sed -n '1,260p' tuf/ngclient/config.py && printf '\n--- init ---\n' && cat tuf/ngclient/__init__.py && printf '\n--- api init ---\n' && cat tuf/api/__init__.py
+sed -n '1,260p' tests/test_updater_fetch_target.py && printf '\n--- trust ---\n' && sed -n '1,220p' tests/test_trusted_metadata_set.py
+rg -n -i "combination|compatib|closure|interface.?version|module|channel|conflict|constraint|preflight|pre-check|adopt" tuf tests docs README.md pyproject.toml | head -200
+find tuf/ngclient -type f -maxdepth 4 | sort && printf '\n--- updater rest ---\n' && sed -n '260,760p' tuf/ngclient/updater.py
+sed -n '1,320p' tuf/ngclient/_internal/trusted_metadata_set.py
+git branch -a && git tag | tail -20 && git remote -v && git show --stat --oneline HEAD | head -50 && sed -n '1,180p' pyproject.toml
+cat tuf/ngclient/README.md && printf '\n--- docs ngclient ---\n' && cat docs/api/tuf.ngclient.rst && cat docs/api/tuf.ngclient.updater.rst && printf '\n--- changelog top ---\n' && sed -n '1,120p' docs/CHANGELOG.md
+sed -n '1,280p' tuf/api/metadata.py
+rg -n "custom|dependencies|depends|interface|channel|version" tests tuf examples docs/api | head -240
+rg -n "class TargetFile|class BaseFile|class MetaFile|class Targets|class Delegations|class DelegatedRole|class Root" tuf/api/_payload.py && sed -n '420,800p' tuf/api/_payload.py
+find .github examples -type f | sort | xargs -I{} sh -c 'echo "--- {}"; sed -n "1,80p" "{}"' | head -500
+sed -n '1030,1280p' tuf/api/_payload.py && sed -n '1380,1760p' tuf/api/_payload.py
+rg -n "get_roles_for_target|succinct|delegations|targets" tests/test_updater_delegation_graphs.py | head -80 && sed -n '1,260p' tests/test_updater_delegation_graphs.py
+sed -n '1,260p' docs/api/api-reference.rst && sed -n '1,200p' README.md && cat tox.ini
+ls -la /Users/bill/.local/share/domain-feedback/codex/workers/W28/tmp 2>/dev/null; ls -la /Users/bill/.local/share/domain-feedback/codex/workers/W28/shell_snapshots 2>/dev/null; ls -la /Users/bill/.local/share/domain-feedback/codex/workers/W28/empty-shell 2>/dev/null
+ls -la .pytest_cache && find .pytest_cache -type f -maxdepth 3 -print -exec sed -n '1,160p' {} \; 2>/dev/null | head -200
+git log --all --oneline --decorate && git fsck --no-reflogs --unreachable 2>/dev/null | head -50 && git reflog --all | head -50
+for f in /Users/bill/.local/share/domain-feedback/codex/workers/W28/shell_snapshots/*.sh; do echo "--- $f"; sed -n '1,200p' "$f"; done
+cat .gitattributes .gitignore && find . -maxdepth 2 -type f -newer README.md -not -path './.git/*' -not -path './.venv/*' -print | sort && find /Users/bill/.local/share/domain-feedback/codex/workers/W28/tmp -maxdepth 4 -type f -print -exec sh -c 'echo ---; sed -n "1,120p" "$1"' _ {} \; 2>/dev/null | head -200
+find . -path './.git' -prune -o -path './.venv' -prune -o -type f -print | sort | tail -100 && find . -type d -name '__pycache__' -not -path './.venv/*' -print
+cat tuf/api/exceptions.py && sed -n '1,160p' tuf/__init__.py && sed -n '1,160p' tests/utils.py && sed -n '1,120p' tests/__init__.py
+env | sort | rg -i 'task|repo|bench|def|eval|instance|problem' || true; find /Users/bill/.local/share/domain-feedback/codex/workers/W28 -maxdepth 2 -type f -not -path '*/tmp/*' -not -path '*/shell_snapshots/*' -print 2>/dev/null | head -50
+ls -l tuf/ngclient/combination.py && wc -l tuf/ngclient/combination.py && sed -n '1,20p' tuf/ngclient/combination.py
+sed -n '1,260p' tuf/ngclient/combination.py && printf '\n--- names ---\n' && rg -n '^(class|def|    def|    @|__all__)' tuf/ngclient/combination.py
+sed -n '245,520p' tuf/ngclient/combination.py
+sed -n '520,940p' tuf/ngclient/combination.py
+sed -n '940,1360p' tuf/ngclient/combination.py
+sed -n '1360,1960p' tuf/ngclient/combination.py
+git status --short && git diff --stat && python - <<'PY'
+from pathlib import Path
+p=Path('tuf/ngclient/combination.py')
+print(p.stat())
+PY
+sed -n '150,205p' tuf/ngclient/combination.py | cat -vet
+sed -n '960,1040p' tuf/ngclient/combination.py; sed -n '1260,1435p' tuf/ngclient/combination.py; sed -n '1470,1550p' tuf/ngclient/combination.py
+sed -n '1040,1165p' tuf/ngclient/combination.py; sed -n '1380,1475p' tuf/ngclient/combination.py; sed -n '890,935p' tuf/ngclient/combination.py
+sed -n '1435,1495p' tuf/ngclient/combination.py
+python -m py_compile tuf/ngclient/combination.py && echo compiled && python -c "import tuf.ngclient.combination as c; print(c.__all__[:5])"
+rg -n "def iter_targets|TargetFile" tuf/ngclient/_internal/trusted_metadata_set.py | head -20 && sed -n '130,180p' tuf/ngclient/_internal/trusted_metadata_set.py
+sed -n '66,86p' tuf/ngclient/_internal/trusted_metadata_set.py
+rg -n "combination|download_state|CombinationPlan|ClientDownloadState" tuf/ngclient/updater.py tuf/ngclient/__init__.py && sed -n '130,260p' tuf/ngclient/updater.py && tail -20 tuf/ngclient/updater.py
+sed -n '250,320p' tuf/ngclient/updater.py; cat tuf/ngclient/__init__.py
+python -m unittest tests.test_updater_fetch_target tests.test_trusted_metadata_set -q
+sed -n '1,210p' tests/repository_simulator.py && sed -n '330,430p' tests/repository_simulator.py
+rg -n "def iter_roles|def iter_targets|download_state" tuf/ngclient/_internal/trusted_metadata_set.py tuf/ngclient/updater.py && sed -n '145,175p' tuf/ngclient/_internal/trusted_metadata_set.py && sed -n '296,320p' tuf/ngclient/updater.py
+cat tuf/ngclient/_internal/combination.py && ls tests | tail -5
+ls -l tests/test_target_combination.py 2>/dev/null || echo missing
+wc -l tests/test_target_combination.py && sed -n '1,120p' tests/test_target_combination.py
+sed -n '120,340p' tests/test_target_combination.py
+python -m unittest tests.test_target_combination -v
+python -c 'from tests.test_target_combination import make_target,make_view; from tuf.ngclient.combination import preflight_combination,_build_view,_extract_declaration; a=make_target("a","a",config="cfg/v1"); b=make_target("b","b",config="cfg/v2"); v=make_view(a,b); vv=_build_view(v); print([(r.module,r.declaration.config,r.declaration.requires) for r in vv.records]); p=preflight_combination(v,["a","b"]); print(p.ok,p.conflict,p.attempted_targets)'
+python -c 'from tests.test_target_combination import make_target,make_view; from tuf.ngclient.combination import preflight_combination,_build_view,_candidate_records,_resolve_closure; s=make_target("stable/plugin","plugin","1.0",content=b"stable content"); b=make_target("beta/plugin","plugin","1.0",content=b"beta content"); v=make_view(s,b); vv=_build_view(v); rs,fs=_candidate_records(["stable/plugin","beta/plugin"],vv); print([(r.module,r.channel,r.identity) for r in rs],fs); p=preflight_combination(v,["stable/plugin","beta/plugin"]); print(p.ok,p.conflict,p.attempted_targets)'
+python -c 'from tests.test_target_combination import make_target,make_view; from tuf.ngclient.combination import preflight_combination; lib=make_target("lib","lib",provides={"lib-api":"2.4.0"}); f=make_target("first","first",requires=[{"module":"lib","interface":"lib-api","version":">=2,<3"}]); s=make_target("second","second",requires=[{"module":"lib","interface":"lib-api","version":"<2"}]); p=preflight_combination(make_view(lib,f,s),["first","second"]); print(p.ok,p.conflict); print([e for e in p.dependencies])'
+python -c 'from pathlib import Path; p=Path("tuf/ngclient/combination.py"); s=p.read_text(); old="""            if (\n                len(value) == 2\n                and isinstance(value[0], str)\n                and isinstance(value[1], (TargetFile, str))\n            ):\n                add(value[1], module=value[0], channel=channel)\n                return\n"""; new="""            if (\n                len(value) == 2\n                and isinstance(value[0], str)\n                and isinstance(value[1], TargetFile)\n            ):\n                add(value[1], module=value[0], channel=channel)\n                return\n"""; assert old in s; p.write_text(s.replace(old,new))' && sed -n '1168,1190p' tuf/ngclient/combination.py
+sed -n '1195,1225p' tuf/ngclient/combination.py && python -m unittest tests.test_target_combination -v
+python -c 'from pathlib import Path; p=Path("tests/test_target_combination.py"); s=p.read_text(); old="""        plan = preflight_combination(\n            make_view(stable, beta),\n            [\"stable/plugin\", \"beta/plugin\"],\n        )\n\n        self.assertFalse(plan.ok)\n        assert plan.conflict is not None\n        self.assertEqual(plan.conflict.kind, \"identity\")\n        self.assertTrue(plan.conflict.is_identity_conflict)\n        self.assertEqual(set(plan.conflict.channels), {\"targets\"})\n        self.assertEqual(len(plan.conflict.identities), 2)\n        self.assertIn(\"plugin\", plan.conflict.modules)\n        self.assertEqual(set(plan.attempted_targets), {\"plugin\"})\n"""; new="""        view = {\"stable\": Targets(targets={stable.path: stable}),\n                \"beta\": Targets(targets={beta.path: beta})}\n        plan = preflight_combination(\n            view,\n            [\"stable/plugin\", \"beta/plugin\"],\n        )\n\n        self.assertFalse(plan.ok)\n        assert plan.conflict is not None\n        self.assertEqual(plan.conflict.kind, \"identity\")\n        self.assertTrue(plan.conflict.is_identity_conflict)\n        self.assertEqual(set(plan.conflict.channels), {\"stable\", \"beta\"})\n        self.assertEqual(len(plan.conflict.identities), 2)\n        self.assertIn(\"plugin\", plan.conflict.modules)\n        self.assertEqual(plan.targets, {})\n"""; assert old in s; p.write_text(s.replace(old,new))' && python -m unittest tests.test_target_combination -q
+python -c 'from pathlib import Path; p=Path("tuf/ngclient/combination.py"); s=p.read_text(); old="""            elif isinstance(value, (Targets, Metadata, bytes)):\n                yield from _iter_view_entries(value)\n"""; new="""            elif isinstance(value, Targets):\n                for path, target in value.targets.items():\n                    yield str(role), path, target\n            elif isinstance(value, Metadata):\n                if isinstance(value.signed, Targets):\n                    for path, target in value.signed.targets.items():\n                        yield str(role), path, target\n            elif isinstance(value, bytes):\n                metadata = Metadata.from_bytes(value)\n                if isinstance(metadata.signed, Targets):\n                    for path, target in metadata.signed.targets.items():\n                        yield str(role), path, target\n"""; assert old in s; p.write_text(s.replace(old,new))' && python -m unittest tests.test_target_combination -q
+python -m unittest -q
+ruff check tuf/ngclient/combination.py tuf/ngclient/updater.py tuf/ngclient/_internal/trusted_metadata_set.py tests/test_target_combination.py 2>&1 | head -160
+ruff format --check tuf/ngclient/combination.py tuf/ngclient/updater.py tuf/ngclient/_internal/trusted_metadata_set.py tests/test_target_combination.py 2>&1 | head -80
+mypy tuf/ngclient/combination.py tuf/ngclient/updater.py tuf/ngclient/_internal/trusted_metadata_set.py 2>&1 | head -160
+ruff check --fix tuf/ngclient/combination.py tuf/ngclient/updater.py tuf/ngclient/_internal/trusted_metadata_set.py tests/test_target_combination.py 2>&1 | tail -80 && ruff format tuf/ngclient/combination.py tuf/ngclient/updater.py tuf/ngclient/_internal/trusted_metadata_set.py tests/test_target_combination.py
+ruff check tuf/ngclient/combination.py tuf/ngclient/updater.py tuf/ngclient/_internal/trusted_metadata_set.py tuf/ngclient/__init__.py tests/test_target_combination.py 2>&1 | sed -n '1,300p'
+ruff check tuf/ngclient/combination.py tuf/ngclient/updater.py tuf/ngclient/_internal/trusted_metadata_set.py tuf/ngclient/__init__.py tests/test_target_combination.py 2>&1 | sed -n '300,620p'
+sed -n '20,55p' tuf/ngclient/combination.py; sed -n '352,378p' tuf/ngclient/combination.py; sed -n '605,625p' tuf/ngclient/combination.py; sed -n '742,770p' tuf/ngclient/combination.py
+sed -n '832,915p' tuf/ngclient/combination.py; sed -n '980,1068p' tuf/ngclient/combination.py
+sed -n '1068,1110p' tuf/ngclient/combination.py; sed -n '1174,1190p' tuf/ngclient/combination.py; sed -n '1230,1250p' tuf/ngclient/combination.py; sed -n '1416,1430p' tuf/ngclient/combination.py
+sed -n '1432,1478p' tuf/ngclient/combination.py; sed -n '1534,1576p' tuf/ngclient/combination.py; sed -n '1605,1620p' tuf/ngclient/combination.py; sed -n '1888,1902p' tuf/ngclient/combination.py; sed -n '1960,1995p' tuf/ngclient/combination.py
+python - <<'PY'
+print('skip')
+PY
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text()
+repls=[
+("""        "requires": [
+            {"module": "runtime", "interface": "runtime-api", "version": ">=2,<3"},
+            "util"
+        ],""",
+"""        "requires": [
+            {
+                "module": "runtime",
+                "interface": "runtime-api",
+                "version": ">=2,<3"
+            },
+            "util"
+        ],"""),
+("""from collections import abc
+from collections.abc import Iterator
+from dataclasses import dataclass, field
+from typing import Any
+""",
+"""from collections import abc
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any
+"""),
+("""from tuf.api.metadata import Metadata, TargetFile, Targets
+
+__all__""",
+"""from tuf.api.metadata import Metadata, TargetFile, Targets
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+__all__"""),
+("""    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, ClientDownloadState):
+            return NotImplemented
+        return (self.roles, self.targets) == (other.roles, other.targets)
+""",
+"""    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, ClientDownloadState):
+            return NotImplemented
+        return (self.roles, self.targets) == (other.roles, other.targets)
+
+    def __hash__(self) -> int:
+        return hash((self.roles, self.targets))
+"""),
+("""def _build_alternative(expression: str) -> tuple[_Clause, ...] | None:""",
+"""def _build_alternative(  # noqa: C901
+    expression: str,
+) -> tuple[_Clause, ...] | None:"""),
+("""    for name, version in value.items():
+        if not isinstance(name, str):
+            continue
+        if isinstance(version, abc.Mapping):
+            version = version.get("version", version.get("constraint"))
+        if version is None:
+            versions[name] = None
+        else:
+            versions[name] = str(version)
+""",
+"""    for name, version_value in value.items():
+        if not isinstance(name, str):
+            continue
+        if isinstance(version_value, abc.Mapping):
+            version_value = version_value.get(
+                "version", version_value.get("constraint")
+            )
+        if version_value is None:
+            versions[name] = None
+        else:
+            versions[name] = str(version_value)
+"""),
+("""def _normalize_requirement(
+    item: Any,  # noqa: ANN401""",
+"""def _normalize_requirement(  # noqa: C901
+    item: Any,  # noqa: ANN401"""),
+("""def _requirement_list(
+    value: Any,  # noqa: ANN401""",
+"""def _requirement_list(  # noqa: C901
+    value: Any,  # noqa: ANN401"""),
+("""def _extract_declaration(
+    target: TargetFile,""",
+"""def _extract_declaration(  # noqa: C901, PLR0912
+    target: TargetFile,"""),
+("""def _parse_caller_declaration(
+    declaration: Any,  # noqa: ANN401""",
+"""def _parse_caller_declaration(  # noqa: C901, PLR0912
+    declaration: Any,  # noqa: ANN401"""),
+("""def _iter_view_entries(
+    view: Any,  # noqa: ANN401""",
+"""def _iter_view_entries(  # noqa: C901, PLR0911, PLR0912
+    view: Any,  # noqa: ANN401"""),
+("""    if hasattr(view, "_trusted_set"):
+        yield from _iter_view_entries(view._trusted_set)
+        return
+""",
+"""    trusted_set = getattr(view, "_trusted_set", None)
+    if trusted_set is not None:
+        yield from _iter_view_entries(trusted_set)
+        return
+"""),
+("""    order = 0
+    for role, path, target in _iter_view_entries(view):
+        declaration = _extract_declaration(target)
+        result.add(
+            _Record(
+                module=declaration.module,
+                target=target,
+                channel=role,
+                declaration=declaration,
+                order=order,
+            )
+        )
+        order += 1
+    return result
+""",
+"""    for order, (role, _path, target) in enumerate(
+        _iter_view_entries(view)
+    ):
+        declaration = _extract_declaration(target)
+        result.add(
+            _Record(
+                module=declaration.module,
+                target=target,
+                channel=role,
+                declaration=declaration,
+                order=order,
+            )
+        )
+    return result
+"""),
+("""def _target_from_value(
+    value: Any,
+    view: _View,  # noqa: ANN401""",
+"""def _target_from_value(  # noqa: PLR0911
+    value: Any,  # noqa: ANN401
+    view: _View,"""),
+("""def _candidate_records(
+    candidates: Any,
+    view: _View,  # noqa: ANN401""",
+"""def _candidate_records(  # noqa: C901, PLR0915
+    candidates: Any,  # noqa: ANN401
+    view: _View,"""),
+("""    def add(
+        value: Any,  # noqa: ANN401""",
+"""    def add(  # noqa: C901, PLR0911, PLR0912
+        value: Any,  # noqa: ANN401"""),
+("""def _resolve_dependency(
+    requirement: DependencyRequirement,""",
+"""def _resolve_dependency(  # noqa: C901, PLR0911
+    requirement: DependencyRequirement,"""),
+("""            message="A dependency requirement names neither module nor interface",""",
+"""            message=(
+                "A dependency requirement names neither module nor interface"
+            ),"""),
+("""def _resolve_closure(
+    candidates: list[_Record],""",
+"""def _resolve_closure(  # noqa: C901
+    candidates: list[_Record],"""),
+("""            assert dependency is not None
+            provided_version = None""",
+"""            if dependency is None:
+                continue
+            provided_version = None"""),
+("""def _check_cycles(
+    selected: dict[str, _Record],
+    edges: list[Dependency],
+    selected_order: dict[str, int],
+    failures: list[_Failure],
+) -> None:""",
+"""def _check_cycles(
+    selected: dict[str, _Record],
+    edges: list[Dependency],
+    failures: list[_Failure],
+) -> None:"""),
+("""    _check_cycles(selected, edges, selected_order, failures)""",
+"""    _check_cycles(selected, edges, failures)"""),
+("""                cycle = tuple(stack[start:] + [dependency])""",
+"""                cycle = (*stack[start:], dependency)"""),
+("""                            group=tuple(
+                                f"{left} -> {right}"
+                                for left, right in zip(cycle, cycle[1:])
+                            ),""",
+"""                            group=tuple(
+                                f"{left} -> {right}"
+                                for left, right in pairwise(cycle)
+                            ),"""),
+("""def _check_requirements(
+    resolution: _Resolution,""",
+"""def _check_requirements(  # noqa: C901, PLR0912
+    resolution: _Resolution,"""),
+("""import json
+import re""",
+"""import json
+import re
+from itertools import pairwise"""),
+("""def preflight_combination(
+    metadata: Any = None,  # noqa: ANN401""",
+"""def preflight_combination(  # noqa: D417
+    metadata: Any = None,  # noqa: ANN401"""),
+]
+for old,new in repls:
+    if old not in s:
+        raise SystemExit("MISSING: "+old[:80])
+    s=s.replace(old,new)
+p.write_text(s)
+print("ok")
+'
+ruff format tuf/ngclient/combination.py tests/test_target_combination.py && ruff check tuf/ngclient/combination.py tuf/ngclient/updater.py tuf/ngclient/_internal/trusted_metadata_set.py tuf/ngclient/__init__.py tests/test_target_combination.py 2>&1 | sed -n '1,260p'
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text()
+repls=[
+("""    for name, version_value in value.items():
+        if not isinstance(name, str):
+            continue
+        if isinstance(version_value, abc.Mapping):
+            version_value = version_value.get(
+                "version", version_value.get("constraint")
+            )
+        if version_value is None:
+            versions[name] = None
+        else:
+            versions[name] = str(version_value)
+""",
+"""    for name, raw_version in value.items():
+        if not isinstance(name, str):
+            continue
+        version_value = raw_version
+        if isinstance(version_value, abc.Mapping):
+            version_value = version_value.get(
+                "version", version_value.get("constraint")
+            )
+        if version_value is None:
+            versions[name] = None
+        else:
+            versions[name] = str(version_value)
+"""),
+("""                                    f"Candidate {value!r} is not present in the "
+                                    "verified metadata view"
+""",
+"""                                    f"Candidate {value!r} is not present "
+                                    "in the verified metadata view"
+"""),
+("""                            f"Candidate {value!r} is not present in the verified "
+                            "metadata view"
+""",
+"""                            f"Candidate {value!r} is not present in "
+                            "the verified metadata view"
+"""),
+("""def _resolve_closure(  # noqa: C901
+""",
+"""def _resolve_closure(  # noqa: C901, PLR0912
+"""),
+("""def resolve_target_closure(
+    *args: Any,
+""",
+"""def resolve_target_closure(
+    *args: Any,  # noqa: ANN401
+"""),
+("""def check_target_combination(
+    *args: Any,
+""",
+"""def check_target_combination(
+    *args: Any,  # noqa: ANN401
+"""),
+("""def plan_target_combination(
+    *args: Any,
+""",
+"""def plan_target_combination(
+    *args: Any,  # noqa: ANN401
+"""),
+]
+for old,new in repls:
+    if old not in s:
+        raise SystemExit("MISSING: "+old[:80])
+    s=s.replace(old,new)
+p.write_text(s)
+print("ok")
+' && ruff check --fix tuf/ngclient/combination.py >/dev/null && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py tuf/ngclient/updater.py tuf/ngclient/_internal/trusted_metadata_set.py tuf/ngclient/__init__.py tests/test_target_combination.py 2>&1 | sed -n '1,200p'
+python -m unittest tests.test_target_combination tests.test_updater_fetch_target tests.test_trusted_metadata_set tests.test_updater_delegation_graphs -q
+python -m compileall -q tuf tests/test_target_combination.py && echo compile-ok
+python -c 'from tuf.ngclient import Updater, CombinationPreflight, preflight_combination, CombinationPlan, CombinationConflict; print("public-ok")'
+sed -n '552,610p' tuf/ngclient/combination.py; sed -n '680,735p' tuf/ngclient/combination.py; sed -n '920,965p' tuf/ngclient/combination.py
+rg -n "records.append\(" tuf/ngclient/combination.py | head -20 && sed -n '1130,1175p' tuf/ngclient/combination.py
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text()
+repls=[
+("""    def matches(self, version_key: tuple[tuple[int, ...], str] | None) -> bool:
+        if version_key is None:
+            return self.operator in {"==", "="}
+        other = self.version_key""",
+"""    def matches_text(self, version: str) -> bool:
+        \"\"\"Match a non-semantic version string literally.\"\"\"
+        if self.operator in {"==", "="}:
+            return version == self.version
+        if self.operator == "!=":
+            return version != self.version
+        return False
+
+    def matches(self, version_key: tuple[tuple[int, ...], str] | None) -> bool:
+        other = self.version_key"""),
+("""        version_key = _parse_version(version)
+        for clauses in self._alternatives:
+            if clauses is None:
+                return True
+            if all(clause.matches(version_key) for clause in clauses):
+                return True
+        return False
+""",
+"""        version_key = _parse_version(version)
+        for clauses in self._alternatives:
+            if clauses is None:
+                return True
+            if version_key is None:
+                if all(clause.matches_text(version) for clause in clauses):
+                    return True
+            elif all(clause.matches(version_key) for clause in clauses):
+                return True
+        return False
+"""),
+("""        reserved = {
+            "interfaces",
+            "provides",
+            "api",
+            "versions",
+            "config",
+            "configuration",
+            "config_version",
+        }
+        for name, version in _interface_mapping(declaration).items():
+            if name in reserved:
+                continue
+            versions[name] = version or "*"
+""",
+"""        wrapper_keys = {
+            key
+            for key in ("interfaces", "provides", "api", "versions")
+            if isinstance(declaration.get(key), abc.Mapping)
+        }
+        reserved = wrapper_keys | {
+            "config",
+            "configuration",
+            "config_version",
+        }
+        for name, version in _interface_mapping(declaration).items():
+            if name in reserved:
+                continue
+            versions[name] = version or "*"
+"""),
+]
+for old,new in repls:
+    if old not in s:
+        raise SystemExit("MISSING: "+old[:80])
+    s=s.replace(old,new)
+p.write_text(s)
+print("ok")
+' && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py 2>&1 | head -80
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text()
+old="""    records: list[_Record] = []
+    failures: list[_Failure] = []
+    next_order = len(view.records) + 1
+
+    def add(  # noqa: C901, PLR0911, PLR0912
+"""
+new="""    records: list[_Record] = []
+    failures: list[_Failure] = []
+    next_order = len(view.records) + 1
+
+    def append_record(
+        target: TargetFile,
+        declaration: ModuleDeclaration,
+        channel: str | None,
+        order: int,
+    ) -> None:
+        identity = TargetIdentity.from_target(target, declaration.identity)
+        path_records = view.path_records(target.path)
+        if view.records:
+            if not path_records:
+                failures.append(
+                    _Failure(
+                        order,
+                        CombinationConflict(
+                            kind=\"missing\",
+                            message=(
+                                f\"Candidate {target.path!r} is not in the \"
+                                \"verified metadata view\"
+                            ),
+                            group=(target.path,),
+                            modules=(declaration.module,),
+                            channels=(channel,) if channel else (),
+                            reason=\"unverified-candidate\",
+                            order=order,
+                        ),
+                    )
+                )
+                return
+            if identity not in {record.identity for record in path_records}:
+                channels = tuple(
+                    record.channel or \"<unknown>\" for record in path_records
+                )
+                failures.append(
+                    _Failure(
+                        order,
+                        CombinationConflict(
+                            kind=\"identity\",
+                            message=(
+                                f\"Candidate {target.path!r} does not match the \"
+                                \"identity in the verified metadata view\"
+                            ),
+                            group=tuple(
+                                f\"candidate: {identity}\",
+                                *(
+                                    f\"view {record.channel or \"<unknown>\"}: \"
+                                    f\"{record.identity}\"
+                                    for record in path_records
+                                ),
+                            ),
+                            modules=(declaration.module,),
+                            channels=channels,
+                            identities=tuple(
+                                str(record.identity)
+                                for record in path_records
+                            ),
+                            reason=\"candidate-view-mismatch\",
+                            order=order,
+                        ),
+                    )
+                )
+                return
+        records.append(
+            _Record(declaration.module, target, channel, declaration, order)
+        )
+
+    def add(  # noqa: C901, PLR0911, PLR0912
+"""
+assert old in s
+s=s.replace(old,new)
+s=s.replace("""            records.append(
+                _Record(declaration.module, target, channel, declaration, order)
+            )
+            return
+""","""            append_record(target, declaration, channel, order)
+            return
+""",1)
+s=s.replace("""                    records.append(
+                        _Record(
+                            declaration.module,
+                            target,
+                            channel or value.get("channel") or target_channel,
+                            declaration,
+                            order,
+                        )
+                    )
+                    return
+""","""                    append_record(
+                        target,
+                        declaration,
+                        channel or value.get("channel") or target_channel,
+                        order,
+                    )
+                    return
+""",1)
+s=s.replace("""        records.append(
+            _Record(
+                declaration.module,
+                target,
+                channel or target_channel,
+                declaration,
+                order,
+            )
+        )
+
+    if candidates is None:
+""","""        append_record(
+            target,
+            declaration,
+            channel or target_channel,
+            order,
+        )
+
+    if candidates is None:
+""",1)
+p.write_text(s)
+print("ok")
+' && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py 2>&1 | head -100
+python -m unittest tests.test_target_combination tests.test_updater_fetch_target tests.test_trusted_metadata_set tests.test_updater_delegation_graphs -q && ruff check tuf/ngclient/combination.py tuf/ngclient/updater.py tuf/ngclient/_internal/trusted_metadata_set.py tuf/ngclient/__init__.py tests/test_target_combination.py
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text()
+repls=[
+("""    "plan_target_combination",
+    "preflight_combination",
+    "preflight_target_combination",
+    "resolve_combination",
+    "resolve_target_closure",
+]""",
+"""    "plan_target_combination",
+    "preflight_combination",
+    "preflight_target_combination",
+    "preflight_targets",
+    "resolve_combination",
+    "resolve_target_combination",
+    "resolve_target_closure",
+]"""),
+("""    @property
+    def category(self) -> str:
+        \"\"\"Alias for ``kind``.\"\"\"
+        return self.kind
+""",
+"""    @property
+    def category(self) -> str:
+        \"\"\"Alias for ``kind``.\"\"\"
+        return self.kind
+
+    @property
+    def conflict_type(self) -> str:
+        \"\"\"Alias for ``kind``.\"\"\"
+        return self.kind
+"""),
+("""    @property
+    def modules(self) -> dict[str, TargetFile]:
+        \"\"\"Alias for the adoptable target mapping.\"\"\"
+        return self.adoptable_targets
+""",
+"""    @property
+    def modules(self) -> dict[str, TargetFile]:
+        \"\"\"Alias for the adoptable target mapping.\"\"\"
+        return self.adoptable_targets
+
+    @property
+    def adoptable(self) -> dict[str, TargetFile]:
+        \"\"\"Alias for ``adoptable_targets``.\"\"\"
+        return self.adoptable_targets
+"""),
+("""    @property
+    def targets_by_path(self) -> dict[str, TargetFile]:
+        \"\"\"Return the adoptable targets keyed by target path.\"\"\"
+        return {
+            target.path: target for target in self.adoptable_targets.values()
+        }
+""",
+"""    @property
+    def targets_by_path(self) -> dict[str, TargetFile]:
+        \"\"\"Return the adoptable targets keyed by target path.\"\"\"
+        return {
+            target.path: target for target in self.adoptable_targets.values()
+        }
+
+    @property
+    def target_paths(self) -> dict[str, TargetFile]:
+        \"\"\"Alias for ``targets_by_path``.\"\"\"
+        return self.targets_by_path
+"""),
+("""    @property
+    def evidence(self) -> tuple[Dependency, ...]:
+        \"\"\"Alias for ``dependency_evidence``.\"\"\"
+        return self.dependency_evidence
+""",
+"""    @property
+    def evidence(self) -> tuple[Dependency, ...]:
+        \"\"\"Alias for ``dependency_evidence``.\"\"\"
+        return self.dependency_evidence
+
+    @property
+    def dependency_map(self) -> dict[str, tuple[Dependency, ...]]:
+        \"\"\"Return evidence edges grouped by depending module.\"\"\"
+        result: dict[str, list[Dependency]] = {}
+        for edge in self.dependencies:
+            result.setdefault(edge.module, []).append(edge)
+        return {module: tuple(edges) for module, edges in result.items()}
+"""),
+("""    @property
+    def first_conflict(self) -> CombinationConflict | None:
+        \"\"\"Alias for ``conflict``.\"\"\"
+        return self.conflict
+""",
+"""    @property
+    def first_conflict(self) -> CombinationConflict | None:
+        \"\"\"Alias for ``conflict``.\"\"\"
+        return self.conflict
+
+    @property
+    def error(self) -> CombinationConflict | None:
+        \"\"\"Alias for ``conflict``.\"\"\"
+        return self.conflict
+"""),
+("""    def raise_for_conflict(self) -> None:
+        \"\"\"Raise ``CombinationConflictError`` if the plan failed.\"\"\"
+        if self.conflict is not None:
+            raise CombinationConflictError(self.conflict)
+""",
+"""    def raise_for_conflict(self) -> None:
+        \"\"\"Raise ``CombinationConflictError`` if the plan failed.\"\"\"
+        if self.conflict is not None:
+            raise CombinationConflictError(self.conflict)
+
+    def raise_error(self) -> None:
+        \"\"\"Alias for :meth:`raise_for_conflict`.\"\"\"
+        self.raise_for_conflict()
+"""),
+("""preflight_target_combination = preflight_combination
+combination_preflight = preflight_combination
+""",
+"""def preflight_targets(*args: Any, **kwargs: Any) -> CombinationPlan:  # noqa: ANN401
+    \"\"\"Alias for :func:`preflight_combination`.\"\"\"
+    return preflight_combination(*args, **kwargs)
+
+
+def resolve_target_combination(
+    *args: Any,
+    **kwargs: Any,  # noqa: ANN401
+) -> CombinationPlan:
+    \"\"\"Alias for :func:`preflight_combination`.\"\"\"
+    return preflight_combination(*args, **kwargs)
+
+
+preflight_target_combination = preflight_combination
+combination_preflight = preflight_combination
+"""),
+]
+for old,new in repls:
+    if old not in s:
+        raise SystemExit("MISSING: "+old[:90])
+    s=s.replace(old,new)
+p.write_text(s)
+print("ok")
+' && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py 2>&1 | head -120
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text().replace("""def resolve_target_combination(
+    *args: Any,
+""","""def resolve_target_combination(
+    *args: Any,  # noqa: ANN401
+""")
+p.write_text(s)
+' && ruff check --fix tuf/ngclient/combination.py >/dev/null && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py
+cat tuf/ngclient/__init__.py
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/__init__.py")
+s=p.read_text()
+old="""from tuf.ngclient.combination import (
+    CombinationConflict,
+    CombinationConflictError,
+    CombinationPlan,
+    CombinationPreflight,
+    check_combination,
+    preflight_combination,
+    resolve_target_closure,
+)
+"""
+new="""from tuf.ngclient.combination import (
+    ClientDownloadState,
+    CombinationConflict,
+    CombinationConflictError,
+    CombinationError,
+    CombinationPlan,
+    CombinationPreflight,
+    CombinationResult,
+    Dependency,
+    DependencyEdge,
+    DependencyRequirement,
+    InterfaceDeclaration,
+    ModuleDeclaration,
+    Requirement,
+    TargetCandidate,
+    TargetIdentity,
+    VersionConstraint,
+    check_combination,
+    check_target_combination,
+    combination_preflight,
+    plan_target_combination,
+    preflight_combination,
+    preflight_target_combination,
+    preflight_targets,
+    resolve_combination,
+    resolve_target_combination,
+    resolve_target_closure,
+)
+"""
+assert old in s
+s=s.replace(old,new)
+old_all="""__all__ = [  # noqa: PLE0604
+    CombinationConflict.__name__,
+    CombinationConflictError.__name__,
+    CombinationPlan.__name__,
+    CombinationPreflight.__name__,
+    FetcherInterface.__name__,
+    Urllib3Fetcher.__name__,
+    TargetFile.__name__,
+    Updater.__name__,
+    UpdaterConfig.__name__,
+    check_combination.__name__,
+    preflight_combination.__name__,
+    resolve_target_closure.__name__,
+]
+"""
+new_all="""__all__ = [  # noqa: PLE0604
+    ClientDownloadState.__name__,
+    CombinationConflict.__name__,
+    CombinationConflictError.__name__,
+    CombinationError.__name__,
+    CombinationPlan.__name__,
+    CombinationPreflight.__name__,
+    CombinationResult.__name__,
+    Dependency.__name__,
+    DependencyEdge.__name__,
+    DependencyRequirement.__name__,
+    FetcherInterface.__name__,
+    InterfaceDeclaration.__name__,
+    ModuleDeclaration.__name__,
+    Requirement.__name__,
+    TargetCandidate.__name__,
+    TargetFile.__name__,
+    TargetIdentity.__name__,
+    Updater.__name__,
+    UpdaterConfig.__name__,
+    Urllib3Fetcher.__name__,
+    VersionConstraint.__name__,
+    check_combination.__name__,
+    check_target_combination.__name__,
+    combination_preflight.__name__,
+    plan_target_combination.__name__,
+    preflight_combination.__name__,
+    preflight_target_combination.__name__,
+    preflight_targets.__name__,
+    resolve_combination.__name__,
+    resolve_target_combination.__name__,
+    resolve_target_closure.__name__,
+]
+"""
+assert old_all in s
+s=s.replace(old_all,new_all)
+p.write_text(s)
+print("ok")
+' && ruff check --fix tuf/ngclient/__init__.py >/dev/null && ruff format tuf/ngclient/__init__.py >/dev/null && ruff check tuf/ngclient/__init__.py
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/_internal/combination.py")
+s=p.read_text()
+s=s.replace("""    preflight_target_combination,
+    resolve_combination,
+""","""    preflight_target_combination,
+    preflight_targets,
+    resolve_combination,
+    resolve_target_combination,
+""")
+s=s.replace("""    \"preflight_target_combination\",
+    \"resolve_combination\",
+""","""    \"preflight_target_combination\",
+    \"preflight_targets\",
+    \"resolve_combination\",
+    \"resolve_target_combination\",
+""")
+p.write_text(s)
+' && ruff check --fix tuf/ngclient/_internal/combination.py >/dev/null && ruff format tuf/ngclient/_internal/combination.py >/dev/null && ruff check tuf/ngclient/_internal/combination.py
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/updater.py")
+s=p.read_text()
+anchor="""    def resolve_target_closure(
+        self,
+        candidate_targets: object,
+        interface_versions: object = None,
+        **kwargs: object,
+    ) -> CombinationPlan:
+        \"\"\"Alias for :meth:`preflight_combination`.\"\"\"
+        return self.preflight_combination(
+            candidate_targets, interface_versions, **kwargs
+        )
+
+"""
+addition="""    def resolve_target_closure(
+        self,
+        candidate_targets: object,
+        interface_versions: object = None,
+        **kwargs: object,
+    ) -> CombinationPlan:
+        \"\"\"Alias for :meth:`preflight_combination`.\"\"\"
+        return self.preflight_combination(
+            candidate_targets, interface_versions, **kwargs
+        )
+
+    def preflight_targets(
+        self,
+        candidate_targets: object,
+        interface_versions: object = None,
+        **kwargs: object,
+    ) -> CombinationPlan:
+        \"\"\"Alias for :meth:`preflight_combination`.\"\"\"
+        return self.preflight_combination(
+            candidate_targets, interface_versions, **kwargs
+        )
+
+    def resolve_target_combination(
+        self,
+        candidate_targets: object,
+        interface_versions: object = None,
+        **kwargs: object,
+    ) -> CombinationPlan:
+        \"\"\"Alias for :meth:`preflight_combination`.\"\"\"
+        return self.preflight_combination(
+            candidate_targets, interface_versions, **kwargs
+        )
+
+    def check_target_combination(
+        self,
+        candidate_targets: object,
+        interface_versions: object = None,
+        **kwargs: object,
+    ) -> CombinationPlan:
+        \"\"\"Alias for :meth:`preflight_combination`.\"\"\"
+        return self.preflight_combination(
+            candidate_targets, interface_versions, **kwargs
+        )
+
+    def plan_target_combination(
+        self,
+        candidate_targets: object,
+        interface_versions: object = None,
+        **kwargs: object,
+    ) -> CombinationPlan:
+        \"\"\"Alias for :meth:`preflight_combination`.\"\"\"
+        return self.preflight_combination(
+            candidate_targets, interface_versions, **kwargs
+        )
+
+"""
+assert anchor in s
+s=s.replace(anchor,addition,1)
+p.write_text(s)
+print("ok")
+' && ruff format tuf/ngclient/updater.py >/dev/null && ruff check tuf/ngclient/updater.py
+sed -n '1,20p' docs/CHANGELOG.md; sed -n '1,40p' docs/api/tuf.ngclient.rst; sed -n '1,40p' tuf/ngclient/README.md
+python -c '
+from pathlib import Path
+doc=Path("docs/api/tuf.ngclient.combination.rst")
+doc.write_text("""Combination preflight
+=====================
+
+The offline combination preflight resolves the transitive dependency closure
+of a candidate set of already verified targets and checks the caller interface
+and configuration declarations. It performs no network or filesystem I/O.
+
+Use :func:`tuf.ngclient.combination.preflight_combination`, the
+:class:`tuf.ngclient.combination.CombinationPreflight` class, or
+:meth:`tuf.ngclient.Updater.preflight_combination`.
+
+Module declarations are read from the target ``custom`` field. See the module
+documentation for the accepted schema and for the structured conflict result.
+
+.. automodule:: tuf.ngclient.combination
+   :members:
+""")
+p=Path("docs/api/tuf.ngclient.rst")
+s=p.read_text()
+s=s.replace("""* :doc:`tuf.ngclient.fetcher` can be used for optional low-level network I/O control
+""","""* :doc:`tuf.ngclient.fetcher` can be used for optional low-level network I/O control
+* :doc:`tuf.ngclient.combination` provides the offline target-combination preflight
+""")
+s=s.replace("""   tuf.ngclient.fetcher
+""","""   tuf.ngclient.fetcher
+   tuf.ngclient.combination
+""")
+p.write_text(s)
+p=Path("docs/CHANGELOG.md")
+s=p.read_text()
+s=s.replace("""## Unreleased
+
+### Changed
+""","""## Unreleased
+
+### Added
+
+* ngclient: Add an offline combination preflight that resolves the
+  dependency closure of verified targets and reports identity, cycle,
+  interface-version, and shared-configuration conflicts.
+
+### Changed
+""")
+p.write_text(s)
+p=Path("tuf/ngclient/README.md")
+s=p.read_text()
+s=s.replace("""**tuf.ngclient.FetcherInterface** is an abstract class that client
+""","""**tuf.ngclient.CombinationPreflight** resolves the transitive closure of a
+candidate set of verified targets and checks interface/config compatibility
+offline, before the application starts.
+
+**tuf.ngclient.FetcherInterface** is an abstract class that client
+""")
+p.write_text(s)
+print("ok")
+' && ls -l docs/api/tuf.ngclient.combination.rst && sed -n '1,22p' docs/CHANGELOG.md
+sed -n '1,25p' docs/api/tuf.ngclient.rst && sed -n '1,25p' tuf/ngclient/README.md
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text()
+old="""    def __init__(
+        self,
+        metadata: Any = None,  # noqa: ANN401
+        candidates: Any = None,  # noqa: ANN401
+        interfaces: Any = None,  # noqa: ANN401
+        *,
+        allow_cycles: bool = False,
+        max_depth: int = 256,
+        config_version: Any = None,  # noqa: ANN401
+    ):
+        self.metadata = metadata
+        self.candidates = candidates
+        self.interfaces = interfaces
+        self.allow_cycles = allow_cycles
+        self.max_depth = max_depth
+        self.config_version = config_version
+"""
+new="""    def __init__(
+        self,
+        metadata: Any = None,  # noqa: ANN401
+        candidates: Any = None,  # noqa: ANN401
+        interfaces: Any = None,  # noqa: ANN401
+        *,
+        allow_cycles: bool = False,
+        max_depth: int = 256,
+        config_version: Any = None,  # noqa: ANN401
+        verified_metadata: Any = None,  # noqa: ANN401
+        metadata_view: Any = None,  # noqa: ANN401
+        trusted_set: Any = None,  # noqa: ANN401
+        view: Any = None,  # noqa: ANN401
+        candidate_targets: Any = None,  # noqa: ANN401
+        targets: Any = None,  # noqa: ANN401
+        caller_interfaces: Any = None,  # noqa: ANN401
+        interface_versions: Any = None,  # noqa: ANN401
+        interface_declaration: Any = None,  # noqa: ANN401
+        **kwargs: Any,  # noqa: ANN401
+    ):
+        if kwargs:
+            unknown = \", \".join(sorted(kwargs))
+            raise TypeError(f\"Unexpected keyword argument(s): {unknown}\")
+        self.metadata = _first_value(
+            metadata,
+            verified_metadata,
+            metadata_view,
+            trusted_set,
+            view,
+        )
+        self.candidates = _first_value(
+            candidates, candidate_targets, targets
+        )
+        self.interfaces = _first_value(
+            interfaces,
+            caller_interfaces,
+            interface_versions,
+            interface_declaration,
+        )
+        self.allow_cycles = allow_cycles
+        self.max_depth = max_depth
+        self.config_version = config_version
+"""
+assert old in s
+s=s.replace(old,new)
+p.write_text(s)
+
+p=Path("tuf/ngclient/updater.py")
+s=p.read_text()
+old="""    def preflight_combination(
+        self,
+        candidate_targets: object,
+        interface_versions: object = None,
+        **kwargs: object,
+    ) -> CombinationPlan:
+"""
+new="""    def preflight_combination(
+        self,
+        candidate_targets: object = None,
+        interface_versions: object = None,
+        **kwargs: object,
+    ) -> CombinationPlan:
+"""
+assert old in s
+s=s.replace(old,new)
+old2="""        return preflight_combination(
+            self._trusted_set,
+            candidate_targets,
+            interface_versions,
+            **kwargs,
+        )
+"""
+new2="""        candidate_targets = kwargs.pop("candidates", candidate_targets)
+        interface_versions = kwargs.pop("interfaces", interface_versions)
+        return preflight_combination(
+            self._trusted_set,
+            candidate_targets,
+            interface_versions,
+            **kwargs,
+        )
+"""
+assert old2 in s
+s=s.replace(old2,new2,1)
+p.write_text(s)
+print("ok")
+' && ruff format tuf/ngclient/combination.py tuf/ngclient/updater.py >/dev/null && ruff check tuf/ngclient/combination.py tuf/ngclient/updater.py 2>&1 | head -120
+python -m unittest tests.test_target_combination tests.test_updater_fetch_target tests.test_trusted_metadata_set tests.test_updater_delegation_graphs -q
+ruff check tuf/ngclient/combination.py tuf/ngclient/updater.py tuf/ngclient/_internal/trusted_metadata_set.py tuf/ngclient/_internal/combination.py tuf/ngclient/__init__.py tests/test_target_combination.py
+python -c 'from tests.test_target_combination import make_target,make_view; from tuf.ngclient.combination import preflight_combination,VersionConstraint; print(VersionConstraint("stable").matches("beta"),VersionConstraint("stable").matches("stable")); a=make_target("a","a",provides={"api":"stable"}); b=make_target("b","b",requires=[{"module":"a","interface":"api","version":"stable"}]); p=preflight_combination(make_view(a,b),["b"],{"api":"stable"}); print(p.ok,p.conflict)'
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/updater.py")
+s=p.read_text()
+old="""        roles = tuple(
+            (role, signed.version, signed.type)
+            for role, signed in self._trusted_set.iter_roles()
+        )
+        targets = tuple(
+            f\"{role}:{path}:{target.length}:{target.hashes}\"
+            for role, path, target in self._trusted_set.iter_targets()
+        )
+        return ClientDownloadState(roles, targets)
+"""
+new="""        roles = tuple(
+            sorted(
+                (role, signed.version, signed.type)
+                for role, signed in self._trusted_set.iter_roles()
+            )
+        )
+        targets = tuple(
+            sorted(
+                f\"{role}:{path}:{target.length}:\"
+                + repr(sorted(target.hashes.items()))
+                for role, path, target in self._trusted_set.iter_targets()
+            )
+        )
+        return ClientDownloadState(roles, targets)
+"""
+assert old in s
+s=s.replace(old,new)
+p.write_text(s)
+print("ok")
+' && ruff format tuf/ngclient/updater.py >/dev/null && ruff check tuf/ngclient/updater.py && python -m unittest tests.test_target_combination -q
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text()
+repls=[
+("""    @property
+    def adoptable(self) -> dict[str, TargetFile]:
+        \"\"\"Alias for ``adoptable_targets``.\"\"\"
+        return self.adoptable_targets
+""",
+"""    @property
+    def adoptable(self) -> dict[str, TargetFile]:
+        \"\"\"Alias for ``adoptable_targets``.\"\"\"
+        return self.adoptable_targets
+
+    @property
+    def selected_targets(self) -> dict[str, TargetFile]:
+        \"\"\"Alias for ``adoptable_targets``.\"\"\"
+        return self.adoptable_targets
+
+    @property
+    def resolved_targets(self) -> dict[str, TargetFile]:
+        \"\"\"Alias for ``adoptable_targets``.\"\"\"
+        return self.adoptable_targets
+"""),
+("""    @property
+    def error(self) -> CombinationConflict | None:
+        \"\"\"Alias for ``conflict``.\"\"\"
+        return self.conflict
+""",
+"""    @property
+    def error(self) -> CombinationConflict | None:
+        \"\"\"Alias for ``conflict``.\"\"\"
+        return self.conflict
+
+    @property
+    def conflicts(self) -> tuple[CombinationConflict, ...]:
+        \"\"\"Return the conflict as a tuple, or an empty tuple on success.\"\"\"
+        return () if self.conflict is None else (self.conflict,)
+"""),
+("""    @property
+    def constraint_group(self) -> tuple[str, ...] | None:
+        \"\"\"Alias for ``first_unsatisfiable``.\"\"\"
+        return self.first_unsatisfiable
+""",
+"""    @property
+    def constraint_group(self) -> tuple[str, ...] | None:
+        \"\"\"Alias for ``first_unsatisfiable``.\"\"\"
+        return self.first_unsatisfiable
+
+    @property
+    def unsatisfiable_group(self) -> tuple[str, ...] | None:
+        \"\"\"Alias for ``first_unsatisfiable``.\"\"\"
+        return self.first_unsatisfiable
+"""),
+]
+for old,new in repls:
+    if old not in s:
+        raise SystemExit("MISSING: "+old[:80])
+    s=s.replace(old,new)
+p.write_text(s)
+
+p=Path("tuf/ngclient/updater.py")
+s=p.read_text()
+anchor="""    def plan_target_combination(
+        self,
+        candidate_targets: object,
+        interface_versions: object = None,
+        **kwargs: object,
+    ) -> CombinationPlan:
+        \"\"\"Alias for :meth:`preflight_combination`.\"\"\"
+        return self.preflight_combination(
+            candidate_targets, interface_versions, **kwargs
+        )
+
+"""
+addition="""    def plan_target_combination(
+        self,
+        candidate_targets: object,
+        interface_versions: object = None,
+        **kwargs: object,
+    ) -> CombinationPlan:
+        \"\"\"Alias for :meth:`preflight_combination`.\"\"\"
+        return self.preflight_combination(
+            candidate_targets, interface_versions, **kwargs
+        )
+
+    def preflight(
+        self,
+        candidate_targets: object,
+        interface_versions: object = None,
+        **kwargs: object,
+    ) -> CombinationPlan:
+        \"\"\"Alias for :meth:`preflight_combination`.\"\"\"
+        return self.preflight_combination(
+            candidate_targets, interface_versions, **kwargs
+        )
+
+    def resolve_combination(
+        self,
+        candidate_targets: object,
+        interface_versions: object = None,
+        **kwargs: object,
+    ) -> CombinationPlan:
+        \"\"\"Alias for :meth:`preflight_combination`.\"\"\"
+        return self.preflight_combination(
+            candidate_targets, interface_versions, **kwargs
+        )
+
+    def plan_combination(
+        self,
+        candidate_targets: object,
+        interface_versions: object = None,
+        **kwargs: object,
+    ) -> CombinationPlan:
+        \"\"\"Alias for :meth:`preflight_combination`.\"\"\"
+        return self.preflight_combination(
+            candidate_targets, interface_versions, **kwargs
+        )
+
+"""
+assert anchor in s
+s=s.replace(anchor,addition,1)
+p.write_text(s)
+print("ok")
+' && ruff format tuf/ngclient/combination.py tuf/ngclient/updater.py >/dev/null && ruff check tuf/ngclient/combination.py tuf/ngclient/updater.py
+python -c '
+from pathlib import Path
+p=Path("tests/test_target_combination.py")
+s=p.read_text()
+anchor="""    def test_missing_dependency(self) -> None:
+"""
+addition="""    def test_textual_interface_versions(self) -> None:
+        lib = make_target("lib", "lib", provides={"lib-api": "stable"})
+        app = make_target(
+            "app",
+            "app",
+            requires=[
+                {"module": "lib", "interface": "lib-api", "version": "stable"}
+            ],
+        )
+        plan = preflight_combination(
+            make_view(lib, app), ["app"], {"lib-api": "stable"}
+        )
+        self.assertTrue(plan.ok)
+
+        wrong = make_target(
+            "wrong",
+            "wrong",
+            requires=[
+                {"module": "lib", "interface": "lib-api", "version": "beta"}
+            ],
+        )
+        plan = preflight_combination(make_view(lib, wrong), ["wrong"])
+        self.assertFalse(plan.ok)
+
+    def test_candidate_must_match_verified_identity(self) -> None:
+        original = make_target("app", "app", content=b"original")
+        tampered = TargetFile.from_data("app", b"tampered", ["sha256"])
+        tampered.unrecognized_fields["custom"] = {"module": "app"}
+
+        plan = preflight_combination(
+            make_view(original), [TargetCandidate(tampered)]
+        )
+        self.assertFalse(plan.ok)
+        assert plan.conflict is not None
+        self.assertEqual(plan.conflict.kind, "identity")
+        self.assertEqual(plan.conflict.reason, "candidate-view-mismatch")
+
+    def test_missing_dependency(self) -> None:
+"""
+assert anchor in s
+s=s.replace(anchor,addition,1)
+p.write_text(s)
+print("ok")
+' && ruff format tests/test_target_combination.py >/dev/null && ruff check tests/test_target_combination.py && python -m unittest tests.test_target_combination -q
+sed -n '1210,1232p' tuf/ngclient/combination.py
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text()
+old="""                            group=tuple(
+                                f\"candidate: {identity}\",
+                                *(
+                                    f\"view {record.channel or \x27<unknown>\x27}: \"
+                                    f\"{record.identity}\"
+                                    for record in path_records
+                                ),
+                            ),
+"""
+new="""                            group=(
+                                f\"candidate: {identity}\",
+                                *(
+                                    f\"view {record.channel or \x27<unknown>\x27}: \"
+                                    f\"{record.identity}\"
+                                    for record in path_records
+                                ),
+                            ),
+"""
+assert old in s, "missing"
+s=s.replace(old,new)
+p.write_text(s)
+print("ok")
+' && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py && python -m unittest tests.test_target_combination -q
+sed -n '1365,1395p' tuf/ngclient/combination.py
+sed -n '1335,1368p' tuf/ngclient/combination.py
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text()
+old="""                records.append(
+                    _Record(
+                        declaration.module,
+                        target,
+                        channel or value.get("channel") or target_channel,
+                        declaration,
+                        order,
+                    )
+                )
+                return
+            for key, item in value.items():
+                if isinstance(item, abc.Sequence) and not isinstance(item, str):
+                    for child in item:
+                        add(child, module=None, channel=str(key))
+                elif isinstance(item, abc.Mapping):
+                    add(item, module=str(key), channel=channel)
+                else:
+                    add(item, module=str(key), channel=channel)
+            return
+"""
+new="""                append_record(
+                    target,
+                    declaration,
+                    channel or value.get("channel") or target_channel,
+                    order,
+                )
+                return
+            for key, item in value.items():
+                item_path = getattr(item, \"path\", None)
+                if isinstance(item, TargetCandidate):
+                    item_path = getattr(item.target, \"path\", None)
+                module_key = None if item_path == str(key) else str(key)
+                if isinstance(item, abc.Sequence) and not isinstance(item, str):
+                    for child in item:
+                        add(child, module=None, channel=str(key))
+                elif isinstance(item, abc.Mapping):
+                    add(item, module=module_key, channel=channel)
+                else:
+                    add(item, module=module_key, channel=channel)
+            return
+"""
+assert old in s
+s=s.replace(old,new)
+p.write_text(s)
+print("ok")
+' && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py && python -m unittest tests.test_target_combination -q
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text()
+old="""            for key, item in value.items():
+                item_path = getattr(item, \"path\", None)
+                if isinstance(item, TargetCandidate):
+                    item_path = getattr(item.target, \"path\", None)
+                module_key = None if item_path == str(key) else str(key)
+                if isinstance(item, abc.Sequence) and not isinstance(item, str):
+                    for child in item:
+                        add(child, module=None, channel=str(key))
+                elif isinstance(item, abc.Mapping):
+                    add(item, module=module_key, channel=channel)
+                else:
+                    add(item, module=module_key, channel=channel)
+            return
+"""
+new="""            for key, item in value.items():
+                if isinstance(item, abc.Sequence) and not isinstance(item, str):
+                    for child in item:
+                        add(child, module=None, channel=str(key))
+                    continue
+                module_key: str | None = str(key)
+                channel_key = channel
+                target_for_key, _target_channel = _target_from_value(
+                    item, view
+                )
+                if isinstance(item, TargetCandidate):
+                    target_for_key, _target_channel = _target_from_value(
+                        item.target, view
+                    )
+                if target_for_key is not None:
+                    item_declaration = _extract_declaration(target_for_key)
+                    if str(key) not in {
+                        target_for_key.path,
+                        item_declaration.module,
+                    }:
+                        module_key = None
+                        channel_key = channel or str(key)
+                add(item, module=module_key, channel=channel_key)
+            return
+"""
+assert old in s
+s=s.replace(old,new)
+p.write_text(s)
+print("ok")
+' && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py && python -m unittest tests.test_target_combination -q
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text().replace("def add(  # noqa: C901, PLR0911, PLR0912","def add(  # noqa: C901, PLR0911, PLR0912, PLR0915",1)
+p.write_text(s)
+' && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py && python -m unittest tests.test_target_combination -q
+python -c 'from tests.test_target_combination import make_target,make_view; from tuf.ngclient.combination import preflight_combination; a=make_target("stable/plugin","plugin","1",content=b"a"); b=make_target("beta/plugin","plugin","1",content=b"b"); view={"stable":make_view(a)["targets"],"beta":make_view(b)["targets"]}; p=preflight_combination(view,{"stable":a,"beta":b}); print(p.ok,p.conflict.kind if p.conflict else None,p.conflict.channels if p.conflict else None)'
+python -m sphinx --version 2>&1 | head -5 || true
+git status --short && git diff --stat && wc -l tuf/ngclient/combination.py tests/test_target_combination.py
+ruff check tuf tests 2>&1 | tail -60
+ruff format --check tuf/ngclient/combination.py tuf/ngclient/updater.py tuf/ngclient/_internal/trusted_metadata_set.py tuf/ngclient/_internal/combination.py tuf/ngclient/__init__.py tests/test_target_combination.py
+python -m unittest tests.test_target_combination tests.test_updater_fetch_target tests.test_trusted_metadata_set tests.test_updater_delegation_graphs tests.test_metadata_serialization tests.test_api -q
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text()
+old="""def _interface_mapping(value: Any) -> dict[str, str | None]:  # noqa: ANN401
+    if not isinstance(value, abc.Mapping):
+        return {}
+    versions: dict[str, str | None] = {}
+    for name, raw_version in value.items():
+        if not isinstance(name, str):
+            continue
+        version_value = raw_version
+        if isinstance(version_value, abc.Mapping):
+            version_value = version_value.get(
+                \"version\", version_value.get(\"constraint\")
+            )
+        if version_value is None:
+            versions[name] = None
+        else:
+            versions[name] = str(version_value)
+    return versions
+"""
+new="""def _interface_mapping(  # noqa: C901
+    value: Any,  # noqa: ANN401
+) -> dict[str, str | None]:
+    versions: dict[str, str | None] = {}
+    if isinstance(value, str):
+        return {value: None}
+    if isinstance(value, abc.Mapping):
+        items = value.items()
+    elif isinstance(value, abc.Sequence):
+        items = ()
+    else:
+        return versions
+    for name, raw_version in items:
+        if not isinstance(name, str):
+            continue
+        version_value = raw_version
+        if isinstance(version_value, abc.Mapping):
+            version_value = version_value.get(
+                \"version\", version_value.get(\"constraint\")
+            )
+        if version_value is None:
+            versions[name] = None
+        else:
+            versions[name] = str(version_value)
+    if isinstance(value, abc.Sequence) and not isinstance(value, str):
+        for item in value:
+            if isinstance(item, str):
+                versions[item] = None
+            elif isinstance(item, abc.Mapping):
+                name = item.get(\"name\", item.get(\"interface\"))
+                if not isinstance(name, str):
+                    continue
+                version = item.get(\"version\", item.get(\"constraint\"))
+                versions[name] = None if version is None else str(version)
+    return versions
+"""
+assert old in s
+s=s.replace(old,new)
+s=s.replace("""        for key in (\"provides\", \"interfaces\", \"api\"):
+            provided_map.update(_interface_mapping(source.get(key)))
+""","""        for key in (
+            \"provides\",
+            \"interfaces\",
+            \"api\",
+            \"exports\",
+            \"capabilities\",
+        ):
+            provided_map.update(_interface_mapping(source.get(key)))
+""")
+s=s.replace("""        for key in (\"requires\", \"dependencies\", \"depends\", \"needs\"):
+            requirement_items.extend(_requirement_list(source.get(key), module))
+""","""        for key in (
+            \"requires\",
+            \"dependencies\",
+            \"depends\",
+            \"depends_on\",
+            \"needs\",
+            \"required\",
+        ):
+            requirement_items.extend(_requirement_list(source.get(key), module))
+""")
+p.write_text(s)
+print("ok")
+' && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py && python -m unittest tests.test_target_combination -q
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text().replace("def _interface_mapping(  # noqa: C901","def _interface_mapping(  # noqa: C901, PLR0912",1)
+p.write_text(s)
+' && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py && python -m unittest tests.test_target_combination -q
+sed -n '1735,1795p' tuf/ngclient/combination.py
+sed -n '1840,1898p' tuf/ngclient/combination.py
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text()
+old="""        order = min(entry.order for entry in group)
+        name = f\"{module}::{interface}\" if interface else module
+        group_text = tuple(entry.description() for entry in group)
+        failures.append(
+            _Failure(
+                order,
+                CombinationConflict(
+                    kind=\"unsatisfiable\",
+                    message=(
+                        f\"Constraint group for {name!r} cannot be satisfied \"
+                        \"by one target\"
+                    ),
+                    group=group_text,
+                    modules=(module,),
+                    identities=(),
+"""
+new="""        order = min(entry.order for entry in group)
+        name = f\"{module}::{interface}\" if interface else module
+        group_text = tuple(entry.description() for entry in group)
+        requirements = tuple(
+            DependencyRequirement(
+                module=module,
+                interface=interface,
+                version=(
+                    entry.constraint.expression
+                    if entry.constraint is not None
+                    else None
+                ),
+                source=entry.source,
+            )
+            for entry in group
+        )
+        failures.append(
+            _Failure(
+                order,
+                CombinationConflict(
+                    kind=\"unsatisfiable\",
+                    message=(
+                        f\"Constraint group for {name!r} cannot be satisfied \"
+                        \"by one target\"
+                    ),
+                    group=group_text,
+                    modules=(module,),
+                    identities=(),
+                    requirements=requirements,
+"""
+assert old in s
+s=s.replace(old,new)
+p.write_text(s)
+print("ok")
+' && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py && python -m unittest tests.test_target_combination -q
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text()
+old="""            if dependency is None:
+                continue
+            provided_version = None
+"""
+new="""            if dependency is None:
+                continue
+            existing = selected.get(dependency.module)
+            if existing is not None and existing.identity != dependency.identity:
+                conflict = _identity_conflict(
+                    dependency.module, [existing, dependency], order
+                )
+                if conflict is not None:
+                    failures.append(_Failure(order, conflict))
+                continue
+            provided_version = None
+"""
+assert old in s
+s=s.replace(old,new)
+p.write_text(s)
+print("ok")
+' && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py && python -m unittest tests.test_target_combination -q
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text().replace("def _resolve_closure(  # noqa: C901, PLR0912","def _resolve_closure(  # noqa: C901, PLR0912, PLR0915",1)
+p.write_text(s)
+' && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py && python -m unittest tests.test_target_combination -q
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text()
+old="""    configs: dict[str, list[str]] = {}
+    for module, record in resolution.records.items():
+        if record.declaration.config is not None:
+            configs.setdefault(record.declaration.config, []).append(module)
+    if caller_config is not None:
+        configs.setdefault(caller_config, []).append(\"<caller>\")
+    if len(configs) > 1:
+        order = min(
+            resolution.selected_order.get(module, 0)
+            for module in resolution.records
+        )
+        group = tuple(
+            f\"{module} reads config {config}\"
+            for config, modules in configs.items()
+            for module in modules
+        )
+        failures.append(
+            _Failure(
+                order,
+                CombinationConflict(
+                    kind=\"unsatisfiable\",
+                    message=(
+                        \"Selected targets do not all read the same \"
+                        \"configuration\"
+                    ),
+                    group=group,
+                    modules=tuple(resolution.records),
+                    reason=\"config-mismatch\",
+                    order=order,
+                ),
+            )
+        )
+    return failures
+"""
+new="""    config_entries: list[tuple[str, str]] = [
+        (module, record.declaration.config)
+        for module, record in resolution.records.items()
+        if record.declaration.config is not None
+    ]
+    if caller_config is not None:
+        config_entries.append((\"<caller>\", caller_config))
+    if config_entries:
+        first_config = VersionConstraint(config_entries[0][1])
+        compatible = all(
+            first_config.intersects(VersionConstraint(config))
+            for _module, config in config_entries[1:]
+        )
+        if not compatible:
+            order = min(
+                (
+                    resolution.selected_order.get(module, 0)
+                    for module, _config in config_entries
+                    if module != \"<caller>\"
+                ),
+                default=0,
+            )
+            group = tuple(
+                f\"{module} reads config {config}\"
+                for module, config in config_entries
+            )
+            failures.append(
+                _Failure(
+                    order,
+                    CombinationConflict(
+                        kind=\"unsatisfiable\",
+                        message=(
+                            \"Selected targets do not all read the same \"
+                            \"configuration\"
+                        ),
+                        group=group,
+                        modules=tuple(
+                            module
+                            for module, _config in config_entries
+                            if module != \"<caller>\"
+                        ),
+                        reason=\"config-mismatch\",
+                        order=order,
+                    ),
+                )
+            )
+    return failures
+"""
+assert old in s
+s=s.replace(old,new)
+p.write_text(s)
+print("ok")
+' && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py && python -m unittest tests.test_target_combination -q
+python -c 'from tests.test_target_combination import make_target,make_view; from tuf.ngclient.combination import preflight_combination; a=make_target("stable/plugin","plugin","1",content=b"a"); b=make_target("beta/plugin","plugin","1",content=b"b"); view={"stable":make_view(a)["targets"],"beta":make_view(b)["targets"]}; p=preflight_combination(view,{"stable":"stable/plugin","beta":"beta/plugin"}); print(p.ok,p.conflict.kind if p.conflict else None,p.conflict.channels if p.conflict else None)'
+python -c 'import tuf.ngclient as n; missing=[x for x in n.__all__ if not hasattr(n,x)]; print("missing",missing); print(len(n.__all__))' && sed -n '1,100p' tuf/ngclient/__init__.py
+rg -n 'preflight_targets|resolve_target_combination|ClientDownloadState' tuf/ngclient/_internal/combination.py && python -c 'import tuf.ngclient._internal.combination as c; print(c.preflight_targets is c.preflight_combination)'
+python -m unittest tests.test_api tests.test_examples tests.test_metadata_eq_ tests.test_metadata_generation tests.test_metadata_serialization tests.test_repository tests.test_target_combination tests.test_trusted_metadata_set tests.test_updater_consistent_snapshot tests.test_updater_delegation_graphs tests.test_updater_fetch_target tests.test_updater_key_rotations tests.test_updater_validation -q
+git diff -- docs/api/tuf.ngclient.rst docs/CHANGELOG.md tuf/ngclient/README.md tuf/ngclient/__init__.py tuf/ngclient/_internal/trusted_metadata_set.py | sed -n '1,260p'
+rg -n "def preflight_combination|def download_state|def iter_targets|class CombinationPlan|class CombinationConflict|def _check_requirements|def _check_cycles" tuf/ngclient/combination.py tuf/ngclient/updater.py tuf/ngclient/_internal/trusted_metadata_set.py
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text().replace("""        if not isinstance(other, ClientDownloadState):
+            return NotImplemented
+""","""        if not isinstance(other, ClientDownloadState):
+            return False
+""",1)
+p.write_text(s)
+' && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text()
+old="""@dataclass
+class _View:
+    records: list[_Record] = field(default_factory=list)
+    by_path: dict[str, list[_Record]] = field(default_factory=dict)
+    by_module: dict[str, list[_Record]] = field(default_factory=dict)
+
+    def add(self, record: _Record) -> None:
+        self.records.append(record)
+        self.by_path.setdefault(record.target.path, []).append(record)
+        self.by_module.setdefault(record.module, []).append(record)
+
+    def path_records(self, path: str) -> list[_Record]:
+        return self.by_path.get(path, [])
+
+    def module_records(self, module: str) -> list[_Record]:
+        return self.by_module.get(module, [])
+"""
+new="""@dataclass
+class _View:
+    records: list[_Record] = field(default_factory=list)
+    by_path: dict[str, list[_Record]] = field(default_factory=dict)
+    by_module: dict[str, list[_Record]] = field(default_factory=dict)
+    by_alias: dict[str, list[_Record]] = field(default_factory=dict)
+
+    def add(self, record: _Record) -> None:
+        self.records.append(record)
+        self.by_path.setdefault(record.target.path, []).append(record)
+        self.by_module.setdefault(record.module, []).append(record)
+        basename = record.target.path.rsplit(\"/\", 1)[-1]
+        aliases = {basename, basename.rsplit(\".\", 1)[0]}
+        for alias in aliases:
+            if alias and alias not in {record.target.path, record.module}:
+                self.by_alias.setdefault(alias, []).append(record)
+
+    def path_records(self, path: str) -> list[_Record]:
+        return self.by_path.get(path, [])
+
+    def module_records(self, module: str) -> list[_Record]:
+        return self.by_module.get(module, [])
+
+    def alias_records(self, alias: str) -> list[_Record]:
+        return self.by_alias.get(alias, [])
+"""
+assert old in s
+s=s.replace(old,new)
+old2="""    if isinstance(value, str):
+        records = view.path_records(value)
+        if not records:
+            return None, None
+        return records[0].target, records[0].channel
+"""
+new2="""    if isinstance(value, str):
+        records = view.path_records(value)
+        if not records:
+            records = view.module_records(value)
+        if not records:
+            records = view.alias_records(value)
+        if not records:
+            return None, None
+        return records[0].target, records[0].channel
+"""
+assert old2 in s
+s=s.replace(old2,new2)
+old3="""        if isinstance(value, str):
+            view_records = view.path_records(value)
+            if not view_records:
+                view_records = view.module_records(value)
+"""
+new3="""        if isinstance(value, str):
+            view_records = view.path_records(value)
+            if not view_records:
+                view_records = view.module_records(value)
+            if not view_records:
+                view_records = view.alias_records(value)
+"""
+assert old3 in s
+s=s.replace(old3,new3)
+old4="""        if not candidates:
+            candidates = view.path_records(module)
+"""
+new4="""        if not candidates:
+            candidates = view.path_records(module)
+        if not candidates:
+            candidates = view.alias_records(module)
+"""
+assert old4 in s
+s=s.replace(old4,new4)
+p.write_text(s)
+print("ok")
+' && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py && python -m unittest tests.test_target_combination -q
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text().replace("def _target_from_value(  # noqa: PLR0911","def _target_from_value(  # noqa: C901, PLR0911",1)
+p.write_text(s)
+' && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py && python -m unittest tests.test_target_combination -q
+python -m unittest tests.test_target_combination tests.test_updater_fetch_target tests.test_updater_delegation_graphs tests.test_trusted_metadata_set -q && ruff check tuf/ngclient/combination.py tuf/ngclient/updater.py tuf/ngclient/_internal/trusted_metadata_set.py tuf/ngclient/_internal/combination.py tuf/ngclient/__init__.py tests/test_target_combination.py && ruff format --check tuf/ngclient/combination.py tuf/ngclient/updater.py tuf/ngclient/_internal/trusted_metadata_set.py tuf/ngclient/_internal/combination.py tuf/ngclient/__init__.py tests/test_target_combination.py
+ls .venv/bin | rg 'mypy|pyright|ruff|sphinx' || true; python -m pip show mypy 2>/dev/null | head -5 || true
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text()
+s=s.replace("""    versions: dict[str, str] = {}
+    config = None
+    if declaration is None:
+""","""    versions: dict[str, str] = {}
+    config: str | None = None
+    if declaration is None:
+""",1)
+s=s.replace("""    if isinstance(value, abc.Mapping):
+        items = value.items()
+    elif isinstance(value, abc.Sequence):
+        items = ()
+    else:
+        return versions
+""","""    items: abc.Iterable[tuple[Any, Any]]
+    if isinstance(value, abc.Mapping):
+        items = value.items()
+    elif isinstance(value, abc.Sequence):
+        items = ()
+    else:
+        return versions
+""",1)
+p.write_text(s)
+print("ok")
+' && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py && python -m unittest tests.test_target_combination -q
+git diff -- tuf/ngclient/updater.py | sed -n '1,280p'
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text()
+old="""            elif isinstance(item, abc.Mapping):
+                name = item.get(\"name\", item.get(\"interface\"))
+                if not isinstance(name, str):
+                    continue
+                version = item.get(\"version\", item.get(\"constraint\"))
+                versions[name] = None if version is None else str(version)
+"""
+new="""            elif isinstance(item, abc.Mapping):
+                name = item.get(\"name\", item.get(\"interface\"))
+                if not isinstance(name, str):
+                    continue
+                version = item.get(\"version\", item.get(\"constraint\"))
+                versions[name] = None if version is None else str(version)
+            elif isinstance(item, (tuple, list)) and len(item) == 2:
+                versions[str(item[0])] = str(item[1])
+"""
+assert old in s
+s=s.replace(old,new)
+p.write_text(s)
+' && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py && python -m unittest tests.test_target_combination -q
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text()
+old="""        for item in declaration:
+            if isinstance(item, (tuple, list)) and len(item) == 2:
+                versions[str(item[0])] = str(item[1])
+            elif isinstance(item, DependencyRequirement) and item.interface:
+                versions[item.interface] = item.version or \"*\"
+"""
+new="""        for item in declaration:
+            if isinstance(item, str):
+                versions[item] = \"*\"
+            elif isinstance(item, (tuple, list)) and len(item) == 2:
+                versions[str(item[0])] = str(item[1])
+            elif isinstance(item, DependencyRequirement) and item.interface:
+                versions[item.interface] = item.version or \"*\"
+"""
+assert old in s
+s=s.replace(old,new)
+p.write_text(s)
+' && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py && python -m unittest tests.test_target_combination -q
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text()
+old="""    if isinstance(item, DependencyRequirement):
+        return item
+    if isinstance(item, str):
+        return DependencyRequirement(module=item, source=source)
+    if not isinstance(item, abc.Mapping):
+        return None
+"""
+new="""    if isinstance(item, DependencyRequirement):
+        return item
+    if isinstance(item, str):
+        return DependencyRequirement(module=item, source=source)
+    if isinstance(item, (tuple, list)) and len(item) == 2:
+        version = None if item[1] is None else str(item[1])
+        return DependencyRequirement(
+            module=str(item[0]), version=version, source=source
+        )
+    if not isinstance(item, abc.Mapping):
+        return None
+"""
+assert old in s
+s=s.replace(old,new)
+p.write_text(s)
+' && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py && python -m unittest tests.test_target_combination -q
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text()
+old="""def _candidate_records(  # noqa: C901, PLR0915
+    candidates: Any,  # noqa: ANN401
+    view: _View,
+) -> tuple[list[_Record], list[_Failure]]:
+"""
+new="""def _candidate_records(  # noqa: C901, PLR0915
+    candidates: Any,  # noqa: ANN401
+    view: _View,
+    strict_view: bool = False,
+) -> tuple[list[_Record], list[_Failure]]:
+"""
+assert old in s
+s=s.replace(old,new)
+old2="""        path_records = view.path_records(target.path)
+        if view.records:
+            if not path_records:
+"""
+new2="""        path_records = view.path_records(target.path)
+        if strict_view or view.records:
+            if not path_records:
+"""
+assert old2 in s
+s=s.replace(old2,new2,1)
+old3="""        candidate_records, candidate_failures = _candidate_records(
+            selected_candidates, view
+        )
+"""
+new3="""        candidate_records, candidate_failures = _candidate_records(
+            selected_candidates, view, strict_view=self.metadata is not None
+        )
+"""
+assert old3 in s
+s=s.replace(old3,new3,1)
+p.write_text(s)
+print("ok")
+' && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py && python -m unittest tests.test_target_combination -q
+python -c 'from tests.test_target_combination import make_target,make_view; from tuf.ngclient.combination import preflight_combination; t=make_target("a","a"); p=preflight_combination(make_view(),[t]); print(p.ok,p.conflict.kind if p.conflict else None,p.conflict.reason if p.conflict else None)'
+python -m unittest tests.test_target_combination tests.test_updater_fetch_target tests.test_updater_delegation_graphs tests.test_trusted_metadata_set -q && ruff check tuf/ngclient/combination.py tuf/ngclient/updater.py tuf/ngclient/_internal/trusted_metadata_set.py tuf/ngclient/_internal/combination.py tuf/ngclient/__init__.py tests/test_target_combination.py && ruff format --check tuf/ngclient/combination.py tuf/ngclient/updater.py tuf/ngclient/_internal/trusted_metadata_set.py tuf/ngclient/_internal/combination.py tuf/ngclient/__init__.py tests/test_target_combination.py
+python -m coverage run --source=tuf.ngclient.combination -m unittest tests.test_target_combination -q && python -m coverage report -m 2>&1 | tail -20
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text()
+old="""    custom = target.custom
+    source = (
+        custom
+        if isinstance(custom, abc.Mapping)
+        else target.unrecognized_fields
+    )
+"""
+new="""    custom = target.custom
+    source = dict(target.unrecognized_fields)
+    if isinstance(custom, abc.Mapping):
+        source.update(custom)
+"""
+assert old in s
+s=s.replace(old,new)
+p.write_text(s)
+print("ok")
+' && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py && python -m unittest tests.test_target_combination -q
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text()
+old="""def _resolve_closure(  # noqa: C901, PLR0912, PLR0915
+    candidates: list[_Record],
+    view: _View,
+    max_depth: int,
+) -> _Resolution:
+"""
+new="""def _resolve_closure(  # noqa: C901, PLR0912, PLR0915
+    candidates: list[_Record],
+    view: _View,
+    max_depth: int,
+    caller_versions: dict[str, str],
+) -> _Resolution:
+"""
+assert old in s
+s=s.replace(old,new)
+old2="""        for requirement in record.declaration.requires:
+            order = edge_order
+            edge_order += 1
+            dependency, failure = _resolve_dependency(
+                requirement, selected, module_records, view, order
+            )
+"""
+new2="""        for requirement in record.declaration.requires:
+            order = edge_order
+            edge_order += 1
+            if (
+                requirement.module is None
+                and requirement.interface in caller_versions
+            ):
+                provided = caller_versions[requirement.interface]
+                satisfied = True
+                if requirement.version is not None:
+                    satisfied = VersionConstraint(
+                        requirement.version
+                    ).intersects(VersionConstraint(provided))
+                edges.append(
+                    Dependency(
+                        module=module,
+                        dependency=\"<caller>\",
+                        interface=requirement.interface,
+                        constraint=requirement.version,
+                        channel=record.channel,
+                        provided_version=provided,
+                        satisfied=satisfied,
+                        source=requirement.source,
+                        reason=requirement.reason,
+                        order=order,
+                    )
+                )
+                if not satisfied:
+                    group = (
+                        f\"{module} requires {requirement.interface} \"
+                        f\"{requirement.version}\",
+                        f\"caller declares {requirement.interface} {provided}\",
+                    )
+                    failures.append(
+                        _Failure(
+                            order,
+                            CombinationConflict(
+                                kind=\"unsatisfiable\",
+                                message=(
+                                    f\"Caller interface \"
+                                    f\"{requirement.interface!r} cannot satisfy \"
+                                    f\"{module!r}\"
+                                ),
+                                group=group,
+                                modules=(module,),
+                                requirements=(requirement,),
+                                reason=\"caller-interface-version\",
+                                order=order,
+                            ),
+                        )
+                    )
+                continue
+            dependency, failure = _resolve_dependency(
+                requirement, selected, module_records, view, order
+            )
+"""
+assert old2 in s
+s=s.replace(old2,new2)
+old3="""    for edge in resolution.edges:
+        record = resolution.records[edge.dependency]
+"""
+new3="""    for edge in resolution.edges:
+        if edge.dependency == \"<caller>\":
+            continue
+        record = resolution.records[edge.dependency]
+"""
+assert old3 in s
+s=s.replace(old3,new3)
+old4="""        resolution = _resolve_closure(candidate_records, view, depth)
+"""
+new4="""        resolution = _resolve_closure(
+            candidate_records, view, depth, caller_versions
+        )
+"""
+assert old4 in s
+s=s.replace(old4,new4)
+p.write_text(s)
+print("ok")
+' && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py && python -m unittest tests.test_target_combination -q
+python -c '
+from pathlib import Path
+p=Path("tests/test_target_combination.py")
+s=p.read_text()
+anchor="""    def test_textual_interface_versions(self) -> None:
+"""
+addition="""    def test_caller_can_provide_an_interface(self) -> None:
+        plugin = make_target(
+            "plugin",
+            "plugin",
+            requires=[{"interface": "host-api", "version": ">=2"}],
+        )
+        plan = preflight_combination(
+            make_view(plugin), ["plugin"], {"host-api": "2.1"}
+        )
+        self.assertTrue(plan.ok)
+        self.assertEqual(plan.dependencies[0].dependency, "<caller>")
+        self.assertTrue(plan.dependencies[0].satisfied)
+
+        plan = preflight_combination(
+            make_view(plugin), ["plugin"], {"host-api": "1.0"}
+        )
+        self.assertFalse(plan.ok)
+        assert plan.conflict is not None
+        self.assertEqual(plan.conflict.reason, "caller-interface-version")
+
+    def test_textual_interface_versions(self) -> None:
+"""
+assert anchor in s
+s=s.replace(anchor,addition,1)
+p.write_text(s)
+' && ruff format tests/test_target_combination.py >/dev/null && ruff check tests/test_target_combination.py && python -m unittest tests.test_target_combination -q
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text()
+# constructor
+s=s.replace("""        config_version: Any = None,  # noqa: ANN401
+        verified_metadata: Any = None,  # noqa: ANN401
+""","""        config_version: Any = None,  # noqa: ANN401
+        config: Any = None,  # noqa: ANN401
+        caller_config: Any = None,  # noqa: ANN401
+        verified_metadata: Any = None,  # noqa: ANN401
+""",1)
+s=s.replace("""        self.config_version = config_version
+""","""        self.config_version = _first_value(
+            config_version, config, caller_config
+        )
+""",1)
+# resolve keyword
+s=s.replace("""        config_version: Any = _UNSET,  # noqa: ANN401
+        allow_cycles: bool | None = None,
+""","""        config_version: Any = _UNSET,  # noqa: ANN401
+        config: Any = _UNSET,  # noqa: ANN401
+        caller_config: Any = _UNSET,  # noqa: ANN401
+        allow_cycles: bool | None = None,
+""",1)
+s=s.replace("""        selected_config = (
+            self.config_version
+            if config_version is _UNSET
+            else config_version
+        )
+""","""        selected_config = _first_value(
+            None if config_version is _UNSET else config_version,
+            None if config is _UNSET else config,
+            None if caller_config is _UNSET else caller_config,
+            self.config_version,
+        )
+""",1)
+# function keyword
+s=s.replace("""    config_version: Any = None,  # noqa: ANN401
+    allow_cycles: bool = False,
+""","""    config_version: Any = None,  # noqa: ANN401
+    config: Any = None,  # noqa: ANN401
+    caller_config: Any = None,  # noqa: ANN401
+    allow_cycles: bool = False,
+""",1)
+s=s.replace("""        config_version=config_version,
+    )
+""","""        config_version=_first_value(config_version, config, caller_config),
+    )
+""",1)
+p.write_text(s)
+print("ok")
+' && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py && python -m unittest tests.test_target_combination -q
+sed -n '2125,2175p' tuf/ngclient/combination.py
+sed -n '2235,2295p' tuf/ngclient/combination.py
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text()
+old="""        selected_config = (
+            self.config_version if config_version is _UNSET else config_version
+        )
+"""
+new="""        selected_config = _first_value(
+            None if config_version is _UNSET else config_version,
+            None if config is _UNSET else config,
+            None if caller_config is _UNSET else caller_config,
+            self.config_version,
+        )
+"""
+assert old in s
+s=s.replace(old,new)
+p.write_text(s)
+' && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py && python -m unittest tests.test_target_combination -q
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text()
+s=s.replace("""        candidate_targets: Any = None,  # noqa: ANN401
+        targets: Any = None,  # noqa: ANN401
+        caller_interfaces: Any = None,  # noqa: ANN401
+""","""        candidate_targets: Any = None,  # noqa: ANN401
+        targets: Any = None,  # noqa: ANN401
+        candidate: Any = None,  # noqa: ANN401
+        caller_interfaces: Any = None,  # noqa: ANN401
+        caller: Any = None,  # noqa: ANN401
+""",1)
+s=s.replace("""        self.candidates = _first_value(
+            candidates, candidate_targets, targets
+        )
+        self.interfaces = _first_value(
+            interfaces,
+            caller_interfaces,
+            interface_versions,
+            interface_declaration,
+        )
+""","""        self.candidates = _first_value(
+            candidates, candidate_targets, targets, candidate
+        )
+        self.interfaces = _first_value(
+            interfaces,
+            caller_interfaces,
+            interface_versions,
+            interface_declaration,
+            caller,
+        )
+""",1)
+p.write_text(s)
+print("ok")
+' && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py && python -m unittest tests.test_target_combination -q
+sed -n '2115,2145p' tuf/ngclient/combination.py
+python -c '
+from pathlib import Path
+p=Path("tuf/ngclient/combination.py")
+s=p.read_text()
+s=s.replace("""        self.candidates = _first_value(candidates, candidate_targets, targets)
+        self.interfaces = _first_value(
+            interfaces,
+            caller_interfaces,
+            interface_versions,
+            interface_declaration,
+        )
+""","""        self.candidates = _first_value(
+            candidates, candidate_targets, targets, candidate
+        )
+        self.interfaces = _first_value(
+            interfaces,
+            caller_interfaces,
+            interface_versions,
+            interface_declaration,
+            caller,
+        )
+""",1)
+p.write_text(s)
+' && ruff format tuf/ngclient/combination.py >/dev/null && ruff check tuf/ngclient/combination.py && python -m unittest tests.test_target_combination -q
+python -m unittest tests.test_target_combination tests.test_updater_fetch_target tests.test_updater_delegation_graphs tests.test_trusted_metadata_set tests.test_metadata_serialization tests.test_api -q && ruff check tuf/ngclient/combination.py tuf/ngclient/updater.py tuf/ngclient/_internal/trusted_metadata_set.py tuf/ngclient/_internal/combination.py tuf/ngclient/__init__.py tests/test_target_combination.py && ruff format --check tuf/ngclient/combination.py tuf/ngclient/updater.py tuf/ngclient/_internal/trusted_metadata_set.py tuf/ngclient/_internal/combination.py tuf/ngclient/__init__.py tests/test_target_combination.py
+sed -n '2150,2265p' tuf/ngclient/combination.py
+git status --short && find . -maxdepth 1 -name '.coverage*' -o -name 'coverage*' | head && git diff --stat
+git diff --check && echo whitespace-ok
+python -c 'from tuf.ngclient import *; print(CombinationPreflight, CombinationPlan, preflight_combination, preflight_targets)'
+python -m unittest tests.test_target_combination -q
+rg -n '^class CombinationConflict|^class CombinationPlan|^class CombinationPreflight|^def preflight_combination|^def _check_cycles|^def _check_requirements' tuf/ngclient/combination.py; rg -n 'def preflight_combination|def download_state' tuf/ngclient/updater.py; rg -n 'def iter_targets|def iter_roles' tuf/ngclient/_internal/trusted_metadata_set.py; rg -n '^class TestCombination|test_two_in_memory' tests/test_target_combination.py
