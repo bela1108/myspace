@@ -1,0 +1,6 @@
+{
+    "name": "windows-live",
+    "groups": ["base", "windows"],
+    "selector": "deploy",
+    "values": ["base", "windows"]
+}

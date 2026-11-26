@@ -1,0 +1,34 @@
+{
+    "reviews": [
+        {
+            "review_id": "REV-BASE",
+            "source": "reviews/base.json",
+            "approvals": [
+                {"id": "APR-BASE-SHARED", "rule": "base_shared", "group": "base"},
+                {"id": "APR-BASE-ALPHA", "rule": "base_alpha", "group": "base"}
+            ]
+        },
+        {
+            "review_id": "REV-WIN",
+            "source": "reviews/windows.json",
+            "approvals": [
+                {"id": "APR-WIN-ALPHA", "rule": "windows_alpha", "group": "windows"}
+            ]
+        }
+    ],
+    "approvals": [
+        {
+            "id": "APR-UPGRADED",
+            "rule": "extras_upgraded",
+            "group": "extras",
+            "combination": "upgraded"
+        },
+        {
+            "id": "APR-LEGACY",
+            "rule": "extras_legacy",
+            "group": "extras",
+            "combination": "legacy",
+            "status": "withdrawn"
+        }
+    ]
+}

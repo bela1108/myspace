@@ -151,6 +151,58 @@ for file in files:
     parser.clear()
 ```
 
+## Offline Deployment Review
+
+Deployment bundles often contain several YARA files (file groups) and select
+rules with a metadata field shared by many rules. The offline review helpers
+resolve such a manifest, trace each enabled rule back to the approval and
+review row that allowed it, and render a legal subset of the approved rules.
+No rule is executed.
+
+```python
+from plyara.deployment import (
+    Approval,
+    DeploymentManifest,
+    load_file_groups,
+    load_manifest,
+    resolve_deployment,
+)
+
+groups = load_file_groups({
+    'base': 'rules/base.yar',
+    'windows': 'rules/windows.yar',
+})
+
+manifest = DeploymentManifest(
+    name='windows-live',
+    groups=('base', 'windows'),
+    selectors={'deploy': {'base', 'windows'}},
+)
+
+# The same manifest can be read from JSON:
+# {"name": "windows-live", "groups": ["base", "windows"],
+#  "selector": "deploy", "values": ["base", "windows"]}
+# manifest = load_manifest('deployment.json')
+
+approvals = [
+    Approval('APR-101', 'REV-7', rule='base_shared', group='base'),
+    Approval('APR-102', 'REV-7', rule='base_alpha', group='base'),
+    Approval('APR-201', 'REV-9', rule='windows_alpha', group='windows'),
+]
+
+report = resolve_deployment(manifest, groups, approvals)
+report.reviewable              # True when every selected rule is approved
+report.enabled_items           # Approved rules with review provenance
+report.missing_approvals       # Why a rule or dependency cannot be enabled
+report.subset_text             # Re-parsed, dependency-complete YARA subset
+```
+
+`Approval` rows may also be grouped in a `Review`; each trace then carries the
+review identifier, review section, source and the metadata value that matched.
+An optional file group can be upgraded with `upgrade_file_group()` and the same
+manifest reviewed again with `review_combinations()`, which reports each
+combination separately and names any approval that is withdrawn or missing.
+
 ## Breaking Change: Import Effects
 
 ### Background

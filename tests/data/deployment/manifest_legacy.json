@@ -1,0 +1,7 @@
+{
+    "name": "legacy",
+    "groups": ["base", "extras"],
+    "selector": "deploy",
+    "values": ["base", "legacy"],
+    "required_rules": ["extras_legacy"]
+}

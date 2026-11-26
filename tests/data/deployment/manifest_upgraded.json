@@ -1,0 +1,7 @@
+{
+    "name": "upgraded",
+    "groups": ["base", "extras"],
+    "selector": "deploy",
+    "values": ["base", "upgraded"],
+    "required_rules": ["extras_upgraded"]
+}
