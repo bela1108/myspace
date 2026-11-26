@@ -1,0 +1,19 @@
+[
+  {
+    "baseline_label": "rules/color_notifications/baseline/color_notifications.yar",
+    "candidate_label": "rules/color_notifications/formatted/color_notifications.yar",
+    "format_only": true,
+    "whitespace_only": false,
+    "classification": "format_only",
+    "notification_color": "green",
+    "changed_rules": [
+      "ColorNotification_Amber",
+      "ColorNotification_Blue",
+      "ColorNotification_Green",
+      "ColorNotification_Red",
+      "cn_has_notification_channel",
+      "cn_red_vocabulary"
+    ],
+    "diff": "--- rules/color_notifications/baseline/color_notifications.yar\n+++ rules/color_notifications/formatted/color_notifications.yar\n@@ -1,56 +1,75 @@\n private rule cn_has_notification_channel {\n     strings:\n-        $notify = \"notify\" nocase\n+        $notify       = \"notify\" nocase\n         $notification = \"notification\" nocase\n-        $webhook = \"webhook\" nocase\n-        $alert = \"alert\" nocase\n+        $webhook      = \"webhook\" nocase\n+        $alert        = \"alert\" nocase\n+\n     condition:\n         any of them\n }\n \n private rule cn_red_vocabulary {\n     strings:\n-        $red = \"red\" nocase\n+        $red     = \"red\" nocase\n         $crimson = \"crimson\" nocase\n         $scarlet = \"scarlet\" nocase\n+\n     condition:\n-        2 of ($red, $crimson, $scarlet) or #red >= 2\n+        (\n+            2 of ($red, $crimson, $scarlet)\n+            or #red >= 2\n+        )\n }\n \n rule ColorNotification_Red {\n     strings:\n         $badge = \"RED_NOTIFICATION\"\n-        $ui = \"color-red\"\n+        $ui    = \"color-red\"\n+\n     condition:\n-        (cn_red_vocabulary and cn_has_notification_channel) or\n-        ($badge and cn_has_notification_channel)\n+        (\n+            cn_red_vocabulary\n+            and cn_has_notification_channel\n+        )\n+        or (\n+            $badge\n+            and cn_has_notification_channel\n+        )\n }\n \n rule ColorNotification_Amber {\n     strings:\n-        $amber = \"amber\" nocase\n-        $orange = \"orange\" nocase\n+        $amber   = \"amber\" nocase\n+        $orange  = \"orange\" nocase\n         $warning = \"warning\" nocase\n+\n     condition:\n-        ($amber or $orange) and ($warning or cn_has_notification_channel) and\n-        #warning >= 2\n+        (\n+            ($amber or $orange)\n+            and ($warning or cn_has_notification_channel)\n+            and #warning >= 2\n+        )\n }\n \n rule ColorNotification_Green {\n     strings:\n-        $green = \"green\" nocase\n+        $green   = \"green\" nocase\n         $emerald = \"emerald\" nocase\n         $success = \"success\" nocase\n+\n     condition:\n-        all of ($green, $emerald) and\n-        ($success or cn_has_notification_channel)\n+        all of ($green, $emerald)\n+        and ($success or cn_has_notification_channel)\n }\n \n rule ColorNotification_Blue {\n     strings:\n-        $blue = \"blue\" nocase\n+        $blue  = \"blue\" nocase\n         $azure = \"azure\" nocase\n-        $info = \"info\" nocase\n+        $info  = \"info\" nocase\n+\n     condition:\n-        1 of ($blue, $azure) and ($info or cn_has_notification_channel)\n+        1 of ($blue, $azure)\n+        and ($info or cn_has_notification_channel)\n }"
+  }
+]

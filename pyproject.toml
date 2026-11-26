@@ -34,6 +34,7 @@ Issues = "https://github.com/plyara/plyara/issues"
 
 [project.scripts]
 plyara = "plyara.command_line:main"
+plyara-roundtrip-gate = "plyara.roundtrip_gate:main"
 
 [project.optional-dependencies]
 tests = ['pycodestyle', 'pydocstyle', 'pyflakes', 'coverage']

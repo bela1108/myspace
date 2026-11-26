@@ -1,0 +1,13 @@
+{
+  "format_report_status": "pass",
+  "changed_report_status": "fail",
+  "format_difference_count": 1,
+  "condition_change_count": 4,
+  "exports": {
+    "format_differences_diff": "reports/color_notifications/format_differences.diff",
+    "format_differences_json": "reports/color_notifications/format_differences.json",
+    "condition_changes_json": "reports/color_notifications/condition_changes.json",
+    "condition_changes_markdown": "reports/color_notifications/condition_changes.md",
+    "uncertain_capabilities_json": "reports/color_notifications/uncertain_capabilities.json"
+  }
+}

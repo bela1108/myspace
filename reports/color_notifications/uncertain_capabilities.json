@@ -1,0 +1,16 @@
+{
+  "notification_color": "amber",
+  "capabilities": [
+    "imported module functions such as pe.*, math.*, and hash.*",
+    "for/of and for/in iteration clauses",
+    "string position and length operators @a[i] and !a[i]",
+    "offset/range predicates using 'at' or 'in'",
+    "arithmetic, bitwise, and shift expressions",
+    "filesize, entrypoint, and other scan-environment integers",
+    "hash, regex, and byte pattern value equivalence beyond opaque atoms",
+    "public, global, or external rule references; only private same-pack helpers are linked",
+    "include directives and preprocessing",
+    "wildcard/anonymous aggregate count expressions such as #a* or bare #"
+  ],
+  "rules": []
+}

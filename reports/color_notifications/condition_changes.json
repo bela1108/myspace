@@ -1,0 +1,522 @@
+[
+  {
+    "rule": "ColorNotification_Amber",
+    "notification_color": "red",
+    "baseline_label": "rules/color_notifications/baseline/color_notifications.yar",
+    "candidate_label": "rules/color_notifications/changed/color_notifications.yar",
+    "condition_terms_equal": false,
+    "baseline_condition_terms": [
+      "(",
+      "$amber",
+      "or",
+      "$orange",
+      ")",
+      "and",
+      "(",
+      "$warning",
+      "or",
+      "cn_has_notification_channel",
+      ")",
+      "and",
+      "#warning",
+      ">=",
+      "2"
+    ],
+    "candidate_condition_terms": [
+      "(",
+      "(",
+      "$amber",
+      "or",
+      "$orange",
+      ")",
+      "and",
+      "(",
+      "$warning",
+      "or",
+      "cn_has_notification_channel",
+      ")",
+      "and",
+      "#warning",
+      ">=",
+      "5",
+      ")"
+    ],
+    "assignment_space": 448,
+    "counterexample": {
+      "abstract_occurrence_counts": {
+        "ColorNotification_Amber.$amber": 0,
+        "ColorNotification_Amber.$orange": 1,
+        "ColorNotification_Amber.$warning": 2,
+        "cn_has_notification_channel.$alert": 0,
+        "cn_has_notification_channel.$notification": 0,
+        "cn_has_notification_channel.$notify": 0,
+        "cn_has_notification_channel.$webhook": 0
+      },
+      "assignments": [
+        {
+          "atom": "ColorNotification_Amber.$amber",
+          "rule": "ColorNotification_Amber",
+          "string": "$amber",
+          "string_index": 0,
+          "declared_value": "amber",
+          "type": "text",
+          "occurrences": 0,
+          "matches": false
+        },
+        {
+          "atom": "ColorNotification_Amber.$orange",
+          "rule": "ColorNotification_Amber",
+          "string": "$orange",
+          "string_index": 1,
+          "declared_value": "orange",
+          "type": "text",
+          "occurrences": 1,
+          "matches": true
+        },
+        {
+          "atom": "ColorNotification_Amber.$warning",
+          "rule": "ColorNotification_Amber",
+          "string": "$warning",
+          "string_index": 2,
+          "declared_value": "warning",
+          "type": "text",
+          "occurrences": 2,
+          "matches": true
+        },
+        {
+          "atom": "cn_has_notification_channel.$alert",
+          "rule": "cn_has_notification_channel",
+          "string": "$alert",
+          "string_index": 3,
+          "declared_value": "alert",
+          "type": "text",
+          "occurrences": 0,
+          "matches": false
+        },
+        {
+          "atom": "cn_has_notification_channel.$notification",
+          "rule": "cn_has_notification_channel",
+          "string": "$notification",
+          "string_index": 1,
+          "declared_value": "notification",
+          "type": "text",
+          "occurrences": 0,
+          "matches": false
+        },
+        {
+          "atom": "cn_has_notification_channel.$notify",
+          "rule": "cn_has_notification_channel",
+          "string": "$notify",
+          "string_index": 0,
+          "declared_value": "notify",
+          "type": "text",
+          "occurrences": 0,
+          "matches": false
+        },
+        {
+          "atom": "cn_has_notification_channel.$webhook",
+          "rule": "cn_has_notification_channel",
+          "string": "$webhook",
+          "string_index": 2,
+          "declared_value": "webhook",
+          "type": "text",
+          "occurrences": 0,
+          "matches": false
+        }
+      ],
+      "baseline_result": true,
+      "candidate_result": false,
+      "searched_assignments": 448
+    }
+  },
+  {
+    "rule": "ColorNotification_Blue",
+    "notification_color": "red",
+    "baseline_label": "rules/color_notifications/baseline/color_notifications.yar",
+    "candidate_label": "rules/color_notifications/changed/color_notifications.yar",
+    "condition_terms_equal": false,
+    "baseline_condition_terms": [
+      "1",
+      "of",
+      "(",
+      "$blue",
+      ",",
+      "$azure",
+      ")",
+      "and",
+      "(",
+      "$info",
+      "or",
+      "cn_has_notification_channel",
+      ")"
+    ],
+    "candidate_condition_terms": [
+      "2",
+      "of",
+      "(",
+      "$blue",
+      ",",
+      "$azure",
+      ")",
+      "and",
+      "(",
+      "$info",
+      "or",
+      "cn_has_notification_channel",
+      ")"
+    ],
+    "assignment_space": 128,
+    "counterexample": {
+      "abstract_occurrence_counts": {
+        "ColorNotification_Blue.$azure": 0,
+        "ColorNotification_Blue.$blue": 1,
+        "ColorNotification_Blue.$info": 0,
+        "cn_has_notification_channel.$alert": 0,
+        "cn_has_notification_channel.$notification": 0,
+        "cn_has_notification_channel.$notify": 0,
+        "cn_has_notification_channel.$webhook": 1
+      },
+      "assignments": [
+        {
+          "atom": "ColorNotification_Blue.$azure",
+          "rule": "ColorNotification_Blue",
+          "string": "$azure",
+          "string_index": 1,
+          "declared_value": "azure",
+          "type": "text",
+          "occurrences": 0,
+          "matches": false
+        },
+        {
+          "atom": "ColorNotification_Blue.$blue",
+          "rule": "ColorNotification_Blue",
+          "string": "$blue",
+          "string_index": 0,
+          "declared_value": "blue",
+          "type": "text",
+          "occurrences": 1,
+          "matches": true
+        },
+        {
+          "atom": "ColorNotification_Blue.$info",
+          "rule": "ColorNotification_Blue",
+          "string": "$info",
+          "string_index": 2,
+          "declared_value": "info",
+          "type": "text",
+          "occurrences": 0,
+          "matches": false
+        },
+        {
+          "atom": "cn_has_notification_channel.$alert",
+          "rule": "cn_has_notification_channel",
+          "string": "$alert",
+          "string_index": 3,
+          "declared_value": "alert",
+          "type": "text",
+          "occurrences": 0,
+          "matches": false
+        },
+        {
+          "atom": "cn_has_notification_channel.$notification",
+          "rule": "cn_has_notification_channel",
+          "string": "$notification",
+          "string_index": 1,
+          "declared_value": "notification",
+          "type": "text",
+          "occurrences": 0,
+          "matches": false
+        },
+        {
+          "atom": "cn_has_notification_channel.$notify",
+          "rule": "cn_has_notification_channel",
+          "string": "$notify",
+          "string_index": 0,
+          "declared_value": "notify",
+          "type": "text",
+          "occurrences": 0,
+          "matches": false
+        },
+        {
+          "atom": "cn_has_notification_channel.$webhook",
+          "rule": "cn_has_notification_channel",
+          "string": "$webhook",
+          "string_index": 2,
+          "declared_value": "webhook",
+          "type": "text",
+          "occurrences": 1,
+          "matches": true
+        }
+      ],
+      "baseline_result": true,
+      "candidate_result": false,
+      "searched_assignments": 128
+    }
+  },
+  {
+    "rule": "ColorNotification_Green",
+    "notification_color": "red",
+    "baseline_label": "rules/color_notifications/baseline/color_notifications.yar",
+    "candidate_label": "rules/color_notifications/changed/color_notifications.yar",
+    "condition_terms_equal": false,
+    "baseline_condition_terms": [
+      "all",
+      "of",
+      "(",
+      "$green",
+      ",",
+      "$emerald",
+      ")",
+      "and",
+      "(",
+      "$success",
+      "or",
+      "cn_has_notification_channel",
+      ")"
+    ],
+    "candidate_condition_terms": [
+      "any",
+      "of",
+      "(",
+      "$green",
+      ",",
+      "$emerald",
+      ")",
+      "and",
+      "(",
+      "$success",
+      "or",
+      "cn_has_notification_channel",
+      ")"
+    ],
+    "assignment_space": 128,
+    "counterexample": {
+      "abstract_occurrence_counts": {
+        "ColorNotification_Green.$emerald": 0,
+        "ColorNotification_Green.$green": 1,
+        "ColorNotification_Green.$success": 0,
+        "cn_has_notification_channel.$alert": 0,
+        "cn_has_notification_channel.$notification": 0,
+        "cn_has_notification_channel.$notify": 0,
+        "cn_has_notification_channel.$webhook": 1
+      },
+      "assignments": [
+        {
+          "atom": "ColorNotification_Green.$emerald",
+          "rule": "ColorNotification_Green",
+          "string": "$emerald",
+          "string_index": 1,
+          "declared_value": "emerald",
+          "type": "text",
+          "occurrences": 0,
+          "matches": false
+        },
+        {
+          "atom": "ColorNotification_Green.$green",
+          "rule": "ColorNotification_Green",
+          "string": "$green",
+          "string_index": 0,
+          "declared_value": "green",
+          "type": "text",
+          "occurrences": 1,
+          "matches": true
+        },
+        {
+          "atom": "ColorNotification_Green.$success",
+          "rule": "ColorNotification_Green",
+          "string": "$success",
+          "string_index": 2,
+          "declared_value": "success",
+          "type": "text",
+          "occurrences": 0,
+          "matches": false
+        },
+        {
+          "atom": "cn_has_notification_channel.$alert",
+          "rule": "cn_has_notification_channel",
+          "string": "$alert",
+          "string_index": 3,
+          "declared_value": "alert",
+          "type": "text",
+          "occurrences": 0,
+          "matches": false
+        },
+        {
+          "atom": "cn_has_notification_channel.$notification",
+          "rule": "cn_has_notification_channel",
+          "string": "$notification",
+          "string_index": 1,
+          "declared_value": "notification",
+          "type": "text",
+          "occurrences": 0,
+          "matches": false
+        },
+        {
+          "atom": "cn_has_notification_channel.$notify",
+          "rule": "cn_has_notification_channel",
+          "string": "$notify",
+          "string_index": 0,
+          "declared_value": "notify",
+          "type": "text",
+          "occurrences": 0,
+          "matches": false
+        },
+        {
+          "atom": "cn_has_notification_channel.$webhook",
+          "rule": "cn_has_notification_channel",
+          "string": "$webhook",
+          "string_index": 2,
+          "declared_value": "webhook",
+          "type": "text",
+          "occurrences": 1,
+          "matches": true
+        }
+      ],
+      "baseline_result": false,
+      "candidate_result": true,
+      "searched_assignments": 128
+    }
+  },
+  {
+    "rule": "ColorNotification_Red",
+    "notification_color": "red",
+    "baseline_label": "rules/color_notifications/baseline/color_notifications.yar",
+    "candidate_label": "rules/color_notifications/changed/color_notifications.yar",
+    "condition_terms_equal": false,
+    "baseline_condition_terms": [
+      "(",
+      "cn_red_vocabulary",
+      "and",
+      "cn_has_notification_channel",
+      ")",
+      "or",
+      "(",
+      "$badge",
+      "and",
+      "cn_has_notification_channel",
+      ")"
+    ],
+    "candidate_condition_terms": [
+      "(",
+      "cn_red_vocabulary",
+      "or",
+      "cn_has_notification_channel",
+      ")",
+      "or",
+      "(",
+      "$badge",
+      "and",
+      "cn_has_notification_channel",
+      ")"
+    ],
+    "assignment_space": 1024,
+    "counterexample": {
+      "abstract_occurrence_counts": {
+        "ColorNotification_Red.$badge": 0,
+        "ColorNotification_Red.$ui": 0,
+        "cn_has_notification_channel.$alert": 0,
+        "cn_has_notification_channel.$notification": 0,
+        "cn_has_notification_channel.$notify": 0,
+        "cn_has_notification_channel.$webhook": 0,
+        "cn_red_vocabulary.$crimson": 0,
+        "cn_red_vocabulary.$red": 1,
+        "cn_red_vocabulary.$scarlet": 1
+      },
+      "assignments": [
+        {
+          "atom": "ColorNotification_Red.$badge",
+          "rule": "ColorNotification_Red",
+          "string": "$badge",
+          "string_index": 0,
+          "declared_value": "RED_NOTIFICATION",
+          "type": "text",
+          "occurrences": 0,
+          "matches": false
+        },
+        {
+          "atom": "ColorNotification_Red.$ui",
+          "rule": "ColorNotification_Red",
+          "string": "$ui",
+          "string_index": 1,
+          "declared_value": "color-red",
+          "type": "text",
+          "occurrences": 0,
+          "matches": false
+        },
+        {
+          "atom": "cn_has_notification_channel.$alert",
+          "rule": "cn_has_notification_channel",
+          "string": "$alert",
+          "string_index": 3,
+          "declared_value": "alert",
+          "type": "text",
+          "occurrences": 0,
+          "matches": false
+        },
+        {
+          "atom": "cn_has_notification_channel.$notification",
+          "rule": "cn_has_notification_channel",
+          "string": "$notification",
+          "string_index": 1,
+          "declared_value": "notification",
+          "type": "text",
+          "occurrences": 0,
+          "matches": false
+        },
+        {
+          "atom": "cn_has_notification_channel.$notify",
+          "rule": "cn_has_notification_channel",
+          "string": "$notify",
+          "string_index": 0,
+          "declared_value": "notify",
+          "type": "text",
+          "occurrences": 0,
+          "matches": false
+        },
+        {
+          "atom": "cn_has_notification_channel.$webhook",
+          "rule": "cn_has_notification_channel",
+          "string": "$webhook",
+          "string_index": 2,
+          "declared_value": "webhook",
+          "type": "text",
+          "occurrences": 0,
+          "matches": false
+        },
+        {
+          "atom": "cn_red_vocabulary.$crimson",
+          "rule": "cn_red_vocabulary",
+          "string": "$crimson",
+          "string_index": 1,
+          "declared_value": "crimson",
+          "type": "text",
+          "occurrences": 0,
+          "matches": false
+        },
+        {
+          "atom": "cn_red_vocabulary.$red",
+          "rule": "cn_red_vocabulary",
+          "string": "$red",
+          "string_index": 0,
+          "declared_value": "red",
+          "type": "text",
+          "occurrences": 1,
+          "matches": true
+        },
+        {
+          "atom": "cn_red_vocabulary.$scarlet",
+          "rule": "cn_red_vocabulary",
+          "string": "$scarlet",
+          "string_index": 2,
+          "declared_value": "scarlet",
+          "type": "text",
+          "occurrences": 1,
+          "matches": true
+        }
+      ],
+      "baseline_result": false,
+      "candidate_result": true,
+      "searched_assignments": 1024
+    }
+  }
+]
