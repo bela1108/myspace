@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dissect.cstruct.bitbuffer import BitBuffer
-from dissect.cstruct.cstruct import cstruct, ctypes, ctypes_type
+from dissect.cstruct.cstruct import DeclarationContext, ParseLease, cstruct, ctypes, ctypes_type
 from dissect.cstruct.dump import dumpstruct, hexdump
 from dissect.cstruct.exception import (
     Error,
@@ -59,6 +59,7 @@ __all__ = [
     "BitBuffer",
     "Char",
     "CharArray",
+    "DeclarationContext",
     "Enum",
     "Error",
     "Expression",
@@ -68,6 +69,7 @@ __all__ = [
     "MetaType",
     "NullPointerDereference",
     "Packed",
+    "ParseLease",
     "ParserError",
     "Pointer",
     "ResolveError",

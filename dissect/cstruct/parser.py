@@ -57,12 +57,14 @@ class CStyleParser(Parser):
         cs: An instance of cstruct.
         compiled: Whether structs should be compiled or not.
         align: Whether to use aligned struct reads.
+        replace: Whether same-named declarations may be replaced.
     """
 
-    def __init__(self, cs: cstruct, compiled: bool = True, align: bool = False):
+    def __init__(self, cs: cstruct, compiled: bool = True, align: bool = False, replace: bool = False):
         super().__init__(cs)
         self.compiled = compiled
         self.align = align
+        self.replace = replace
         self._data = None
 
         self._flags: list[str] = []
@@ -327,7 +329,7 @@ class CStyleParser(Parser):
                 base_type.__name__ = name
                 base_type.__qualname__ = name
 
-            self.cs.add_type(name, type_)
+            self.cs.add_type(name, type_, replace=self.replace)
 
             if not self._match(TokenType.COMMA):
                 break
@@ -360,7 +362,7 @@ class CStyleParser(Parser):
                 type = factory(name, [], align=self.align)
                 if self.compiled and "nocompile" not in self._flags:
                     type = compiler.compile_structure(type)
-                self.cs.add_type(name, type)
+                self.cs.add_type(name, type, replace=self.replace)
             else:
                 # struct typename ... (type reference)
                 return self.cs.resolve(name)
@@ -450,7 +452,7 @@ class CStyleParser(Parser):
         if name is not None:
             # Register the enum/flag type if it has a name
             # Anonymous enums/flags are handled in the top level parse loop
-            self.cs.add_type(type_.__name__, type_)
+            self.cs.add_type(type_.__name__, type_, replace=self.replace)
 
         return type_
 

@@ -105,6 +105,20 @@ By default, all structures are compiled into classes that provide optimised perf
 
 More examples can be found in the `examples` directory.
 
+### Declaration contexts
+
+When multiple inputs use the same type name with different ABIs, claim a parse task before loading another definition. The claim freezes an independent snapshot of the types, aliases and constants used by that task:
+
+```python
+task = c_parser.claim("Record")
+old_record = task.read(stream)
+
+c_parser.load(other_abi_definition, replace=True)
+new_record = c_parser.read("Record", stream)
+```
+
+Use `c_parser.snapshot("case-a")` to store an independent named snapshot, or `c_parser.freeze()` to seal a context in place. Explicitly select a snapshot with `c_parser.read(..., context="case-a")` or `with c_parser.use_context("case-a") as abi:`. `DeclarationContext` provides the same API plus named-context helpers.
+
 ## Features
 ### Structure parsing
 Write simple C-like structures and use them to parse binary data, as can be seen in the examples.

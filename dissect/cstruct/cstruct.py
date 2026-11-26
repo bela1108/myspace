@@ -8,8 +8,10 @@ import sys
 import types
 import warnings
 from contextlib import contextmanager
+from contextvars import ContextVar
 from functools import lru_cache
 from pathlib import Path
+from threading import RLock
 from typing import TYPE_CHECKING, Any, BinaryIO, Literal, TypeVar, cast
 
 from dissect.cstruct.exception import ResolveError
@@ -21,6 +23,7 @@ from dissect.cstruct.types import (
     BaseType,
     Char,
     Enum,
+    Field,
     Flag,
     Int,
     Packed,
@@ -31,21 +34,30 @@ from dissect.cstruct.types import (
     Wchar,
 )
 from dissect.cstruct.types.base import normalize_endianness
+from dissect.cstruct.types.enum import EnumMetaType
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable
     from typing import TypeAlias
 
-    from dissect.cstruct.types import (
-        Array,
-        Field,
-    )
+    from typing_extensions import Self
+
+    from dissect.cstruct.types import Array
 
 
 T = TypeVar("T", bound=BaseType)
 
 AllowedEndianness: TypeAlias = Literal["little", "big", "network", "<", ">", "!", "@", "="]
 Endianness: TypeAlias = Literal["<", ">", "!", "@", "="]
+
+_active_declaration_context: ContextVar[cstruct | None] = ContextVar(
+    "dissect_cstruct_active_declaration_context",
+    default=None,
+)
+_context_scope_tokens: ContextVar[tuple[Any, ...]] = ContextVar(
+    "dissect_cstruct_context_scope_tokens",
+    default=(),
+)
 
 
 class cstruct:
@@ -65,6 +77,10 @@ class cstruct:
         self.consts: dict[str, int | str | bytes] = {}
         self.types: dict[str, type[BaseType]] = {}
         self.includes: list[str] = []
+
+        self._frozen = False
+        self._declaration_lock = RLock()
+        self.contexts: dict[str, cstruct] = {"default": self}
 
         # fmt: off
         initial_types = {
@@ -245,20 +261,128 @@ class cstruct:
         raise AttributeError(f"'{type(self).__name__}' object has no attribute {attr!r}")
 
     def __copy__(self) -> cstruct:
-        cs = cstruct(endian=self.endian, pointer=self.pointer.__name__)
+        cs = type(self)(endian=self.endian)
         cs._anonymous_count = self._anonymous_count
         cs.includes = self.includes.copy()
 
-        # Update types to point to the new cstruct instance
+        # Copy constants first. Type expressions in the cloned graph are bound to ``cs``.
+        cs.consts = dict(self.consts)
+        for name, value in self.consts.items():
+            cs._add_attr(name, value)
+
+        # Clone the complete reachable type graph. Copying a class object itself is a no-op,
+        # so reusing ``copy.copy(type_)`` would accidentally rebind and mutate the source graph.
+        memo: dict[type[BaseType], type[BaseType]] = {}
         for name, type_ in self.types.items():
-            new_type = copy.copy(type_)
-            new_type.__cs__ = cs
+            new_type = self._clone_type(type_, cs, memo)
             cs.add_type(name, new_type, replace=True)
 
-        for name, value in self.consts.items():
-            cs.add_const(name, value)
+        cs.pointer = self._clone_type(self.pointer, cs, memo)
+
+        # Compiled readers/writers close over types and the cstruct instance. Recreate them
+        # against the cloned graph instead of copying those closures.
+        from dissect.cstruct import compiler
+
+        for old_type, new_type in memo.items():
+            if isinstance(old_type, type) and issubclass(old_type, Structure) and old_type.__compiled__:
+                compiler.compile_structure(new_type)
 
         return cs
+
+    def _clone_type(
+        self,
+        old_type: type[BaseType],
+        target: cstruct,
+        memo: dict[type[BaseType], type[BaseType]],
+    ) -> type[BaseType]:
+        """Clone a type and every type referenced by it into ``target``."""
+        if not isinstance(old_type, type):
+            return old_type
+
+        if old_type in memo:
+            return memo[old_type]
+
+        if not hasattr(old_type, "__cs__"):
+            # Shared abstract base classes such as ``BaseType`` and ``Array`` are not declarations.
+            memo[old_type] = old_type
+            return old_type
+
+        if issubclass(old_type, Structure):
+            base = Union if issubclass(old_type, Union) else Structure
+            new_type = target._make_struct(
+                old_type.__name__,
+                [],
+                align=old_type.__align__,
+                anonymous=old_type.__anonymous__,
+                base=base,
+            )
+            memo[old_type] = new_type
+
+            fields = []
+            for field in old_type.__fields__:
+                field_type = self._clone_type(field.type, target, memo)
+                fields.append(Field(field.name, field_type, field.bits, field.offset))
+
+            new_type.__fields__.extend(fields)
+            new_type.commit()
+            return new_type
+
+        if isinstance(old_type, EnumMetaType):
+            value_type = self._clone_type(old_type.__type__, target, memo)
+            members = {name: member.value for name, member in old_type.__members__.items()}
+            factory = target._make_flag if issubclass(old_type, Flag) else target._make_enum
+            new_type = factory(old_type.__name__, value_type, members)
+            memo[old_type] = new_type
+            return new_type
+
+        if issubclass(old_type, BaseArray):
+            element_type = self._clone_type(old_type.__type__, target, memo)
+            new_type = target._make_array(element_type, old_type.__num_entries__)
+            memo[old_type] = new_type
+            return new_type
+
+        if issubclass(old_type, Pointer):
+            target_type = self._clone_type(old_type.__type__, target, memo)
+            new_type = target._make_pointer(target_type)
+            memo[old_type] = new_type
+            return new_type
+
+        return self._clone_custom_type(old_type, target, memo)
+
+    @staticmethod
+    def _clone_custom_type(
+        old_type: type[BaseType],
+        target: cstruct,
+        memo: dict[type[BaseType], type[BaseType]],
+    ) -> type[BaseType]:
+        """Clone a packed, integer or user-provided type class."""
+        skipped_attributes = {
+            "__dict__",
+            "__weakref__",
+            "__cs__",
+            "__parameters__",
+            "__orig_bases__",
+            "__firstlineno__",
+            "__static_attributes__",
+        }
+        attributes = {key: value for key, value in vars(old_type).items() if key not in skipped_attributes}
+        attributes["__cs__"] = target
+
+        bases = tuple(
+            target._clone_type(base, target, memo) if isinstance(base, type) and hasattr(base, "__cs__") else base
+            for base in old_type.__bases__
+        )
+
+        new_type = types.new_class(
+            old_type.__name__,
+            bases,
+            {"metaclass": type(old_type)},
+            lambda namespace: namespace.update(attributes),
+        )
+        if isinstance(old_type.__dict__.get("__type__"), type):
+            new_type.__type__ = target._clone_type(old_type.__type__, target, memo)
+        memo[old_type] = new_type
+        return new_type
 
     def _next_anonymous(self) -> str:
         name = f"__anonymous_{self._anonymous_count}__"
@@ -287,12 +411,14 @@ class cstruct:
         Raises:
             ValueError: If the type already exists.
         """
+        self._require_mutable()
         typeobj = self.resolve(type_)
-        if not replace and (existing := self.types.get(name)) is not None and existing is not typeobj:
-            raise ValueError(f"Duplicate type: {name}")
+        with self._declaration_lock:
+            if not replace and (existing := self.types.get(name)) is not None and existing is not typeobj:
+                raise ValueError(f"Duplicate type: {name}")
 
-        self.types[name] = typeobj
-        self._add_attr(name, typeobj)
+            self.types[name] = typeobj
+            self._add_attr(name, typeobj)
 
     addtype = add_type
 
@@ -341,8 +467,10 @@ class cstruct:
             name: Name of the constant to be added.
             value: The value of the constant.
         """
-        self.consts[name] = value
-        self._add_attr(name, value)
+        self._require_mutable()
+        with self._declaration_lock:
+            self.consts[name] = value
+            self._add_attr(name, value)
 
     def del_const(self, name: str) -> None:
         """Delete a constant value.
@@ -353,10 +481,21 @@ class cstruct:
         Raises:
             KeyError: If the constant does not exist.
         """
-        del self.consts[name]
-        self.__dict__.pop(name, None)
+        self._require_mutable()
+        with self._declaration_lock:
+            del self.consts[name]
+            self.__dict__.pop(name, None)
 
-    def load(self, definition: str, deftype: int | None = None, **kwargs) -> cstruct:
+    def load(
+        self,
+        definition: str,
+        deftype: int | None = None,
+        *,
+        replace: bool = False,
+        overwrite: bool = False,
+        context: str | cstruct | None = None,
+        **kwargs,
+    ) -> cstruct:
         """Parse structures from the given definitions using the given definition type.
 
         Definitions can be parsed using different parsers. Currently, there's
@@ -367,16 +506,26 @@ class cstruct:
         Args:
             definition: The definition to parse.
             deftype: The definition type to parse the definitions with.
+            replace: Allow replacing types with the same name.
+            overwrite: Alias for ``replace``.
+            context: Named context or context object to load into.
             **kwargs: Keyword arguments for parsers.
         """
+        replace = replace or overwrite
+        if context is not None:
+            declaration_context = self.get_context(context) if isinstance(context, str) else context
+            return declaration_context.load(definition, deftype, replace=replace, **kwargs)
+
+        self._require_mutable()
         deftype = deftype or cstruct.DEF_CSTYLE
 
-        if deftype == cstruct.DEF_CSTYLE:
-            CStyleParser(self, **kwargs).parse(definition)
-        else:
-            raise ValueError(f"Unknown definition type: {deftype}")
+        with self._declaration_lock:
+            if deftype == cstruct.DEF_CSTYLE:
+                CStyleParser(self, replace=replace, **kwargs).parse(definition)
+            else:
+                raise ValueError(f"Unknown definition type: {deftype}")
 
-        return self
+            return self
 
     def loadfile(self, path: str, deftype: int | None = None, **kwargs) -> None:
         """Load structure definitions from a file.
@@ -427,17 +576,31 @@ class cstruct:
 
         return "\n\n".join(blocks)
 
-    def read(self, name: str, stream: BinaryIO) -> Any:
+    def read(
+        self,
+        name: str,
+        stream: BinaryIO,
+        *,
+        context: str | cstruct | None = None,
+        endian: AllowedEndianness | None = None,
+    ) -> Any:
         """Parse data using a given type.
 
         Args:
             name: Type name to read.
             stream: File-like object or byte string to parse.
+            context: Optional declaration context/name to resolve ``name`` from.
+            endian: Optional endianness override.
 
         Returns:
             The parsed data.
         """
-        return self.resolve(name).read(stream)
+        if context is not None:
+            declaration_context = self._coerce_context(context)
+        else:
+            declaration_context = _active_declaration_context.get() or self
+        type_ = declaration_context.resolve(name)
+        return type_.read(stream, endian=endian)
 
     def resolve(self, name: type[BaseType] | str) -> type[BaseType]:
         """Resolve a type name to get the actual type object.
@@ -469,6 +632,138 @@ class cstruct:
             A new cstruct instance with the same types and settings as this one.
         """
         return copy.copy(self)
+
+    @property
+    def is_frozen(self) -> bool:
+        """Whether this declaration context rejects declaration changes."""
+        return self._frozen
+
+    @property
+    def frozen(self) -> bool:
+        """Alias for :attr:`is_frozen`."""
+        return self._frozen
+
+    def _require_mutable(self) -> None:
+        if self._frozen:
+            raise TypeError("Declaration context is frozen; freeze a mutable context or use a different context")
+
+    def freeze(self, name: str | None = None) -> Self:
+        """Freeze this context in place and return it.
+
+        If callers need to keep modifying the current registry, call :meth:`snapshot` or
+        :meth:`claim` first. If ``name`` is provided, this context is stored in :attr:`contexts`.
+        """
+        with self._declaration_lock:
+            self._frozen = True
+            if not isinstance(self.consts, types.MappingProxyType):
+                self.consts = types.MappingProxyType(self.consts)
+            if not isinstance(self.types, types.MappingProxyType):
+                self.types = types.MappingProxyType(self.types)
+            if name is not None:
+                self.contexts[name] = self
+            return self
+
+    def snapshot(self, name: str | None = None) -> cstruct:
+        """Return an independent frozen copy of the current declarations."""
+        with self._declaration_lock:
+            frozen = self if self._frozen else self.copy()
+            frozen.freeze()
+            if name is not None:
+                self.contexts[name] = frozen
+            return frozen
+
+    def create_context(
+        self,
+        name: str,
+        *,
+        clone: bool = False,
+        frozen: bool = False,
+    ) -> cstruct:
+        """Create and register a named declaration context.
+
+        Args:
+            name: Stable caller-selected context name.
+            clone: Copy the current declarations into the context when true.
+            frozen: Freeze the new context immediately.
+        """
+        with self._declaration_lock:
+            if name in self.contexts:
+                return self.contexts[name]
+
+            context = self.copy() if clone else type(self)(endian=self.endian)
+            if frozen:
+                context = context.freeze()
+            self.contexts[name] = context
+            return context
+
+    def get_context(self, context: str | cstruct) -> cstruct:
+        """Return a registered context by name, or return a context object unchanged."""
+        if isinstance(context, cstruct):
+            return context
+
+        try:
+            return self.contexts[context]
+        except KeyError:
+            raise KeyError(f"Unknown declaration context: {context!r}") from None
+
+    def _coerce_context(self, context: str | cstruct) -> cstruct:
+        return self.get_context(context)
+
+    def context(
+        self,
+        name: str | cstruct | None = None,
+        *,
+        create: bool = False,
+        clone: bool = False,
+        frozen: bool = False,
+    ) -> cstruct:
+        """Return the active, named or explicitly supplied declaration context."""
+        if name is None:
+            return _active_declaration_context.get() or self
+        if isinstance(name, cstruct):
+            return name
+        if create:
+            return self.create_context(name, clone=clone, frozen=frozen)
+        return self.get_context(name)
+
+    def select_context(self, context: str | cstruct) -> cstruct:
+        """Explicitly select another declaration context."""
+        return self.get_context(context)
+
+    @contextmanager
+    def use_context(self, context: str | cstruct) -> Generator[cstruct]:
+        """Yield an explicitly selected declaration context."""
+        declaration_context = self.get_context(context)
+        token = _active_declaration_context.set(declaration_context)
+        try:
+            yield declaration_context
+        finally:
+            _active_declaration_context.reset(token)
+
+    @contextmanager
+    def frozen_context(self, name: str | None = None) -> Generator[cstruct]:
+        """Yield a frozen snapshot of this context."""
+        yield self.snapshot(name)
+
+    def __enter__(self) -> Self:
+        token = _active_declaration_context.set(self)
+        tokens = _context_scope_tokens.get()
+        _context_scope_tokens.set((*tokens, token))
+        return self
+
+    def __exit__(self, exc_type: object, exc: object, traceback: object) -> None:
+        tokens = _context_scope_tokens.get()
+        if tokens:
+            token = tokens[-1]
+            _context_scope_tokens.set(tokens[:-1])
+            _active_declaration_context.reset(token)
+
+    def claim(self, name: str, *, context: str | cstruct | None = None) -> ParseLease:
+        """Claim a parse task and pin it to a frozen declaration snapshot."""
+        declaration_context = self if context is None else self._coerce_context(context)
+        return ParseLease(declaration_context.snapshot(), name)
+
+    checkout = claim
 
     @contextmanager
     def endianness(self, endian: AllowedEndianness) -> Generator[cstruct]:
@@ -760,6 +1055,50 @@ class cstruct:
         _OWORD: TypeAlias = uint128
 
 
+class ParseLease:
+    """A parsing task bound to the frozen declaration context it claimed."""
+
+    __slots__ = ("context", "name", "type")
+
+    def __init__(self, context: cstruct, name: str) -> None:
+        self.context = context
+        self.name = name
+        self.type = context.resolve(name)
+
+    def read(self, stream: BinaryIO, *, endian: AllowedEndianness | None = None) -> Any:
+        """Read from a stream using the claimed ABI."""
+        return self.type.read(stream, endian=endian)
+
+    def reads(self, data: bytes | memoryview | bytearray, *, endian: AllowedEndianness | None = None) -> Any:
+        """Read from bytes using the claimed ABI."""
+        return self.type.reads(data, endian=endian)
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        return self.type(*args, **kwargs)
+
+    def __len__(self) -> int:
+        return len(self.type)
+
+
+class DeclarationContext(cstruct):
+    """A :class:`cstruct` registry with explicit named-context helpers."""
+
+    def __init__(
+        self,
+        load: str = "",
+        *,
+        endian: AllowedEndianness = "<",
+        pointer: str | None = None,
+        name: str | None = None,
+    ) -> None:
+        super().__init__(load, endian=endian, pointer=pointer)
+        self.name = name
+
+    def declare(self, definition: str, deftype: int | None = None, **kwargs: Any) -> cstruct:
+        """Declare types in this context; alias for :meth:`load`."""
+        return self.load(definition, deftype, **kwargs)
+
+
 # Attribute names that types and constants may never shadow: the public API and methods of the cstruct
 # class itself, plus the instance attributes created in __init__.
 _RESERVED_NAMES = frozenset(dir(cstruct)) | {
@@ -769,6 +1108,9 @@ _RESERVED_NAMES = frozenset(dir(cstruct)) | {
     "includes",
     "pointer",
     "_anonymous_count",
+    "_frozen",
+    "_declaration_lock",
+    "contexts",
 }
 
 
