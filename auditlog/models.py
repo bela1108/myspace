@@ -25,7 +25,8 @@ from django.utils.encoding import smart_str
 from django.utils.translation import gettext_lazy as _
 
 from auditlog import get_logentry_model
-from auditlog.diff import get_mask_function
+from auditlog.diff import get_mask_function, mask_str
+from auditlog.correction_service import get_display_changes
 
 DEFAULT_OBJECT_REPR = "<error forming object repr>"
 
@@ -460,16 +461,16 @@ class AbstractLogEntry(models.Model):
         # Get the model and model_fields, but gracefully handle the case where the model no longer exists
         model = self.content_type.model_class()
         model_fields = None
-        if auditlog.contains(model._meta.model):
+        if model is not None and auditlog.contains(model._meta.model):
             model_fields = auditlog.get_model_fields(model._meta.model)
 
         if settings.AUDITLOG_STORE_JSON_CHANGES:
             changes_dict = {}
-            for field_name, values in self.changes_dict.items():
+            for field_name, values in self.display_changes_dict.items():
                 values_as_strings = [str(v) for v in values]
                 changes_dict[field_name] = values_as_strings
         else:
-            changes_dict = self.changes_dict
+            changes_dict = self.display_changes_dict
 
         changes_display_dict = {}
         # grab the changes_dict and iterate through
@@ -567,6 +568,16 @@ class AbstractLogEntry(models.Model):
         # ObjectDoesNotExist will be raised if the object was deleted.
         except ObjectDoesNotExist:
             return f"Deleted '{field.related_model.__name__}' ({value})"
+
+    @property
+    def display_changes_dict(self):
+        """Return the approved, disclosure-safe values for this log entry."""
+        return get_display_changes(self)
+
+    def get_display_changes(self, at=None, include_corrections=False):
+        return get_display_changes(
+            self, at=at, include_corrections=include_corrections
+        )
 
 
 class LogEntry(AbstractLogEntry):
