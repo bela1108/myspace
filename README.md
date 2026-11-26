@@ -134,6 +134,43 @@ JSON Output:
 ]
 ```
 
+## Three-Way Review
+
+When two maintainers produce complete offline drafts, review both against the
+approved ruleset as a common base:
+
+```python
+from plyara.review import review_rules
+
+report = review_rules(approved_source, left_draft, right_draft)
+
+report.mergeable        # metadata/tag changes that can merge independently
+report.reissue          # condition, string identity, dependency, rule changes
+report.manual_review    # unresolved expressions and cross-draft coupling
+report.merged_source    # non-conflicting merge preview
+```
+
+The same entry point is available on the parser and from the command line:
+
+```python
+report = plyara.Plyara().review(approved_source, left_draft, right_draft)
+```
+
+```sh
+plyara review approved.yar left.yar right.yar
+# or: plyara --review approved.yar left.yar right.yar
+```
+
+The review compares the condition structure, local string identities, and
+explainable condition dependencies. Metadata and tags merge independently.
+Condition, string-identity, dependency, scope, import, rule-addition, and
+rule-removal changes require a new issuance. Expressions that cannot be judged
+statically (for example an unknown identifier or module) remain explicit
+`manual_review` items. A condition that starts depending on a string or rule
+changed by the other draft is also surfaced as a combined-only manual item, so
+two individually explainable changes are not silently merged into a new active
+dependency.
+
 # Additional Information
 
 ## Reusing The Parser

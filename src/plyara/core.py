@@ -353,6 +353,22 @@ class Parser:
 
         return self.rules
 
+    def review(self, base, left, right, **kwargs):
+        """Review two offline drafts against an approved base ruleset.
+
+        Args:
+            base: Approved YARA source that acts as the common ancestor.
+            left: Complete draft from the first maintainer.
+            right: Complete draft from the second maintainer.
+            **kwargs: Additional keyword arguments passed to :func:`plyara.review.review_rules`.
+
+        Returns:
+            ReviewReport: Mergeable, reissue-required, and manual-review results.
+        """
+        from plyara.review import review_rules
+
+        return review_rules(base, left, right, **kwargs)
+
 
 class Plyara(Parser):
     """Define the lexer and the parser rules."""
