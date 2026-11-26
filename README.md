@@ -139,8 +139,8 @@ usage: pip-audit [-h] [-V] [-l] [-r REQUIREMENT] [--locked] [-f FORMAT]
                  [-s SERVICE] [--osv-url OSV_URL] [-d] [-S]
                  [--desc [{on,off,auto}]] [--aliases [{on,off,auto}]]
                  [--cache-dir CACHE_DIR] [--progress-spinner {on,off}]
-                 [--timeout TIMEOUT] [--path PATH] [-v] [--fix]
-                 [--require-hashes] [--index-url INDEX_URL]
+                 [--timeout TIMEOUT] [--path PATH] [--account LEDGER] [-v]
+                 [--fix] [--require-hashes] [--index-url INDEX_URL]
                  [--extra-index-url URL] [--skip-editable] [--no-deps]
                  [-o FILE] [--ignore-vuln ID] [--disable-pip]
                  [project_path]
@@ -196,6 +196,11 @@ options:
   --path PATH           restrict to the specified installation path for
                         auditing packages; this option can be used multiple
                         times (default: [])
+  --account LEDGER      run offline accounting instead of auditing: project
+                        the pip-audit JSON report declared in the given ledger
+                        onto deliverable and service layers, using the
+                        ledger's composition and provenance declarations
+                        (default: None)
   -v, --verbose         run with additional debug logging; supply multiple
                         times to increase verbosity (default: 0)
   --fix                 automatically upgrade dependencies with known

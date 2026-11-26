@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import argparse
 import enum
+import json
 import logging
 import os
 import sys
@@ -15,6 +16,7 @@ from pathlib import Path
 from typing import IO, NoReturn, cast
 
 from pip_audit import __version__
+from pip_audit._account import Ledger, LedgerError, project
 from pip_audit._audit import AuditOptions, Auditor
 from pip_audit._dependency_source import (
     DependencySource,
@@ -319,6 +321,15 @@ def _parser() -> argparse.ArgumentParser:  # pragma: no cover
         help="restrict to the specified installation path for auditing packages; "
         "this option can be used multiple times",
     )
+    dep_source_args.add_argument(
+        "--account",
+        type=Path,
+        metavar="LEDGER",
+        dest="account",
+        help="run offline accounting instead of auditing: project the pip-audit "
+        "JSON report declared in the given ledger onto deliverable and service "
+        "layers, using the ledger's composition and provenance declarations",
+    )
     parser.add_argument(
         "-v",
         "--verbose",
@@ -408,6 +419,36 @@ def _parse_args(parser: argparse.ArgumentParser) -> argparse.Namespace:  # pragm
     return args
 
 
+def _run_accounting(ledger_path: Path, output: Path) -> NoReturn:  # pragma: no cover
+    """
+    Run the offline accounting flow selected by --account and exit.
+    """
+    try:
+        ledger = Ledger.load(ledger_path)
+    except LedgerError as e:
+        _fatal(str(e))
+
+    projection = project(ledger)
+    summary = projection["summary"]
+    pending = summary["deliverable_layer_pending"]
+    print(
+        f"Accounted {pending} pending "
+        f"{'finding' if pending == 1 else 'findings'} in "
+        f"{summary['deliverable_units']} deliverable "
+        f"{'unit' if summary['deliverable_units'] == 1 else 'units'} "
+        f"({summary['repackaged_units']} repackaged) across "
+        f"{summary['services']} services: "
+        f"{summary['service_layer_pending']} service-layer items, "
+        f"{summary['shared_findings']} shared",
+        file=sys.stderr,
+    )
+    with _output_io(output) as io:
+        print(json.dumps(projection, indent=2), file=io)
+    if pending > 0:
+        sys.exit(1)
+    sys.exit(0)
+
+
 def _dep_source_from_project_path(
     project_path: Path, index_url: str, extra_index_urls: list[str], locked: bool, state: AuditState
 ) -> DependencySource:  # pragma: no cover
@@ -444,6 +485,13 @@ def audit() -> None:  # pragma: no cover
     """
     parser = _parser()
     args = _parse_args(parser)
+
+    # The --account flow is fully offline: it projects an existing JSON
+    # report onto the declared layers without auditing anything.
+    if args.account is not None:
+        if args.fix:
+            parser.error("The --fix flag cannot be used with --account")
+        _run_accounting(args.account, args.output)
 
     service: VulnerabilityService
     if args.vulnerability_service is VulnerabilityServiceChoice.Osv:

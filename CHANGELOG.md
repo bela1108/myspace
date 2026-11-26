@@ -8,6 +8,12 @@ All versions prior to 0.0.9 are untracked.
 
 ## [Unreleased]
 
+### Added
+
+* Added an offline accounting entrypoint, `--account LEDGER`, that projects
+  an existing `pip-audit` JSON report onto deliverable and service layers
+  using a declared ledger of composition relationships and provenance
+
 ### Fixed
 
 * Editable requirements skipped with `--skip-editable` no longer require a hash

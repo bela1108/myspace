@@ -1,0 +1,72 @@
+{
+  "release_packages": [
+    {
+      "id": "web-bundle",
+      "dependencies": [
+        { "name": "libfoo", "version": "1.2.3" },
+        { "name": "libsafe", "version": "2.0.0" }
+      ]
+    },
+    {
+      "id": "data-bundle",
+      "dependencies": [
+        { "name": "libbar", "version": "4.5.6" }
+      ]
+    }
+  ],
+  "services": [
+    {
+      "id": "svc-gateway",
+      "uses": [
+        { "package": "web-bundle", "provenance": "shared" }
+      ]
+    },
+    {
+      "id": "svc-api",
+      "uses": [
+        { "package": "web-bundle", "provenance": "shared" },
+        { "package": "data-bundle", "provenance": "shared" }
+      ]
+    },
+    {
+      "id": "svc-worker",
+      "uses": [
+        { "package": "data-bundle", "provenance": "repackaged" }
+      ]
+    }
+  ],
+  "audit": {
+    "dependencies": [
+      {
+        "name": "libfoo",
+        "version": "1.2.3",
+        "vulns": [
+          {
+            "id": "PYSEC-2023-0001",
+            "fix_versions": ["1.2.4"],
+            "description": "libfoo parses headers unsafely.",
+            "aliases": ["CVE-2023-10001"]
+          }
+        ]
+      },
+      {
+        "name": "libsafe",
+        "version": "2.0.0",
+        "vulns": []
+      },
+      {
+        "name": "libbar",
+        "version": "4.5.6",
+        "vulns": [
+          {
+            "id": "PYSEC-2024-0042",
+            "fix_versions": ["4.5.7"],
+            "description": "libbar deserializes untrusted data.",
+            "aliases": ["CVE-2024-10042"]
+          }
+        ]
+      }
+    ],
+    "fixes": []
+  }
+}
