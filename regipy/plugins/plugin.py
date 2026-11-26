@@ -12,6 +12,9 @@ class Plugin:
     NAME: Optional[str] = None
     DESCRIPTION: Optional[str] = None
     COMPATIBLE_HIVE: Optional[str] = None
+    # Plugins release with regipy by default; implementations may override this
+    # to give an individual plugin its own interpretation/version coordinate.
+    VERSION: Optional[str] = None
 
     def __init_subclass__(cls) -> None:
         PLUGINS.add(cls)

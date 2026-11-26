@@ -16,6 +16,7 @@ from regipy.plugins.utils import run_relevant_plugins
 from regipy.recovery import apply_transaction_logs
 from regipy.regdiff import compare_hives
 from regipy.registry import RegistryHive
+from regipy.testimony import audit_export as audit_testimony_export_file
 from regipy.utils import _setup_logging, calculate_xor32_checksum
 
 logger = logging.getLogger(__name__)
@@ -287,6 +288,75 @@ def run_plugins(hive_path, output_path, plugins, hive_type, partial_hive_path, v
         f"Finished: {len(plugin_results)}/{len(PLUGINS)} plugins matched the hive type",
         fg="green",
     )
+
+
+def _load_audit_json_option(path):
+    if not path:
+        return None
+    with open(path, encoding="utf-8") as input_file:
+        return json.load(input_file)
+
+
+@click.command(name="receipt-audit")
+@click.argument(
+    "export_path",
+    type=click.Path(exists=True, dir_okay=False, resolve_path=True),
+    required=True,
+)
+@click.option(
+    "--active-plugins",
+    type=click.Path(exists=True, dir_okay=False, resolve_path=True),
+    help="JSON file mapping plugin names to active versions or plugin references.",
+)
+@click.option(
+    "--interpretations",
+    type=click.Path(exists=True, dir_okay=False, resolve_path=True),
+    help="JSON array/map of currently registered interpretation versions.",
+)
+@click.option(
+    "--changes",
+    type=click.Path(exists=True, dir_okay=False, resolve_path=True),
+    help="JSON array of scoped ChangeNotice records.",
+)
+@click.option(
+    "-f",
+    "--format",
+    "output_format",
+    type=click.Choice(["markdown", "json"]),
+    default="markdown",
+    help="Report format.",
+)
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(dir_okay=False, resolve_path=True),
+    help="Write the report to this path instead of stdout.",
+)
+@click.option(
+    "--check",
+    is_flag=True,
+    default=False,
+    help="Exit with status 1 when any testimony requires review.",
+)
+def receipt_audit(export_path, active_plugins, interpretations, changes, output_format, output, check):
+    """Audit deterministic testimony receipts in an offline JSON export."""
+
+    report = audit_testimony_export_file(
+        export_path,
+        active_plugins=_load_audit_json_option(active_plugins),
+        interpretations=_load_audit_json_option(interpretations),
+        changes=_load_audit_json_option(changes),
+    )
+    rendered = report.to_json() if output_format == "json" else report.to_markdown()
+
+    if output:
+        with open(output, "w", encoding="utf-8") as output_file:
+            output_file.write(rendered)
+    else:
+        click.echo(rendered)
+
+    if check and report.review_queue:
+        raise click.exceptions.Exit(1)
 
 
 @click.command()
