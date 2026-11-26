@@ -24,3 +24,7 @@ class CoseInvalidKey(Exception):
 
 class CoseException(Exception):
     pass
+
+
+class CoseReceiptAuditError(CoseException):
+    pass
