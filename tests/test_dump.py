@@ -379,6 +379,48 @@ def test_dumpstruct_dict_bitfields(cs: cstruct, compiled: bool) -> None:
     }
 
 
+def test_dumpstruct_explicit_alias(cs: cstruct, compiled: bool) -> None:
+    """Verify that an explicit alias (a field with a manual offset) shares the storage of the original field: the
+    dict projection lists both names at the same offset so each interpretation can be referenced separately, while
+    the hexdump palette preserves the shared bytes only once.
+    """
+    cdef = """
+    struct sample {
+        uint8   tag;
+        uint16  status;
+        uint8   tail;
+    };
+    """
+    cs.load(cdef, compiled=compiled)
+    cs.sample.add_field("alias", cs.uint16, offset=1)
+
+    assert verify_compiled(cs.sample, compiled)
+
+    buf = b"\xaa\x05\x40\xbb"
+    result = dumpstruct(cs.sample, buf, output="dict")
+
+    assert result == {
+        "bytes": "aa0540bb",
+        "type": "sample",
+        "kind": "struct",
+        "fields": [
+            {"name": "tag", "type": "uint8", "offset": 0, "size": 1, "display": "0xaa"},
+            {"name": "status", "type": "uint16", "offset": 1, "size": 2, "display": "0x4005"},
+            {"name": "tail", "type": "uint8", "offset": 3, "size": 1, "display": "0xbb"},
+            {"name": "alias", "type": "uint16", "offset": 1, "size": 2, "display": "0x4005"},
+        ],
+    }
+
+    lines: list[tuple[int, str, str | None]] = []
+    palette: dump.Palette = []
+    dump._render_fields(result["fields"], 0, lines, palette, 0)
+
+    # Both interpretations are listed, but the shared bytes are preserved (colored) only once
+    assert [name for _, name, _ in lines] == ["tag", "status", "tail", "alias"]
+    assert [length for length, _ in palette] == [1, 2, 1]
+    assert sum(length for length, _ in palette) == len(buf)
+
+
 def test_dumpstruct_invalid_args(cs: cstruct, compiled: bool) -> None:
     """Verify that invalid arguments raise ValueError."""
     cdef = """
