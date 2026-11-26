@@ -31,6 +31,14 @@ FILENAME_FORMAT_SHORT = "{step_name}.link"
 UNFINISHED_FILENAME_FORMAT = ".{step_name}.{keyid:.8}.link-unfinished"
 UNFINISHED_FILENAME_FORMAT_GLOB = ".{step_name}.{pattern}.link-unfinished"
 
+CREDENTIAL_REF_FIELDS = (
+    "credential_refs",
+    "credential_references",
+    "credentials",
+    "credential_access",
+    "secret_refs",
+)
+
 
 @attr.s(repr=False, init=False)
 class Link(Signable):
@@ -88,6 +96,7 @@ class Link(Signable):
     byproducts = attr.ib()
     command = attr.ib()
     environment = attr.ib()
+    credential_refs = attr.ib(default=None)
 
     def __init__(self, **kwargs):
         super().__init__()
@@ -100,6 +109,33 @@ class Link(Signable):
         self.command = kwargs.get("command", [])
         self.environment = kwargs.get("environment", {})
 
+        credential_field_name = "credential_refs"
+        credential_value = None
+        for field_name in CREDENTIAL_REF_FIELDS:
+            if field_name in kwargs:
+                credential_field_name = field_name
+                credential_value = kwargs[field_name]
+                break
+
+        self._credential_field_name = credential_field_name
+        self.credential_refs = credential_value
+
+        known_fields = {
+            "_type",
+            "name",
+            "materials",
+            "products",
+            "byproducts",
+            "command",
+            "environment",
+            *CREDENTIAL_REF_FIELDS,
+        }
+        self._extra_fields = {
+            key: value
+            for key, value in kwargs.items()
+            if key not in known_fields
+        }
+
         self.validate()
 
     @property
@@ -110,6 +146,62 @@ class Link(Signable):
         # NOTE: Trailing underscore is used by convention (pep8) to avoid conflict
         # with Python's type keyword.
         return self._type
+
+    @property
+    def credential_references(self):
+        """Alias for the public credential references reported by a builder."""
+        return self.credential_refs
+
+    @credential_references.setter
+    def credential_references(self, value):
+        self.credential_refs = value
+
+    @property
+    def credentials(self):
+        """Compatibility alias for credential references."""
+        return self.credential_refs
+
+    @credentials.setter
+    def credentials(self, value):
+        self.credential_refs = value
+
+    @property
+    def credential_refs_reported(self):
+        """Whether the link contains the new credential-reference field.
+
+        A missing field and an explicit JSON ``null`` both mean that the old
+        builder did not collect this information.  An empty list means that a
+        new builder did collect it and found no credential references.
+        """
+        return self.credential_refs is not None
+
+    @property
+    def credential_refs_collected(self):
+        """Alias for :attr:`credential_refs_reported`."""
+        return self.credential_refs is not None
+
+    @property
+    def credential_refs_present(self):
+        """Whether the serialized Link has a credential-reference field."""
+        return self.credential_refs is not None
+
+    @property
+    def credential_collection_status(self):
+        """Return ``not_collected`` for legacy Links or ``reported``."""
+        return "reported" if self.credential_refs is not None else "not_collected"
+
+    def to_dict(self):
+        """Serialize link while omitting an uncollected credential field."""
+        data = attr.asdict(self)
+        value = data.pop("credential_refs", None)
+        if value is not None:
+            data[self._credential_field_name] = value
+        extra_fields = getattr(self, "_extra_fields", {})
+        if extra_fields:
+            data.update(extra_fields)
+        if getattr(self, "is_summary", False):
+            data["summary"] = True
+        return data
 
     @staticmethod
     def read(data):
@@ -174,3 +266,17 @@ class Link(Signable):
             raise securesystemslib.exceptions.FormatError(
                 f"Invalid Link: field `environment` must be of type dict, got: {type(self.environment)}"
             )
+
+    def _validate_credential_refs(self):
+        """Private method to validate optional public credential references."""
+        if self.credential_refs is None:
+            return
+
+        if not isinstance(self.credential_refs, (list, tuple)):
+            raise securesystemslib.exceptions.FormatError(
+                "Invalid Link: optional credential references must be a list, "
+                f"got: {type(self.credential_refs)}"
+            )
+
+        if isinstance(self.credential_refs, tuple):
+            self.credential_refs = list(self.credential_refs)

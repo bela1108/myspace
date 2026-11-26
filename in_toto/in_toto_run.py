@@ -25,7 +25,9 @@
 """
 
 import argparse
+import json
 import logging
+import os
 import sys
 from getpass import getpass
 
@@ -209,6 +211,19 @@ e.g. 'document.pdf'.
     parser.add_argument(*METADATA_DIRECTORY_ARGS, **METADATA_DIRECTORY_KWARGS)
     parser.add_argument(*DSSE_ARGS, **DSSE_KWARGS)
     parser.add_argument(*RUN_TIMEOUT_ARGS, **RUN_TIMEOUT_KWARGS)
+    parser.add_argument(
+        "--credential-refs",
+        "--credential-references",
+        "--credentials",
+        dest="credential_refs",
+        default=None,
+        metavar="<path-or-json>",
+        help=(
+            "JSON list of public credential references and their purposes, "
+            "or a path to a JSON file. Use '[]' to explicitly report zero "
+            "credential references."
+        ),
+    )
 
     verbosity_args = parser.add_mutually_exclusive_group(required=False)
     verbosity_args.add_argument(*VERBOSE_ARGS, **VERBOSE_KWARGS)
@@ -277,6 +292,14 @@ def main():
 
     payload = None
     try:
+        credential_refs = None
+        if args.credential_refs is not None:
+            if os.path.exists(args.credential_refs):
+                with open(args.credential_refs, encoding="utf-8") as handle:
+                    credential_refs = json.load(handle)
+            else:
+                credential_refs = json.loads(args.credential_refs)
+
         # We load the key here because it might prompt the user for a password in
         # case the key is encrypted. Something that should not happen in the lib.
         signer = None
@@ -307,6 +330,7 @@ def main():
             use_dsse=args.use_dsse,
             timeout=args.run_timeout,
             signer=signer,
+            credential_refs=credential_refs,
         )
         # FIXME the link has just been serialized and the payload
         # is being deserialized in order to get the 'return-value'.

@@ -422,6 +422,7 @@ def in_toto_run(  # noqa: C901, PLR0912, PLR0913, PLR0914, PLR0915, PLR0917, RUF
     use_dsse=False,
     timeout=in_toto.settings.LINK_CMD_EXEC_TIMEOUT,
     signer=None,
+    credential_refs=None,
 ):
     """Performs a supply chain step or inspection generating link metadata.
 
@@ -583,6 +584,7 @@ def in_toto_run(  # noqa: C901, PLR0912, PLR0913, PLR0914, PLR0915, PLR0917, RUF
         command=link_cmd_args,
         byproducts=byproducts,
         environment=environment,
+        credential_refs=credential_refs,
     )
 
     if use_dsse:

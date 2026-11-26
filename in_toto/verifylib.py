@@ -43,6 +43,7 @@ import in_toto.rulelib
 import in_toto.runlib
 import in_toto.settings
 from in_toto.exceptions import (
+    ApprovalVerificationError,
     BadReturnValueError,
     LayoutExpiredError,
     RuleVerificationError,
@@ -1478,6 +1479,11 @@ def get_summary_link(layout, reduced_chain_link_dict, name):
         summary_link.byproducts = last_step_link.byproducts
         summary_link.command = last_step_link.command
 
+    # Summary links are unsigned convenience projections, not original
+    # attestations.  Mark them so optional reviews can request the raw Links.
+    summary_link.is_summary = True
+    summary_link.summary_only = True
+
     return summary_link
 
 
@@ -1489,6 +1495,13 @@ def in_toto_verify(  # noqa: PLR0913, PLR0917, RUF100
     step_name="",
     persist_inspection_links=True,
     inspect_timeout=in_toto.settings.LINK_CMD_EXEC_TIMEOUT,
+    credential_approvals=None,
+    approval_manifest=None,
+    credential_review=None,
+    credential_approval_path=None,
+    credential_review_only=False,
+    credential_review_strict=True,
+    **kwargs,
 ):
     """Performs complete in-toto supply chain verification for a final product.
 
@@ -1580,6 +1593,54 @@ def in_toto_verify(  # noqa: PLR0913, PLR0917, RUF100
 
     """
 
+    credential_approvals = (
+        credential_approvals
+        or kwargs.pop("credential_approval_manifest", None)
+        or kwargs.pop("credential_review_manifest", None)
+        or kwargs.pop("approval_manifest_path", None)
+        or kwargs.pop("review_credentials", None)
+    )
+    credential_review_only = credential_review_only or kwargs.pop(
+        "review_only", False
+    )
+    if kwargs:
+        unexpected = next(iter(kwargs))
+        raise TypeError(f"unexpected keyword argument: {unexpected!r}")
+
+    if (
+        credential_approvals is not None
+        or approval_manifest is not None
+        or credential_review is not None
+        or credential_review_only
+    ):
+        from in_toto import reviewlib
+
+        approval_source = (
+            credential_approvals
+            if credential_approvals is not None
+            else approval_manifest
+        )
+        if approval_source is None and not isinstance(credential_review, bool):
+            approval_source = credential_review
+
+        credential_review_report = reviewlib.review_layout(
+            metadata,
+            approval_source,
+            approval_path=credential_approval_path,
+            link_dir=link_dir_path,
+            layout_key_dict=layout_key_dict,
+        )
+
+        if credential_review_only:
+            return credential_review_report
+
+        if credential_review_strict and not credential_review_report.approved:
+            raise ApprovalVerificationError(
+                "Credential reference approval review failed."
+            )
+    else:
+        credential_review_report = None
+
     LOG.info("Verifying layout metadata signatures...")
     verify_metadata_signatures(metadata, layout_key_dict)
 
@@ -1639,4 +1700,24 @@ def in_toto_verify(  # noqa: PLR0913, PLR0917, RUF100
     # Return a link file which summarizes the entire software supply chain
     # This is mostly relevant if the currently verified supply chain is embedded
     # in another supply chain
-    return get_summary_link(layout, reduced_chain_link_dict, step_name)
+    summary_link = get_summary_link(layout, reduced_chain_link_dict, step_name)
+    if credential_review_report is not None:
+        summary_link.credential_review_report = credential_review_report
+    return summary_link
+
+
+# Optional offline credential-review entry points.  Imported at module load
+# time; reviewlib imports verifylib only lazily for root signature helpers.
+from in_toto.reviewlib import (  # noqa: E402
+    CredentialReviewer,
+    ReviewReport,
+    review_credential_approvals,
+    review_credential_refs,
+    review_layout as review_credential_layout,
+    review_link as review_credential_link,
+    review_summary_link as review_credential_summary,
+)
+
+review_credentials = review_credential_approvals
+verify_credentials = review_credential_approvals
+review_credential_references = review_credential_refs

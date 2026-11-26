@@ -25,12 +25,14 @@
 """
 
 import argparse
+import json
 import logging
 import sys
 
 from securesystemslib._gpg import functions as gpg_interface
 
 from in_toto import __version__, verifylib
+from in_toto import reviewlib
 from in_toto.common_args import (
     GPG_HOME_ARGS,
     GPG_HOME_KWARGS,
@@ -173,6 +175,32 @@ for which the public part can be found in the GPG keyring at '~/.gnupg'.
         ),
     )
 
+    parser.add_argument(
+        "--credential-review",
+        "--credential-approvals",
+        "--review-approvals",
+        "--approval-manifest",
+        "--approval-list",
+        dest="credential_approvals",
+        type=str,
+        metavar="<path>",
+        default=None,
+        help=(
+            "optional path to an independent credential-reference approval "
+            "manifest; signed original Links are reviewed without executing "
+            "the build step."
+        ),
+    )
+    parser.add_argument(
+        "--credential-review-only",
+        dest="credential_review_only",
+        action="store_true",
+        help=(
+            "run only the offline credential review, without in-toto "
+            "inspections or artifact-rule verification."
+        ),
+    )
+
     parser.add_argument(*GPG_HOME_ARGS, **GPG_HOME_KWARGS)
     parser.add_argument(
         "--inspection-timeout",
@@ -233,12 +261,34 @@ def main():
                 key = load_public_key_from_file(path)
                 layout_key_dict[key["keyid"]] = key
 
+        if args.credential_review_only:
+            report = reviewlib.review_layout(
+                layout,
+                approval_path=args.credential_approvals,
+                link_dir=args.link_dir,
+                layout_key_dict=layout_key_dict,
+            )
+            print(json.dumps(report, indent=2, sort_keys=True, default=str))
+            if not report.approved:
+                sys.exit(1)
+            sys.exit(0)
+
         verifylib.in_toto_verify(
             layout,
             layout_key_dict,
             args.link_dir,
             inspect_timeout=args.inspect_timeout,
         )
+
+        if args.credential_approvals:
+            report = reviewlib.review_layout(
+                layout,
+                approval_path=args.credential_approvals,
+                link_dir=args.link_dir,
+                layout_key_dict=layout_key_dict,
+            )
+            LOG.info("Credential review report: %s", json.dumps(report, default=str))
+            reviewlib.verify_review_report(report)
 
     except Exception as e:  # noqa: BLE001
         LOG.error("(in-toto-verify) %s: %s", type(e).__name__, e)

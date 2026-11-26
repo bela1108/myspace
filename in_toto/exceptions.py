@@ -41,3 +41,15 @@ class PrefixError(Error):
 
 class InvalidMetadata(Error):  # noqa: N818
     """Indicates that the metadata is not valid."""
+
+
+class CredentialReviewError(Error):
+    """Indicates that credential reference review failed or is incomplete."""
+
+
+class ApprovalVerificationError(CredentialReviewError):
+    """Indicates that an approval manifest does not cover all references."""
+
+
+CredentialApprovalError = CredentialReviewError
+ReviewVerificationError = ApprovalVerificationError

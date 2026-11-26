@@ -27,6 +27,7 @@ in-toto-match-products: match local artifacts against link metadata products <in
 :maxdepth: 2
 
 in-toto-verify: perform final product supply chain verification <in-toto-verify>
+in-toto-review: offline credential reference approval review <in-toto-review>
 ```
 
 ## Utilities

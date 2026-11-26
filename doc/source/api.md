@@ -41,3 +41,25 @@ documented [in-toto#663](https://github.com/in-toto/in-toto/issues/663).
 ```{eval-rst}
 .. autofunction:: in_toto.verifylib.in_toto_verify
 ```
+
+## Credential Reference Review
+
+The optional offline review entry point reads signature-bearing original
+Links and compares their public credential references and declared purposes
+with an independent approval manifest. It does not execute build steps.
+
+A missing `credential_refs` field means a legacy Link did not collect the
+data. An explicit empty list means a new Link reports zero references. An
+unsigned summary Link produces a separate missing-attestation result.
+
+```{eval-rst}
+.. autofunction:: in_toto.reviewlib.review_credential_approvals
+```
+
+```{eval-rst}
+.. autofunction:: in_toto.reviewlib.review_layout
+```
+
+```{eval-rst}
+.. autofunction:: in_toto.reviewlib.review_summary_link
+```
