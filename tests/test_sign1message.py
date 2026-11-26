@@ -2,6 +2,7 @@ import cbor2
 import pytest
 
 from pycose.exceptions import CoseException, CoseIllegalAlgorithm, CoseIllegalKeyOps
+from pycose.headers import Algorithm, KID
 from pycose.keys import OKPKey, EC2Key
 from pycose.keys.cosekey import CoseKey
 from pycose.keys.keyops import SignOp, VerifyOp
@@ -49,6 +50,75 @@ def test_sign1_decoding(test_sign1):
     assert msg.uhdr == test_input['unprotected']
 
     assert msg.verify_signature()
+
+
+def test_verified_snapshot_isolates_consumers():
+    key = EC2Key.generate_key(crv='P_256', optional_params={'ALG': 'ES256'})
+    encoded_receipts = []
+
+    for receipt_id, payload in [
+        (b'receipt-1', b'first receipt'),
+        (b'receipt-2', b'second receipt'),
+    ]:
+        msg = Sign1Message(
+            phdr={Algorithm: key.alg},
+            uhdr={KID: receipt_id},
+            payload=payload)
+        msg.key = key
+        encoded_receipts.append(msg.encode())
+
+    business_results = []
+
+    for encoded_receipt in encoded_receipts:
+        receipt = Sign1Message.decode(encoded_receipt)
+        receipt.key = key
+
+        assert receipt.verified_snapshot is None
+        assert receipt.verify_signature(capture_snapshot=True)
+
+        snapshot = receipt.verified_snapshot
+        original_kid = snapshot.uhdr[KID]
+        original_payload = snapshot.payload
+
+        receipt.phdr[KID] = b'display protected note'
+        receipt.uhdr[KID] = b'display kid'
+        receipt.payload = b'display payload'
+        receipt.signature = b'display signature'
+
+        assert snapshot is not receipt
+        assert snapshot.phdr == {Algorithm: key.alg}
+        assert snapshot.uhdr == {KID: original_kid}
+        assert snapshot.payload == original_payload
+        assert snapshot.signature != receipt.signature
+        assert snapshot.verified_snapshot is None
+        assert snapshot.key is not receipt.key
+        assert snapshot.key == receipt.key
+
+        business_results.append({
+            'kid': snapshot.uhdr[KID],
+            'payload': snapshot.payload,
+        })
+
+        snapshot.uhdr[KID] = b'business display note'
+        assert receipt.verified_snapshot.uhdr[KID] == original_kid
+
+    assert business_results == [
+        {'kid': b'receipt-1', 'payload': b'first receipt'},
+        {'kid': b'receipt-2', 'payload': b'second receipt'},
+    ]
+
+
+def test_failed_verification_does_not_capture_snapshot():
+    key = EC2Key.generate_key(crv='P_256', optional_params={'ALG': 'ES256'})
+    msg = Sign1Message(phdr={Algorithm: key.alg}, payload=b'original receipt')
+    msg.key = key
+
+    decoded = Sign1Message.decode(msg.encode())
+    decoded.key = key
+    decoded.payload = b'tampered receipt'
+
+    assert not decoded.verify_signature(capture_snapshot=True)
+    assert decoded.verified_snapshot is None
 
 
 def test_detached_payload():

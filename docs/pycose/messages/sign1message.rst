@@ -8,6 +8,10 @@ since no additional key information is transported.
 The payload can either be included in the message or remain detached.
 Detached payloads must be provided as `detached_payload` argument during signing and verification.
 
+Call ``verify_signature(capture_snapshot=True)`` to retain an independent copy of a successfully verified message.
+Each read of ``verified_snapshot`` returns another copy, so display-layer changes to the decoded message cannot alter
+the data used by another consumer.
+
 .. image:: ../../../images/sign1.png
     :width: 650px
     :align: center

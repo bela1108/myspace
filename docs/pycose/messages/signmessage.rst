@@ -8,6 +8,9 @@ is extended with a list of :class:`~pycose.messages.signer.CoseSignature` struct
 The payload can either be included in the message or remain detached.
 Detached payloads must be provided as `detached_payload` argument during signing and verification.
 
+Verifying a ``CoseSignature`` with ``capture_snapshot=True`` also stores an independent parent ``SignMessage`` snapshot
+in the parent's ``verified_snapshot`` attribute.
+
 .. module:: pycose.messages.signmessage
 
 .. autoclass:: SignMessage
@@ -21,4 +24,3 @@ Detached payloads must be provided as `detached_payload` argument during signing
     :members:
     :inherited-members:
     :exclude-members: from_cose_obj, record_cbor_tag
-

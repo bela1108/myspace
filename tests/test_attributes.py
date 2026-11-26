@@ -272,6 +272,27 @@ def test_allow_unknown_header_attribute_encoding_decoding():
     assert "Custom-Header-Attr1" in msg_decoded.phdr
     assert "Custom-Header-Attr2" in msg_decoded.uhdr
 
+
+def test_header_and_local_attribute_values_are_copied():
+    critical = [1]
+    local_value = {'note': ['display']}
+
+    msg = Sign1Message(phdr={Critical: critical}, payload=b"")
+    critical.append(2)
+    assert msg.phdr == {Critical: [1]}
+
+    msg.phdr_update({Critical: critical})
+    critical.append(3)
+    assert msg.phdr == {Critical: [1, 2]}
+
+    msg.uhdr_update({Critical: critical})
+    critical.append(4)
+    assert msg.uhdr == {Critical: [1, 2, 3]}
+
+    msg.local_attrs = {'display': local_value}
+    local_value['note'].append('changed')
+    assert msg.local_attrs == {'display': {'note': ['display']}}
+
 def test_no_reencoding_of_protected_header():
     # The following protected header encodes {Alg: Es256, "foo": 1}, however,
     # it is crafted such that it would not be emitted by cbor2.

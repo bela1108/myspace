@@ -36,9 +36,16 @@ class SignCommon(CoseMessage, metaclass=abc.ABCMeta):
         else:
             raise CoseException('Wrong key type')
 
-    def verify_signature(self, detached_payload: Optional[bytes] = None, *args, **kwargs) -> bool:
+    def verify_signature(self,
+                         detached_payload: Optional[bytes] = None,
+                         capture_snapshot: bool = False,
+                         *args,
+                         **kwargs) -> bool:
         """
         Verifies the signature of a received COSE message.
+
+        :param detached_payload: Payload for a detached COSE signature.
+        :param capture_snapshot: Capture an independent message copy after successful verification.
 
         :returns: True for a valid signature or False for an invalid signature
         """
@@ -46,7 +53,15 @@ class SignCommon(CoseMessage, metaclass=abc.ABCMeta):
 
         self._key_verification(alg, VerifyOp)
 
-        return alg.verify(key=self.key, data=self._create_sig_structure(detached_payload), signature=self.signature)
+        valid = alg.verify(key=self.key, data=self._create_sig_structure(detached_payload), signature=self.signature)
+
+        if valid and capture_snapshot:
+            self._capture_verified_snapshot()
+            parent = getattr(self, '_parent', None)
+            if parent is not None:
+                parent._capture_verified_snapshot()
+
+        return valid
 
     def compute_signature(self, detached_payload: Optional[bytes] = None, *args, **kwargs) -> bytes:
         """

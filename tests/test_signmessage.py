@@ -4,6 +4,7 @@ import cbor2
 import pytest
 
 from pycose.keys import EC2Key
+from pycose.headers import Algorithm, KID
 from pycose.messages.signmessage import SignMessage
 from pycose.messages.signer import CoseSignature
 from pycose.exceptions import CoseException
@@ -59,6 +60,58 @@ def test_sign_decoding(test_sign):
         s.key = s_input['signing_key']
         assert hexlify(s._create_sig_structure()) == hexlify(s_output['structure'])
         assert s.verify_signature()
+
+
+def test_verified_snapshot_isolates_consumers():
+    key = EC2Key.generate_key(crv='P_256', optional_params={'ALG': 'ES256'})
+    encoded_receipts = []
+
+    for receipt_id, payload in [
+        (b'receipt-1', b'first receipt'),
+        (b'receipt-2', b'second receipt'),
+    ]:
+        signer = CoseSignature(
+            phdr={Algorithm: key.alg},
+            uhdr={KID: receipt_id},
+            key=key)
+        receipt = SignMessage(uhdr={KID: receipt_id}, payload=payload, signers=[signer])
+        encoded_receipts.append(receipt.encode())
+
+    business_results = []
+
+    for encoded_receipt in encoded_receipts:
+        receipt = SignMessage.decode(encoded_receipt)
+        signer = receipt.signers[0]
+        signer.key = key
+
+        assert receipt.verified_snapshot is None
+        assert signer.verify_signature(capture_snapshot=True)
+
+        snapshot = receipt.verified_snapshot
+        original_kid = snapshot.uhdr[KID]
+        original_signature = snapshot.signers[0].signature
+
+        receipt.uhdr[KID] = b'display receipt kid'
+        receipt.payload = b'display payload'
+        signer.uhdr[KID] = b'display signer kid'
+        signer.signature = b'display signature'
+
+        assert snapshot is not receipt
+        assert snapshot.uhdr == {KID: original_kid}
+        assert snapshot.payload == snapshot.signers[0]._parent.payload
+        assert snapshot.signers[0].uhdr == {KID: original_kid}
+        assert snapshot.signers[0].signature == original_signature
+        assert snapshot.signers[0]._parent is snapshot
+
+        business_results.append({
+            'kid': snapshot.uhdr[KID],
+            'payload': snapshot.payload,
+        })
+
+    assert business_results == [
+        {'kid': b'receipt-1', 'payload': b'first receipt'},
+        {'kid': b'receipt-2', 'payload': b'second receipt'},
+    ]
 
 
 def test_detached_payload():

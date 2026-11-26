@@ -137,6 +137,17 @@ class CoseMessage(CoseBase, metaclass=abc.ABCMeta):
             raise TypeError("payload should be of type 'bytes' not {}".format(type(new_payload)))
         self._payload = new_payload  # can be plaintext or ciphertext
 
+    @property
+    def verified_snapshot(self) -> Optional['CoseMessage']:
+        """ Return an independent copy of the message captured during successful verification. """
+        snapshot = getattr(self, '_verified_snapshot', None)
+        if snapshot is None:
+            return None
+        return snapshot.copy()
+
+    def _capture_verified_snapshot(self) -> None:
+        self._verified_snapshot = self.copy()
+
     @abc.abstractmethod
     def encode(self, message: list, tag: bool = True, *args, **kwargs) -> CBOR:
         if tag:

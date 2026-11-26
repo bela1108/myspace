@@ -104,13 +104,13 @@ class CoseBase(metaclass=abc.ABCMeta):
     def phdr_update(self, phdr_params: dict) -> None:
         if type(phdr_params) is not dict:
             raise TypeError("protected header should be of type 'dict'")
-        self._phdr.update(phdr_params)
+        self._phdr.update(deepcopy(phdr_params))
         self._phdr_encoded = None
 
     def uhdr_update(self, uhdr_params: dict) -> None:
         if type(uhdr_params) is not dict:
             raise TypeError("unprotected header should be of type 'dict'")
-        self._uhdr.update(uhdr_params)
+        self._uhdr.update(deepcopy(uhdr_params))
 
     @property
     def local_attrs(self):
@@ -119,7 +119,11 @@ class CoseBase(metaclass=abc.ABCMeta):
     @local_attrs.setter
     def local_attrs(self, attributes: Dict['CoseHeaderAttribute', Any]):
         for k, v in attributes.items():
-            self._local_attrs[k] = v
+            self._local_attrs[k] = deepcopy(v)
+
+    def copy(self: 'CB') -> 'CB':
+        """ Return an independent copy of the COSE object. """
+        return deepcopy(self)
 
     @property
     def phdr_encoded(self) -> CBOR:
@@ -166,9 +170,9 @@ class CoseBase(metaclass=abc.ABCMeta):
             attr = CoseHeaderAttribute.from_id(k, allow_unknown_attributes)
 
             if hasattr(attr, 'value_parser'):
-                decoded_hdr[attr] = attr.value_parser(v)
+                decoded_hdr[attr] = deepcopy(attr.value_parser(v))
             else:
-                decoded_hdr[attr] = v
+                decoded_hdr[attr] = deepcopy(v)
 
         return decoded_hdr
 
