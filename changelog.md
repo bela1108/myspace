@@ -2,6 +2,8 @@
 
 ## 1.5.1
 
+ - Added `asn1crypto.cms_algorithm_protection` for offline RFC 6211 review of
+   CMSAlgorithmProtection attributes on SignerInfo and AuthenticatedData
  - Handle RSASSA-PSS in `keys.PrivateKeyInfo.bit_size` and
    `keys.PublicKeyInfo.bit_size`
  - Handle RSASSA-PSS in `keys.PrivateKeyInfo.wrap` and

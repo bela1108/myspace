@@ -40,6 +40,7 @@ def load_order():
         'asn1crypto.csr',
         'asn1crypto.ocsp',
         'asn1crypto.cms',
+        'asn1crypto.cms_algorithm_protection',
         'asn1crypto.pdf',
         'asn1crypto.pkcs12',
         'asn1crypto.tsp',

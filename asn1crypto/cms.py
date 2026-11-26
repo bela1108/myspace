@@ -1006,3 +1006,49 @@ CMSAttribute._oid_specs = {
     'encrypt_key_pref': SMIMEEncryptionKeyPreferences,
     'smime_capabilities': SetOfSMIMECapabilites,
 }
+
+
+def review_algorithm_protection(value):
+    """
+    Reviews RFC 6211 CMSAlgorithmProtection declarations in a CMS
+    ContentInfo, SignedData, SignerInfo or AuthenticatedData structure.
+
+    This is a convenience wrapper around
+    :func:`asn1crypto.cms_algorithm_protection.review`.
+    """
+
+    from .cms_algorithm_protection import review
+    return review(value)
+
+
+def analyze_algorithm_protection(value):
+    """Alias for :func:`review_algorithm_protection`."""
+    return review_algorithm_protection(value)
+
+
+def _content_info_algorithm_protection_review(self):
+    return review_algorithm_protection(self)
+
+
+def _signed_data_algorithm_protection_review(self):
+    return review_algorithm_protection(self)
+
+
+def _signer_info_algorithm_protection_review(self):
+    from .cms_algorithm_protection import review_signer_info
+    return review_signer_info(self)
+
+
+def _authenticated_data_algorithm_protection_review(self):
+    from .cms_algorithm_protection import review_authenticated_data
+    return review_authenticated_data(self)
+
+
+ContentInfo.review_algorithm_protection = _content_info_algorithm_protection_review
+ContentInfo.algorithm_protection_review = _content_info_algorithm_protection_review
+SignedData.review_algorithm_protection = _signed_data_algorithm_protection_review
+SignedData.algorithm_protection_review = _signed_data_algorithm_protection_review
+SignerInfo.review_algorithm_protection = _signer_info_algorithm_protection_review
+SignerInfo.algorithm_protection_review = _signer_info_algorithm_protection_review
+AuthenticatedData.review_algorithm_protection = _authenticated_data_algorithm_protection_review
+AuthenticatedData.algorithm_protection_review = _authenticated_data_algorithm_protection_review
