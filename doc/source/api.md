@@ -41,3 +41,15 @@ documented [in-toto#663](https://github.com/in-toto/in-toto/issues/663).
 ```{eval-rst}
 .. autofunction:: in_toto.verifylib.in_toto_verify
 ```
+
+```{eval-rst}
+.. autofunction:: in_toto.switch_verify.verify_switch_release
+```
+
+```{eval-rst}
+.. autofunction:: in_toto.switch_verify.verify_layout_signoffs
+```
+
+```{eval-rst}
+.. autofunction:: in_toto.switch_verify.assess_junction
+```

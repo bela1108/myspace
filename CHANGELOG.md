@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Added
+* Offline, replayable fallback-to-normal switch verification via
+  `in_toto.switch_verify` and the `in-toto-verify-switch` command.  The check
+  attributes manual sign-offs per layout, replays signed artifact rules,
+  quarantines unreviewed fallback cache residue, and fails closed when
+  co-existing concurrent links disagree instead of trusting a last-written
+  mode marker.
+
 ## v3.1.0
 
 This release includes version bumpbs, as well as upgraded debian support , and

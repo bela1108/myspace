@@ -1640,3 +1640,19 @@ def in_toto_verify(  # noqa: PLR0913, PLR0917, RUF100
     # This is mostly relevant if the currently verified supply chain is embedded
     # in another supply chain
     return get_summary_link(layout, reduced_chain_link_dict, step_name)
+
+
+def in_toto_verify_switch(*args, **kwargs):
+    """Verify a fallback-to-normal release switch offline.
+
+    This is a convenience alias for
+    :func:`in_toto.switch_verify.verify_switch_release`.  It is imported
+    lazily to keep :mod:`in_toto.switch_verify` free to reuse verification
+    helpers from this module.
+
+    Returns:
+      An :class:`in_toto.switch_verify.SwitchVerdict`.
+    """
+    from in_toto.switch_verify import verify_switch_release  # noqa: PLC0415
+
+    return verify_switch_release(*args, **kwargs)

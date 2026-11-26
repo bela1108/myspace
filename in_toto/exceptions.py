@@ -41,3 +41,12 @@ class PrefixError(Error):
 
 class InvalidMetadata(Error):  # noqa: N818
     """Indicates that the metadata is not valid."""
+
+
+class SwitchVerificationError(Error):
+    """Indicates that offline switch verification failed."""
+
+
+class ConcurrentModeError(SwitchVerificationError):
+    """Indicates that co-existing concurrent link metadata cannot be
+    disambiguated without trusting a last-writer mode marker."""
