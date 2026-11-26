@@ -22,9 +22,33 @@ import re
 import warnings
 
 from plyara.core import Parser
+from plyara.acceptance import (
+    AcceptancePlan,
+    AcceptancePlanner,
+    Evidence,
+    Obligation,
+    minimum_compliant_combination,
+    plan_acceptance,
+)
 
 # Initialize the logger
 logger = logging.getLogger(__name__)
+
+
+__all__ = [
+    'AcceptancePlan',
+    'AcceptancePlanner',
+    'Evidence',
+    'Obligation',
+    'detect_dependencies',
+    'detect_imports',
+    'generate_hash',
+    'is_valid_rule_name',
+    'is_valid_rule_tag',
+    'minimum_compliant_combination',
+    'plan_acceptance',
+    'rebuild_yara_rule',
+]
 
 
 def is_valid_rule_name(entry):
