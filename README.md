@@ -50,6 +50,42 @@ Updates to python-evtx are pushed to PyPi, so you can install the module using `
 
 The source code for python-evtx is hosted at Github, and you may download, fork, and review it from this repository (http://www.github.com/williballenthin/python-evtx).  Please report issues or feature requests through Github's bug tracker associated with the project.
 
+Local order review
+------------------
+
+The Evtx.order_review module builds a source-aware partial order for repeated acquisitions of the same event log. Record occurrences are identified by acquisition, chunk, and physical offset; raw record numbers support a record_continuity edge but are never treated as global identities. Physical traversal order, explicit acquisition relations, and witness-table claims remain separately labeled.
+
+    from Evtx.order_review import review_evtx_acquisitions
+
+    review = review_evtx_acquisitions(
+        {
+            "acq-1": "capture-1.evtx",
+            "acq-2": "capture-2.evtx",
+            "acq-3": "capture-3.evtx",
+        },
+        witnesses="witness-order.csv",
+        node_map={"acq-1:120": "operation-a", "acq-2:121": "operation-b"},
+    )
+
+    investigator_package = review.investigator_package()
+    print(review.to_markdown())
+
+The JSON/Markdown report has the two investigator-facing outputs:
+
+- still_valid_partial_order: source-labeled direct edges, transitive order pairs, incomparable unknown segments, topological generations, and legal topological orders.
+- inconsistent_witness_statements: one inclusion-minimal witness subset whose claims cannot all hold, together with the source-labeled cycle/basis.
+
+A continuity edge that would let a reused sequence number reverse an explicit acquisition relation is rejected and reported in rejected_relations; it does not overwrite the acquisition relationship.
+
+The command line entry point is:
+
+    evtx_order_review --acquisition ACQ1=capture-1.evtx \
+        --acquisition ACQ2=capture-2.evtx \
+        --acquisition ACQ3=capture-3.evtx \
+        --witnesses witness-order.csv --format markdown
+
+Witness table headers may be English (statement_id, before, after, witness) or Chinese (编号, 先发生, 后发生, 证人).
+
 Development
 -----------
 For formatting, use isort:
@@ -71,4 +107,3 @@ Or use [just](https://github.com/casey/just) to run the linters:
 License
 -------
 python-evtx is licensed under the Apache License, Version 2.0.  This means it is freely available for use and modification in a personal and professional capacity.  
-
