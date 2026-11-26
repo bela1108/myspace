@@ -1,0 +1,65 @@
+{
+  "schema": "elf-evidence-missing-parts/v1",
+  "fixture": "evidence_plan/table_refs.o",
+  "fixture_sha256": "ad6c217c65ee2311a17296f6e5bb0a83e0ca69138a78f3750385ff5f0d683a93",
+  "hash_algorithm": "sha256",
+  "offset_basis": "byte offset from start of table_refs.o",
+  "scenarios": [
+    {
+      "scenario": "cap_equals_abs_closure",
+      "cap_bytes": 1221,
+      "full_physical_closure_bytes": 1249,
+      "deficit_bytes": 28,
+      "retained_claim": "abs",
+      "unsupported_claims": [
+        "pcrel"
+      ],
+      "missing_parts": [
+        {
+          "id": "relocation:pcrel",
+          "container": "table_refs.o",
+          "offset": 192,
+          "size": 24,
+          "sha256": "a620972924074aa82747d7ef0988fc780900a72ea5648c15df3411d0421ee780",
+          "recompute": "dd if=evidence_plan/table_refs.o bs=1 skip=192 count=24 2>/dev/null | shasum -a 256"
+        },
+        {
+          "id": "table-slot:pcrel",
+          "container": "table_refs.o",
+          "offset": 80,
+          "size": 4,
+          "sha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+          "recompute": "dd if=evidence_plan/table_refs.o bs=1 skip=80 count=4 2>/dev/null | shasum -a 256"
+        }
+      ]
+    },
+    {
+      "scenario": "cap_equals_pcrel_closure",
+      "cap_bytes": 1217,
+      "full_physical_closure_bytes": 1249,
+      "deficit_bytes": 32,
+      "retained_claim": "pcrel",
+      "unsupported_claims": [
+        "abs"
+      ],
+      "missing_parts": [
+        {
+          "id": "relocation:abs",
+          "container": "table_refs.o",
+          "offset": 168,
+          "size": 24,
+          "sha256": "83ff11ed64793470263b9ae44d81867b7654591db088ef747c51f236ae4f0e2f",
+          "recompute": "dd if=evidence_plan/table_refs.o bs=1 skip=168 count=24 2>/dev/null | shasum -a 256"
+        },
+        {
+          "id": "table-slot:abs",
+          "container": "table_refs.o",
+          "offset": 72,
+          "size": 8,
+          "sha256": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+          "recompute": "dd if=evidence_plan/table_refs.o bs=1 skip=72 count=8 2>/dev/null | shasum -a 256"
+        }
+      ]
+    }
+  ]
+}

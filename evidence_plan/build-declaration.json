@@ -1,0 +1,24 @@
+{
+  "assemble_command": [
+    "clang",
+    "--target=x86_64-unknown-elf",
+    "-c",
+    "table_refs.s",
+    "-o",
+    "table_refs.o"
+  ],
+  "execution_policy": "assemble_only; do not execute the ET_REL fixture",
+  "expected_elf": {
+    "data_encoding": "ELFDATA2LSB",
+    "e_type": "ET_REL",
+    "elfclass": 64,
+    "machine_arch": "x64"
+  },
+  "fixture": "table_refs.o",
+  "fixture_sha256": "ad6c217c65ee2311a17296f6e5bb0a83e0ca69138a78f3750385ff5f0d683a93",
+  "schema": "elf-evidence-build-declaration/v1",
+  "source": "table_refs.s",
+  "source_sha256": "f361004db06437a8bb9e0b0f856483b0187d5178b3f67bede02d35fed4c1c03c",
+  "target": "x86_64-unknown-elf",
+  "toolchain": "Apple clang version 21.0.0 (clang-2100.1.1.101)"
+}
