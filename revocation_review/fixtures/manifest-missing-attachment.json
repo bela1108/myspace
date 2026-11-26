@@ -1,0 +1,191 @@
+{
+  "case": "missing-attachment",
+  "title": "missing-attachment",
+  "archive": "archive-outer-only.der",
+  "seal_key": "seal-public.pem",
+  "issuer_key": null,
+  "attachment_refs": [
+    {
+      "id": "ATT-REV-001",
+      "kind": "crl",
+      "path": "attachments/revocation.crl.der",
+      "sha256": "15438db21bd655c5587f3f492b726604de4099bf1e983851d49e16b036c0053f"
+    }
+  ],
+  "issuance_scope": [
+    "REV-001"
+  ],
+  "entries": [
+    {
+      "id": "IDX-001",
+      "kind": "archive",
+      "claim": "\u5916\u5c42 CMS \u56de\u6267\u58f0\u660e\u4e86\u4e00\u4efd\u540a\u9500\u4fe1\u606f\u5f52\u6863\u5bf9\u8c61\uff0c\u5e76\u4ee5 other_rev_info \u6458\u8981\u627f\u8bfa\u5176\u5b57\u8282\u3002",
+      "baseline_tier": "T1",
+      "baseline_basis": "\u5916\u5c42\u56de\u6267 SIG-OUTER\uff1b\u6458\u8981\u672c\u8eab\u4e0d\u63d0\u4f9b\u9644\u4ef6\u5b57\u8282\u3002"
+    },
+    {
+      "id": "REV-001",
+      "kind": "archive",
+      "claim": "\u8bc1\u4e66\u5e8f\u5217\u53f7 0x5A17C0DE \u4e8e 2026-11-18 12:00 UTC \u88ab\u64a4\u9500\uff0c\u539f\u56e0 key_compromise\u3002",
+      "baseline_tier": "T1",
+      "baseline_basis": "\u4ec5\u5916\u5c42\u56de\u6267\u4e0e\u76ee\u5f55\u7d22\u5f15\uff1b\u5c1a\u672a\u8bfb\u53d6\u5b9e\u9645 CRL \u5b57\u8282\uff0c\u4e5f\u6ca1\u6709\u53d1\u884c\u8005\u9a8c\u7b7e\u3002"
+    },
+    {
+      "id": "REV-002",
+      "kind": "archive",
+      "claim": "\u5f52\u6863\u653f\u7b56\u8981\u6c42\u5728 2027-11-20 \u524d\u91cd\u65b0\u5c01\u5b58\u540c\u4e00\u6761\u8bb0\u5f55\u3002",
+      "baseline_tier": "T1",
+      "baseline_basis": "\u653f\u7b56\u901a\u77e5\u4f9d\u636e\uff1b\u4e0d\u5728\u672c\u6b21 CRL \u7684 tbs_cert_list \u7b7e\u540d\u8986\u76d6\u8303\u56f4\u3002"
+    },
+    {
+      "id": "CODE-001",
+      "kind": "code",
+      "claim": "AdobeArchiveRevInfo \u53ea\u4fdd\u5b58 version\uff1b\u5b9e\u9645\u9644\u4ef6\u7c7b\u578b\u7531 RevocationInfoArchival \u7684 crl/ocsp/other_rev_info \u5206\u652f\u627f\u62c5\u3002",
+      "baseline_tier": "S1",
+      "baseline_basis": "CIT-PDF-ARCH, CIT-PDF-RIA, CIT-PDF-OID"
+    },
+    {
+      "id": "CODE-002",
+      "kind": "code",
+      "claim": "CMS SignerInfo \u5c06 signed_attrs \u4e0e signature \u5206\u5f00\uff1b\u542b signed_attrs \u7684\u5206\u652f\u4e2d\uff0c\u5916\u5c42\u7b7e\u540d\u8986\u76d6\u7684\u662f\u7b7e\u540d\u5c5e\u6027\uff0c\u800c\u4e0d\u662f\u6574\u4e2a ContentInfo\u3002",
+      "baseline_tier": "S1",
+      "baseline_basis": "CIT-CMS-SIGNER, CIT-CMS-SIGNEDDATA"
+    },
+    {
+      "id": "CODE-003",
+      "kind": "code",
+      "claim": "CRL CertificateList \u5c06 tbs_cert_list \u4e0e signature_algorithm/signature \u5206\u5f00\uff1b\u5185\u5c42\u7b7e\u540d\u53ea\u8986\u76d6 TBS \u5b57\u8282\u3002",
+      "baseline_tier": "S1",
+      "baseline_basis": "CIT-CRL-LIST"
+    },
+    {
+      "id": "CODE-004",
+      "kind": "code",
+      "claim": "ArchiveTimeStampSequence \u53ef\u4e32\u8054\u591a\u4efd\u4fdd\u5168\u8bf4\u660e\uff0c\u4f46\u5b83\u672c\u8eab\u4e0d\u662f\u64a4\u9500\u72b6\u6001\u9a8c\u7b7e\u5668\u3002",
+      "baseline_tier": "S1",
+      "baseline_basis": "CIT-TSP-ATS"
+    },
+    {
+      "id": "CODE-005",
+      "kind": "code",
+      "claim": "asn1crypto \u662f\u89e3\u6790/\u5e8f\u5217\u5316\u5e93\uff1b\u7b7e\u540d\u5728\u7ed3\u6784\u4e2d\u8868\u73b0\u4e3a\u5b57\u8282\u4e32\uff0c\u5e93\u5185\u6ca1\u6709\u5bc6\u7801\u5b66 verify API\u3002",
+      "baseline_tier": "S1",
+      "baseline_basis": "CIT-README-PARSE, CIT-README-SIG, ABS-NO-VERIFY"
+    },
+    {
+      "id": "CODE-006",
+      "kind": "code",
+      "claim": "asn1crypto/pdf.py \u53ea\u63d0\u4f9b ASN.1 \u7c7b\u578b\u6620\u5c04\uff0c\u4e0d\u89e3\u6790 PDF ByteRange\uff0c\u56e0\u6b64\u4e0d\u80fd\u8bc1\u660e PDF \u6587\u4ef6\u7ea7\u5c01\u5b58\u8986\u76d6\u3002",
+      "baseline_tier": "S1",
+      "baseline_basis": "CIT-PDF-DOC, ABS-NO-BYTERANGE"
+    }
+  ],
+  "citations": {
+    "CIT-PDF-ARCH": {
+      "path": "asn1crypto/pdf.py",
+      "line_start": 31,
+      "line_end": 34,
+      "snippets": [
+        "class AdobeArchiveRevInfo(Sequence)",
+        "('version', Integer)"
+      ],
+      "claim": "AdobeArchiveRevInfo carries only a version; it does not carry attachment bytes."
+    },
+    "CIT-PDF-RIA": {
+      "path": "asn1crypto/pdf.py",
+      "line_start": 64,
+      "line_end": 69,
+      "snippets": [
+        "class RevocationInfoArchival(Sequence)",
+        "('crl', SequenceOfCertificateList",
+        "('ocsp', SequenceOfOCSPResponse",
+        "('other_rev_info', SequenceOfOtherRevInfo"
+      ],
+      "claim": "The archival revocation attribute has distinct crl, ocsp and other_rev_info branches."
+    },
+    "CIT-PDF-OID": {
+      "path": "asn1crypto/pdf.py",
+      "line_start": 82,
+      "line_end": 84,
+      "snippets": [
+        "pdf_signing",
+        "adobe_revocation_info_archival",
+        "CMSAttribute._oid_specs"
+      ],
+      "claim": "The CMS attribute OID is mapped to SetOfRevocationInfoArchival."
+    },
+    "CIT-PDF-DOC": {
+      "path": "asn1crypto/pdf.py",
+      "line_start": 3,
+      "line_end": 6,
+      "snippets": [
+        "ASN.1 type classes for PDF signature structures",
+        "CMSAttribute"
+      ],
+      "claim": "pdf.py is an ASN.1 type module, not a PDF byte-range parser."
+    },
+    "CIT-CMS-SIGNER": {
+      "path": "asn1crypto/cms.py",
+      "line_start": 605,
+      "line_end": 614,
+      "snippets": [
+        "class SignerInfo(Sequence)",
+        "('signed_attrs', CMSAttributes",
+        "('signature', OctetString)"
+      ],
+      "claim": "SignerInfo separates signed attributes from the signature value."
+    },
+    "CIT-CMS-SIGNEDDATA": {
+      "path": "asn1crypto/cms.py",
+      "line_start": 621,
+      "line_end": 629,
+      "snippets": [
+        "class SignedData(Sequence)",
+        "('crls', RevocationInfoChoices",
+        "('signer_infos', SignerInfos)"
+      ],
+      "claim": "SignedData keeps top-level CRLs and signer infos as separate fields."
+    },
+    "CIT-CRL-LIST": {
+      "path": "asn1crypto/crl.py",
+      "line_start": 286,
+      "line_end": 291,
+      "snippets": [
+        "class CertificateList(Sequence)",
+        "('tbs_cert_list', TbsCertList)",
+        "('signature', OctetBitString)"
+      ],
+      "claim": "CertificateList separates the signed TBS bytes from algorithm and signature fields."
+    },
+    "CIT-TSP-ATS": {
+      "path": "asn1crypto/tsp.py",
+      "line_start": 202,
+      "line_end": 212,
+      "snippets": [
+        "class ArchiveTimeStamp(Sequence)",
+        "('time_stamp', ContentInfo)",
+        "class ArchiveTimeStampSequence(SequenceOf)"
+      ],
+      "claim": "Archive timestamp structures can chain preservation statements, but do not verify revocation status."
+    },
+    "CIT-README-PARSE": {
+      "path": "readme.md",
+      "line_start": 1,
+      "line_end": 4,
+      "snippets": [
+        "parsing and serializing ASN.1 structures"
+      ],
+      "claim": "The package describes itself as a parser/serializer."
+    },
+    "CIT-README-SIG": {
+      "path": "readme.md",
+      "line_start": 90,
+      "line_end": 95,
+      "snippets": [
+        "signatures are really byte strings",
+        "BitString"
+      ],
+      "claim": "Signatures are represented as byte strings; the package does not authenticate them."
+    }
+  }
+}

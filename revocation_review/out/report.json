@@ -1,0 +1,2108 @@
+{
+  "report_id": "REVIEW-REV-001",
+  "target": {
+    "package": "asn1crypto",
+    "version": "1.5.1"
+  },
+  "tiers": {
+    "T0": "无有效字节：没有可用外层回执，也没有附件字节。",
+    "T1": "外层回执：外层签名/回执有效，但没有实际对象字节；只能证明曾提交过某个摘要承诺。",
+    "T2": "附件字节：实际对象字节存在，且与回执摘要一致；外层封存覆盖这些字节，但尚未完成原发行验签。",
+    "T3": "原发行证明：对象字节存在，并由独立发行者密钥验证了对象自身签名。",
+    "S1": "源码引用：命题关于代码结构，引用行已离线核对；不改写也不升级归档层级。",
+    "S0": "源码引用失配：引用的文件或行片段无法核对。"
+  },
+  "fixture_meta": {
+    "issuer_key_id": "KEY-0A5B67549542C9A5",
+    "seal_key_id": "KEY-03396219237F75A6",
+    "issuer_public_sha256": "0a5b67549542c9a55ed6a80ba5c7646b13834d6d5a15c2e3fedd7da04db45886",
+    "seal_public_sha256": "03396219237f75a64f12aeb7f39723abf400b160c364980a765dac24aeba2464",
+    "crl_sha256": "15438db21bd655c5587f3f492b726604de4099bf1e983851d49e16b036c0053f",
+    "crl_size": 281,
+    "receipt_digest": "15438db21bd655c5587f3f492b726604de4099bf1e983851d49e16b036c0053f",
+    "manifests": {
+      "outer-only": "manifest-outer-only.json",
+      "missing-attachment": "manifest-missing-attachment.json",
+      "attachment-unverified": "manifest-attachment-unverified.json",
+      "issuance-verified": "manifest-issuance-verified.json",
+      "tampered-attachment": "manifest-tampered-attachment.json"
+    }
+  },
+  "scenario_order": [
+    "outer-only",
+    "missing-attachment",
+    "attachment-unverified",
+    "tampered-attachment",
+    "issuance-verified"
+  ],
+  "scenarios": {
+    "outer-only": {
+      "case": "outer-only",
+      "manifest": "manifest-outer-only.json",
+      "archive": {
+        "name": "archive-outer-only.der",
+        "size": 419,
+        "sha256": "d81b2d284f783fd98d81eac634604ceb6639710293126de5bb496c4cb9136606"
+      },
+      "outer": {
+        "status": "VALID",
+        "algorithm": "ed25519",
+        "signed_object": "CMS SignedAttrs (untagged SET OF)",
+        "signed_sha256": "e00d89b92e57dda31a79e65ce61e94053e49d73c9c2403760471110b5a84c802",
+        "signed_len": 146,
+        "archive_span": [
+          200,
+          346
+        ],
+        "signature_sha256": "fa43d1f7e2f5d38dcb47010184ea2b5c5ce72aff66c28164de5e60d726abcff3",
+        "signature_span": [
+          355,
+          419
+        ],
+        "key_id": "KEY-03396219237F75A6",
+        "key_fingerprint": "03396219237f75a64f12aeb7f39723abf400b160c364980a765dac24aeba2464",
+        "error": null,
+        "message_digest_expected": "49945d0fa063c90cb8cf1a9bcd3e74bb5ec556111ee36acd97a591ef06cdf94f",
+        "message_digest_attr": "49945d0fa063c90cb8cf1a9bcd3e74bb5ec556111ee36acd97a591ef06cdf94f",
+        "message_digest_match": true,
+        "archival_attr_present": true
+      },
+      "attachment": {
+        "state": "outer_receipt_only",
+        "source": "none",
+        "present": false,
+        "declared_refs": [],
+        "sha256": null,
+        "size": null,
+        "expected_sha256": "15438db21bd655c5587f3f492b726604de4099bf1e983851d49e16b036c0053f",
+        "digest_match": null
+      },
+      "inner": {
+        "status": "NOT_ATTEMPTED",
+        "algorithm": null,
+        "signed_object": "CertificateList.tbs_cert_list",
+        "signed_sha256": null,
+        "signed_len": null,
+        "archive_span": null,
+        "signature_sha256": null,
+        "signature_span": null,
+        "key_id": null,
+        "key_fingerprint": null,
+        "error": null
+      },
+      "entries": [
+        {
+          "id": "IDX-001",
+          "kind": "archive",
+          "claim": "外层 CMS 回执声明了一份吊销信息归档对象，并以 other_rev_info 摘要承诺其字节。",
+          "tier": "T1",
+          "basis": "外层回执 SIG-OUTER；摘要本身不提供附件字节。",
+          "changed": false
+        },
+        {
+          "id": "REV-001",
+          "kind": "archive",
+          "claim": "证书序列号 0x5A17C0DE 于 2026-11-18 12:00 UTC 被撤销，原因 key_compromise。",
+          "tier": "T1",
+          "basis": "SIG-OUTER 有效；只有外层回执，没有附件字节。",
+          "changed": false,
+          "tier_changed": false,
+          "basis_changed": true
+        },
+        {
+          "id": "REV-002",
+          "kind": "archive",
+          "claim": "归档政策要求在 2027-11-20 前重新封存同一条记录。",
+          "tier": "T1",
+          "basis": "政策通知依据；不在本次 CRL 的 tbs_cert_list 签名覆盖范围。",
+          "changed": false
+        },
+        {
+          "id": "CODE-001",
+          "kind": "code",
+          "claim": "AdobeArchiveRevInfo 只保存 version；实际附件类型由 RevocationInfoArchival 的 crl/ocsp/other_rev_info 分支承担。",
+          "tier": "S1",
+          "basis": "CIT-PDF-ARCH, CIT-PDF-RIA, CIT-PDF-OID",
+          "changed": false,
+          "citation_ids": [
+            "CIT-PDF-ARCH",
+            "CIT-PDF-RIA",
+            "CIT-PDF-OID"
+          ],
+          "absence_ids": [],
+          "citation_status": "OK"
+        },
+        {
+          "id": "CODE-002",
+          "kind": "code",
+          "claim": "CMS SignerInfo 将 signed_attrs 与 signature 分开；含 signed_attrs 的分支中，外层签名覆盖的是签名属性，而不是整个 ContentInfo。",
+          "tier": "S1",
+          "basis": "CIT-CMS-SIGNER, CIT-CMS-SIGNEDDATA",
+          "changed": false,
+          "citation_ids": [
+            "CIT-CMS-SIGNER",
+            "CIT-CMS-SIGNEDDATA"
+          ],
+          "absence_ids": [],
+          "citation_status": "OK"
+        },
+        {
+          "id": "CODE-003",
+          "kind": "code",
+          "claim": "CRL CertificateList 将 tbs_cert_list 与 signature_algorithm/signature 分开；内层签名只覆盖 TBS 字节。",
+          "tier": "S1",
+          "basis": "CIT-CRL-LIST",
+          "changed": false,
+          "citation_ids": [
+            "CIT-CRL-LIST"
+          ],
+          "absence_ids": [],
+          "citation_status": "OK"
+        },
+        {
+          "id": "CODE-004",
+          "kind": "code",
+          "claim": "ArchiveTimeStampSequence 可串联多份保全说明，但它本身不是撤销状态验签器。",
+          "tier": "S1",
+          "basis": "CIT-TSP-ATS",
+          "changed": false,
+          "citation_ids": [
+            "CIT-TSP-ATS"
+          ],
+          "absence_ids": [],
+          "citation_status": "OK"
+        },
+        {
+          "id": "CODE-005",
+          "kind": "code",
+          "claim": "asn1crypto 是解析/序列化库；签名在结构中表现为字节串，库内没有密码学 verify API。",
+          "tier": "S1",
+          "basis": "CIT-README-PARSE, CIT-README-SIG, ABS-NO-VERIFY",
+          "changed": false,
+          "citation_ids": [
+            "CIT-README-PARSE",
+            "CIT-README-SIG"
+          ],
+          "absence_ids": [
+            "ABS-NO-VERIFY"
+          ],
+          "citation_status": "OK"
+        },
+        {
+          "id": "CODE-006",
+          "kind": "code",
+          "claim": "asn1crypto/pdf.py 只提供 ASN.1 类型映射，不解析 PDF ByteRange，因此不能证明 PDF 文件级封存覆盖。",
+          "tier": "S1",
+          "basis": "CIT-PDF-DOC, ABS-NO-BYTERANGE",
+          "changed": false,
+          "citation_ids": [
+            "CIT-PDF-DOC"
+          ],
+          "absence_ids": [
+            "ABS-NO-BYTERANGE"
+          ],
+          "citation_status": "OK"
+        }
+      ],
+      "changed_ids": [],
+      "coverage": [
+        {
+          "id": "outer_signed_attrs",
+          "label": "CMS SignedAttrs（逻辑 SET 编码；归档内为 [0] 隐式包装）",
+          "sha256": "e00d89b92e57dda31a79e65ce61e94053e49d73c9c2403760471110b5a84c802",
+          "length": 146,
+          "archive_span": [
+            200,
+            346
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "外层签名的直接输入；归档中的 0xA0 标签被还原为 SET(0x31) 后验签。"
+        },
+        {
+          "id": "outer_signature_value",
+          "label": "外层 CMS signature OCTET STRING 内容",
+          "sha256": "fa43d1f7e2f5d38dcb47010184ea2b5c5ce72aff66c28164de5e60d726abcff3",
+          "length": 64,
+          "archive_span": [
+            355,
+            419
+          ],
+          "outer_direct": false,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "签名值自身不被任一签名覆盖。"
+        },
+        {
+          "id": "payload",
+          "label": "encap_content_info 内容",
+          "sha256": "49945d0fa063c90cb8cf1a9bcd3e74bb5ec556111ee36acd97a591ef06cdf94f",
+          "length": 32,
+          "archive_span": [
+            60,
+            92
+          ],
+          "outer_direct": false,
+          "outer_digest": true,
+          "inner_direct": false,
+          "note": "外层签名不直接覆盖 payload；只通过 message_digest 间接绑定。"
+        },
+        {
+          "id": "archival_attribute",
+          "label": "adobe_revocation_info_archival 值",
+          "sha256": "af6a4bfabe075cce44aef05360787823233a3f9d703c5407b812e2344bf6c8d2",
+          "length": 53,
+          "archive_span": [
+            293,
+            346
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "位于 signed_attrs 内，因此外层签名直接覆盖其字节；内层 CRL 签名不覆盖。"
+        }
+      ],
+      "citation_audit": {
+        "CIT-PDF-ARCH": {
+          "id": "CIT-PDF-ARCH",
+          "path": "asn1crypto/pdf.py",
+          "line_start": 31,
+          "line_end": 34,
+          "claim": "AdobeArchiveRevInfo carries only a version; it does not carry attachment bytes.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-PDF-RIA": {
+          "id": "CIT-PDF-RIA",
+          "path": "asn1crypto/pdf.py",
+          "line_start": 64,
+          "line_end": 69,
+          "claim": "The archival revocation attribute has distinct crl, ocsp and other_rev_info branches.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-PDF-OID": {
+          "id": "CIT-PDF-OID",
+          "path": "asn1crypto/pdf.py",
+          "line_start": 82,
+          "line_end": 84,
+          "claim": "The CMS attribute OID is mapped to SetOfRevocationInfoArchival.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-PDF-DOC": {
+          "id": "CIT-PDF-DOC",
+          "path": "asn1crypto/pdf.py",
+          "line_start": 3,
+          "line_end": 6,
+          "claim": "pdf.py is an ASN.1 type module, not a PDF byte-range parser.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-CMS-SIGNER": {
+          "id": "CIT-CMS-SIGNER",
+          "path": "asn1crypto/cms.py",
+          "line_start": 605,
+          "line_end": 614,
+          "claim": "SignerInfo separates signed attributes from the signature value.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-CMS-SIGNEDDATA": {
+          "id": "CIT-CMS-SIGNEDDATA",
+          "path": "asn1crypto/cms.py",
+          "line_start": 621,
+          "line_end": 629,
+          "claim": "SignedData keeps top-level CRLs and signer infos as separate fields.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-CRL-LIST": {
+          "id": "CIT-CRL-LIST",
+          "path": "asn1crypto/crl.py",
+          "line_start": 286,
+          "line_end": 291,
+          "claim": "CertificateList separates the signed TBS bytes from algorithm and signature fields.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-TSP-ATS": {
+          "id": "CIT-TSP-ATS",
+          "path": "asn1crypto/tsp.py",
+          "line_start": 202,
+          "line_end": 212,
+          "claim": "Archive timestamp structures can chain preservation statements, but do not verify revocation status.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-README-PARSE": {
+          "id": "CIT-README-PARSE",
+          "path": "readme.md",
+          "line_start": 1,
+          "line_end": 4,
+          "claim": "The package describes itself as a parser/serializer.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-README-SIG": {
+          "id": "CIT-README-SIG",
+          "path": "readme.md",
+          "line_start": 90,
+          "line_end": 95,
+          "claim": "Signatures are represented as byte strings; the package does not authenticate them.",
+          "status": "OK",
+          "missing_snippets": []
+        }
+      }
+    },
+    "missing-attachment": {
+      "case": "missing-attachment",
+      "manifest": "manifest-missing-attachment.json",
+      "archive": {
+        "name": "archive-outer-only.der",
+        "size": 419,
+        "sha256": "d81b2d284f783fd98d81eac634604ceb6639710293126de5bb496c4cb9136606"
+      },
+      "outer": {
+        "status": "VALID",
+        "algorithm": "ed25519",
+        "signed_object": "CMS SignedAttrs (untagged SET OF)",
+        "signed_sha256": "e00d89b92e57dda31a79e65ce61e94053e49d73c9c2403760471110b5a84c802",
+        "signed_len": 146,
+        "archive_span": [
+          200,
+          346
+        ],
+        "signature_sha256": "fa43d1f7e2f5d38dcb47010184ea2b5c5ce72aff66c28164de5e60d726abcff3",
+        "signature_span": [
+          355,
+          419
+        ],
+        "key_id": "KEY-03396219237F75A6",
+        "key_fingerprint": "03396219237f75a64f12aeb7f39723abf400b160c364980a765dac24aeba2464",
+        "error": null,
+        "message_digest_expected": "49945d0fa063c90cb8cf1a9bcd3e74bb5ec556111ee36acd97a591ef06cdf94f",
+        "message_digest_attr": "49945d0fa063c90cb8cf1a9bcd3e74bb5ec556111ee36acd97a591ef06cdf94f",
+        "message_digest_match": true,
+        "archival_attr_present": true
+      },
+      "attachment": {
+        "state": "missing",
+        "source": "none",
+        "present": false,
+        "declared_refs": [
+          {
+            "id": "ATT-REV-001",
+            "kind": "crl",
+            "path": "attachments/revocation.crl.der",
+            "expected_sha256": "15438db21bd655c5587f3f492b726604de4099bf1e983851d49e16b036c0053f",
+            "exists": false,
+            "sha256": null,
+            "size": null
+          }
+        ],
+        "sha256": null,
+        "size": null,
+        "expected_sha256": "15438db21bd655c5587f3f492b726604de4099bf1e983851d49e16b036c0053f",
+        "digest_match": null
+      },
+      "inner": {
+        "status": "NOT_ATTEMPTED",
+        "algorithm": null,
+        "signed_object": "CertificateList.tbs_cert_list",
+        "signed_sha256": null,
+        "signed_len": null,
+        "archive_span": null,
+        "signature_sha256": null,
+        "signature_span": null,
+        "key_id": null,
+        "key_fingerprint": null,
+        "error": null
+      },
+      "entries": [
+        {
+          "id": "IDX-001",
+          "kind": "archive",
+          "claim": "外层 CMS 回执声明了一份吊销信息归档对象，并以 other_rev_info 摘要承诺其字节。",
+          "tier": "T1",
+          "basis": "外层回执 SIG-OUTER；摘要本身不提供附件字节。",
+          "changed": false
+        },
+        {
+          "id": "REV-001",
+          "kind": "archive",
+          "claim": "证书序列号 0x5A17C0DE 于 2026-11-18 12:00 UTC 被撤销，原因 key_compromise。",
+          "tier": "T1",
+          "basis": "SIG-OUTER 有效；声明的附件路径缺失；不能把外层回执等同于附件。",
+          "changed": false,
+          "tier_changed": false,
+          "basis_changed": true
+        },
+        {
+          "id": "REV-002",
+          "kind": "archive",
+          "claim": "归档政策要求在 2027-11-20 前重新封存同一条记录。",
+          "tier": "T1",
+          "basis": "政策通知依据；不在本次 CRL 的 tbs_cert_list 签名覆盖范围。",
+          "changed": false
+        },
+        {
+          "id": "CODE-001",
+          "kind": "code",
+          "claim": "AdobeArchiveRevInfo 只保存 version；实际附件类型由 RevocationInfoArchival 的 crl/ocsp/other_rev_info 分支承担。",
+          "tier": "S1",
+          "basis": "CIT-PDF-ARCH, CIT-PDF-RIA, CIT-PDF-OID",
+          "changed": false,
+          "citation_ids": [
+            "CIT-PDF-ARCH",
+            "CIT-PDF-RIA",
+            "CIT-PDF-OID"
+          ],
+          "absence_ids": [],
+          "citation_status": "OK"
+        },
+        {
+          "id": "CODE-002",
+          "kind": "code",
+          "claim": "CMS SignerInfo 将 signed_attrs 与 signature 分开；含 signed_attrs 的分支中，外层签名覆盖的是签名属性，而不是整个 ContentInfo。",
+          "tier": "S1",
+          "basis": "CIT-CMS-SIGNER, CIT-CMS-SIGNEDDATA",
+          "changed": false,
+          "citation_ids": [
+            "CIT-CMS-SIGNER",
+            "CIT-CMS-SIGNEDDATA"
+          ],
+          "absence_ids": [],
+          "citation_status": "OK"
+        },
+        {
+          "id": "CODE-003",
+          "kind": "code",
+          "claim": "CRL CertificateList 将 tbs_cert_list 与 signature_algorithm/signature 分开；内层签名只覆盖 TBS 字节。",
+          "tier": "S1",
+          "basis": "CIT-CRL-LIST",
+          "changed": false,
+          "citation_ids": [
+            "CIT-CRL-LIST"
+          ],
+          "absence_ids": [],
+          "citation_status": "OK"
+        },
+        {
+          "id": "CODE-004",
+          "kind": "code",
+          "claim": "ArchiveTimeStampSequence 可串联多份保全说明，但它本身不是撤销状态验签器。",
+          "tier": "S1",
+          "basis": "CIT-TSP-ATS",
+          "changed": false,
+          "citation_ids": [
+            "CIT-TSP-ATS"
+          ],
+          "absence_ids": [],
+          "citation_status": "OK"
+        },
+        {
+          "id": "CODE-005",
+          "kind": "code",
+          "claim": "asn1crypto 是解析/序列化库；签名在结构中表现为字节串，库内没有密码学 verify API。",
+          "tier": "S1",
+          "basis": "CIT-README-PARSE, CIT-README-SIG, ABS-NO-VERIFY",
+          "changed": false,
+          "citation_ids": [
+            "CIT-README-PARSE",
+            "CIT-README-SIG"
+          ],
+          "absence_ids": [
+            "ABS-NO-VERIFY"
+          ],
+          "citation_status": "OK"
+        },
+        {
+          "id": "CODE-006",
+          "kind": "code",
+          "claim": "asn1crypto/pdf.py 只提供 ASN.1 类型映射，不解析 PDF ByteRange，因此不能证明 PDF 文件级封存覆盖。",
+          "tier": "S1",
+          "basis": "CIT-PDF-DOC, ABS-NO-BYTERANGE",
+          "changed": false,
+          "citation_ids": [
+            "CIT-PDF-DOC"
+          ],
+          "absence_ids": [
+            "ABS-NO-BYTERANGE"
+          ],
+          "citation_status": "OK"
+        }
+      ],
+      "changed_ids": [],
+      "coverage": [
+        {
+          "id": "outer_signed_attrs",
+          "label": "CMS SignedAttrs（逻辑 SET 编码；归档内为 [0] 隐式包装）",
+          "sha256": "e00d89b92e57dda31a79e65ce61e94053e49d73c9c2403760471110b5a84c802",
+          "length": 146,
+          "archive_span": [
+            200,
+            346
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "外层签名的直接输入；归档中的 0xA0 标签被还原为 SET(0x31) 后验签。"
+        },
+        {
+          "id": "outer_signature_value",
+          "label": "外层 CMS signature OCTET STRING 内容",
+          "sha256": "fa43d1f7e2f5d38dcb47010184ea2b5c5ce72aff66c28164de5e60d726abcff3",
+          "length": 64,
+          "archive_span": [
+            355,
+            419
+          ],
+          "outer_direct": false,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "签名值自身不被任一签名覆盖。"
+        },
+        {
+          "id": "payload",
+          "label": "encap_content_info 内容",
+          "sha256": "49945d0fa063c90cb8cf1a9bcd3e74bb5ec556111ee36acd97a591ef06cdf94f",
+          "length": 32,
+          "archive_span": [
+            60,
+            92
+          ],
+          "outer_direct": false,
+          "outer_digest": true,
+          "inner_direct": false,
+          "note": "外层签名不直接覆盖 payload；只通过 message_digest 间接绑定。"
+        },
+        {
+          "id": "archival_attribute",
+          "label": "adobe_revocation_info_archival 值",
+          "sha256": "af6a4bfabe075cce44aef05360787823233a3f9d703c5407b812e2344bf6c8d2",
+          "length": 53,
+          "archive_span": [
+            293,
+            346
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "位于 signed_attrs 内，因此外层签名直接覆盖其字节；内层 CRL 签名不覆盖。"
+        }
+      ],
+      "citation_audit": {
+        "CIT-PDF-ARCH": {
+          "id": "CIT-PDF-ARCH",
+          "path": "asn1crypto/pdf.py",
+          "line_start": 31,
+          "line_end": 34,
+          "claim": "AdobeArchiveRevInfo carries only a version; it does not carry attachment bytes.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-PDF-RIA": {
+          "id": "CIT-PDF-RIA",
+          "path": "asn1crypto/pdf.py",
+          "line_start": 64,
+          "line_end": 69,
+          "claim": "The archival revocation attribute has distinct crl, ocsp and other_rev_info branches.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-PDF-OID": {
+          "id": "CIT-PDF-OID",
+          "path": "asn1crypto/pdf.py",
+          "line_start": 82,
+          "line_end": 84,
+          "claim": "The CMS attribute OID is mapped to SetOfRevocationInfoArchival.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-PDF-DOC": {
+          "id": "CIT-PDF-DOC",
+          "path": "asn1crypto/pdf.py",
+          "line_start": 3,
+          "line_end": 6,
+          "claim": "pdf.py is an ASN.1 type module, not a PDF byte-range parser.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-CMS-SIGNER": {
+          "id": "CIT-CMS-SIGNER",
+          "path": "asn1crypto/cms.py",
+          "line_start": 605,
+          "line_end": 614,
+          "claim": "SignerInfo separates signed attributes from the signature value.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-CMS-SIGNEDDATA": {
+          "id": "CIT-CMS-SIGNEDDATA",
+          "path": "asn1crypto/cms.py",
+          "line_start": 621,
+          "line_end": 629,
+          "claim": "SignedData keeps top-level CRLs and signer infos as separate fields.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-CRL-LIST": {
+          "id": "CIT-CRL-LIST",
+          "path": "asn1crypto/crl.py",
+          "line_start": 286,
+          "line_end": 291,
+          "claim": "CertificateList separates the signed TBS bytes from algorithm and signature fields.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-TSP-ATS": {
+          "id": "CIT-TSP-ATS",
+          "path": "asn1crypto/tsp.py",
+          "line_start": 202,
+          "line_end": 212,
+          "claim": "Archive timestamp structures can chain preservation statements, but do not verify revocation status.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-README-PARSE": {
+          "id": "CIT-README-PARSE",
+          "path": "readme.md",
+          "line_start": 1,
+          "line_end": 4,
+          "claim": "The package describes itself as a parser/serializer.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-README-SIG": {
+          "id": "CIT-README-SIG",
+          "path": "readme.md",
+          "line_start": 90,
+          "line_end": 95,
+          "claim": "Signatures are represented as byte strings; the package does not authenticate them.",
+          "status": "OK",
+          "missing_snippets": []
+        }
+      }
+    },
+    "attachment-unverified": {
+      "case": "attachment-unverified",
+      "manifest": "manifest-attachment-unverified.json",
+      "archive": {
+        "name": "archive-with-crl.der",
+        "size": 715,
+        "sha256": "1fba5402b40f7439db7092de741c950458d1681e161cdc39a6b14b2fd6e976e2"
+      },
+      "outer": {
+        "status": "VALID",
+        "algorithm": "ed25519",
+        "signed_object": "CMS SignedAttrs (untagged SET OF)",
+        "signed_sha256": "16cf564f3d98a672c91d21220066a0c09cf3121fe22d2d3278644f52c985fffd",
+        "signed_len": 442,
+        "archive_span": [
+          200,
+          642
+        ],
+        "signature_sha256": "baad7ee1ba7037023b329ee9be2766e9d316caf0a1712b8fe7ff3ade65c1e8ca",
+        "signature_span": [
+          651,
+          715
+        ],
+        "key_id": "KEY-03396219237F75A6",
+        "key_fingerprint": "03396219237f75a64f12aeb7f39723abf400b160c364980a765dac24aeba2464",
+        "error": null,
+        "message_digest_expected": "49945d0fa063c90cb8cf1a9bcd3e74bb5ec556111ee36acd97a591ef06cdf94f",
+        "message_digest_attr": "49945d0fa063c90cb8cf1a9bcd3e74bb5ec556111ee36acd97a591ef06cdf94f",
+        "message_digest_match": true,
+        "archival_attr_present": true
+      },
+      "attachment": {
+        "state": "present",
+        "source": "embedded",
+        "present": true,
+        "declared_refs": [],
+        "sha256": "15438db21bd655c5587f3f492b726604de4099bf1e983851d49e16b036c0053f",
+        "size": 281,
+        "expected_sha256": "15438db21bd655c5587f3f492b726604de4099bf1e983851d49e16b036c0053f",
+        "digest_match": true
+      },
+      "inner": {
+        "status": "MISSING_KEY",
+        "algorithm": "ed25519",
+        "signed_object": "CertificateList.tbs_cert_list",
+        "signed_sha256": "22cf608294c26ab8c091918395cf86712f77ca7034cc0e374fcc528b2209ad15",
+        "signed_len": 203,
+        "archive_span": [
+          314,
+          517
+        ],
+        "signature_sha256": "6f86dd6cfbcee7c0059d1e8e1d05b1e99d5557aad3dc1f76205c909e6bb63a2f",
+        "signature_span": [
+          527,
+          591
+        ],
+        "key_id": null,
+        "key_fingerprint": null,
+        "error": "no independent issuer public key was supplied"
+      },
+      "entries": [
+        {
+          "id": "IDX-001",
+          "kind": "archive",
+          "claim": "外层 CMS 回执声明了一份吊销信息归档对象，并以 other_rev_info 摘要承诺其字节。",
+          "tier": "T1",
+          "basis": "外层回执 SIG-OUTER；摘要本身不提供附件字节。",
+          "changed": false
+        },
+        {
+          "id": "REV-001",
+          "kind": "archive",
+          "claim": "证书序列号 0x5A17C0DE 于 2026-11-18 12:00 UTC 被撤销，原因 key_compromise。",
+          "tier": "T2",
+          "basis": "SIG-OUTER + 实际附件字节且摘要一致；发行者公钥缺失，未做原发行验签。",
+          "changed": true,
+          "tier_changed": true,
+          "basis_changed": true
+        },
+        {
+          "id": "REV-002",
+          "kind": "archive",
+          "claim": "归档政策要求在 2027-11-20 前重新封存同一条记录。",
+          "tier": "T1",
+          "basis": "政策通知依据；不在本次 CRL 的 tbs_cert_list 签名覆盖范围。",
+          "changed": false
+        },
+        {
+          "id": "CODE-001",
+          "kind": "code",
+          "claim": "AdobeArchiveRevInfo 只保存 version；实际附件类型由 RevocationInfoArchival 的 crl/ocsp/other_rev_info 分支承担。",
+          "tier": "S1",
+          "basis": "CIT-PDF-ARCH, CIT-PDF-RIA, CIT-PDF-OID",
+          "changed": false,
+          "citation_ids": [
+            "CIT-PDF-ARCH",
+            "CIT-PDF-RIA",
+            "CIT-PDF-OID"
+          ],
+          "absence_ids": [],
+          "citation_status": "OK"
+        },
+        {
+          "id": "CODE-002",
+          "kind": "code",
+          "claim": "CMS SignerInfo 将 signed_attrs 与 signature 分开；含 signed_attrs 的分支中，外层签名覆盖的是签名属性，而不是整个 ContentInfo。",
+          "tier": "S1",
+          "basis": "CIT-CMS-SIGNER, CIT-CMS-SIGNEDDATA",
+          "changed": false,
+          "citation_ids": [
+            "CIT-CMS-SIGNER",
+            "CIT-CMS-SIGNEDDATA"
+          ],
+          "absence_ids": [],
+          "citation_status": "OK"
+        },
+        {
+          "id": "CODE-003",
+          "kind": "code",
+          "claim": "CRL CertificateList 将 tbs_cert_list 与 signature_algorithm/signature 分开；内层签名只覆盖 TBS 字节。",
+          "tier": "S1",
+          "basis": "CIT-CRL-LIST",
+          "changed": false,
+          "citation_ids": [
+            "CIT-CRL-LIST"
+          ],
+          "absence_ids": [],
+          "citation_status": "OK"
+        },
+        {
+          "id": "CODE-004",
+          "kind": "code",
+          "claim": "ArchiveTimeStampSequence 可串联多份保全说明，但它本身不是撤销状态验签器。",
+          "tier": "S1",
+          "basis": "CIT-TSP-ATS",
+          "changed": false,
+          "citation_ids": [
+            "CIT-TSP-ATS"
+          ],
+          "absence_ids": [],
+          "citation_status": "OK"
+        },
+        {
+          "id": "CODE-005",
+          "kind": "code",
+          "claim": "asn1crypto 是解析/序列化库；签名在结构中表现为字节串，库内没有密码学 verify API。",
+          "tier": "S1",
+          "basis": "CIT-README-PARSE, CIT-README-SIG, ABS-NO-VERIFY",
+          "changed": false,
+          "citation_ids": [
+            "CIT-README-PARSE",
+            "CIT-README-SIG"
+          ],
+          "absence_ids": [
+            "ABS-NO-VERIFY"
+          ],
+          "citation_status": "OK"
+        },
+        {
+          "id": "CODE-006",
+          "kind": "code",
+          "claim": "asn1crypto/pdf.py 只提供 ASN.1 类型映射，不解析 PDF ByteRange，因此不能证明 PDF 文件级封存覆盖。",
+          "tier": "S1",
+          "basis": "CIT-PDF-DOC, ABS-NO-BYTERANGE",
+          "changed": false,
+          "citation_ids": [
+            "CIT-PDF-DOC"
+          ],
+          "absence_ids": [
+            "ABS-NO-BYTERANGE"
+          ],
+          "citation_status": "OK"
+        }
+      ],
+      "changed_ids": [
+        "REV-001"
+      ],
+      "coverage": [
+        {
+          "id": "outer_signed_attrs",
+          "label": "CMS SignedAttrs（逻辑 SET 编码；归档内为 [0] 隐式包装）",
+          "sha256": "16cf564f3d98a672c91d21220066a0c09cf3121fe22d2d3278644f52c985fffd",
+          "length": 442,
+          "archive_span": [
+            200,
+            642
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "外层签名的直接输入；归档中的 0xA0 标签被还原为 SET(0x31) 后验签。"
+        },
+        {
+          "id": "outer_signature_value",
+          "label": "外层 CMS signature OCTET STRING 内容",
+          "sha256": "baad7ee1ba7037023b329ee9be2766e9d316caf0a1712b8fe7ff3ade65c1e8ca",
+          "length": 64,
+          "archive_span": [
+            651,
+            715
+          ],
+          "outer_direct": false,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "签名值自身不被任一签名覆盖。"
+        },
+        {
+          "id": "payload",
+          "label": "encap_content_info 内容",
+          "sha256": "49945d0fa063c90cb8cf1a9bcd3e74bb5ec556111ee36acd97a591ef06cdf94f",
+          "length": 32,
+          "archive_span": [
+            60,
+            92
+          ],
+          "outer_direct": false,
+          "outer_digest": true,
+          "inner_direct": false,
+          "note": "外层签名不直接覆盖 payload；只通过 message_digest 间接绑定。"
+        },
+        {
+          "id": "archival_attribute",
+          "label": "adobe_revocation_info_archival 值",
+          "sha256": "1d5533477a202cb4011849a1dfb20789f9bb51e03854846e510b02af6e3d7285",
+          "length": 344,
+          "archive_span": [
+            298,
+            642
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "位于 signed_attrs 内，因此外层签名直接覆盖其字节；内层 CRL 签名不覆盖。"
+        },
+        {
+          "id": "crl_certificate_list",
+          "label": "内层 CertificateList（完整 CRL，含自身签名字段）",
+          "sha256": "15438db21bd655c5587f3f492b726604de4099bf1e983851d49e16b036c0053f",
+          "length": 281,
+          "archive_span": [
+            310,
+            591
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "外层封存覆盖完整 CRL 字节，但不因此验证 CRL 签名。"
+        },
+        {
+          "id": "crl_tbs_cert_list",
+          "label": "CRL tbs_cert_list（被发行者签名的字节）",
+          "sha256": "22cf608294c26ab8c091918395cf86712f77ca7034cc0e374fcc528b2209ad15",
+          "length": 203,
+          "archive_span": [
+            314,
+            517
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": true,
+          "note": "内层签名的直接输入；是完整 CRL 的真子集。"
+        },
+        {
+          "id": "revoked_certificate_entry",
+          "label": "revoked_certificates[0]（第一条吊销记录）",
+          "sha256": "b3edff55247b76afd50f939a6b6b8cc1bf2daab279568250814e95d95947955b",
+          "length": 63,
+          "archive_span": [
+            438,
+            501
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": true,
+          "note": "吊销记录内容位于 tbs_cert_list 内，因此两层都覆盖其字节；但只有内层签名证明其发行来源。"
+        },
+        {
+          "id": "crl_signature_value",
+          "label": "CRL signature BIT STRING 内容",
+          "sha256": "6f86dd6cfbcee7c0059d1e8e1d05b1e99d5557aad3dc1f76205c909e6bb63a2f",
+          "length": 64,
+          "archive_span": [
+            527,
+            591
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "外层封存把它当作附件字节覆盖；内层签名本身不覆盖自己的签名值。"
+        }
+      ],
+      "citation_audit": {
+        "CIT-PDF-ARCH": {
+          "id": "CIT-PDF-ARCH",
+          "path": "asn1crypto/pdf.py",
+          "line_start": 31,
+          "line_end": 34,
+          "claim": "AdobeArchiveRevInfo carries only a version; it does not carry attachment bytes.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-PDF-RIA": {
+          "id": "CIT-PDF-RIA",
+          "path": "asn1crypto/pdf.py",
+          "line_start": 64,
+          "line_end": 69,
+          "claim": "The archival revocation attribute has distinct crl, ocsp and other_rev_info branches.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-PDF-OID": {
+          "id": "CIT-PDF-OID",
+          "path": "asn1crypto/pdf.py",
+          "line_start": 82,
+          "line_end": 84,
+          "claim": "The CMS attribute OID is mapped to SetOfRevocationInfoArchival.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-PDF-DOC": {
+          "id": "CIT-PDF-DOC",
+          "path": "asn1crypto/pdf.py",
+          "line_start": 3,
+          "line_end": 6,
+          "claim": "pdf.py is an ASN.1 type module, not a PDF byte-range parser.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-CMS-SIGNER": {
+          "id": "CIT-CMS-SIGNER",
+          "path": "asn1crypto/cms.py",
+          "line_start": 605,
+          "line_end": 614,
+          "claim": "SignerInfo separates signed attributes from the signature value.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-CMS-SIGNEDDATA": {
+          "id": "CIT-CMS-SIGNEDDATA",
+          "path": "asn1crypto/cms.py",
+          "line_start": 621,
+          "line_end": 629,
+          "claim": "SignedData keeps top-level CRLs and signer infos as separate fields.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-CRL-LIST": {
+          "id": "CIT-CRL-LIST",
+          "path": "asn1crypto/crl.py",
+          "line_start": 286,
+          "line_end": 291,
+          "claim": "CertificateList separates the signed TBS bytes from algorithm and signature fields.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-TSP-ATS": {
+          "id": "CIT-TSP-ATS",
+          "path": "asn1crypto/tsp.py",
+          "line_start": 202,
+          "line_end": 212,
+          "claim": "Archive timestamp structures can chain preservation statements, but do not verify revocation status.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-README-PARSE": {
+          "id": "CIT-README-PARSE",
+          "path": "readme.md",
+          "line_start": 1,
+          "line_end": 4,
+          "claim": "The package describes itself as a parser/serializer.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-README-SIG": {
+          "id": "CIT-README-SIG",
+          "path": "readme.md",
+          "line_start": 90,
+          "line_end": 95,
+          "claim": "Signatures are represented as byte strings; the package does not authenticate them.",
+          "status": "OK",
+          "missing_snippets": []
+        }
+      }
+    },
+    "tampered-attachment": {
+      "case": "tampered-attachment",
+      "manifest": "manifest-tampered-attachment.json",
+      "archive": {
+        "name": "archive-tampered-crl.der",
+        "size": 716,
+        "sha256": "8716995fc4881e26a241955df6b9aa50796a5909ad622ff351a6cacdf1e031a1"
+      },
+      "outer": {
+        "status": "VALID",
+        "algorithm": "ed25519",
+        "signed_object": "CMS SignedAttrs (untagged SET OF)",
+        "signed_sha256": "a93e4d4fafd811fce7099c0d3101290e39a1ed6be21cc2ee4490fe76f0c1aa0d",
+        "signed_len": 443,
+        "archive_span": [
+          200,
+          643
+        ],
+        "signature_sha256": "530676f2d6b5bbeeee204c2850f7fcafd9325cc90aa2266d72bd3d26dac6e394",
+        "signature_span": [
+          652,
+          716
+        ],
+        "key_id": "KEY-03396219237F75A6",
+        "key_fingerprint": "03396219237f75a64f12aeb7f39723abf400b160c364980a765dac24aeba2464",
+        "error": null,
+        "message_digest_expected": "49945d0fa063c90cb8cf1a9bcd3e74bb5ec556111ee36acd97a591ef06cdf94f",
+        "message_digest_attr": "49945d0fa063c90cb8cf1a9bcd3e74bb5ec556111ee36acd97a591ef06cdf94f",
+        "message_digest_match": true,
+        "archival_attr_present": true
+      },
+      "attachment": {
+        "state": "present",
+        "source": "embedded",
+        "present": true,
+        "declared_refs": [],
+        "sha256": "7e715c5432ed347264d016162c07e65f47e8f83642c32fdab57d8ef1c7af7e09",
+        "size": 282,
+        "expected_sha256": "15438db21bd655c5587f3f492b726604de4099bf1e983851d49e16b036c0053f",
+        "digest_match": false
+      },
+      "inner": {
+        "status": "INVALID",
+        "algorithm": "ed25519",
+        "signed_object": "CertificateList.tbs_cert_list",
+        "signed_sha256": "743e03933311198829b39cabc87a06a89ce7d790fc5e3fdb05921afe6481f818",
+        "signed_len": 204,
+        "archive_span": [
+          314,
+          518
+        ],
+        "signature_sha256": "6f86dd6cfbcee7c0059d1e8e1d05b1e99d5557aad3dc1f76205c909e6bb63a2f",
+        "signature_span": [
+          528,
+          592
+        ],
+        "key_id": "KEY-0A5B67549542C9A5",
+        "key_fingerprint": "0a5b67549542c9a55ed6a80ba5c7646b13834d6d5a15c2e3fedd7da04db45886",
+        "error": "InvalidSignature: "
+      },
+      "entries": [
+        {
+          "id": "IDX-001",
+          "kind": "archive",
+          "claim": "外层 CMS 回执声明了一份吊销信息归档对象，并以 other_rev_info 摘要承诺其字节。",
+          "tier": "T1",
+          "basis": "外层回执 SIG-OUTER；摘要本身不提供附件字节。",
+          "changed": false
+        },
+        {
+          "id": "REV-001",
+          "kind": "archive",
+          "claim": "证书序列号 0x5A17C0DE 于 2026-11-18 12:00 UTC 被撤销，原因 key_compromise。",
+          "tier": "T1",
+          "basis": "SIG-OUTER 有效；外层封存有效，但附件摘要与外层承诺不一致。",
+          "changed": false,
+          "tier_changed": false,
+          "basis_changed": true
+        },
+        {
+          "id": "REV-002",
+          "kind": "archive",
+          "claim": "归档政策要求在 2027-11-20 前重新封存同一条记录。",
+          "tier": "T1",
+          "basis": "政策通知依据；不在本次 CRL 的 tbs_cert_list 签名覆盖范围。",
+          "changed": false
+        },
+        {
+          "id": "CODE-001",
+          "kind": "code",
+          "claim": "AdobeArchiveRevInfo 只保存 version；实际附件类型由 RevocationInfoArchival 的 crl/ocsp/other_rev_info 分支承担。",
+          "tier": "S1",
+          "basis": "CIT-PDF-ARCH, CIT-PDF-RIA, CIT-PDF-OID",
+          "changed": false,
+          "citation_ids": [
+            "CIT-PDF-ARCH",
+            "CIT-PDF-RIA",
+            "CIT-PDF-OID"
+          ],
+          "absence_ids": [],
+          "citation_status": "OK"
+        },
+        {
+          "id": "CODE-002",
+          "kind": "code",
+          "claim": "CMS SignerInfo 将 signed_attrs 与 signature 分开；含 signed_attrs 的分支中，外层签名覆盖的是签名属性，而不是整个 ContentInfo。",
+          "tier": "S1",
+          "basis": "CIT-CMS-SIGNER, CIT-CMS-SIGNEDDATA",
+          "changed": false,
+          "citation_ids": [
+            "CIT-CMS-SIGNER",
+            "CIT-CMS-SIGNEDDATA"
+          ],
+          "absence_ids": [],
+          "citation_status": "OK"
+        },
+        {
+          "id": "CODE-003",
+          "kind": "code",
+          "claim": "CRL CertificateList 将 tbs_cert_list 与 signature_algorithm/signature 分开；内层签名只覆盖 TBS 字节。",
+          "tier": "S1",
+          "basis": "CIT-CRL-LIST",
+          "changed": false,
+          "citation_ids": [
+            "CIT-CRL-LIST"
+          ],
+          "absence_ids": [],
+          "citation_status": "OK"
+        },
+        {
+          "id": "CODE-004",
+          "kind": "code",
+          "claim": "ArchiveTimeStampSequence 可串联多份保全说明，但它本身不是撤销状态验签器。",
+          "tier": "S1",
+          "basis": "CIT-TSP-ATS",
+          "changed": false,
+          "citation_ids": [
+            "CIT-TSP-ATS"
+          ],
+          "absence_ids": [],
+          "citation_status": "OK"
+        },
+        {
+          "id": "CODE-005",
+          "kind": "code",
+          "claim": "asn1crypto 是解析/序列化库；签名在结构中表现为字节串，库内没有密码学 verify API。",
+          "tier": "S1",
+          "basis": "CIT-README-PARSE, CIT-README-SIG, ABS-NO-VERIFY",
+          "changed": false,
+          "citation_ids": [
+            "CIT-README-PARSE",
+            "CIT-README-SIG"
+          ],
+          "absence_ids": [
+            "ABS-NO-VERIFY"
+          ],
+          "citation_status": "OK"
+        },
+        {
+          "id": "CODE-006",
+          "kind": "code",
+          "claim": "asn1crypto/pdf.py 只提供 ASN.1 类型映射，不解析 PDF ByteRange，因此不能证明 PDF 文件级封存覆盖。",
+          "tier": "S1",
+          "basis": "CIT-PDF-DOC, ABS-NO-BYTERANGE",
+          "changed": false,
+          "citation_ids": [
+            "CIT-PDF-DOC"
+          ],
+          "absence_ids": [
+            "ABS-NO-BYTERANGE"
+          ],
+          "citation_status": "OK"
+        }
+      ],
+      "changed_ids": [],
+      "coverage": [
+        {
+          "id": "outer_signed_attrs",
+          "label": "CMS SignedAttrs（逻辑 SET 编码；归档内为 [0] 隐式包装）",
+          "sha256": "a93e4d4fafd811fce7099c0d3101290e39a1ed6be21cc2ee4490fe76f0c1aa0d",
+          "length": 443,
+          "archive_span": [
+            200,
+            643
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "外层签名的直接输入；归档中的 0xA0 标签被还原为 SET(0x31) 后验签。"
+        },
+        {
+          "id": "outer_signature_value",
+          "label": "外层 CMS signature OCTET STRING 内容",
+          "sha256": "530676f2d6b5bbeeee204c2850f7fcafd9325cc90aa2266d72bd3d26dac6e394",
+          "length": 64,
+          "archive_span": [
+            652,
+            716
+          ],
+          "outer_direct": false,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "签名值自身不被任一签名覆盖。"
+        },
+        {
+          "id": "payload",
+          "label": "encap_content_info 内容",
+          "sha256": "49945d0fa063c90cb8cf1a9bcd3e74bb5ec556111ee36acd97a591ef06cdf94f",
+          "length": 32,
+          "archive_span": [
+            60,
+            92
+          ],
+          "outer_direct": false,
+          "outer_digest": true,
+          "inner_direct": false,
+          "note": "外层签名不直接覆盖 payload；只通过 message_digest 间接绑定。"
+        },
+        {
+          "id": "archival_attribute",
+          "label": "adobe_revocation_info_archival 值",
+          "sha256": "bcdbe4cd7b9518f3d5a4ab7a0698ddaaf3922fd1c82a05fee5b5d66999621dc6",
+          "length": 345,
+          "archive_span": [
+            298,
+            643
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "位于 signed_attrs 内，因此外层签名直接覆盖其字节；内层 CRL 签名不覆盖。"
+        },
+        {
+          "id": "crl_certificate_list",
+          "label": "内层 CertificateList（完整 CRL，含自身签名字段）",
+          "sha256": "7e715c5432ed347264d016162c07e65f47e8f83642c32fdab57d8ef1c7af7e09",
+          "length": 282,
+          "archive_span": [
+            310,
+            592
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "外层封存覆盖完整 CRL 字节，但不因此验证 CRL 签名。"
+        },
+        {
+          "id": "crl_tbs_cert_list",
+          "label": "CRL tbs_cert_list（被发行者签名的字节）",
+          "sha256": "743e03933311198829b39cabc87a06a89ce7d790fc5e3fdb05921afe6481f818",
+          "length": 204,
+          "archive_span": [
+            314,
+            518
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": true,
+          "note": "内层签名的直接输入；是完整 CRL 的真子集。"
+        },
+        {
+          "id": "revoked_certificate_entry",
+          "label": "revoked_certificates[0]（第一条吊销记录）",
+          "sha256": "3b014ea2ebb35109d792abccc9a8719a02354fca776586b05ffaf721bd6050bb",
+          "length": 64,
+          "archive_span": [
+            438,
+            502
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": true,
+          "note": "吊销记录内容位于 tbs_cert_list 内，因此两层都覆盖其字节；但只有内层签名证明其发行来源。"
+        },
+        {
+          "id": "crl_signature_value",
+          "label": "CRL signature BIT STRING 内容",
+          "sha256": "6f86dd6cfbcee7c0059d1e8e1d05b1e99d5557aad3dc1f76205c909e6bb63a2f",
+          "length": 64,
+          "archive_span": [
+            528,
+            592
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "外层封存把它当作附件字节覆盖；内层签名本身不覆盖自己的签名值。"
+        }
+      ],
+      "citation_audit": {
+        "CIT-PDF-ARCH": {
+          "id": "CIT-PDF-ARCH",
+          "path": "asn1crypto/pdf.py",
+          "line_start": 31,
+          "line_end": 34,
+          "claim": "AdobeArchiveRevInfo carries only a version; it does not carry attachment bytes.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-PDF-RIA": {
+          "id": "CIT-PDF-RIA",
+          "path": "asn1crypto/pdf.py",
+          "line_start": 64,
+          "line_end": 69,
+          "claim": "The archival revocation attribute has distinct crl, ocsp and other_rev_info branches.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-PDF-OID": {
+          "id": "CIT-PDF-OID",
+          "path": "asn1crypto/pdf.py",
+          "line_start": 82,
+          "line_end": 84,
+          "claim": "The CMS attribute OID is mapped to SetOfRevocationInfoArchival.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-PDF-DOC": {
+          "id": "CIT-PDF-DOC",
+          "path": "asn1crypto/pdf.py",
+          "line_start": 3,
+          "line_end": 6,
+          "claim": "pdf.py is an ASN.1 type module, not a PDF byte-range parser.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-CMS-SIGNER": {
+          "id": "CIT-CMS-SIGNER",
+          "path": "asn1crypto/cms.py",
+          "line_start": 605,
+          "line_end": 614,
+          "claim": "SignerInfo separates signed attributes from the signature value.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-CMS-SIGNEDDATA": {
+          "id": "CIT-CMS-SIGNEDDATA",
+          "path": "asn1crypto/cms.py",
+          "line_start": 621,
+          "line_end": 629,
+          "claim": "SignedData keeps top-level CRLs and signer infos as separate fields.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-CRL-LIST": {
+          "id": "CIT-CRL-LIST",
+          "path": "asn1crypto/crl.py",
+          "line_start": 286,
+          "line_end": 291,
+          "claim": "CertificateList separates the signed TBS bytes from algorithm and signature fields.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-TSP-ATS": {
+          "id": "CIT-TSP-ATS",
+          "path": "asn1crypto/tsp.py",
+          "line_start": 202,
+          "line_end": 212,
+          "claim": "Archive timestamp structures can chain preservation statements, but do not verify revocation status.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-README-PARSE": {
+          "id": "CIT-README-PARSE",
+          "path": "readme.md",
+          "line_start": 1,
+          "line_end": 4,
+          "claim": "The package describes itself as a parser/serializer.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-README-SIG": {
+          "id": "CIT-README-SIG",
+          "path": "readme.md",
+          "line_start": 90,
+          "line_end": 95,
+          "claim": "Signatures are represented as byte strings; the package does not authenticate them.",
+          "status": "OK",
+          "missing_snippets": []
+        }
+      }
+    },
+    "issuance-verified": {
+      "case": "issuance-verified",
+      "manifest": "manifest-issuance-verified.json",
+      "archive": {
+        "name": "archive-with-crl.der",
+        "size": 715,
+        "sha256": "1fba5402b40f7439db7092de741c950458d1681e161cdc39a6b14b2fd6e976e2"
+      },
+      "outer": {
+        "status": "VALID",
+        "algorithm": "ed25519",
+        "signed_object": "CMS SignedAttrs (untagged SET OF)",
+        "signed_sha256": "16cf564f3d98a672c91d21220066a0c09cf3121fe22d2d3278644f52c985fffd",
+        "signed_len": 442,
+        "archive_span": [
+          200,
+          642
+        ],
+        "signature_sha256": "baad7ee1ba7037023b329ee9be2766e9d316caf0a1712b8fe7ff3ade65c1e8ca",
+        "signature_span": [
+          651,
+          715
+        ],
+        "key_id": "KEY-03396219237F75A6",
+        "key_fingerprint": "03396219237f75a64f12aeb7f39723abf400b160c364980a765dac24aeba2464",
+        "error": null,
+        "message_digest_expected": "49945d0fa063c90cb8cf1a9bcd3e74bb5ec556111ee36acd97a591ef06cdf94f",
+        "message_digest_attr": "49945d0fa063c90cb8cf1a9bcd3e74bb5ec556111ee36acd97a591ef06cdf94f",
+        "message_digest_match": true,
+        "archival_attr_present": true
+      },
+      "attachment": {
+        "state": "present",
+        "source": "embedded",
+        "present": true,
+        "declared_refs": [],
+        "sha256": "15438db21bd655c5587f3f492b726604de4099bf1e983851d49e16b036c0053f",
+        "size": 281,
+        "expected_sha256": "15438db21bd655c5587f3f492b726604de4099bf1e983851d49e16b036c0053f",
+        "digest_match": true
+      },
+      "inner": {
+        "status": "VALID",
+        "algorithm": "ed25519",
+        "signed_object": "CertificateList.tbs_cert_list",
+        "signed_sha256": "22cf608294c26ab8c091918395cf86712f77ca7034cc0e374fcc528b2209ad15",
+        "signed_len": 203,
+        "archive_span": [
+          314,
+          517
+        ],
+        "signature_sha256": "6f86dd6cfbcee7c0059d1e8e1d05b1e99d5557aad3dc1f76205c909e6bb63a2f",
+        "signature_span": [
+          527,
+          591
+        ],
+        "key_id": "KEY-0A5B67549542C9A5",
+        "key_fingerprint": "0a5b67549542c9a55ed6a80ba5c7646b13834d6d5a15c2e3fedd7da04db45886",
+        "error": null
+      },
+      "entries": [
+        {
+          "id": "IDX-001",
+          "kind": "archive",
+          "claim": "外层 CMS 回执声明了一份吊销信息归档对象，并以 other_rev_info 摘要承诺其字节。",
+          "tier": "T1",
+          "basis": "外层回执 SIG-OUTER；摘要本身不提供附件字节。",
+          "changed": false
+        },
+        {
+          "id": "REV-001",
+          "kind": "archive",
+          "claim": "证书序列号 0x5A17C0DE 于 2026-11-18 12:00 UTC 被撤销，原因 key_compromise。",
+          "tier": "T3",
+          "basis": "SIG-INNER（发行者密钥）+ SIG-OUTER + 附件摘要一致；字段读取自已验签的 tbs_cert_list。",
+          "changed": true,
+          "tier_changed": true,
+          "basis_changed": true
+        },
+        {
+          "id": "REV-002",
+          "kind": "archive",
+          "claim": "归档政策要求在 2027-11-20 前重新封存同一条记录。",
+          "tier": "T1",
+          "basis": "政策通知依据；不在本次 CRL 的 tbs_cert_list 签名覆盖范围。",
+          "changed": false
+        },
+        {
+          "id": "CODE-001",
+          "kind": "code",
+          "claim": "AdobeArchiveRevInfo 只保存 version；实际附件类型由 RevocationInfoArchival 的 crl/ocsp/other_rev_info 分支承担。",
+          "tier": "S1",
+          "basis": "CIT-PDF-ARCH, CIT-PDF-RIA, CIT-PDF-OID",
+          "changed": false,
+          "citation_ids": [
+            "CIT-PDF-ARCH",
+            "CIT-PDF-RIA",
+            "CIT-PDF-OID"
+          ],
+          "absence_ids": [],
+          "citation_status": "OK"
+        },
+        {
+          "id": "CODE-002",
+          "kind": "code",
+          "claim": "CMS SignerInfo 将 signed_attrs 与 signature 分开；含 signed_attrs 的分支中，外层签名覆盖的是签名属性，而不是整个 ContentInfo。",
+          "tier": "S1",
+          "basis": "CIT-CMS-SIGNER, CIT-CMS-SIGNEDDATA",
+          "changed": false,
+          "citation_ids": [
+            "CIT-CMS-SIGNER",
+            "CIT-CMS-SIGNEDDATA"
+          ],
+          "absence_ids": [],
+          "citation_status": "OK"
+        },
+        {
+          "id": "CODE-003",
+          "kind": "code",
+          "claim": "CRL CertificateList 将 tbs_cert_list 与 signature_algorithm/signature 分开；内层签名只覆盖 TBS 字节。",
+          "tier": "S1",
+          "basis": "CIT-CRL-LIST",
+          "changed": false,
+          "citation_ids": [
+            "CIT-CRL-LIST"
+          ],
+          "absence_ids": [],
+          "citation_status": "OK"
+        },
+        {
+          "id": "CODE-004",
+          "kind": "code",
+          "claim": "ArchiveTimeStampSequence 可串联多份保全说明，但它本身不是撤销状态验签器。",
+          "tier": "S1",
+          "basis": "CIT-TSP-ATS",
+          "changed": false,
+          "citation_ids": [
+            "CIT-TSP-ATS"
+          ],
+          "absence_ids": [],
+          "citation_status": "OK"
+        },
+        {
+          "id": "CODE-005",
+          "kind": "code",
+          "claim": "asn1crypto 是解析/序列化库；签名在结构中表现为字节串，库内没有密码学 verify API。",
+          "tier": "S1",
+          "basis": "CIT-README-PARSE, CIT-README-SIG, ABS-NO-VERIFY",
+          "changed": false,
+          "citation_ids": [
+            "CIT-README-PARSE",
+            "CIT-README-SIG"
+          ],
+          "absence_ids": [
+            "ABS-NO-VERIFY"
+          ],
+          "citation_status": "OK"
+        },
+        {
+          "id": "CODE-006",
+          "kind": "code",
+          "claim": "asn1crypto/pdf.py 只提供 ASN.1 类型映射，不解析 PDF ByteRange，因此不能证明 PDF 文件级封存覆盖。",
+          "tier": "S1",
+          "basis": "CIT-PDF-DOC, ABS-NO-BYTERANGE",
+          "changed": false,
+          "citation_ids": [
+            "CIT-PDF-DOC"
+          ],
+          "absence_ids": [
+            "ABS-NO-BYTERANGE"
+          ],
+          "citation_status": "OK"
+        }
+      ],
+      "changed_ids": [
+        "REV-001"
+      ],
+      "coverage": [
+        {
+          "id": "outer_signed_attrs",
+          "label": "CMS SignedAttrs（逻辑 SET 编码；归档内为 [0] 隐式包装）",
+          "sha256": "16cf564f3d98a672c91d21220066a0c09cf3121fe22d2d3278644f52c985fffd",
+          "length": 442,
+          "archive_span": [
+            200,
+            642
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "外层签名的直接输入；归档中的 0xA0 标签被还原为 SET(0x31) 后验签。"
+        },
+        {
+          "id": "outer_signature_value",
+          "label": "外层 CMS signature OCTET STRING 内容",
+          "sha256": "baad7ee1ba7037023b329ee9be2766e9d316caf0a1712b8fe7ff3ade65c1e8ca",
+          "length": 64,
+          "archive_span": [
+            651,
+            715
+          ],
+          "outer_direct": false,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "签名值自身不被任一签名覆盖。"
+        },
+        {
+          "id": "payload",
+          "label": "encap_content_info 内容",
+          "sha256": "49945d0fa063c90cb8cf1a9bcd3e74bb5ec556111ee36acd97a591ef06cdf94f",
+          "length": 32,
+          "archive_span": [
+            60,
+            92
+          ],
+          "outer_direct": false,
+          "outer_digest": true,
+          "inner_direct": false,
+          "note": "外层签名不直接覆盖 payload；只通过 message_digest 间接绑定。"
+        },
+        {
+          "id": "archival_attribute",
+          "label": "adobe_revocation_info_archival 值",
+          "sha256": "1d5533477a202cb4011849a1dfb20789f9bb51e03854846e510b02af6e3d7285",
+          "length": 344,
+          "archive_span": [
+            298,
+            642
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "位于 signed_attrs 内，因此外层签名直接覆盖其字节；内层 CRL 签名不覆盖。"
+        },
+        {
+          "id": "crl_certificate_list",
+          "label": "内层 CertificateList（完整 CRL，含自身签名字段）",
+          "sha256": "15438db21bd655c5587f3f492b726604de4099bf1e983851d49e16b036c0053f",
+          "length": 281,
+          "archive_span": [
+            310,
+            591
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "外层封存覆盖完整 CRL 字节，但不因此验证 CRL 签名。"
+        },
+        {
+          "id": "crl_tbs_cert_list",
+          "label": "CRL tbs_cert_list（被发行者签名的字节）",
+          "sha256": "22cf608294c26ab8c091918395cf86712f77ca7034cc0e374fcc528b2209ad15",
+          "length": 203,
+          "archive_span": [
+            314,
+            517
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": true,
+          "note": "内层签名的直接输入；是完整 CRL 的真子集。"
+        },
+        {
+          "id": "revoked_certificate_entry",
+          "label": "revoked_certificates[0]（第一条吊销记录）",
+          "sha256": "b3edff55247b76afd50f939a6b6b8cc1bf2daab279568250814e95d95947955b",
+          "length": 63,
+          "archive_span": [
+            438,
+            501
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": true,
+          "note": "吊销记录内容位于 tbs_cert_list 内，因此两层都覆盖其字节；但只有内层签名证明其发行来源。"
+        },
+        {
+          "id": "crl_signature_value",
+          "label": "CRL signature BIT STRING 内容",
+          "sha256": "6f86dd6cfbcee7c0059d1e8e1d05b1e99d5557aad3dc1f76205c909e6bb63a2f",
+          "length": 64,
+          "archive_span": [
+            527,
+            591
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "外层封存把它当作附件字节覆盖；内层签名本身不覆盖自己的签名值。"
+        }
+      ],
+      "citation_audit": {
+        "CIT-PDF-ARCH": {
+          "id": "CIT-PDF-ARCH",
+          "path": "asn1crypto/pdf.py",
+          "line_start": 31,
+          "line_end": 34,
+          "claim": "AdobeArchiveRevInfo carries only a version; it does not carry attachment bytes.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-PDF-RIA": {
+          "id": "CIT-PDF-RIA",
+          "path": "asn1crypto/pdf.py",
+          "line_start": 64,
+          "line_end": 69,
+          "claim": "The archival revocation attribute has distinct crl, ocsp and other_rev_info branches.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-PDF-OID": {
+          "id": "CIT-PDF-OID",
+          "path": "asn1crypto/pdf.py",
+          "line_start": 82,
+          "line_end": 84,
+          "claim": "The CMS attribute OID is mapped to SetOfRevocationInfoArchival.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-PDF-DOC": {
+          "id": "CIT-PDF-DOC",
+          "path": "asn1crypto/pdf.py",
+          "line_start": 3,
+          "line_end": 6,
+          "claim": "pdf.py is an ASN.1 type module, not a PDF byte-range parser.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-CMS-SIGNER": {
+          "id": "CIT-CMS-SIGNER",
+          "path": "asn1crypto/cms.py",
+          "line_start": 605,
+          "line_end": 614,
+          "claim": "SignerInfo separates signed attributes from the signature value.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-CMS-SIGNEDDATA": {
+          "id": "CIT-CMS-SIGNEDDATA",
+          "path": "asn1crypto/cms.py",
+          "line_start": 621,
+          "line_end": 629,
+          "claim": "SignedData keeps top-level CRLs and signer infos as separate fields.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-CRL-LIST": {
+          "id": "CIT-CRL-LIST",
+          "path": "asn1crypto/crl.py",
+          "line_start": 286,
+          "line_end": 291,
+          "claim": "CertificateList separates the signed TBS bytes from algorithm and signature fields.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-TSP-ATS": {
+          "id": "CIT-TSP-ATS",
+          "path": "asn1crypto/tsp.py",
+          "line_start": 202,
+          "line_end": 212,
+          "claim": "Archive timestamp structures can chain preservation statements, but do not verify revocation status.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-README-PARSE": {
+          "id": "CIT-README-PARSE",
+          "path": "readme.md",
+          "line_start": 1,
+          "line_end": 4,
+          "claim": "The package describes itself as a parser/serializer.",
+          "status": "OK",
+          "missing_snippets": []
+        },
+        "CIT-README-SIG": {
+          "id": "CIT-README-SIG",
+          "path": "readme.md",
+          "line_start": 90,
+          "line_end": 95,
+          "claim": "Signatures are represented as byte strings; the package does not authenticate them.",
+          "status": "OK",
+          "missing_snippets": []
+        }
+      }
+    }
+  },
+  "baseline": {
+    "case": "outer-only",
+    "entries": [
+      {
+        "id": "IDX-001",
+        "kind": "archive",
+        "claim": "外层 CMS 回执声明了一份吊销信息归档对象，并以 other_rev_info 摘要承诺其字节。",
+        "tier": "T1",
+        "basis": "外层回执 SIG-OUTER；摘要本身不提供附件字节。",
+        "changed": false
+      },
+      {
+        "id": "REV-001",
+        "kind": "archive",
+        "claim": "证书序列号 0x5A17C0DE 于 2026-11-18 12:00 UTC 被撤销，原因 key_compromise。",
+        "tier": "T1",
+        "basis": "SIG-OUTER 有效；只有外层回执，没有附件字节。",
+        "changed": false,
+        "tier_changed": false,
+        "basis_changed": true
+      },
+      {
+        "id": "REV-002",
+        "kind": "archive",
+        "claim": "归档政策要求在 2027-11-20 前重新封存同一条记录。",
+        "tier": "T1",
+        "basis": "政策通知依据；不在本次 CRL 的 tbs_cert_list 签名覆盖范围。",
+        "changed": false
+      },
+      {
+        "id": "CODE-001",
+        "kind": "code",
+        "claim": "AdobeArchiveRevInfo 只保存 version；实际附件类型由 RevocationInfoArchival 的 crl/ocsp/other_rev_info 分支承担。",
+        "tier": "S1",
+        "basis": "CIT-PDF-ARCH, CIT-PDF-RIA, CIT-PDF-OID",
+        "changed": false,
+        "citation_ids": [
+          "CIT-PDF-ARCH",
+          "CIT-PDF-RIA",
+          "CIT-PDF-OID"
+        ],
+        "absence_ids": [],
+        "citation_status": "OK"
+      },
+      {
+        "id": "CODE-002",
+        "kind": "code",
+        "claim": "CMS SignerInfo 将 signed_attrs 与 signature 分开；含 signed_attrs 的分支中，外层签名覆盖的是签名属性，而不是整个 ContentInfo。",
+        "tier": "S1",
+        "basis": "CIT-CMS-SIGNER, CIT-CMS-SIGNEDDATA",
+        "changed": false,
+        "citation_ids": [
+          "CIT-CMS-SIGNER",
+          "CIT-CMS-SIGNEDDATA"
+        ],
+        "absence_ids": [],
+        "citation_status": "OK"
+      },
+      {
+        "id": "CODE-003",
+        "kind": "code",
+        "claim": "CRL CertificateList 将 tbs_cert_list 与 signature_algorithm/signature 分开；内层签名只覆盖 TBS 字节。",
+        "tier": "S1",
+        "basis": "CIT-CRL-LIST",
+        "changed": false,
+        "citation_ids": [
+          "CIT-CRL-LIST"
+        ],
+        "absence_ids": [],
+        "citation_status": "OK"
+      },
+      {
+        "id": "CODE-004",
+        "kind": "code",
+        "claim": "ArchiveTimeStampSequence 可串联多份保全说明，但它本身不是撤销状态验签器。",
+        "tier": "S1",
+        "basis": "CIT-TSP-ATS",
+        "changed": false,
+        "citation_ids": [
+          "CIT-TSP-ATS"
+        ],
+        "absence_ids": [],
+        "citation_status": "OK"
+      },
+      {
+        "id": "CODE-005",
+        "kind": "code",
+        "claim": "asn1crypto 是解析/序列化库；签名在结构中表现为字节串，库内没有密码学 verify API。",
+        "tier": "S1",
+        "basis": "CIT-README-PARSE, CIT-README-SIG, ABS-NO-VERIFY",
+        "changed": false,
+        "citation_ids": [
+          "CIT-README-PARSE",
+          "CIT-README-SIG"
+        ],
+        "absence_ids": [
+          "ABS-NO-VERIFY"
+        ],
+        "citation_status": "OK"
+      },
+      {
+        "id": "CODE-006",
+        "kind": "code",
+        "claim": "asn1crypto/pdf.py 只提供 ASN.1 类型映射，不解析 PDF ByteRange，因此不能证明 PDF 文件级封存覆盖。",
+        "tier": "S1",
+        "basis": "CIT-PDF-DOC, ABS-NO-BYTERANGE",
+        "changed": false,
+        "citation_ids": [
+          "CIT-PDF-DOC"
+        ],
+        "absence_ids": [
+          "ABS-NO-BYTERANGE"
+        ],
+        "citation_status": "OK"
+      }
+    ]
+  },
+  "issuance_verified": {
+    "case": "issuance-verified",
+    "entries": [
+      {
+        "id": "IDX-001",
+        "kind": "archive",
+        "claim": "外层 CMS 回执声明了一份吊销信息归档对象，并以 other_rev_info 摘要承诺其字节。",
+        "tier": "T1",
+        "basis": "外层回执 SIG-OUTER；摘要本身不提供附件字节。",
+        "changed": false
+      },
+      {
+        "id": "REV-001",
+        "kind": "archive",
+        "claim": "证书序列号 0x5A17C0DE 于 2026-11-18 12:00 UTC 被撤销，原因 key_compromise。",
+        "tier": "T3",
+        "basis": "SIG-INNER（发行者密钥）+ SIG-OUTER + 附件摘要一致；字段读取自已验签的 tbs_cert_list。",
+        "changed": true,
+        "tier_changed": true,
+        "basis_changed": true
+      },
+      {
+        "id": "REV-002",
+        "kind": "archive",
+        "claim": "归档政策要求在 2027-11-20 前重新封存同一条记录。",
+        "tier": "T1",
+        "basis": "政策通知依据；不在本次 CRL 的 tbs_cert_list 签名覆盖范围。",
+        "changed": false
+      },
+      {
+        "id": "CODE-001",
+        "kind": "code",
+        "claim": "AdobeArchiveRevInfo 只保存 version；实际附件类型由 RevocationInfoArchival 的 crl/ocsp/other_rev_info 分支承担。",
+        "tier": "S1",
+        "basis": "CIT-PDF-ARCH, CIT-PDF-RIA, CIT-PDF-OID",
+        "changed": false,
+        "citation_ids": [
+          "CIT-PDF-ARCH",
+          "CIT-PDF-RIA",
+          "CIT-PDF-OID"
+        ],
+        "absence_ids": [],
+        "citation_status": "OK"
+      },
+      {
+        "id": "CODE-002",
+        "kind": "code",
+        "claim": "CMS SignerInfo 将 signed_attrs 与 signature 分开；含 signed_attrs 的分支中，外层签名覆盖的是签名属性，而不是整个 ContentInfo。",
+        "tier": "S1",
+        "basis": "CIT-CMS-SIGNER, CIT-CMS-SIGNEDDATA",
+        "changed": false,
+        "citation_ids": [
+          "CIT-CMS-SIGNER",
+          "CIT-CMS-SIGNEDDATA"
+        ],
+        "absence_ids": [],
+        "citation_status": "OK"
+      },
+      {
+        "id": "CODE-003",
+        "kind": "code",
+        "claim": "CRL CertificateList 将 tbs_cert_list 与 signature_algorithm/signature 分开；内层签名只覆盖 TBS 字节。",
+        "tier": "S1",
+        "basis": "CIT-CRL-LIST",
+        "changed": false,
+        "citation_ids": [
+          "CIT-CRL-LIST"
+        ],
+        "absence_ids": [],
+        "citation_status": "OK"
+      },
+      {
+        "id": "CODE-004",
+        "kind": "code",
+        "claim": "ArchiveTimeStampSequence 可串联多份保全说明，但它本身不是撤销状态验签器。",
+        "tier": "S1",
+        "basis": "CIT-TSP-ATS",
+        "changed": false,
+        "citation_ids": [
+          "CIT-TSP-ATS"
+        ],
+        "absence_ids": [],
+        "citation_status": "OK"
+      },
+      {
+        "id": "CODE-005",
+        "kind": "code",
+        "claim": "asn1crypto 是解析/序列化库；签名在结构中表现为字节串，库内没有密码学 verify API。",
+        "tier": "S1",
+        "basis": "CIT-README-PARSE, CIT-README-SIG, ABS-NO-VERIFY",
+        "changed": false,
+        "citation_ids": [
+          "CIT-README-PARSE",
+          "CIT-README-SIG"
+        ],
+        "absence_ids": [
+          "ABS-NO-VERIFY"
+        ],
+        "citation_status": "OK"
+      },
+      {
+        "id": "CODE-006",
+        "kind": "code",
+        "claim": "asn1crypto/pdf.py 只提供 ASN.1 类型映射，不解析 PDF ByteRange，因此不能证明 PDF 文件级封存覆盖。",
+        "tier": "S1",
+        "basis": "CIT-PDF-DOC, ABS-NO-BYTERANGE",
+        "changed": false,
+        "citation_ids": [
+          "CIT-PDF-DOC"
+        ],
+        "absence_ids": [
+          "ABS-NO-BYTERANGE"
+        ],
+        "citation_status": "OK"
+      }
+    ],
+    "changed_ids": [
+      "REV-001"
+    ]
+  },
+  "absence_audit": {
+    "ABS-NO-VERIFY": {
+      "id": "ABS-NO-VERIFY",
+      "description": "asn1crypto 内没有签名验证 API（只搜索 def verify/check_signature）",
+      "pattern": "def (?:verify|verify_signature|check_signature)\\b",
+      "status": "OK",
+      "matches": []
+    },
+    "ABS-NO-BYTERANGE": {
+      "id": "ABS-NO-BYTERANGE",
+      "description": "asn1crypto 内没有 PDF ByteRange 解析代码",
+      "pattern": "ByteRange",
+      "status": "OK",
+      "matches": []
+    }
+  },
+  "corpus": {
+    "path": "tests/fixtures/eid2011.crl",
+    "size": 1181874,
+    "sha256": "136ad7a127f3bc195d8275c0c39ba8f4064d81264eb5afc20fbfaa8b1b93be10",
+    "issuer": "Email Address: pki@sk.ee, Common Name: EID-SK 2011, Organization: AS Sertifitseerimiskeskus, Country: EE",
+    "this_update": "2015-05-22T11:44:11+00:00",
+    "revoked_count": 15752,
+    "signature_algorithm": "sha256_rsa",
+    "tbs_sha256": "4523f4729c5cae05e41a139b16c1a45d1b863d9d3b6d3f29f2517f58a62759b1",
+    "tbs_len": 1181593,
+    "signature_len": 256,
+    "issuer_key_available": false,
+    "status": "MISSING_KEY",
+    "note": "本仓库没有该 CRL 的发行者公钥/证书，只能核对结构与 TBS 字节边界，不能提升到 T3。"
+  }
+}

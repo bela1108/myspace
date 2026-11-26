@@ -1,0 +1,753 @@
+{
+  "ledger_id": "VL-REV-001",
+  "generated_by": "revocation_review/review.py",
+  "target": {
+    "package": "asn1crypto",
+    "version": "1.5.1"
+  },
+  "keys": {
+    "KEY-03396219237F75A6": {
+      "role": "outer_seal",
+      "fingerprint_sha256": "03396219237f75a64f12aeb7f39723abf400b160c364980a765dac24aeba2464",
+      "source": "seal-public.pem"
+    },
+    "KEY-0A5B67549542C9A5": {
+      "role": "issuer",
+      "fingerprint_sha256": "0a5b67549542c9a55ed6a80ba5c7646b13834d6d5a15c2e3fedd7da04db45886",
+      "source": "issuer-public.pem"
+    }
+  },
+  "cases": {
+    "outer-only": {
+      "manifest": "manifest-outer-only.json",
+      "archive": {
+        "name": "archive-outer-only.der",
+        "size": 419,
+        "sha256": "d81b2d284f783fd98d81eac634604ceb6639710293126de5bb496c4cb9136606"
+      },
+      "signatures": [
+        {
+          "id": "SIG-OUTER",
+          "layer": "outer_cms_seal",
+          "algorithm": "ed25519",
+          "status": "VALID",
+          "signed_object": "CMS SignedAttrs (untagged SET OF)",
+          "signed_sha256": "e00d89b92e57dda31a79e65ce61e94053e49d73c9c2403760471110b5a84c802",
+          "signed_len": 146,
+          "archive_span": [
+            200,
+            346
+          ],
+          "signature_sha256": "fa43d1f7e2f5d38dcb47010184ea2b5c5ce72aff66c28164de5e60d726abcff3",
+          "signature_span": [
+            355,
+            419
+          ],
+          "key_id": "KEY-03396219237F75A6",
+          "error": null
+        },
+        {
+          "id": "SIG-INNER",
+          "layer": "issuer_crl",
+          "algorithm": null,
+          "status": "NOT_ATTEMPTED",
+          "signed_object": "CertificateList.tbs_cert_list",
+          "signed_sha256": null,
+          "signed_len": null,
+          "archive_span": null,
+          "signature_sha256": null,
+          "signature_span": null,
+          "key_id": null,
+          "error": null
+        }
+      ],
+      "attachment": {
+        "state": "outer_receipt_only",
+        "source": "none",
+        "sha256": null,
+        "expected_sha256": "15438db21bd655c5587f3f492b726604de4099bf1e983851d49e16b036c0053f",
+        "digest_match": null
+      },
+      "coverage": [
+        {
+          "id": "outer_signed_attrs",
+          "label": "CMS SignedAttrs（逻辑 SET 编码；归档内为 [0] 隐式包装）",
+          "sha256": "e00d89b92e57dda31a79e65ce61e94053e49d73c9c2403760471110b5a84c802",
+          "length": 146,
+          "archive_span": [
+            200,
+            346
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "外层签名的直接输入；归档中的 0xA0 标签被还原为 SET(0x31) 后验签。"
+        },
+        {
+          "id": "outer_signature_value",
+          "label": "外层 CMS signature OCTET STRING 内容",
+          "sha256": "fa43d1f7e2f5d38dcb47010184ea2b5c5ce72aff66c28164de5e60d726abcff3",
+          "length": 64,
+          "archive_span": [
+            355,
+            419
+          ],
+          "outer_direct": false,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "签名值自身不被任一签名覆盖。"
+        },
+        {
+          "id": "payload",
+          "label": "encap_content_info 内容",
+          "sha256": "49945d0fa063c90cb8cf1a9bcd3e74bb5ec556111ee36acd97a591ef06cdf94f",
+          "length": 32,
+          "archive_span": [
+            60,
+            92
+          ],
+          "outer_direct": false,
+          "outer_digest": true,
+          "inner_direct": false,
+          "note": "外层签名不直接覆盖 payload；只通过 message_digest 间接绑定。"
+        },
+        {
+          "id": "archival_attribute",
+          "label": "adobe_revocation_info_archival 值",
+          "sha256": "af6a4bfabe075cce44aef05360787823233a3f9d703c5407b812e2344bf6c8d2",
+          "length": 53,
+          "archive_span": [
+            293,
+            346
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "位于 signed_attrs 内，因此外层签名直接覆盖其字节；内层 CRL 签名不覆盖。"
+        }
+      ]
+    },
+    "missing-attachment": {
+      "manifest": "manifest-missing-attachment.json",
+      "archive": {
+        "name": "archive-outer-only.der",
+        "size": 419,
+        "sha256": "d81b2d284f783fd98d81eac634604ceb6639710293126de5bb496c4cb9136606"
+      },
+      "signatures": [
+        {
+          "id": "SIG-OUTER",
+          "layer": "outer_cms_seal",
+          "algorithm": "ed25519",
+          "status": "VALID",
+          "signed_object": "CMS SignedAttrs (untagged SET OF)",
+          "signed_sha256": "e00d89b92e57dda31a79e65ce61e94053e49d73c9c2403760471110b5a84c802",
+          "signed_len": 146,
+          "archive_span": [
+            200,
+            346
+          ],
+          "signature_sha256": "fa43d1f7e2f5d38dcb47010184ea2b5c5ce72aff66c28164de5e60d726abcff3",
+          "signature_span": [
+            355,
+            419
+          ],
+          "key_id": "KEY-03396219237F75A6",
+          "error": null
+        },
+        {
+          "id": "SIG-INNER",
+          "layer": "issuer_crl",
+          "algorithm": null,
+          "status": "NOT_ATTEMPTED",
+          "signed_object": "CertificateList.tbs_cert_list",
+          "signed_sha256": null,
+          "signed_len": null,
+          "archive_span": null,
+          "signature_sha256": null,
+          "signature_span": null,
+          "key_id": null,
+          "error": null
+        }
+      ],
+      "attachment": {
+        "state": "missing",
+        "source": "none",
+        "sha256": null,
+        "expected_sha256": "15438db21bd655c5587f3f492b726604de4099bf1e983851d49e16b036c0053f",
+        "digest_match": null
+      },
+      "coverage": [
+        {
+          "id": "outer_signed_attrs",
+          "label": "CMS SignedAttrs（逻辑 SET 编码；归档内为 [0] 隐式包装）",
+          "sha256": "e00d89b92e57dda31a79e65ce61e94053e49d73c9c2403760471110b5a84c802",
+          "length": 146,
+          "archive_span": [
+            200,
+            346
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "外层签名的直接输入；归档中的 0xA0 标签被还原为 SET(0x31) 后验签。"
+        },
+        {
+          "id": "outer_signature_value",
+          "label": "外层 CMS signature OCTET STRING 内容",
+          "sha256": "fa43d1f7e2f5d38dcb47010184ea2b5c5ce72aff66c28164de5e60d726abcff3",
+          "length": 64,
+          "archive_span": [
+            355,
+            419
+          ],
+          "outer_direct": false,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "签名值自身不被任一签名覆盖。"
+        },
+        {
+          "id": "payload",
+          "label": "encap_content_info 内容",
+          "sha256": "49945d0fa063c90cb8cf1a9bcd3e74bb5ec556111ee36acd97a591ef06cdf94f",
+          "length": 32,
+          "archive_span": [
+            60,
+            92
+          ],
+          "outer_direct": false,
+          "outer_digest": true,
+          "inner_direct": false,
+          "note": "外层签名不直接覆盖 payload；只通过 message_digest 间接绑定。"
+        },
+        {
+          "id": "archival_attribute",
+          "label": "adobe_revocation_info_archival 值",
+          "sha256": "af6a4bfabe075cce44aef05360787823233a3f9d703c5407b812e2344bf6c8d2",
+          "length": 53,
+          "archive_span": [
+            293,
+            346
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "位于 signed_attrs 内，因此外层签名直接覆盖其字节；内层 CRL 签名不覆盖。"
+        }
+      ]
+    },
+    "attachment-unverified": {
+      "manifest": "manifest-attachment-unverified.json",
+      "archive": {
+        "name": "archive-with-crl.der",
+        "size": 715,
+        "sha256": "1fba5402b40f7439db7092de741c950458d1681e161cdc39a6b14b2fd6e976e2"
+      },
+      "signatures": [
+        {
+          "id": "SIG-OUTER",
+          "layer": "outer_cms_seal",
+          "algorithm": "ed25519",
+          "status": "VALID",
+          "signed_object": "CMS SignedAttrs (untagged SET OF)",
+          "signed_sha256": "16cf564f3d98a672c91d21220066a0c09cf3121fe22d2d3278644f52c985fffd",
+          "signed_len": 442,
+          "archive_span": [
+            200,
+            642
+          ],
+          "signature_sha256": "baad7ee1ba7037023b329ee9be2766e9d316caf0a1712b8fe7ff3ade65c1e8ca",
+          "signature_span": [
+            651,
+            715
+          ],
+          "key_id": "KEY-03396219237F75A6",
+          "error": null
+        },
+        {
+          "id": "SIG-INNER",
+          "layer": "issuer_crl",
+          "algorithm": "ed25519",
+          "status": "MISSING_KEY",
+          "signed_object": "CertificateList.tbs_cert_list",
+          "signed_sha256": "22cf608294c26ab8c091918395cf86712f77ca7034cc0e374fcc528b2209ad15",
+          "signed_len": 203,
+          "archive_span": [
+            314,
+            517
+          ],
+          "signature_sha256": "6f86dd6cfbcee7c0059d1e8e1d05b1e99d5557aad3dc1f76205c909e6bb63a2f",
+          "signature_span": [
+            527,
+            591
+          ],
+          "key_id": null,
+          "error": "no independent issuer public key was supplied"
+        }
+      ],
+      "attachment": {
+        "state": "present",
+        "source": "embedded",
+        "sha256": "15438db21bd655c5587f3f492b726604de4099bf1e983851d49e16b036c0053f",
+        "expected_sha256": "15438db21bd655c5587f3f492b726604de4099bf1e983851d49e16b036c0053f",
+        "digest_match": true
+      },
+      "coverage": [
+        {
+          "id": "outer_signed_attrs",
+          "label": "CMS SignedAttrs（逻辑 SET 编码；归档内为 [0] 隐式包装）",
+          "sha256": "16cf564f3d98a672c91d21220066a0c09cf3121fe22d2d3278644f52c985fffd",
+          "length": 442,
+          "archive_span": [
+            200,
+            642
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "外层签名的直接输入；归档中的 0xA0 标签被还原为 SET(0x31) 后验签。"
+        },
+        {
+          "id": "outer_signature_value",
+          "label": "外层 CMS signature OCTET STRING 内容",
+          "sha256": "baad7ee1ba7037023b329ee9be2766e9d316caf0a1712b8fe7ff3ade65c1e8ca",
+          "length": 64,
+          "archive_span": [
+            651,
+            715
+          ],
+          "outer_direct": false,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "签名值自身不被任一签名覆盖。"
+        },
+        {
+          "id": "payload",
+          "label": "encap_content_info 内容",
+          "sha256": "49945d0fa063c90cb8cf1a9bcd3e74bb5ec556111ee36acd97a591ef06cdf94f",
+          "length": 32,
+          "archive_span": [
+            60,
+            92
+          ],
+          "outer_direct": false,
+          "outer_digest": true,
+          "inner_direct": false,
+          "note": "外层签名不直接覆盖 payload；只通过 message_digest 间接绑定。"
+        },
+        {
+          "id": "archival_attribute",
+          "label": "adobe_revocation_info_archival 值",
+          "sha256": "1d5533477a202cb4011849a1dfb20789f9bb51e03854846e510b02af6e3d7285",
+          "length": 344,
+          "archive_span": [
+            298,
+            642
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "位于 signed_attrs 内，因此外层签名直接覆盖其字节；内层 CRL 签名不覆盖。"
+        },
+        {
+          "id": "crl_certificate_list",
+          "label": "内层 CertificateList（完整 CRL，含自身签名字段）",
+          "sha256": "15438db21bd655c5587f3f492b726604de4099bf1e983851d49e16b036c0053f",
+          "length": 281,
+          "archive_span": [
+            310,
+            591
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "外层封存覆盖完整 CRL 字节，但不因此验证 CRL 签名。"
+        },
+        {
+          "id": "crl_tbs_cert_list",
+          "label": "CRL tbs_cert_list（被发行者签名的字节）",
+          "sha256": "22cf608294c26ab8c091918395cf86712f77ca7034cc0e374fcc528b2209ad15",
+          "length": 203,
+          "archive_span": [
+            314,
+            517
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": true,
+          "note": "内层签名的直接输入；是完整 CRL 的真子集。"
+        },
+        {
+          "id": "revoked_certificate_entry",
+          "label": "revoked_certificates[0]（第一条吊销记录）",
+          "sha256": "b3edff55247b76afd50f939a6b6b8cc1bf2daab279568250814e95d95947955b",
+          "length": 63,
+          "archive_span": [
+            438,
+            501
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": true,
+          "note": "吊销记录内容位于 tbs_cert_list 内，因此两层都覆盖其字节；但只有内层签名证明其发行来源。"
+        },
+        {
+          "id": "crl_signature_value",
+          "label": "CRL signature BIT STRING 内容",
+          "sha256": "6f86dd6cfbcee7c0059d1e8e1d05b1e99d5557aad3dc1f76205c909e6bb63a2f",
+          "length": 64,
+          "archive_span": [
+            527,
+            591
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "外层封存把它当作附件字节覆盖；内层签名本身不覆盖自己的签名值。"
+        }
+      ]
+    },
+    "tampered-attachment": {
+      "manifest": "manifest-tampered-attachment.json",
+      "archive": {
+        "name": "archive-tampered-crl.der",
+        "size": 716,
+        "sha256": "8716995fc4881e26a241955df6b9aa50796a5909ad622ff351a6cacdf1e031a1"
+      },
+      "signatures": [
+        {
+          "id": "SIG-OUTER",
+          "layer": "outer_cms_seal",
+          "algorithm": "ed25519",
+          "status": "VALID",
+          "signed_object": "CMS SignedAttrs (untagged SET OF)",
+          "signed_sha256": "a93e4d4fafd811fce7099c0d3101290e39a1ed6be21cc2ee4490fe76f0c1aa0d",
+          "signed_len": 443,
+          "archive_span": [
+            200,
+            643
+          ],
+          "signature_sha256": "530676f2d6b5bbeeee204c2850f7fcafd9325cc90aa2266d72bd3d26dac6e394",
+          "signature_span": [
+            652,
+            716
+          ],
+          "key_id": "KEY-03396219237F75A6",
+          "error": null
+        },
+        {
+          "id": "SIG-INNER",
+          "layer": "issuer_crl",
+          "algorithm": "ed25519",
+          "status": "INVALID",
+          "signed_object": "CertificateList.tbs_cert_list",
+          "signed_sha256": "743e03933311198829b39cabc87a06a89ce7d790fc5e3fdb05921afe6481f818",
+          "signed_len": 204,
+          "archive_span": [
+            314,
+            518
+          ],
+          "signature_sha256": "6f86dd6cfbcee7c0059d1e8e1d05b1e99d5557aad3dc1f76205c909e6bb63a2f",
+          "signature_span": [
+            528,
+            592
+          ],
+          "key_id": "KEY-0A5B67549542C9A5",
+          "error": "InvalidSignature: "
+        }
+      ],
+      "attachment": {
+        "state": "present",
+        "source": "embedded",
+        "sha256": "7e715c5432ed347264d016162c07e65f47e8f83642c32fdab57d8ef1c7af7e09",
+        "expected_sha256": "15438db21bd655c5587f3f492b726604de4099bf1e983851d49e16b036c0053f",
+        "digest_match": false
+      },
+      "coverage": [
+        {
+          "id": "outer_signed_attrs",
+          "label": "CMS SignedAttrs（逻辑 SET 编码；归档内为 [0] 隐式包装）",
+          "sha256": "a93e4d4fafd811fce7099c0d3101290e39a1ed6be21cc2ee4490fe76f0c1aa0d",
+          "length": 443,
+          "archive_span": [
+            200,
+            643
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "外层签名的直接输入；归档中的 0xA0 标签被还原为 SET(0x31) 后验签。"
+        },
+        {
+          "id": "outer_signature_value",
+          "label": "外层 CMS signature OCTET STRING 内容",
+          "sha256": "530676f2d6b5bbeeee204c2850f7fcafd9325cc90aa2266d72bd3d26dac6e394",
+          "length": 64,
+          "archive_span": [
+            652,
+            716
+          ],
+          "outer_direct": false,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "签名值自身不被任一签名覆盖。"
+        },
+        {
+          "id": "payload",
+          "label": "encap_content_info 内容",
+          "sha256": "49945d0fa063c90cb8cf1a9bcd3e74bb5ec556111ee36acd97a591ef06cdf94f",
+          "length": 32,
+          "archive_span": [
+            60,
+            92
+          ],
+          "outer_direct": false,
+          "outer_digest": true,
+          "inner_direct": false,
+          "note": "外层签名不直接覆盖 payload；只通过 message_digest 间接绑定。"
+        },
+        {
+          "id": "archival_attribute",
+          "label": "adobe_revocation_info_archival 值",
+          "sha256": "bcdbe4cd7b9518f3d5a4ab7a0698ddaaf3922fd1c82a05fee5b5d66999621dc6",
+          "length": 345,
+          "archive_span": [
+            298,
+            643
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "位于 signed_attrs 内，因此外层签名直接覆盖其字节；内层 CRL 签名不覆盖。"
+        },
+        {
+          "id": "crl_certificate_list",
+          "label": "内层 CertificateList（完整 CRL，含自身签名字段）",
+          "sha256": "7e715c5432ed347264d016162c07e65f47e8f83642c32fdab57d8ef1c7af7e09",
+          "length": 282,
+          "archive_span": [
+            310,
+            592
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "外层封存覆盖完整 CRL 字节，但不因此验证 CRL 签名。"
+        },
+        {
+          "id": "crl_tbs_cert_list",
+          "label": "CRL tbs_cert_list（被发行者签名的字节）",
+          "sha256": "743e03933311198829b39cabc87a06a89ce7d790fc5e3fdb05921afe6481f818",
+          "length": 204,
+          "archive_span": [
+            314,
+            518
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": true,
+          "note": "内层签名的直接输入；是完整 CRL 的真子集。"
+        },
+        {
+          "id": "revoked_certificate_entry",
+          "label": "revoked_certificates[0]（第一条吊销记录）",
+          "sha256": "3b014ea2ebb35109d792abccc9a8719a02354fca776586b05ffaf721bd6050bb",
+          "length": 64,
+          "archive_span": [
+            438,
+            502
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": true,
+          "note": "吊销记录内容位于 tbs_cert_list 内，因此两层都覆盖其字节；但只有内层签名证明其发行来源。"
+        },
+        {
+          "id": "crl_signature_value",
+          "label": "CRL signature BIT STRING 内容",
+          "sha256": "6f86dd6cfbcee7c0059d1e8e1d05b1e99d5557aad3dc1f76205c909e6bb63a2f",
+          "length": 64,
+          "archive_span": [
+            528,
+            592
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "外层封存把它当作附件字节覆盖；内层签名本身不覆盖自己的签名值。"
+        }
+      ]
+    },
+    "issuance-verified": {
+      "manifest": "manifest-issuance-verified.json",
+      "archive": {
+        "name": "archive-with-crl.der",
+        "size": 715,
+        "sha256": "1fba5402b40f7439db7092de741c950458d1681e161cdc39a6b14b2fd6e976e2"
+      },
+      "signatures": [
+        {
+          "id": "SIG-OUTER",
+          "layer": "outer_cms_seal",
+          "algorithm": "ed25519",
+          "status": "VALID",
+          "signed_object": "CMS SignedAttrs (untagged SET OF)",
+          "signed_sha256": "16cf564f3d98a672c91d21220066a0c09cf3121fe22d2d3278644f52c985fffd",
+          "signed_len": 442,
+          "archive_span": [
+            200,
+            642
+          ],
+          "signature_sha256": "baad7ee1ba7037023b329ee9be2766e9d316caf0a1712b8fe7ff3ade65c1e8ca",
+          "signature_span": [
+            651,
+            715
+          ],
+          "key_id": "KEY-03396219237F75A6",
+          "error": null
+        },
+        {
+          "id": "SIG-INNER",
+          "layer": "issuer_crl",
+          "algorithm": "ed25519",
+          "status": "VALID",
+          "signed_object": "CertificateList.tbs_cert_list",
+          "signed_sha256": "22cf608294c26ab8c091918395cf86712f77ca7034cc0e374fcc528b2209ad15",
+          "signed_len": 203,
+          "archive_span": [
+            314,
+            517
+          ],
+          "signature_sha256": "6f86dd6cfbcee7c0059d1e8e1d05b1e99d5557aad3dc1f76205c909e6bb63a2f",
+          "signature_span": [
+            527,
+            591
+          ],
+          "key_id": "KEY-0A5B67549542C9A5",
+          "error": null
+        }
+      ],
+      "attachment": {
+        "state": "present",
+        "source": "embedded",
+        "sha256": "15438db21bd655c5587f3f492b726604de4099bf1e983851d49e16b036c0053f",
+        "expected_sha256": "15438db21bd655c5587f3f492b726604de4099bf1e983851d49e16b036c0053f",
+        "digest_match": true
+      },
+      "coverage": [
+        {
+          "id": "outer_signed_attrs",
+          "label": "CMS SignedAttrs（逻辑 SET 编码；归档内为 [0] 隐式包装）",
+          "sha256": "16cf564f3d98a672c91d21220066a0c09cf3121fe22d2d3278644f52c985fffd",
+          "length": 442,
+          "archive_span": [
+            200,
+            642
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "外层签名的直接输入；归档中的 0xA0 标签被还原为 SET(0x31) 后验签。"
+        },
+        {
+          "id": "outer_signature_value",
+          "label": "外层 CMS signature OCTET STRING 内容",
+          "sha256": "baad7ee1ba7037023b329ee9be2766e9d316caf0a1712b8fe7ff3ade65c1e8ca",
+          "length": 64,
+          "archive_span": [
+            651,
+            715
+          ],
+          "outer_direct": false,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "签名值自身不被任一签名覆盖。"
+        },
+        {
+          "id": "payload",
+          "label": "encap_content_info 内容",
+          "sha256": "49945d0fa063c90cb8cf1a9bcd3e74bb5ec556111ee36acd97a591ef06cdf94f",
+          "length": 32,
+          "archive_span": [
+            60,
+            92
+          ],
+          "outer_direct": false,
+          "outer_digest": true,
+          "inner_direct": false,
+          "note": "外层签名不直接覆盖 payload；只通过 message_digest 间接绑定。"
+        },
+        {
+          "id": "archival_attribute",
+          "label": "adobe_revocation_info_archival 值",
+          "sha256": "1d5533477a202cb4011849a1dfb20789f9bb51e03854846e510b02af6e3d7285",
+          "length": 344,
+          "archive_span": [
+            298,
+            642
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "位于 signed_attrs 内，因此外层签名直接覆盖其字节；内层 CRL 签名不覆盖。"
+        },
+        {
+          "id": "crl_certificate_list",
+          "label": "内层 CertificateList（完整 CRL，含自身签名字段）",
+          "sha256": "15438db21bd655c5587f3f492b726604de4099bf1e983851d49e16b036c0053f",
+          "length": 281,
+          "archive_span": [
+            310,
+            591
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "外层封存覆盖完整 CRL 字节，但不因此验证 CRL 签名。"
+        },
+        {
+          "id": "crl_tbs_cert_list",
+          "label": "CRL tbs_cert_list（被发行者签名的字节）",
+          "sha256": "22cf608294c26ab8c091918395cf86712f77ca7034cc0e374fcc528b2209ad15",
+          "length": 203,
+          "archive_span": [
+            314,
+            517
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": true,
+          "note": "内层签名的直接输入；是完整 CRL 的真子集。"
+        },
+        {
+          "id": "revoked_certificate_entry",
+          "label": "revoked_certificates[0]（第一条吊销记录）",
+          "sha256": "b3edff55247b76afd50f939a6b6b8cc1bf2daab279568250814e95d95947955b",
+          "length": 63,
+          "archive_span": [
+            438,
+            501
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": true,
+          "note": "吊销记录内容位于 tbs_cert_list 内，因此两层都覆盖其字节；但只有内层签名证明其发行来源。"
+        },
+        {
+          "id": "crl_signature_value",
+          "label": "CRL signature BIT STRING 内容",
+          "sha256": "6f86dd6cfbcee7c0059d1e8e1d05b1e99d5557aad3dc1f76205c909e6bb63a2f",
+          "length": 64,
+          "archive_span": [
+            527,
+            591
+          ],
+          "outer_direct": true,
+          "outer_digest": false,
+          "inner_direct": false,
+          "note": "外层封存把它当作附件字节覆盖；内层签名本身不覆盖自己的签名值。"
+        }
+      ]
+    }
+  }
+}
