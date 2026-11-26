@@ -1,0 +1,85 @@
+{
+  "schema": "independent-sealing-manifest/v1",
+  "case_id": "FORENSIC-DNFILE-056",
+  "note": "确定性合成案卷，用于验证只读 AssemblyRef 与独立封存清单配对。",
+  "artifacts": [
+    {
+      "seal_id": "SEAL-WIDGETS-310",
+      "delivery_path": "delivery/Contoso.Widgets_3.1.0.0.dll",
+      "sealed_artifact": "sealed-archive/SEAL-WIDGETS-310/Contoso.Widgets_3.1.0.0.dll",
+      "sha256": "afe2a965a7a0a70b31ca3763dd2bda9b7a201ea4c9657dab9b99a2d5806cb499",
+      "size": 1024,
+      "identity": {
+        "name": "Contoso.Widgets",
+        "version": "3.1.0.0",
+        "culture": "",
+        "public_key_token": "15869992a418bb68"
+      }
+    },
+    {
+      "seal_id": "SEAL-WIDGETS-400",
+      "delivery_path": "delivery/Contoso.Widgets_4.0.0.0.dll",
+      "sealed_artifact": "sealed-archive/SEAL-WIDGETS-400/Contoso.Widgets_4.0.0.0.dll",
+      "sha256": "72af825ba79dfc55b814da33cb5a14e0f32e94be1ec5b29fe086c3abebb8d92c",
+      "size": 1024,
+      "identity": {
+        "name": "Contoso.Widgets",
+        "version": "4.0.0.0",
+        "culture": "",
+        "public_key_token": "15869992a418bb68"
+      }
+    },
+    {
+      "seal_id": "SEAL-REGIONAL-EN",
+      "delivery_path": "delivery/Regional.Resources_1.0.0.0_en-US.dll",
+      "sealed_artifact": "sealed-archive/SEAL-REGIONAL-EN/Regional.Resources_1.0.0.0_en-US.dll",
+      "sha256": "dd0a3720dad1e5461425a4b093f32fa701f345e2f1ac8e5a467eac0a6858804f",
+      "size": 1024,
+      "identity": {
+        "name": "Regional.Resources",
+        "version": "1.0.0.0",
+        "culture": "en-US",
+        "public_key_token": "80ca8998c3eb0e0b"
+      }
+    },
+    {
+      "seal_id": "SEAL-REGIONAL-FR",
+      "delivery_path": "delivery/Regional.Resources_1.0.0.0_fr-FR.dll",
+      "sealed_artifact": "sealed-archive/SEAL-REGIONAL-FR/Regional.Resources_1.0.0.0_fr-FR.dll",
+      "sha256": "74588e7dbb0ba3b6875bcd08b9c1b64bb45cbf46538c81c6d7b278a6572f98e3",
+      "size": 1024,
+      "identity": {
+        "name": "Regional.Resources",
+        "version": "1.0.0.0",
+        "culture": null,
+        "public_key_token": "80ca8998c3eb0e0b"
+      }
+    },
+    {
+      "seal_id": "SEAL-IMAGING-KEYA",
+      "delivery_path": "delivery/Imaging.Codec_5.0.0.0_keyA.dll",
+      "sealed_artifact": "sealed-archive/SEAL-IMAGING-KEYA/Imaging.Codec_5.0.0.0_keyA.dll",
+      "sha256": "a99dd381c9073a2decf02207177e046953de0157cf6a1076847c8183106ea54d",
+      "size": 1024,
+      "identity": {
+        "name": "Imaging.Codec",
+        "version": "5.0.0.0",
+        "culture": "",
+        "public_key_token": "665f91ab7ea87eff"
+      }
+    },
+    {
+      "seal_id": "SEAL-IMAGING-KEYB",
+      "delivery_path": "delivery/Imaging.Codec_5.0.0.0_keyB.dll",
+      "sealed_artifact": "sealed-archive/SEAL-IMAGING-KEYB/Imaging.Codec_5.0.0.0_keyB.dll",
+      "sha256": "a53fdeb852e16fca911b2d43bfc34127b26fafebf23f2423ecd55c9115defdf6",
+      "size": 1024,
+      "identity": {
+        "name": "Imaging.Codec",
+        "version": "5.0.0.0",
+        "culture": "",
+        "public_key_token": "96c697130e81bb75"
+      }
+    }
+  ]
+}

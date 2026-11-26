@@ -1,0 +1,1468 @@
+{
+  "schema": "dnfile.assemblyref-inventory/v1",
+  "case_id": "FORENSIC-DNFILE-056",
+  "summary": {
+    "reference_rows": 3,
+    "confirmed_pairs": 1,
+    "candidate_only_groups": 2,
+    "unmatched": 0,
+    "candidate_sealed_artifacts": 5,
+    "evidence_gap_items": 5
+  },
+  "entries": [
+    {
+      "reference_id": "ForensicSample.Dispatch.dll:AssemblyRef:1",
+      "source_path": "forensic_case/references/Dispatch.exe",
+      "row": 1,
+      "status": "confirmed_pair",
+      "reference_identity": {
+        "name": "Contoso.Widgets",
+        "name_key": "contoso.widgets",
+        "version": "3.1.0.0",
+        "version_parts": [
+          3,
+          1,
+          0,
+          0
+        ],
+        "version_complete": true,
+        "culture": "",
+        "culture_label": "neutral",
+        "culture_present": true,
+        "public_key_token": "15869992a418bb68",
+        "public_key_kind": "public_key_token",
+        "complete_identity": true,
+        "evidence_gaps": [],
+        "table_evidence": {
+          "table": "AssemblyRef",
+          "row": 1,
+          "file_offset": 760,
+          "major_version": 3,
+          "minor_version": 1,
+          "build_number": 0,
+          "revision_number": 0,
+          "flags": 0,
+          "public_key_blob_index": 1,
+          "name_string_index": 53,
+          "culture_string_index": 0,
+          "hash_value_blob_index": 0
+        }
+      },
+      "evidence_gaps": [],
+      "confirmed_pair": {
+        "classification": "deterministic",
+        "identity_exact_match": true,
+        "seal_verified": true,
+        "identity_comparison": {
+          "name": "match",
+          "version": "match",
+          "culture": "match",
+          "public_key_token": "match",
+          "mismatches": []
+        },
+        "evidence_gaps": [],
+        "artifact_path": "forensic_case/delivery/Contoso.Widgets_3.1.0.0.dll",
+        "file_name": "Contoso.Widgets_3.1.0.0.dll",
+        "seal_id": "SEAL-WIDGETS-310",
+        "sealed_artifact": "sealed-archive/SEAL-WIDGETS-310/Contoso.Widgets_3.1.0.0.dll",
+        "manifest": {
+          "found": true,
+          "seal_id": "SEAL-WIDGETS-310",
+          "sealed_artifact": "sealed-archive/SEAL-WIDGETS-310/Contoso.Widgets_3.1.0.0.dll",
+          "record_index": 1,
+          "sha256": "afe2a965a7a0a70b31ca3763dd2bda9b7a201ea4c9657dab9b99a2d5806cb499",
+          "actual_sha256": "afe2a965a7a0a70b31ca3763dd2bda9b7a201ea4c9657dab9b99a2d5806cb499",
+          "sha256_status": "verified",
+          "size_status": "verified",
+          "identity_checks": {
+            "name": "match",
+            "version": "match",
+            "culture": "match",
+            "public_key_token": "match",
+            "mismatches": []
+          }
+        },
+        "candidate_identity": {
+          "name": "Contoso.Widgets",
+          "name_key": "contoso.widgets",
+          "version": "3.1.0.0",
+          "version_parts": [
+            3,
+            1,
+            0,
+            0
+          ],
+          "version_complete": true,
+          "culture": "",
+          "culture_label": "neutral",
+          "culture_present": true,
+          "public_key_token": "15869992a418bb68",
+          "public_key_kind": "full_public_key",
+          "complete_identity": true,
+          "evidence_gaps": [],
+          "table_evidence": {
+            "table": "Assembly",
+            "row": 1,
+            "file_offset": 734,
+            "major_version": 3,
+            "minor_version": 1,
+            "build_number": 0,
+            "revision_number": 0,
+            "flags": 0,
+            "public_key_blob_index": 1,
+            "name_string_index": 21,
+            "culture_string_index": 0,
+            "hash_value_blob_index": null
+          }
+        }
+      },
+      "candidates": [],
+      "all_pairings": [
+        {
+          "classification": "deterministic",
+          "identity_exact_match": true,
+          "seal_verified": true,
+          "identity_comparison": {
+            "name": "match",
+            "version": "match",
+            "culture": "match",
+            "public_key_token": "match",
+            "mismatches": []
+          },
+          "evidence_gaps": [],
+          "artifact_path": "forensic_case/delivery/Contoso.Widgets_3.1.0.0.dll",
+          "file_name": "Contoso.Widgets_3.1.0.0.dll",
+          "seal_id": "SEAL-WIDGETS-310",
+          "sealed_artifact": "sealed-archive/SEAL-WIDGETS-310/Contoso.Widgets_3.1.0.0.dll",
+          "manifest": {
+            "found": true,
+            "seal_id": "SEAL-WIDGETS-310",
+            "sealed_artifact": "sealed-archive/SEAL-WIDGETS-310/Contoso.Widgets_3.1.0.0.dll",
+            "record_index": 1,
+            "sha256": "afe2a965a7a0a70b31ca3763dd2bda9b7a201ea4c9657dab9b99a2d5806cb499",
+            "actual_sha256": "afe2a965a7a0a70b31ca3763dd2bda9b7a201ea4c9657dab9b99a2d5806cb499",
+            "sha256_status": "verified",
+            "size_status": "verified",
+            "identity_checks": {
+              "name": "match",
+              "version": "match",
+              "culture": "match",
+              "public_key_token": "match",
+              "mismatches": []
+            }
+          },
+          "candidate_identity": {
+            "name": "Contoso.Widgets",
+            "name_key": "contoso.widgets",
+            "version": "3.1.0.0",
+            "version_parts": [
+              3,
+              1,
+              0,
+              0
+            ],
+            "version_complete": true,
+            "culture": "",
+            "culture_label": "neutral",
+            "culture_present": true,
+            "public_key_token": "15869992a418bb68",
+            "public_key_kind": "full_public_key",
+            "complete_identity": true,
+            "evidence_gaps": [],
+            "table_evidence": {
+              "table": "Assembly",
+              "row": 1,
+              "file_offset": 734,
+              "major_version": 3,
+              "minor_version": 1,
+              "build_number": 0,
+              "revision_number": 0,
+              "flags": 0,
+              "public_key_blob_index": 1,
+              "name_string_index": 21,
+              "culture_string_index": 0,
+              "hash_value_blob_index": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "reference_id": "ForensicSample.Dispatch.dll:AssemblyRef:2",
+      "source_path": "forensic_case/references/Dispatch.exe",
+      "row": 2,
+      "status": "candidate_only",
+      "reference_identity": {
+        "name": "Regional.Resources",
+        "name_key": "regional.resources",
+        "version": "1.0.0.0",
+        "version_parts": [
+          1,
+          0,
+          0,
+          0
+        ],
+        "version_complete": true,
+        "culture": null,
+        "culture_label": null,
+        "culture_present": false,
+        "public_key_token": "80ca8998c3eb0e0b",
+        "public_key_kind": "public_key_token",
+        "complete_identity": false,
+        "evidence_gaps": [
+          "culture_missing"
+        ],
+        "table_evidence": {
+          "table": "AssemblyRef",
+          "row": 2,
+          "file_offset": 780,
+          "major_version": 1,
+          "minor_version": 0,
+          "build_number": 0,
+          "revision_number": 0,
+          "flags": 0,
+          "public_key_blob_index": 10,
+          "name_string_index": 69,
+          "culture_string_index": 65534,
+          "hash_value_blob_index": 0
+        }
+      },
+      "evidence_gaps": [
+        "culture_missing",
+        "manifest.culture_missing",
+        "reference_identity_incomplete"
+      ],
+      "confirmed_pair": null,
+      "candidates": [
+        {
+          "classification": "candidate",
+          "identity_exact_match": false,
+          "seal_verified": true,
+          "identity_comparison": {
+            "name": "match",
+            "version": "match",
+            "culture": "evidence_missing",
+            "public_key_token": "match",
+            "mismatches": []
+          },
+          "evidence_gaps": [
+            "culture_missing",
+            "reference_identity_incomplete"
+          ],
+          "artifact_path": "forensic_case/delivery/Regional.Resources_1.0.0.0_en-US.dll",
+          "file_name": "Regional.Resources_1.0.0.0_en-US.dll",
+          "seal_id": "SEAL-REGIONAL-EN",
+          "sealed_artifact": "sealed-archive/SEAL-REGIONAL-EN/Regional.Resources_1.0.0.0_en-US.dll",
+          "manifest": {
+            "found": true,
+            "seal_id": "SEAL-REGIONAL-EN",
+            "sealed_artifact": "sealed-archive/SEAL-REGIONAL-EN/Regional.Resources_1.0.0.0_en-US.dll",
+            "record_index": 3,
+            "sha256": "dd0a3720dad1e5461425a4b093f32fa701f345e2f1ac8e5a467eac0a6858804f",
+            "actual_sha256": "dd0a3720dad1e5461425a4b093f32fa701f345e2f1ac8e5a467eac0a6858804f",
+            "sha256_status": "verified",
+            "size_status": "verified",
+            "identity_checks": {
+              "name": "match",
+              "version": "match",
+              "culture": "match",
+              "public_key_token": "match",
+              "mismatches": []
+            }
+          },
+          "candidate_identity": {
+            "name": "Regional.Resources",
+            "name_key": "regional.resources",
+            "version": "1.0.0.0",
+            "version_parts": [
+              1,
+              0,
+              0,
+              0
+            ],
+            "version_complete": true,
+            "culture": "en-us",
+            "culture_label": "en-us",
+            "culture_present": true,
+            "public_key_token": "80ca8998c3eb0e0b",
+            "public_key_kind": "full_public_key",
+            "complete_identity": true,
+            "evidence_gaps": [],
+            "table_evidence": {
+              "table": "Assembly",
+              "row": 1,
+              "file_offset": 734,
+              "major_version": 1,
+              "minor_version": 0,
+              "build_number": 0,
+              "revision_number": 0,
+              "flags": 0,
+              "public_key_blob_index": 1,
+              "name_string_index": 30,
+              "culture_string_index": 24,
+              "hash_value_blob_index": null
+            }
+          }
+        },
+        {
+          "classification": "candidate",
+          "identity_exact_match": false,
+          "seal_verified": true,
+          "identity_comparison": {
+            "name": "match",
+            "version": "match",
+            "culture": "evidence_missing",
+            "public_key_token": "match",
+            "mismatches": []
+          },
+          "evidence_gaps": [
+            "culture_missing",
+            "manifest.culture_missing",
+            "reference_identity_incomplete"
+          ],
+          "artifact_path": "forensic_case/delivery/Regional.Resources_1.0.0.0_fr-FR.dll",
+          "file_name": "Regional.Resources_1.0.0.0_fr-FR.dll",
+          "seal_id": "SEAL-REGIONAL-FR",
+          "sealed_artifact": "sealed-archive/SEAL-REGIONAL-FR/Regional.Resources_1.0.0.0_fr-FR.dll",
+          "manifest": {
+            "found": true,
+            "seal_id": "SEAL-REGIONAL-FR",
+            "sealed_artifact": "sealed-archive/SEAL-REGIONAL-FR/Regional.Resources_1.0.0.0_fr-FR.dll",
+            "record_index": 4,
+            "sha256": "74588e7dbb0ba3b6875bcd08b9c1b64bb45cbf46538c81c6d7b278a6572f98e3",
+            "actual_sha256": "74588e7dbb0ba3b6875bcd08b9c1b64bb45cbf46538c81c6d7b278a6572f98e3",
+            "sha256_status": "verified",
+            "size_status": "verified",
+            "identity_checks": {
+              "name": "match",
+              "version": "match",
+              "culture": "evidence_missing",
+              "public_key_token": "match",
+              "mismatches": []
+            }
+          },
+          "candidate_identity": {
+            "name": "Regional.Resources",
+            "name_key": "regional.resources",
+            "version": "1.0.0.0",
+            "version_parts": [
+              1,
+              0,
+              0,
+              0
+            ],
+            "version_complete": true,
+            "culture": "fr-fr",
+            "culture_label": "fr-fr",
+            "culture_present": true,
+            "public_key_token": "80ca8998c3eb0e0b",
+            "public_key_kind": "full_public_key",
+            "complete_identity": true,
+            "evidence_gaps": [],
+            "table_evidence": {
+              "table": "Assembly",
+              "row": 1,
+              "file_offset": 734,
+              "major_version": 1,
+              "minor_version": 0,
+              "build_number": 0,
+              "revision_number": 0,
+              "flags": 0,
+              "public_key_blob_index": 1,
+              "name_string_index": 30,
+              "culture_string_index": 24,
+              "hash_value_blob_index": null
+            }
+          }
+        }
+      ],
+      "all_pairings": [
+        {
+          "classification": "candidate",
+          "identity_exact_match": false,
+          "seal_verified": true,
+          "identity_comparison": {
+            "name": "match",
+            "version": "match",
+            "culture": "evidence_missing",
+            "public_key_token": "match",
+            "mismatches": []
+          },
+          "evidence_gaps": [
+            "culture_missing",
+            "reference_identity_incomplete"
+          ],
+          "artifact_path": "forensic_case/delivery/Regional.Resources_1.0.0.0_en-US.dll",
+          "file_name": "Regional.Resources_1.0.0.0_en-US.dll",
+          "seal_id": "SEAL-REGIONAL-EN",
+          "sealed_artifact": "sealed-archive/SEAL-REGIONAL-EN/Regional.Resources_1.0.0.0_en-US.dll",
+          "manifest": {
+            "found": true,
+            "seal_id": "SEAL-REGIONAL-EN",
+            "sealed_artifact": "sealed-archive/SEAL-REGIONAL-EN/Regional.Resources_1.0.0.0_en-US.dll",
+            "record_index": 3,
+            "sha256": "dd0a3720dad1e5461425a4b093f32fa701f345e2f1ac8e5a467eac0a6858804f",
+            "actual_sha256": "dd0a3720dad1e5461425a4b093f32fa701f345e2f1ac8e5a467eac0a6858804f",
+            "sha256_status": "verified",
+            "size_status": "verified",
+            "identity_checks": {
+              "name": "match",
+              "version": "match",
+              "culture": "match",
+              "public_key_token": "match",
+              "mismatches": []
+            }
+          },
+          "candidate_identity": {
+            "name": "Regional.Resources",
+            "name_key": "regional.resources",
+            "version": "1.0.0.0",
+            "version_parts": [
+              1,
+              0,
+              0,
+              0
+            ],
+            "version_complete": true,
+            "culture": "en-us",
+            "culture_label": "en-us",
+            "culture_present": true,
+            "public_key_token": "80ca8998c3eb0e0b",
+            "public_key_kind": "full_public_key",
+            "complete_identity": true,
+            "evidence_gaps": [],
+            "table_evidence": {
+              "table": "Assembly",
+              "row": 1,
+              "file_offset": 734,
+              "major_version": 1,
+              "minor_version": 0,
+              "build_number": 0,
+              "revision_number": 0,
+              "flags": 0,
+              "public_key_blob_index": 1,
+              "name_string_index": 30,
+              "culture_string_index": 24,
+              "hash_value_blob_index": null
+            }
+          }
+        },
+        {
+          "classification": "candidate",
+          "identity_exact_match": false,
+          "seal_verified": true,
+          "identity_comparison": {
+            "name": "match",
+            "version": "match",
+            "culture": "evidence_missing",
+            "public_key_token": "match",
+            "mismatches": []
+          },
+          "evidence_gaps": [
+            "culture_missing",
+            "manifest.culture_missing",
+            "reference_identity_incomplete"
+          ],
+          "artifact_path": "forensic_case/delivery/Regional.Resources_1.0.0.0_fr-FR.dll",
+          "file_name": "Regional.Resources_1.0.0.0_fr-FR.dll",
+          "seal_id": "SEAL-REGIONAL-FR",
+          "sealed_artifact": "sealed-archive/SEAL-REGIONAL-FR/Regional.Resources_1.0.0.0_fr-FR.dll",
+          "manifest": {
+            "found": true,
+            "seal_id": "SEAL-REGIONAL-FR",
+            "sealed_artifact": "sealed-archive/SEAL-REGIONAL-FR/Regional.Resources_1.0.0.0_fr-FR.dll",
+            "record_index": 4,
+            "sha256": "74588e7dbb0ba3b6875bcd08b9c1b64bb45cbf46538c81c6d7b278a6572f98e3",
+            "actual_sha256": "74588e7dbb0ba3b6875bcd08b9c1b64bb45cbf46538c81c6d7b278a6572f98e3",
+            "sha256_status": "verified",
+            "size_status": "verified",
+            "identity_checks": {
+              "name": "match",
+              "version": "match",
+              "culture": "evidence_missing",
+              "public_key_token": "match",
+              "mismatches": []
+            }
+          },
+          "candidate_identity": {
+            "name": "Regional.Resources",
+            "name_key": "regional.resources",
+            "version": "1.0.0.0",
+            "version_parts": [
+              1,
+              0,
+              0,
+              0
+            ],
+            "version_complete": true,
+            "culture": "fr-fr",
+            "culture_label": "fr-fr",
+            "culture_present": true,
+            "public_key_token": "80ca8998c3eb0e0b",
+            "public_key_kind": "full_public_key",
+            "complete_identity": true,
+            "evidence_gaps": [],
+            "table_evidence": {
+              "table": "Assembly",
+              "row": 1,
+              "file_offset": 734,
+              "major_version": 1,
+              "minor_version": 0,
+              "build_number": 0,
+              "revision_number": 0,
+              "flags": 0,
+              "public_key_blob_index": 1,
+              "name_string_index": 30,
+              "culture_string_index": 24,
+              "hash_value_blob_index": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "reference_id": "ForensicSample.Dispatch.dll:AssemblyRef:3",
+      "source_path": "forensic_case/references/Dispatch.exe",
+      "row": 3,
+      "status": "candidate_only",
+      "reference_identity": {
+        "name": "Imaging.Codec",
+        "name_key": "imaging.codec",
+        "version": "5.0.0.0",
+        "version_parts": [
+          5,
+          0,
+          0,
+          0
+        ],
+        "version_complete": true,
+        "culture": "",
+        "culture_label": "neutral",
+        "culture_present": true,
+        "public_key_token": null,
+        "public_key_kind": null,
+        "complete_identity": false,
+        "evidence_gaps": [
+          "public_key_identity_missing"
+        ],
+        "table_evidence": {
+          "table": "AssemblyRef",
+          "row": 3,
+          "file_offset": 800,
+          "major_version": 5,
+          "minor_version": 0,
+          "build_number": 0,
+          "revision_number": 0,
+          "flags": 0,
+          "public_key_blob_index": 0,
+          "name_string_index": 88,
+          "culture_string_index": 0,
+          "hash_value_blob_index": 0
+        }
+      },
+      "evidence_gaps": [
+        "public_key_identity_missing",
+        "reference_identity_incomplete"
+      ],
+      "confirmed_pair": null,
+      "candidates": [
+        {
+          "classification": "candidate",
+          "identity_exact_match": false,
+          "seal_verified": true,
+          "identity_comparison": {
+            "name": "match",
+            "version": "match",
+            "culture": "match",
+            "public_key_token": "evidence_missing",
+            "mismatches": []
+          },
+          "evidence_gaps": [
+            "public_key_identity_missing",
+            "reference_identity_incomplete"
+          ],
+          "artifact_path": "forensic_case/delivery/Imaging.Codec_5.0.0.0_keyA.dll",
+          "file_name": "Imaging.Codec_5.0.0.0_keyA.dll",
+          "seal_id": "SEAL-IMAGING-KEYA",
+          "sealed_artifact": "sealed-archive/SEAL-IMAGING-KEYA/Imaging.Codec_5.0.0.0_keyA.dll",
+          "manifest": {
+            "found": true,
+            "seal_id": "SEAL-IMAGING-KEYA",
+            "sealed_artifact": "sealed-archive/SEAL-IMAGING-KEYA/Imaging.Codec_5.0.0.0_keyA.dll",
+            "record_index": 5,
+            "sha256": "a99dd381c9073a2decf02207177e046953de0157cf6a1076847c8183106ea54d",
+            "actual_sha256": "a99dd381c9073a2decf02207177e046953de0157cf6a1076847c8183106ea54d",
+            "sha256_status": "verified",
+            "size_status": "verified",
+            "identity_checks": {
+              "name": "match",
+              "version": "match",
+              "culture": "match",
+              "public_key_token": "match",
+              "mismatches": []
+            }
+          },
+          "candidate_identity": {
+            "name": "Imaging.Codec",
+            "name_key": "imaging.codec",
+            "version": "5.0.0.0",
+            "version_parts": [
+              5,
+              0,
+              0,
+              0
+            ],
+            "version_complete": true,
+            "culture": "",
+            "culture_label": "neutral",
+            "culture_present": true,
+            "public_key_token": "665f91ab7ea87eff",
+            "public_key_kind": "full_public_key",
+            "complete_identity": true,
+            "evidence_gaps": [],
+            "table_evidence": {
+              "table": "Assembly",
+              "row": 1,
+              "file_offset": 734,
+              "major_version": 5,
+              "minor_version": 0,
+              "build_number": 0,
+              "revision_number": 0,
+              "flags": 0,
+              "public_key_blob_index": 1,
+              "name_string_index": 19,
+              "culture_string_index": 0,
+              "hash_value_blob_index": null
+            }
+          }
+        },
+        {
+          "classification": "candidate",
+          "identity_exact_match": false,
+          "seal_verified": true,
+          "identity_comparison": {
+            "name": "match",
+            "version": "match",
+            "culture": "match",
+            "public_key_token": "evidence_missing",
+            "mismatches": []
+          },
+          "evidence_gaps": [
+            "public_key_identity_missing",
+            "reference_identity_incomplete"
+          ],
+          "artifact_path": "forensic_case/delivery/Imaging.Codec_5.0.0.0_keyB.dll",
+          "file_name": "Imaging.Codec_5.0.0.0_keyB.dll",
+          "seal_id": "SEAL-IMAGING-KEYB",
+          "sealed_artifact": "sealed-archive/SEAL-IMAGING-KEYB/Imaging.Codec_5.0.0.0_keyB.dll",
+          "manifest": {
+            "found": true,
+            "seal_id": "SEAL-IMAGING-KEYB",
+            "sealed_artifact": "sealed-archive/SEAL-IMAGING-KEYB/Imaging.Codec_5.0.0.0_keyB.dll",
+            "record_index": 6,
+            "sha256": "a53fdeb852e16fca911b2d43bfc34127b26fafebf23f2423ecd55c9115defdf6",
+            "actual_sha256": "a53fdeb852e16fca911b2d43bfc34127b26fafebf23f2423ecd55c9115defdf6",
+            "sha256_status": "verified",
+            "size_status": "verified",
+            "identity_checks": {
+              "name": "match",
+              "version": "match",
+              "culture": "match",
+              "public_key_token": "match",
+              "mismatches": []
+            }
+          },
+          "candidate_identity": {
+            "name": "Imaging.Codec",
+            "name_key": "imaging.codec",
+            "version": "5.0.0.0",
+            "version_parts": [
+              5,
+              0,
+              0,
+              0
+            ],
+            "version_complete": true,
+            "culture": "",
+            "culture_label": "neutral",
+            "culture_present": true,
+            "public_key_token": "96c697130e81bb75",
+            "public_key_kind": "full_public_key",
+            "complete_identity": true,
+            "evidence_gaps": [],
+            "table_evidence": {
+              "table": "Assembly",
+              "row": 1,
+              "file_offset": 734,
+              "major_version": 5,
+              "minor_version": 0,
+              "build_number": 0,
+              "revision_number": 0,
+              "flags": 0,
+              "public_key_blob_index": 1,
+              "name_string_index": 19,
+              "culture_string_index": 0,
+              "hash_value_blob_index": null
+            }
+          }
+        }
+      ],
+      "all_pairings": [
+        {
+          "classification": "candidate",
+          "identity_exact_match": false,
+          "seal_verified": true,
+          "identity_comparison": {
+            "name": "match",
+            "version": "match",
+            "culture": "match",
+            "public_key_token": "evidence_missing",
+            "mismatches": []
+          },
+          "evidence_gaps": [
+            "public_key_identity_missing",
+            "reference_identity_incomplete"
+          ],
+          "artifact_path": "forensic_case/delivery/Imaging.Codec_5.0.0.0_keyA.dll",
+          "file_name": "Imaging.Codec_5.0.0.0_keyA.dll",
+          "seal_id": "SEAL-IMAGING-KEYA",
+          "sealed_artifact": "sealed-archive/SEAL-IMAGING-KEYA/Imaging.Codec_5.0.0.0_keyA.dll",
+          "manifest": {
+            "found": true,
+            "seal_id": "SEAL-IMAGING-KEYA",
+            "sealed_artifact": "sealed-archive/SEAL-IMAGING-KEYA/Imaging.Codec_5.0.0.0_keyA.dll",
+            "record_index": 5,
+            "sha256": "a99dd381c9073a2decf02207177e046953de0157cf6a1076847c8183106ea54d",
+            "actual_sha256": "a99dd381c9073a2decf02207177e046953de0157cf6a1076847c8183106ea54d",
+            "sha256_status": "verified",
+            "size_status": "verified",
+            "identity_checks": {
+              "name": "match",
+              "version": "match",
+              "culture": "match",
+              "public_key_token": "match",
+              "mismatches": []
+            }
+          },
+          "candidate_identity": {
+            "name": "Imaging.Codec",
+            "name_key": "imaging.codec",
+            "version": "5.0.0.0",
+            "version_parts": [
+              5,
+              0,
+              0,
+              0
+            ],
+            "version_complete": true,
+            "culture": "",
+            "culture_label": "neutral",
+            "culture_present": true,
+            "public_key_token": "665f91ab7ea87eff",
+            "public_key_kind": "full_public_key",
+            "complete_identity": true,
+            "evidence_gaps": [],
+            "table_evidence": {
+              "table": "Assembly",
+              "row": 1,
+              "file_offset": 734,
+              "major_version": 5,
+              "minor_version": 0,
+              "build_number": 0,
+              "revision_number": 0,
+              "flags": 0,
+              "public_key_blob_index": 1,
+              "name_string_index": 19,
+              "culture_string_index": 0,
+              "hash_value_blob_index": null
+            }
+          }
+        },
+        {
+          "classification": "candidate",
+          "identity_exact_match": false,
+          "seal_verified": true,
+          "identity_comparison": {
+            "name": "match",
+            "version": "match",
+            "culture": "match",
+            "public_key_token": "evidence_missing",
+            "mismatches": []
+          },
+          "evidence_gaps": [
+            "public_key_identity_missing",
+            "reference_identity_incomplete"
+          ],
+          "artifact_path": "forensic_case/delivery/Imaging.Codec_5.0.0.0_keyB.dll",
+          "file_name": "Imaging.Codec_5.0.0.0_keyB.dll",
+          "seal_id": "SEAL-IMAGING-KEYB",
+          "sealed_artifact": "sealed-archive/SEAL-IMAGING-KEYB/Imaging.Codec_5.0.0.0_keyB.dll",
+          "manifest": {
+            "found": true,
+            "seal_id": "SEAL-IMAGING-KEYB",
+            "sealed_artifact": "sealed-archive/SEAL-IMAGING-KEYB/Imaging.Codec_5.0.0.0_keyB.dll",
+            "record_index": 6,
+            "sha256": "a53fdeb852e16fca911b2d43bfc34127b26fafebf23f2423ecd55c9115defdf6",
+            "actual_sha256": "a53fdeb852e16fca911b2d43bfc34127b26fafebf23f2423ecd55c9115defdf6",
+            "sha256_status": "verified",
+            "size_status": "verified",
+            "identity_checks": {
+              "name": "match",
+              "version": "match",
+              "culture": "match",
+              "public_key_token": "match",
+              "mismatches": []
+            }
+          },
+          "candidate_identity": {
+            "name": "Imaging.Codec",
+            "name_key": "imaging.codec",
+            "version": "5.0.0.0",
+            "version_parts": [
+              5,
+              0,
+              0,
+              0
+            ],
+            "version_complete": true,
+            "culture": "",
+            "culture_label": "neutral",
+            "culture_present": true,
+            "public_key_token": "96c697130e81bb75",
+            "public_key_kind": "full_public_key",
+            "complete_identity": true,
+            "evidence_gaps": [],
+            "table_evidence": {
+              "table": "Assembly",
+              "row": 1,
+              "file_offset": 734,
+              "major_version": 5,
+              "minor_version": 0,
+              "build_number": 0,
+              "revision_number": 0,
+              "flags": 0,
+              "public_key_blob_index": 1,
+              "name_string_index": 19,
+              "culture_string_index": 0,
+              "hash_value_blob_index": null
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "forensic_case/delivery/Contoso.Widgets_3.1.0.0.dll",
+      "file_name": "Contoso.Widgets_3.1.0.0.dll",
+      "metadata_available": true,
+      "assembly_identity": {
+        "name": "Contoso.Widgets",
+        "name_key": "contoso.widgets",
+        "version": "3.1.0.0",
+        "version_parts": [
+          3,
+          1,
+          0,
+          0
+        ],
+        "version_complete": true,
+        "culture": "",
+        "culture_label": "neutral",
+        "culture_present": true,
+        "public_key_token": "15869992a418bb68",
+        "public_key_kind": "full_public_key",
+        "complete_identity": true,
+        "evidence_gaps": [],
+        "table_evidence": {
+          "table": "Assembly",
+          "row": 1,
+          "file_offset": 734,
+          "major_version": 3,
+          "minor_version": 1,
+          "build_number": 0,
+          "revision_number": 0,
+          "flags": 0,
+          "public_key_blob_index": 1,
+          "name_string_index": 21,
+          "culture_string_index": 0,
+          "hash_value_blob_index": null
+        }
+      },
+      "assembly_identities": [
+        {
+          "name": "Contoso.Widgets",
+          "name_key": "contoso.widgets",
+          "version": "3.1.0.0",
+          "version_parts": [
+            3,
+            1,
+            0,
+            0
+          ],
+          "version_complete": true,
+          "culture": "",
+          "culture_label": "neutral",
+          "culture_present": true,
+          "public_key_token": "15869992a418bb68",
+          "public_key_kind": "full_public_key",
+          "complete_identity": true,
+          "evidence_gaps": [],
+          "table_evidence": {
+            "table": "Assembly",
+            "row": 1,
+            "file_offset": 734,
+            "major_version": 3,
+            "minor_version": 1,
+            "build_number": 0,
+            "revision_number": 0,
+            "flags": 0,
+            "public_key_blob_index": 1,
+            "name_string_index": 21,
+            "culture_string_index": 0,
+            "hash_value_blob_index": null
+          }
+        }
+      ],
+      "references": [],
+      "module_name": "Contoso.Widgets.dll",
+      "parse_errors": [],
+      "dnfile_warnings": [
+        "Byte 0x00 makes up 69.3359% of the file's contents. This may indicate truncation / malformation.",
+        "If SectionAlignment(0x200) < 0x1000 it should equal FileAlignment(0x4)"
+      ],
+      "manifest": {
+        "found": true,
+        "seal_id": "SEAL-WIDGETS-310",
+        "sealed_artifact": "sealed-archive/SEAL-WIDGETS-310/Contoso.Widgets_3.1.0.0.dll",
+        "record_index": 1,
+        "sha256": "afe2a965a7a0a70b31ca3763dd2bda9b7a201ea4c9657dab9b99a2d5806cb499",
+        "actual_sha256": "afe2a965a7a0a70b31ca3763dd2bda9b7a201ea4c9657dab9b99a2d5806cb499",
+        "sha256_status": "verified",
+        "size_status": "verified",
+        "identity_checks": {
+          "name": "match",
+          "version": "match",
+          "culture": "match",
+          "public_key_token": "match",
+          "mismatches": []
+        }
+      },
+      "evidence_gaps": []
+    },
+    {
+      "path": "forensic_case/delivery/Contoso.Widgets_4.0.0.0.dll",
+      "file_name": "Contoso.Widgets_4.0.0.0.dll",
+      "metadata_available": true,
+      "assembly_identity": {
+        "name": "Contoso.Widgets",
+        "name_key": "contoso.widgets",
+        "version": "4.0.0.0",
+        "version_parts": [
+          4,
+          0,
+          0,
+          0
+        ],
+        "version_complete": true,
+        "culture": "",
+        "culture_label": "neutral",
+        "culture_present": true,
+        "public_key_token": "15869992a418bb68",
+        "public_key_kind": "full_public_key",
+        "complete_identity": true,
+        "evidence_gaps": [],
+        "table_evidence": {
+          "table": "Assembly",
+          "row": 1,
+          "file_offset": 734,
+          "major_version": 4,
+          "minor_version": 0,
+          "build_number": 0,
+          "revision_number": 0,
+          "flags": 0,
+          "public_key_blob_index": 1,
+          "name_string_index": 21,
+          "culture_string_index": 0,
+          "hash_value_blob_index": null
+        }
+      },
+      "assembly_identities": [
+        {
+          "name": "Contoso.Widgets",
+          "name_key": "contoso.widgets",
+          "version": "4.0.0.0",
+          "version_parts": [
+            4,
+            0,
+            0,
+            0
+          ],
+          "version_complete": true,
+          "culture": "",
+          "culture_label": "neutral",
+          "culture_present": true,
+          "public_key_token": "15869992a418bb68",
+          "public_key_kind": "full_public_key",
+          "complete_identity": true,
+          "evidence_gaps": [],
+          "table_evidence": {
+            "table": "Assembly",
+            "row": 1,
+            "file_offset": 734,
+            "major_version": 4,
+            "minor_version": 0,
+            "build_number": 0,
+            "revision_number": 0,
+            "flags": 0,
+            "public_key_blob_index": 1,
+            "name_string_index": 21,
+            "culture_string_index": 0,
+            "hash_value_blob_index": null
+          }
+        }
+      ],
+      "references": [],
+      "module_name": "Contoso.Widgets.dll",
+      "parse_errors": [],
+      "dnfile_warnings": [
+        "Byte 0x00 makes up 69.4336% of the file's contents. This may indicate truncation / malformation.",
+        "If SectionAlignment(0x200) < 0x1000 it should equal FileAlignment(0x4)"
+      ],
+      "manifest": {
+        "found": true,
+        "seal_id": "SEAL-WIDGETS-400",
+        "sealed_artifact": "sealed-archive/SEAL-WIDGETS-400/Contoso.Widgets_4.0.0.0.dll",
+        "record_index": 2,
+        "sha256": "72af825ba79dfc55b814da33cb5a14e0f32e94be1ec5b29fe086c3abebb8d92c",
+        "actual_sha256": "72af825ba79dfc55b814da33cb5a14e0f32e94be1ec5b29fe086c3abebb8d92c",
+        "sha256_status": "verified",
+        "size_status": "verified",
+        "identity_checks": {
+          "name": "match",
+          "version": "match",
+          "culture": "match",
+          "public_key_token": "match",
+          "mismatches": []
+        }
+      },
+      "evidence_gaps": []
+    },
+    {
+      "path": "forensic_case/delivery/Imaging.Codec_5.0.0.0_keyA.dll",
+      "file_name": "Imaging.Codec_5.0.0.0_keyA.dll",
+      "metadata_available": true,
+      "assembly_identity": {
+        "name": "Imaging.Codec",
+        "name_key": "imaging.codec",
+        "version": "5.0.0.0",
+        "version_parts": [
+          5,
+          0,
+          0,
+          0
+        ],
+        "version_complete": true,
+        "culture": "",
+        "culture_label": "neutral",
+        "culture_present": true,
+        "public_key_token": "665f91ab7ea87eff",
+        "public_key_kind": "full_public_key",
+        "complete_identity": true,
+        "evidence_gaps": [],
+        "table_evidence": {
+          "table": "Assembly",
+          "row": 1,
+          "file_offset": 734,
+          "major_version": 5,
+          "minor_version": 0,
+          "build_number": 0,
+          "revision_number": 0,
+          "flags": 0,
+          "public_key_blob_index": 1,
+          "name_string_index": 19,
+          "culture_string_index": 0,
+          "hash_value_blob_index": null
+        }
+      },
+      "assembly_identities": [
+        {
+          "name": "Imaging.Codec",
+          "name_key": "imaging.codec",
+          "version": "5.0.0.0",
+          "version_parts": [
+            5,
+            0,
+            0,
+            0
+          ],
+          "version_complete": true,
+          "culture": "",
+          "culture_label": "neutral",
+          "culture_present": true,
+          "public_key_token": "665f91ab7ea87eff",
+          "public_key_kind": "full_public_key",
+          "complete_identity": true,
+          "evidence_gaps": [],
+          "table_evidence": {
+            "table": "Assembly",
+            "row": 1,
+            "file_offset": 734,
+            "major_version": 5,
+            "minor_version": 0,
+            "build_number": 0,
+            "revision_number": 0,
+            "flags": 0,
+            "public_key_blob_index": 1,
+            "name_string_index": 19,
+            "culture_string_index": 0,
+            "hash_value_blob_index": null
+          }
+        }
+      ],
+      "references": [],
+      "module_name": "Imaging.Codec.dll",
+      "parse_errors": [],
+      "dnfile_warnings": [
+        "Byte 0x00 makes up 69.8242% of the file's contents. This may indicate truncation / malformation.",
+        "If SectionAlignment(0x200) < 0x1000 it should equal FileAlignment(0x4)"
+      ],
+      "manifest": {
+        "found": true,
+        "seal_id": "SEAL-IMAGING-KEYA",
+        "sealed_artifact": "sealed-archive/SEAL-IMAGING-KEYA/Imaging.Codec_5.0.0.0_keyA.dll",
+        "record_index": 5,
+        "sha256": "a99dd381c9073a2decf02207177e046953de0157cf6a1076847c8183106ea54d",
+        "actual_sha256": "a99dd381c9073a2decf02207177e046953de0157cf6a1076847c8183106ea54d",
+        "sha256_status": "verified",
+        "size_status": "verified",
+        "identity_checks": {
+          "name": "match",
+          "version": "match",
+          "culture": "match",
+          "public_key_token": "match",
+          "mismatches": []
+        }
+      },
+      "evidence_gaps": []
+    },
+    {
+      "path": "forensic_case/delivery/Imaging.Codec_5.0.0.0_keyB.dll",
+      "file_name": "Imaging.Codec_5.0.0.0_keyB.dll",
+      "metadata_available": true,
+      "assembly_identity": {
+        "name": "Imaging.Codec",
+        "name_key": "imaging.codec",
+        "version": "5.0.0.0",
+        "version_parts": [
+          5,
+          0,
+          0,
+          0
+        ],
+        "version_complete": true,
+        "culture": "",
+        "culture_label": "neutral",
+        "culture_present": true,
+        "public_key_token": "96c697130e81bb75",
+        "public_key_kind": "full_public_key",
+        "complete_identity": true,
+        "evidence_gaps": [],
+        "table_evidence": {
+          "table": "Assembly",
+          "row": 1,
+          "file_offset": 734,
+          "major_version": 5,
+          "minor_version": 0,
+          "build_number": 0,
+          "revision_number": 0,
+          "flags": 0,
+          "public_key_blob_index": 1,
+          "name_string_index": 19,
+          "culture_string_index": 0,
+          "hash_value_blob_index": null
+        }
+      },
+      "assembly_identities": [
+        {
+          "name": "Imaging.Codec",
+          "name_key": "imaging.codec",
+          "version": "5.0.0.0",
+          "version_parts": [
+            5,
+            0,
+            0,
+            0
+          ],
+          "version_complete": true,
+          "culture": "",
+          "culture_label": "neutral",
+          "culture_present": true,
+          "public_key_token": "96c697130e81bb75",
+          "public_key_kind": "full_public_key",
+          "complete_identity": true,
+          "evidence_gaps": [],
+          "table_evidence": {
+            "table": "Assembly",
+            "row": 1,
+            "file_offset": 734,
+            "major_version": 5,
+            "minor_version": 0,
+            "build_number": 0,
+            "revision_number": 0,
+            "flags": 0,
+            "public_key_blob_index": 1,
+            "name_string_index": 19,
+            "culture_string_index": 0,
+            "hash_value_blob_index": null
+          }
+        }
+      ],
+      "references": [],
+      "module_name": "Imaging.Codec.dll",
+      "parse_errors": [],
+      "dnfile_warnings": [
+        "Byte 0x00 makes up 69.8242% of the file's contents. This may indicate truncation / malformation.",
+        "If SectionAlignment(0x200) < 0x1000 it should equal FileAlignment(0x4)"
+      ],
+      "manifest": {
+        "found": true,
+        "seal_id": "SEAL-IMAGING-KEYB",
+        "sealed_artifact": "sealed-archive/SEAL-IMAGING-KEYB/Imaging.Codec_5.0.0.0_keyB.dll",
+        "record_index": 6,
+        "sha256": "a53fdeb852e16fca911b2d43bfc34127b26fafebf23f2423ecd55c9115defdf6",
+        "actual_sha256": "a53fdeb852e16fca911b2d43bfc34127b26fafebf23f2423ecd55c9115defdf6",
+        "sha256_status": "verified",
+        "size_status": "verified",
+        "identity_checks": {
+          "name": "match",
+          "version": "match",
+          "culture": "match",
+          "public_key_token": "match",
+          "mismatches": []
+        }
+      },
+      "evidence_gaps": []
+    },
+    {
+      "path": "forensic_case/delivery/Regional.Resources_1.0.0.0_en-US.dll",
+      "file_name": "Regional.Resources_1.0.0.0_en-US.dll",
+      "metadata_available": true,
+      "assembly_identity": {
+        "name": "Regional.Resources",
+        "name_key": "regional.resources",
+        "version": "1.0.0.0",
+        "version_parts": [
+          1,
+          0,
+          0,
+          0
+        ],
+        "version_complete": true,
+        "culture": "en-us",
+        "culture_label": "en-us",
+        "culture_present": true,
+        "public_key_token": "80ca8998c3eb0e0b",
+        "public_key_kind": "full_public_key",
+        "complete_identity": true,
+        "evidence_gaps": [],
+        "table_evidence": {
+          "table": "Assembly",
+          "row": 1,
+          "file_offset": 734,
+          "major_version": 1,
+          "minor_version": 0,
+          "build_number": 0,
+          "revision_number": 0,
+          "flags": 0,
+          "public_key_blob_index": 1,
+          "name_string_index": 30,
+          "culture_string_index": 24,
+          "hash_value_blob_index": null
+        }
+      },
+      "assembly_identities": [
+        {
+          "name": "Regional.Resources",
+          "name_key": "regional.resources",
+          "version": "1.0.0.0",
+          "version_parts": [
+            1,
+            0,
+            0,
+            0
+          ],
+          "version_complete": true,
+          "culture": "en-us",
+          "culture_label": "en-us",
+          "culture_present": true,
+          "public_key_token": "80ca8998c3eb0e0b",
+          "public_key_kind": "full_public_key",
+          "complete_identity": true,
+          "evidence_gaps": [],
+          "table_evidence": {
+            "table": "Assembly",
+            "row": 1,
+            "file_offset": 734,
+            "major_version": 1,
+            "minor_version": 0,
+            "build_number": 0,
+            "revision_number": 0,
+            "flags": 0,
+            "public_key_blob_index": 1,
+            "name_string_index": 30,
+            "culture_string_index": 24,
+            "hash_value_blob_index": null
+          }
+        }
+      ],
+      "references": [],
+      "module_name": "Regional.Resources.dll",
+      "parse_errors": [],
+      "dnfile_warnings": [
+        "Byte 0x00 makes up 68.2617% of the file's contents. This may indicate truncation / malformation.",
+        "If SectionAlignment(0x200) < 0x1000 it should equal FileAlignment(0x4)"
+      ],
+      "manifest": {
+        "found": true,
+        "seal_id": "SEAL-REGIONAL-EN",
+        "sealed_artifact": "sealed-archive/SEAL-REGIONAL-EN/Regional.Resources_1.0.0.0_en-US.dll",
+        "record_index": 3,
+        "sha256": "dd0a3720dad1e5461425a4b093f32fa701f345e2f1ac8e5a467eac0a6858804f",
+        "actual_sha256": "dd0a3720dad1e5461425a4b093f32fa701f345e2f1ac8e5a467eac0a6858804f",
+        "sha256_status": "verified",
+        "size_status": "verified",
+        "identity_checks": {
+          "name": "match",
+          "version": "match",
+          "culture": "match",
+          "public_key_token": "match",
+          "mismatches": []
+        }
+      },
+      "evidence_gaps": []
+    },
+    {
+      "path": "forensic_case/delivery/Regional.Resources_1.0.0.0_fr-FR.dll",
+      "file_name": "Regional.Resources_1.0.0.0_fr-FR.dll",
+      "metadata_available": true,
+      "assembly_identity": {
+        "name": "Regional.Resources",
+        "name_key": "regional.resources",
+        "version": "1.0.0.0",
+        "version_parts": [
+          1,
+          0,
+          0,
+          0
+        ],
+        "version_complete": true,
+        "culture": "fr-fr",
+        "culture_label": "fr-fr",
+        "culture_present": true,
+        "public_key_token": "80ca8998c3eb0e0b",
+        "public_key_kind": "full_public_key",
+        "complete_identity": true,
+        "evidence_gaps": [],
+        "table_evidence": {
+          "table": "Assembly",
+          "row": 1,
+          "file_offset": 734,
+          "major_version": 1,
+          "minor_version": 0,
+          "build_number": 0,
+          "revision_number": 0,
+          "flags": 0,
+          "public_key_blob_index": 1,
+          "name_string_index": 30,
+          "culture_string_index": 24,
+          "hash_value_blob_index": null
+        }
+      },
+      "assembly_identities": [
+        {
+          "name": "Regional.Resources",
+          "name_key": "regional.resources",
+          "version": "1.0.0.0",
+          "version_parts": [
+            1,
+            0,
+            0,
+            0
+          ],
+          "version_complete": true,
+          "culture": "fr-fr",
+          "culture_label": "fr-fr",
+          "culture_present": true,
+          "public_key_token": "80ca8998c3eb0e0b",
+          "public_key_kind": "full_public_key",
+          "complete_identity": true,
+          "evidence_gaps": [],
+          "table_evidence": {
+            "table": "Assembly",
+            "row": 1,
+            "file_offset": 734,
+            "major_version": 1,
+            "minor_version": 0,
+            "build_number": 0,
+            "revision_number": 0,
+            "flags": 0,
+            "public_key_blob_index": 1,
+            "name_string_index": 30,
+            "culture_string_index": 24,
+            "hash_value_blob_index": null
+          }
+        }
+      ],
+      "references": [],
+      "module_name": "Regional.Resources.dll",
+      "parse_errors": [],
+      "dnfile_warnings": [
+        "Byte 0x00 makes up 68.2617% of the file's contents. This may indicate truncation / malformation.",
+        "If SectionAlignment(0x200) < 0x1000 it should equal FileAlignment(0x4)"
+      ],
+      "manifest": {
+        "found": true,
+        "seal_id": "SEAL-REGIONAL-FR",
+        "sealed_artifact": "sealed-archive/SEAL-REGIONAL-FR/Regional.Resources_1.0.0.0_fr-FR.dll",
+        "record_index": 4,
+        "sha256": "74588e7dbb0ba3b6875bcd08b9c1b64bb45cbf46538c81c6d7b278a6572f98e3",
+        "actual_sha256": "74588e7dbb0ba3b6875bcd08b9c1b64bb45cbf46538c81c6d7b278a6572f98e3",
+        "sha256_status": "verified",
+        "size_status": "verified",
+        "identity_checks": {
+          "name": "match",
+          "version": "match",
+          "culture": "evidence_missing",
+          "public_key_token": "match",
+          "mismatches": []
+        }
+      },
+      "evidence_gaps": [
+        "manifest.culture_missing"
+      ]
+    }
+  ],
+  "manifest": {
+    "path": "forensic_case/sealing-manifest.json",
+    "case_id": "FORENSIC-DNFILE-056",
+    "note": "确定性合成案卷，用于验证只读 AssemblyRef 与独立封存清单配对。",
+    "entry_count": 6
+  },
+  "reference_files": [
+    {
+      "path": "forensic_case/references/Dispatch.exe",
+      "metadata_available": true,
+      "module_name": "ForensicSample.Dispatch.dll",
+      "parse_errors": [],
+      "dnfile_warnings": [
+        "Byte 0x00 makes up 76.1719% of the file's contents. This may indicate truncation / malformation.",
+        "If SectionAlignment(0x200) < 0x1000 it should equal FileAlignment(0x4)"
+      ]
+    }
+  ],
+  "archive_dirs": [
+    "forensic_case/delivery"
+  ],
+  "manifest_path": "forensic_case/sealing-manifest.json"
+}
