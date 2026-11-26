@@ -53,6 +53,21 @@ Some of the tasks that pefile makes possible are:
 
 Please, refer to [Usage Examples](https://github.com/erocarrera/pefile/blob/wiki/UsageExamples.md#introduction) for some code snippets that demonstrate how to use _pefile_.
 
+### Read-only resource range audit
+
+`pefile.audit_resource_ranges(source_pe, target_pe, records)` checks export
+permission claims, converts section-relative source offsets through the actual
+section table, and compares the source bytes with target resource data-entry
+boundaries. Findings are classified as `verified_copy`, `candidate_only`, or
+`out_of_range_source`; each result retains section, RVA, raw range, and
+SHA-256 provenance without returning resource bytes.
+
+Run `python resource_range_audit.py --make-samples audit-demo` to generate two
+tiny benign PEs with different file/section alignments and a JSON provenance
+report. One payload occurs in two resource entries and remains a candidate;
+another payload occurs both in its resource boundary and section alignment
+padding, demonstrating how the data-entry boundary resolves the raw match.
+
 Here are a few examples of what a dump produced with _pefile_ looks like for different types of files:
 
 * [a packed file](https://github.com/erocarrera/pefile/blob/wiki/FullDump0x90.md)

@@ -22,6 +22,7 @@ __contact__ = "ero.carrera@gmail.com"
 
 import codecs
 import copy
+import json
 import math
 import mmap
 import os
@@ -7968,6 +7969,1608 @@ class PE:
                 self.SectionAlignment_Warning = True
 
         return cache_adjust_SectionAlignment(val, section_alignment, file_alignment)
+
+
+RESOURCE_RANGE_AUDIT_SCHEMA = "pefile.resource_range_audit/v1"
+
+RESOURCE_RANGE_VERIFIED = "verified_copy"
+RESOURCE_RANGE_CANDIDATE = "candidate_only"
+RESOURCE_RANGE_OUT_OF_RANGE = "out_of_range_source"
+RESOURCE_RANGE_NOT_FOUND = "not_found"
+RESOURCE_RANGE_EXPORT_DENIED = "export_denied"
+RESOURCE_RANGE_PERMISSION_REQUIRED = "permission_required"
+
+RESOURCE_RANGE_STATUS_EN = {
+    RESOURCE_RANGE_VERIFIED: "verified copy",
+    RESOURCE_RANGE_CANDIDATE: "candidate only",
+    RESOURCE_RANGE_OUT_OF_RANGE: "out-of-range source",
+    RESOURCE_RANGE_NOT_FOUND: "not found",
+    RESOURCE_RANGE_EXPORT_DENIED: "export denied",
+    RESOURCE_RANGE_PERMISSION_REQUIRED: "permission required",
+}
+
+RESOURCE_RANGE_SHORT_STATUS = {
+    RESOURCE_RANGE_VERIFIED: "verified",
+    RESOURCE_RANGE_CANDIDATE: "candidate",
+    RESOURCE_RANGE_OUT_OF_RANGE: "out_of_range",
+    RESOURCE_RANGE_NOT_FOUND: "not_found",
+    RESOURCE_RANGE_EXPORT_DENIED: "denied",
+    RESOURCE_RANGE_PERMISSION_REQUIRED: "permission_required",
+}
+
+RESOURCE_RANGE_STATUS_ZH = {
+    RESOURCE_RANGE_VERIFIED: "已核实拷贝",
+    RESOURCE_RANGE_CANDIDATE: "只能定位到候选",
+    RESOURCE_RANGE_OUT_OF_RANGE: "超范围来源",
+    RESOURCE_RANGE_NOT_FOUND: "未找到对应字节范围",
+    RESOURCE_RANGE_EXPORT_DENIED: "导出许可被拒绝",
+    RESOURCE_RANGE_PERMISSION_REQUIRED: "缺少明确导出许可",
+}
+
+_RESOURCE_AUDIT_CONTENT_KEYS = {
+    "data", "content", "payload", "bytes", "resource_bytes",
+    "raw_bytes", "blob", "resource_content",
+}
+
+_RESOURCE_AUDIT_TRUE = {
+    "1", "true", "yes", "y", "ok", "allowed", "allow", "approved",
+    "granted", "permitted", "exportable", "export_allowed",
+}
+_RESOURCE_AUDIT_FALSE = {
+    "0", "false", "no", "n", "denied", "revoked", "forbidden",
+    "blocked", "disallowed", "export_denied",
+}
+
+
+class ResourceRangeAuditReport(dict):
+    """JSON-serializable result of a read-only resource range audit."""
+
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError as exc:
+            raise AttributeError(name) from exc
+
+    @property
+    def findings(self):
+        return self.get("findings", [])
+
+    @property
+    def verified(self):
+        return [
+            item for item in self.findings
+            if item.get("classification") == RESOURCE_RANGE_VERIFIED
+        ]
+
+    @property
+    def candidates(self):
+        return [
+            item for item in self.findings
+            if item.get("classification") == RESOURCE_RANGE_CANDIDATE
+        ]
+
+    @property
+    def out_of_range(self):
+        return [
+            item for item in self.findings
+            if item.get("classification") == RESOURCE_RANGE_OUT_OF_RANGE
+        ]
+
+    def to_dict(self):
+        return _resource_audit_json_safe(self)
+
+    def to_json(self, **kwargs):
+        kwargs.setdefault("ensure_ascii", False)
+        kwargs.setdefault("indent", 2)
+        return json_dumps(self.to_dict(), **kwargs)
+
+
+def json_dumps(value, **kwargs):
+    """Serialize audit data as JSON."""
+    return json.dumps(value, **kwargs)
+
+
+def _resource_audit_json_safe(value):
+    if isinstance(value, ResourceRangeAuditReport):
+        return {k: _resource_audit_json_safe(v) for k, v in dict.items(value)}
+    if isinstance(value, dict):
+        return {str(k): _resource_audit_json_safe(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [_resource_audit_json_safe(v) for v in value]
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    if isinstance(value, (bytes, bytearray, memoryview)):
+        raw = bytes(value)
+        return {
+            "content_included": False,
+            "size_bytes": len(raw),
+            "sha256": sha256(raw).hexdigest(),
+        }
+    if isinstance(value, (os.PathLike,)):
+        return os.fspath(value)
+    return str(value)
+
+
+def _resource_audit_redact_content(value, key=None):
+    normalized_key = str(key).strip().lower().replace("-", "_") if key else ""
+    if isinstance(value, (bytes, bytearray, memoryview)):
+        raw = bytes(value)
+        return {
+            "content_included": False,
+            "size_bytes": len(raw),
+            "sha256": sha256(raw).hexdigest(),
+        }
+    if normalized_key in _RESOURCE_AUDIT_CONTENT_KEYS:
+        if isinstance(value, str):
+            raw = value.encode("utf-8", "replace")
+            return {
+                "content_included": False,
+                "length": len(value),
+                "sha256": sha256(raw).hexdigest(),
+            }
+        return {"content_included": False, "redacted": True}
+    if isinstance(value, dict):
+        return {
+            k: _resource_audit_redact_content(v, k)
+            for k, v in value.items()
+        }
+    if isinstance(value, (list, tuple)):
+        return [_resource_audit_redact_content(item) for item in value]
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    if isinstance(value, os.PathLike):
+        return os.fspath(value)
+    return str(value)
+
+
+def _resource_audit_int(value, default=None):
+    if value is None or isinstance(value, bool):
+        return default
+    if isinstance(value, int):
+        return value
+    if isinstance(value, bytes):
+        value = value.decode("ascii", "replace")
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return default
+        try:
+            return int(text, 0)
+        except ValueError:
+            try:
+                return int(text)
+            except ValueError:
+                return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _resource_audit_name(value):
+    if value is None:
+        return None
+    if isinstance(value, bytes):
+        return value.split(b"\0", 1)[0].decode("utf-8", "replace")
+    return str(value)
+
+
+def _resource_audit_section_info(section, index):
+    raw_offset = _resource_audit_int(getattr(section, "PointerToRawData", 0), 0)
+    raw_size = _resource_audit_int(getattr(section, "SizeOfRawData", 0), 0)
+    virtual_address = _resource_audit_int(getattr(section, "VirtualAddress", 0), 0)
+    virtual_size = _resource_audit_int(getattr(section, "Misc_VirtualSize", 0), 0)
+    try:
+        name_bytes = section.get_name()
+    except Exception:
+        name_bytes = getattr(section, "Name", b"")
+    name = _resource_audit_name(name_bytes) or ""
+    return {
+        "index": index,
+        "name": name,
+        "raw_offset": raw_offset,
+        "raw_end_exclusive": raw_offset + raw_size,
+        "raw_size": raw_size,
+        "virtual_address": virtual_address,
+        "virtual_size": virtual_size,
+        "characteristics": _resource_audit_int(
+            getattr(section, "Characteristics", 0), 0
+        ),
+    }
+
+
+def _resource_audit_raw_section(sections, offset):
+    if offset is None:
+        return None
+    for index, section in enumerate(sections):
+        start = section["raw_offset"]
+        end = section["raw_end_exclusive"]
+        if start <= offset < end:
+            return index
+    return None
+
+
+def _resource_audit_range_info(context, start, size, *, data_entry_offset=None):
+    data = context["data"]
+    sections = context["sections"]
+    size = max(0, _resource_audit_int(size, 0))
+    end = start + size
+    section_index = _resource_audit_raw_section(sections, start)
+    section = sections[section_index] if section_index is not None else None
+    valid = (
+        isinstance(start, int)
+        and start >= 0
+        and size >= 0
+        and end <= len(data)
+    )
+    if section is not None and end > section["raw_end_exclusive"]:
+        crosses_section_boundary = True
+    else:
+        crosses_section_boundary = False
+
+    rva = None
+    pe = context["pe"]
+    try:
+        rva = int(pe.get_rva_from_offset(start))
+    except Exception:
+        rva = None
+
+    digest = None
+    if valid and size:
+        digest = sha256(data[start:end]).hexdigest()
+
+    return {
+        "raw_offset": start,
+        "raw_end_exclusive": end,
+        "size_bytes": size,
+        "valid_file_range": valid,
+        "section_index": section_index,
+        "section_name": section["name"] if section else None,
+        "section_offset": start - section["raw_offset"] if section else None,
+        "rva": rva,
+        "data_entry_file_offset": data_entry_offset,
+        "crosses_section_raw_boundary": crosses_section_boundary,
+        "sha256": digest,
+    }
+
+
+def _resource_audit_entry_name(entry):
+    name = getattr(entry, "name", None)
+    if name is None:
+        return None
+    return _resource_audit_name(name)
+
+
+def _resource_audit_inventory(context):
+    pe = context["pe"]
+    resources = []
+    root = getattr(pe, "DIRECTORY_ENTRY_RESOURCE", None)
+    if root is None:
+        return resources
+
+    type_names = {value: key for key, value in RESOURCE_TYPE.items()}
+
+    for type_entry in getattr(root, "entries", []) or []:
+        type_id = getattr(type_entry, "id", None)
+        type_name = _resource_audit_entry_name(type_entry)
+        if type_name is None and type_id in type_names:
+            type_name = type_names[type_id]
+        type_directory = getattr(type_entry, "directory", None)
+
+        for resource_entry in getattr(type_directory, "entries", []) or []:
+            resource_id = getattr(resource_entry, "id", None)
+            resource_name = _resource_audit_entry_name(resource_entry)
+            resource_directory = getattr(resource_entry, "directory", None)
+
+            for language_entry in getattr(resource_directory, "entries", []) or []:
+                data_container = getattr(language_entry, "data", None)
+                struct = getattr(data_container, "struct", None)
+                if struct is None:
+                    continue
+
+                rva = _resource_audit_int(getattr(struct, "OffsetToData", None))
+                size = _resource_audit_int(getattr(struct, "Size", 0), 0)
+                data_entry_offset = None
+                get_offset = getattr(struct, "get_file_offset", None)
+                if callable(get_offset):
+                    data_entry_offset = _resource_audit_int(get_offset())
+
+                raw_offset = None
+                try:
+                    raw_offset = _resource_audit_int(pe.get_offset_from_rva(rva))
+                except Exception:
+                    raw_offset = None
+
+                bounds_valid = (
+                    raw_offset is not None
+                    and rva is not None
+                    and size is not None
+                    and size >= 0
+                    and raw_offset >= 0
+                    and raw_offset + size <= len(context["data"])
+                )
+                raw_end = raw_offset + size if raw_offset is not None else None
+                section_index = None
+                if raw_offset is not None:
+                    section_index = _resource_audit_raw_section(
+                        context["sections"], raw_offset
+                    )
+                section = (
+                    context["sections"][section_index]
+                    if section_index is not None else None
+                )
+                raw_bytes = None
+                digest = None
+                if bounds_valid:
+                    raw_bytes = context["data"][raw_offset:raw_end]
+                    digest = sha256(raw_bytes).hexdigest()
+
+                resources.append({
+                    "index": len(resources),
+                    "type_id": type_id,
+                    "type_name": type_name,
+                    "resource_id": resource_id,
+                    "resource_name": resource_name,
+                    "language_id": getattr(data_container, "lang", None),
+                    "sublanguage_id": getattr(data_container, "sublang", None),
+                    "entry_language_id": getattr(language_entry, "id", None),
+                    "rva": rva,
+                    "size": size,
+                    "raw_offset": raw_offset,
+                    "raw_end_exclusive": raw_end,
+                    "data_entry_file_offset": data_entry_offset,
+                    "section_index": section_index,
+                    "section_name": section["name"] if section else None,
+                    "section_offset": (
+                        raw_offset - section["raw_offset"] if section else None
+                    ),
+                    "bounds_valid": bounds_valid,
+                    "sha256": digest,
+                    "bytes": raw_bytes,
+                })
+    return resources
+
+
+def _resource_audit_load_context(source, role):
+    path = None
+    if isinstance(source, (str, os.PathLike)):
+        path = os.fspath(source)
+        with open(path, "rb") as handle:
+            data = handle.read()
+        pe = PE(data=data, fast_load=True)
+    elif isinstance(source, (bytes, bytearray, memoryview)):
+        data = bytes(source)
+        pe = PE(data=data, fast_load=True)
+    elif isinstance(source, PE):
+        pe = source
+        data = bytes(getattr(pe, "__data__", b"") or b"")
+        if not data:
+            try:
+                data = bytes(pe.trim())
+            except Exception:
+                data = b""
+    else:
+        raise TypeError(
+            "resource audit input must be a path, bytes, or pefile.PE instance"
+        )
+
+    if not hasattr(pe, "DIRECTORY_ENTRY_RESOURCE"):
+        try:
+            pe.parse_data_directories(directories=[
+                DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_RESOURCE"]
+            ])
+        except Exception as exc:
+            pe.__warnings__.append(f"resource range audit could not parse resources: {exc}")
+
+    sections = [
+        _resource_audit_section_info(section, index)
+        for index, section in enumerate(getattr(pe, "sections", []) or [])
+    ]
+    context = {
+        "role": role,
+        "path": path,
+        "name": (
+            str(path).replace("\\\\", "/").rstrip("/").rsplit("/", 1)[-1]
+            if path else f"<{role}:pefile.PE>"
+        ),
+        "data": data,
+        "pe": pe,
+        "sha256": sha256(data).hexdigest() if data else None,
+        "file_size": len(data),
+        "sections": sections,
+        "resources": [],
+    }
+    context["resources"] = _resource_audit_inventory(context)
+    return context
+
+
+def _resource_audit_artifact_provenance(context):
+    pe = context["pe"]
+    optional = getattr(pe, "OPTIONAL_HEADER", None)
+    file_header = getattr(pe, "FILE_HEADER", None)
+    return {
+        "role": context["role"],
+        "path": context["path"],
+        "name": context["name"],
+        "size_bytes": context["file_size"],
+        "sha256": context["sha256"],
+        "pefile_version": __version__,
+        "machine": _resource_audit_int(getattr(file_header, "Machine", None)),
+        "number_of_sections": _resource_audit_int(
+            getattr(file_header, "NumberOfSections", None)
+        ),
+        "optional_magic": _resource_audit_int(getattr(optional, "Magic", None)),
+        "section_alignment": _resource_audit_int(
+            getattr(optional, "SectionAlignment", None)
+        ),
+        "file_alignment": _resource_audit_int(
+            getattr(optional, "FileAlignment", None)
+        ),
+        "sections": [dict(section) for section in context["sections"]],
+        "resource_entry_count": len(context["resources"]),
+    }
+
+
+def _resource_audit_leaf_provenance(context, leaf):
+    if leaf is None:
+        return None
+    range_info = None
+    if leaf.get("raw_offset") is not None:
+        range_info = _resource_audit_range_info(
+            context,
+            leaf["raw_offset"],
+            leaf["size"],
+            data_entry_offset=leaf.get("data_entry_file_offset"),
+        )
+    return {
+        "kind": "pe_resource_data_entry",
+        "resource_path": {
+            "type_id": leaf.get("type_id"),
+            "type_name": leaf.get("type_name"),
+            "resource_id": leaf.get("resource_id"),
+            "resource_name": leaf.get("resource_name"),
+            "language_id": leaf.get("language_id"),
+            "entry_language_id": leaf.get("entry_language_id"),
+            "sublanguage_id": leaf.get("sublanguage_id"),
+        },
+        "rva": leaf.get("rva"),
+        "section_name": leaf.get("section_name"),
+        "section_index": leaf.get("section_index"),
+        "section_offset": leaf.get("section_offset"),
+        "raw_offset": leaf.get("raw_offset"),
+        "raw_end_exclusive": leaf.get("raw_end_exclusive"),
+        "size_bytes": leaf.get("size"),
+        "data_entry_file_offset": leaf.get("data_entry_file_offset"),
+        "bounds_valid": leaf.get("bounds_valid"),
+        "sha256": leaf.get("sha256"),
+        "range": range_info,
+        "artifact": {
+            "role": context["role"],
+            "name": context["name"],
+            "path": context["path"],
+            "sha256": context["sha256"],
+        },
+    }
+
+
+def _resource_audit_normalized_record(record):
+    if isinstance(record, dict):
+        raw = record
+    elif hasattr(record, "_asdict"):
+        raw = record._asdict()
+    elif hasattr(record, "__dict__"):
+        raw = vars(record)
+    else:
+        raw = {"value": record}
+
+    normalized = {}
+    for key, value in raw.items():
+        normalized[str(key).strip().lower().replace("-", "_")] = value
+    return raw, normalized
+
+
+def _resource_audit_get(normalized, names, default=None):
+    for name in names:
+        key = name.strip().lower().replace("-", "_")
+        if key in normalized and normalized[key] is not None:
+            return normalized[key]
+    return default
+
+
+def _resource_audit_permission_value(value):
+    if value is None:
+        return None, "unknown"
+    if isinstance(value, dict):
+        for key in ("allowed", "export_allowed", "permitted", "granted", "approved"):
+            if key in value:
+                granted, status = _resource_audit_permission_value(value[key])
+                return granted, status
+        decision = value.get("status") or value.get("decision") or value.get("state")
+        if decision is not None:
+            return _resource_audit_permission_value(decision)
+        return None, "unknown"
+    if isinstance(value, bool):
+        return value, "granted" if value else "denied"
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        granted = bool(value)
+        return granted, "granted" if granted else "denied"
+    text = str(value).strip().lower().replace("-", "_").replace(" ", "_")
+    if text in _RESOURCE_AUDIT_TRUE:
+        return True, "granted"
+    if text in _RESOURCE_AUDIT_FALSE:
+        return False, "denied"
+    return None, "unknown"
+
+
+def _resource_audit_permission(normalized, item_id, export_permissions):
+    evidence_keys = (
+        "export_permission", "export_permit", "export_allowed", "allow_export",
+        "permission", "license", "licence", "clearance", "export_id",
+        "export_ticket", "ticket", "grant", "approval", "approved_by",
+    )
+    evidence = {}
+    for key in evidence_keys:
+        value = _resource_audit_get(normalized, [key])
+        if value is not None:
+            evidence[key] = value
+    evidence = _resource_audit_redact_content(evidence)
+
+    value = _resource_audit_get(normalized, [
+        "export_allowed", "allowed", "permitted", "is_allowed",
+        "export_permitted", "can_export", "licensed", "has_license",
+        "export_permission", "permission", "license_permission",
+    ])
+    granted, status = _resource_audit_permission_value(value)
+    source = "processing_record"
+
+    global_value = None
+    if isinstance(export_permissions, dict):
+        if item_id in export_permissions:
+            global_value = export_permissions[item_id]
+        else:
+            for key in (str(item_id),):
+                if key in export_permissions:
+                    global_value = export_permissions[key]
+    elif isinstance(export_permissions, (list, tuple, set)):
+        if item_id in export_permissions or str(item_id) in export_permissions:
+            global_value = True
+
+    if global_value is not None:
+        global_granted, global_status = _resource_audit_permission_value(global_value)
+        if granted is None:
+            granted, status = global_granted, global_status
+            source = "export_permissions_argument"
+        elif global_granted is False:
+            granted, status = False, "denied"
+            source = "record_and_export_permissions_argument"
+
+    return {
+        "granted": granted,
+        "status": status,
+        "verified": status == "granted",
+        "source": source,
+        "evidence": evidence,
+    }
+
+
+def _resource_audit_record_id(normalized, index):
+    value = _resource_audit_get(normalized, [
+        "id", "item_id", "record_id", "resource_id", "resource", "name",
+        "label", "reference", "ticket",
+    ])
+    if value is None:
+        return f"record-{index + 1}"
+    return value
+
+
+def _resource_audit_resolve_section(context, value):
+    sections = context["sections"]
+    if value is None:
+        return None, None
+    index = _resource_audit_int(value)
+    if index is not None and not isinstance(value, (str, bytes)):
+        if -len(sections) <= index < len(sections):
+            return index, None
+        return None, f"section index {index} is outside the section table"
+
+    wanted = _resource_audit_name(value)
+    if wanted is None:
+        return None, "section reference is invalid"
+    wanted_text = wanted.strip().lower()
+    normalized_wanted = wanted_text.lstrip(".")
+    for index, section in enumerate(sections):
+        name = section["name"] or ""
+        if name == wanted or name.lower() == wanted_text:
+            return index, None
+        if name.lower().lstrip(".") == normalized_wanted:
+            return index, None
+    numeric = _resource_audit_int(wanted)
+    if numeric is not None and 0 <= numeric < len(sections):
+        return numeric, None
+    return None, f"section {wanted!r} was not found"
+
+
+def _resource_audit_record_range(normalized):
+    range_value = _resource_audit_get(normalized, [
+        "range", "byte_range", "extent", "file_range", "source_range",
+    ])
+    start = end = None
+    if isinstance(range_value, dict):
+        start = _resource_audit_int(range_value.get("start") or range_value.get("begin"))
+        end = _resource_audit_int(
+            range_value.get("end") or range_value.get("end_exclusive")
+        )
+    elif isinstance(range_value, (list, tuple)) and len(range_value) >= 2:
+        start = _resource_audit_int(range_value[0])
+        end = _resource_audit_int(range_value[1])
+
+    size = _resource_audit_get(normalized, [
+        "size", "length", "data_size", "range_size", "byte_count",
+        "resource_size", "claimed_size",
+    ])
+    size = _resource_audit_int(size)
+    if start is None:
+        start = _resource_audit_int(_resource_audit_get(normalized, [
+            "section_offset", "source_section_offset", "original_section_offset",
+            "offset_in_section", "relative_offset", "section_relative_offset",
+            "offset", "source_offset", "original_offset",
+        ]))
+    if end is None and start is not None and size is not None:
+        end = start + size
+    if size is None and start is not None and end is not None and end >= start:
+        size = end - start
+
+    absolute_offset = _resource_audit_int(_resource_audit_get(normalized, [
+        "raw_offset", "file_offset", "absolute_offset",
+        "source_file_offset", "raw_start",
+    ]))
+    rva = _resource_audit_int(_resource_audit_get(normalized, [
+        "rva", "relative_virtual_address", "offset_to_data",
+    ]))
+    return start, size, end, absolute_offset, rva
+
+
+def _resource_audit_hints(normalized):
+    target = _resource_audit_get(normalized, ["target", "expected_target", "target_resource"])
+    target_values = target if isinstance(target, dict) else {}
+
+    def hint(keys, target_keys):
+        value = _resource_audit_get(normalized, keys)
+        if value is None and isinstance(target_values, dict):
+            for key in target_keys:
+                key = key.lower().replace("-", "_")
+                if key in target_values:
+                    value = target_values[key]
+                    break
+        return value
+
+    resource_type = hint(
+        ["type", "type_id", "resource_type", "resource_type_id"],
+        ["type", "type_id", "resource_type"],
+    )
+    if isinstance(resource_type, str):
+        resource_type = RESOURCE_TYPE.get(resource_type, resource_type)
+        resource_type = _resource_audit_int(resource_type, resource_type)
+    resource_id = hint(
+        [
+            "target_resource_id", "target_id", "expected_resource_id",
+            "resource_id", "resource_name_id",
+        ],
+        ["resource_id", "target_id", "id"],
+    )
+    language = hint(
+        [
+            "target_language_id", "target_language", "language",
+            "lang", "language_id", "lcid",
+        ],
+        ["language", "lang", "language_id"],
+    )
+    return {
+        "type": resource_type,
+        "resource_id": resource_id,
+        "name": hint(
+            ["target_resource_name", "target_name", "resource_name", "name"],
+            ["resource_name", "name"],
+        ),
+        "language": _resource_audit_int(language, language),
+    }
+
+
+def _resource_audit_hint_matches(leaf, hints):
+    if hints.get("type") is not None:
+        wanted_type = hints["type"]
+        if (leaf.get("type_id") != wanted_type
+                and leaf.get("type_name") != wanted_type):
+            return False
+    if hints.get("resource_id") is not None:
+        wanted_id = _resource_audit_int(hints["resource_id"], hints["resource_id"])
+        if leaf.get("resource_id") != wanted_id:
+            return False
+    if hints.get("name") is not None and leaf.get("resource_name") != hints["name"]:
+        return False
+    if hints.get("language") is not None:
+        wanted_language = _resource_audit_int(hints["language"], hints["language"])
+        if (leaf.get("language_id") != wanted_language
+                and leaf.get("entry_language_id") != wanted_language):
+            return False
+    return True
+
+
+def _resource_audit_find_source_leaf(context, section_index, section_offset, raw_start, rva):
+    exact = []
+    containing = []
+    for leaf in context["resources"]:
+        if not leaf.get("bounds_valid"):
+            continue
+        if raw_start is not None and leaf.get("raw_offset") == raw_start:
+            exact.append(leaf)
+            continue
+        if rva is not None and leaf.get("rva") == rva:
+            exact.append(leaf)
+            continue
+        if section_index is not None and leaf.get("section_index") == section_index:
+            if section_offset is not None and leaf.get("section_offset") == section_offset:
+                exact.append(leaf)
+                continue
+            data_entry = leaf.get("data_entry_file_offset")
+            section = context["sections"][section_index]
+            if data_entry is not None:
+                data_entry_section_offset = data_entry - section["raw_offset"]
+                if section_offset == data_entry_section_offset:
+                    exact.append(leaf)
+                    continue
+            if (section_offset is not None
+                    and leaf["section_offset"] <= section_offset
+                    < leaf["section_offset"] + leaf["size"]):
+                containing.append(leaf)
+    return exact, containing
+
+
+def _resource_audit_location_class(context, offset, end):
+    sections = context["sections"]
+    index = _resource_audit_raw_section(sections, offset)
+    if index is not None:
+        section = sections[index]
+        virtual_size = section.get("virtual_size") or 0
+        raw_start = section["raw_offset"]
+        if virtual_size and offset >= raw_start + virtual_size:
+            return "section_alignment_padding"
+        return "section_raw_data"
+
+    if offset < (context["pe"].OPTIONAL_HEADER.SizeOfHeaders or 0):
+        return "pe_headers"
+
+    previous_end = 0
+    next_start = None
+    for section in sections:
+        if section["raw_end_exclusive"] <= offset:
+            previous_end = max(previous_end, section["raw_end_exclusive"])
+        if section["raw_offset"] >= end and (
+                next_start is None or section["raw_offset"] < next_start):
+            next_start = section["raw_offset"]
+    if previous_end <= offset and next_start is not None and end <= next_start:
+        return "alignment_gap_between_sections"
+
+    last_end = max((section["raw_end_exclusive"] for section in sections), default=0)
+    if offset >= last_end:
+        return "overlay_or_trailing_file_bytes"
+    return "unmapped_file_bytes"
+
+
+def _resource_audit_raw_candidates(context, needle, max_candidates):
+    if not needle:
+        return []
+    data = context["data"]
+    candidates = []
+    position = data.find(needle)
+    while position >= 0 and len(candidates) < max_candidates:
+        end = position + len(needle)
+        section_index = _resource_audit_raw_section(context["sections"], position)
+        relations = []
+        related_resources = []
+        for leaf in context["resources"]:
+            if not leaf.get("bounds_valid") or leaf.get("raw_offset") is None:
+                continue
+            leaf_start = leaf["raw_offset"]
+            leaf_end = leaf["raw_end_exclusive"]
+            relation = None
+            if position == leaf_start and end == leaf_end:
+                relation = "exact_resource_range"
+            elif leaf_start <= position and end <= leaf_end:
+                relation = "inside_resource_range"
+            elif position <= leaf_start and leaf_end <= end:
+                relation = "resource_range_inside_match"
+            elif position < leaf_end and leaf_start < end:
+                relation = "overlaps_resource_range"
+            if relation:
+                relations.append(relation)
+                related_resources.append(
+                    _resource_audit_leaf_provenance(context, leaf)
+                )
+        range_info = _resource_audit_range_info(context, position, len(needle))
+        candidates.append({
+            "kind": "raw_byte_occurrence",
+            "confidence": "candidate",
+            "location_class": _resource_audit_location_class(context, position, end),
+            "resource_relations": sorted(set(relations)),
+            "related_resources": related_resources,
+            "range": range_info,
+            "raw_offset": position,
+            "raw_end_exclusive": end,
+            "section_index": section_index,
+            "section_name": (
+                context["sections"][section_index]["name"]
+                if section_index is not None else None
+            ),
+            "section_offset": range_info["section_offset"],
+            "sha256": sha256(needle).hexdigest(),
+            "artifact": {
+                "role": context["role"],
+                "name": context["name"],
+                "path": context["path"],
+                "sha256": context["sha256"],
+            },
+        })
+        position = data.find(needle, position + 1)
+    return candidates
+
+
+def _resource_audit_match_target(target_context, source_bytes, hints,
+                                 include_raw_occurrences, max_candidates):
+    exact = []
+    for leaf in target_context["resources"]:
+        if not leaf.get("bounds_valid") or leaf.get("bytes") is None:
+            continue
+        if leaf["bytes"] == source_bytes:
+            exact.append(leaf)
+
+    hinted = [leaf for leaf in exact if _resource_audit_hint_matches(leaf, hints)]
+    hint_used = bool(hints and any(v is not None for v in hints.values()))
+    if hint_used and hinted:
+        selected_pool = hinted
+        disambiguated = len(exact) > 1 and len(hinted) == 1
+    else:
+        selected_pool = exact
+        disambiguated = False
+
+    raw_candidates = []
+    if include_raw_occurrences:
+        raw_candidates = _resource_audit_raw_candidates(
+            target_context, source_bytes, max_candidates
+        )
+
+    return {
+        "exact": exact,
+        "selected": selected_pool,
+        "hint_used": hint_used and bool(hinted),
+        "hint_fell_back": hint_used and not hinted,
+        "disambiguated": disambiguated,
+        "raw_candidates": raw_candidates,
+    }
+
+
+def _resource_audit_base_finding(index, record_id, record_raw, permission):
+    return {
+        "index": index,
+        "id": record_id,
+        "record_id": record_id,
+        "status": None,
+        "classification": None,
+        "classification_zh": None,
+        "verified": False,
+        "copy_verified": False,
+        "is_verified": False,
+        "is_candidate": False,
+        "is_ambiguous": False,
+        "is_out_of_range": False,
+        "authorized": permission["granted"],
+        "export_allowed": permission["granted"],
+        "export_permitted": permission["granted"],
+        "permitted": permission["granted"],
+        "licensed": permission["granted"],
+        "export_permission_status": permission["status"],
+        "export_permission_verified": permission["verified"],
+        "export_permission": permission,
+        "reasons": [],
+        "warnings": [],
+        "candidates": [],
+        "source": None,
+        "target": None,
+        "provenance": {},
+        "content_included": False,
+        "record": _resource_audit_redact_content(record_raw),
+    }
+
+
+def audit_resource_ranges(source=None, target=None, records=None, **kwargs):
+    """Audit export permission, source ranges, and target PE resource bounds.
+
+    The function is read-only.  Reports contain offset, section, RVA, size and
+    hash provenance, but never resource bytes.
+    """
+    def is_pe_like(value):
+        return isinstance(value, (PE, str, os.PathLike, bytes, bytearray))
+
+    if (isinstance(source, (list, dict))
+            and is_pe_like(target) and is_pe_like(records)):
+        records, source, target = source, target, records
+    elif (is_pe_like(source) and isinstance(target, (list, dict))
+            and is_pe_like(records)):
+        records, target = target, records
+
+    if source is None:
+        for key in ("source_pe", "original_pe", "sealed_pe", "sealed_source",
+                    "original", "src", "source_path", "original_path"):
+            if key in kwargs:
+                source = kwargs.pop(key)
+                break
+    if target is None:
+        for key in ("target_pe", "new_pe", "new_tool", "destination_pe",
+                    "destination", "dest", "target_path", "new_path"):
+            if key in kwargs:
+                target = kwargs.pop(key)
+                break
+    if records is None:
+        for key in ("processing_records", "log_records", "range_records",
+                    "entries"):
+            if key in kwargs:
+                records = kwargs.pop(key)
+                break
+
+    if (source is not None and target is None and records is None
+            and isinstance(source, (list, dict))):
+        manifest = source
+        source = kwargs.pop("source", None)
+        target = kwargs.pop("target", None)
+        if isinstance(manifest, list):
+            records = manifest
+    else:
+        manifest = kwargs.pop("manifest", None)
+
+    if (isinstance(source, (str, os.PathLike))
+            and target is None and records is None
+            and str(source).lower().endswith(".json")):
+        with open(source, encoding="utf-8") as handle:
+            manifest = json.load(handle)
+        source = None
+
+    if isinstance(manifest, dict):
+        source = source or manifest.get("source") or manifest.get("source_pe")
+        target = target or manifest.get("target") or manifest.get("target_pe")
+        if records is None:
+            records = (
+                manifest.get("records")
+                or manifest.get("items")
+                or manifest.get("transfers")
+                or manifest.get("resources")
+            )
+        kwargs.setdefault(
+            "export_permissions",
+            manifest.get("export_permissions") or manifest.get("permissions"),
+        )
+
+    if records is None:
+        records = kwargs.pop("transfers", None)
+    if records is None:
+        records = kwargs.pop("items", None)
+    if records is None:
+        records = []
+    if isinstance(records, dict):
+        records = (
+            records.get("records")
+            or records.get("items")
+            or records.get("transfers")
+            or [records]
+        )
+
+    export_permissions = kwargs.get("export_permissions")
+    require_permission = bool(kwargs.get("require_export_permission", False))
+    include_raw = bool(kwargs.get("include_raw_occurrences", True))
+    max_candidates = max(1, int(kwargs.get("max_candidates", 100)))
+
+    source_context = _resource_audit_load_context(source, "source")
+    target_context = _resource_audit_load_context(target, "target")
+    auditor = ResourceRangeAuditor(
+        source_context,
+        target_context,
+        export_permissions=export_permissions,
+        require_export_permission=require_permission,
+        include_raw_occurrences=include_raw,
+        max_candidates=max_candidates,
+    )
+    return auditor.audit(records)
+
+
+class ResourceRangeAuditor:
+    """Stateful read-only auditor for one sealed source and one new PE."""
+
+    def __init__(self, source, target=None, *, export_permissions=None,
+                 require_export_permission=False,
+                 include_raw_occurrences=True, max_candidates=100):
+        if isinstance(source, dict) and "data" in source and "pe" in source:
+            self.source_context = source
+        else:
+            self.source_context = _resource_audit_load_context(source, "source")
+        if isinstance(target, dict) and "data" in target and "pe" in target:
+            self.target_context = target
+        else:
+            self.target_context = _resource_audit_load_context(target, "target")
+        self.export_permissions = export_permissions
+        self.require_export_permission = require_export_permission
+        self.include_raw_occurrences = include_raw_occurrences
+        self.max_candidates = max(1, int(max_candidates))
+
+    def audit(self, records):
+        if isinstance(records, dict):
+            records = [records]
+        findings = []
+        for index, record in enumerate(records or []):
+            if isinstance(record, int) and not isinstance(record, bool):
+                record = {"section_offset": record}
+            elif isinstance(record, str):
+                offset = _resource_audit_int(record)
+                if offset is not None:
+                    record = {"section_offset": offset}
+            findings.append(self.audit_one(record, index))
+
+        summary = {
+            "total": len(findings),
+            RESOURCE_RANGE_VERIFIED: 0,
+            RESOURCE_RANGE_CANDIDATE: 0,
+            RESOURCE_RANGE_OUT_OF_RANGE: 0,
+            RESOURCE_RANGE_NOT_FOUND: 0,
+            RESOURCE_RANGE_EXPORT_DENIED: 0,
+            RESOURCE_RANGE_PERMISSION_REQUIRED: 0,
+        }
+        for finding in findings:
+            classification = finding["classification"]
+            if classification in (
+                RESOURCE_RANGE_VERIFIED,
+                RESOURCE_RANGE_CANDIDATE,
+                RESOURCE_RANGE_OUT_OF_RANGE,
+                RESOURCE_RANGE_NOT_FOUND,
+            ):
+                summary[classification] += 1
+            if finding["status"] == RESOURCE_RANGE_EXPORT_DENIED:
+                summary[RESOURCE_RANGE_EXPORT_DENIED] += 1
+            if finding["status"] == RESOURCE_RANGE_PERMISSION_REQUIRED:
+                summary[RESOURCE_RANGE_PERMISSION_REQUIRED] += 1
+
+        verified_findings = [
+            item for item in findings
+            if item["classification"] == RESOURCE_RANGE_VERIFIED
+        ]
+        candidate_findings = [
+            item for item in findings
+            if item["classification"] == RESOURCE_RANGE_CANDIDATE
+        ]
+        out_of_range_findings = [
+            item for item in findings
+            if item["classification"] == RESOURCE_RANGE_OUT_OF_RANGE
+        ]
+
+        classification_counts = {
+            RESOURCE_RANGE_VERIFIED: len(verified_findings),
+            RESOURCE_RANGE_CANDIDATE: len(candidate_findings),
+            RESOURCE_RANGE_OUT_OF_RANGE: len(out_of_range_findings),
+            "verified": len(verified_findings),
+            "candidate": len(candidate_findings),
+            "ambiguous": len(candidate_findings),
+            "out_of_range": len(out_of_range_findings),
+            "out_of_bounds": len(out_of_range_findings),
+            "已核实拷贝": len(verified_findings),
+            "只能定位到候选": len(candidate_findings),
+            "超范围来源": len(out_of_range_findings),
+        }
+
+        return ResourceRangeAuditReport({
+            "schema": RESOURCE_RANGE_AUDIT_SCHEMA,
+            "read_only": True,
+            "content_included": False,
+            "status_labels_zh": RESOURCE_RANGE_STATUS_ZH,
+            "status_labels_en": RESOURCE_RANGE_STATUS_EN,
+            "summary": summary,
+            "counts": classification_counts,
+            "classification_counts": classification_counts,
+            "source": _resource_audit_artifact_provenance(self.source_context),
+            "target": _resource_audit_artifact_provenance(self.target_context),
+            "findings": findings,
+            "results": findings,
+            "items": findings,
+            "verified": verified_findings,
+            "candidates": candidate_findings,
+            "candidate_only": candidate_findings,
+            "ambiguous": candidate_findings,
+            "out_of_range": out_of_range_findings,
+            "out_of_range_source": out_of_range_findings,
+            "out_of_bounds": out_of_range_findings,
+            "verified_ids": [item["id"] for item in verified_findings],
+            "candidate_ids": [item["id"] for item in candidate_findings],
+            "out_of_range_ids": [item["id"] for item in out_of_range_findings],
+        })
+
+    def audit_one(self, record, index=0):
+        record_raw, normalized = _resource_audit_normalized_record(record)
+        item_id = _resource_audit_record_id(normalized, index)
+        permission = _resource_audit_permission(
+            normalized, item_id, self.export_permissions
+        )
+        finding = _resource_audit_base_finding(
+            index, item_id, record_raw, permission
+        )
+        hints = _resource_audit_hints(normalized)
+
+        section_value = _resource_audit_get(normalized, [
+            "section", "section_name", "source_section",
+            "origin_section", "pe_section",
+        ])
+        section_index, section_error = _resource_audit_resolve_section(
+            self.source_context, section_value
+        )
+        section_offset, size, end, absolute_offset, rva = (
+            _resource_audit_record_range(normalized)
+        )
+
+        raw_start = None
+        locator_kind = None
+        if absolute_offset is not None:
+            raw_start = absolute_offset
+            locator_kind = "absolute_raw_offset"
+            if section_index is None:
+                section_index = _resource_audit_raw_section(
+                    self.source_context["sections"], raw_start
+                )
+        elif rva is not None:
+            locator_kind = "rva"
+            try:
+                raw_start = int(self.source_context["pe"].get_offset_from_rva(rva))
+            except Exception as exc:
+                finding["reasons"].append(f"source RVA cannot be mapped: {exc}")
+            if raw_start is not None and section_index is None:
+                section_index = _resource_audit_raw_section(
+                    self.source_context["sections"], raw_start
+                )
+        elif section_offset is not None:
+            locator_kind = "section_offset"
+            if section_index is not None:
+                raw_start = (
+                    self.source_context["sections"][section_index]["raw_offset"]
+                    + section_offset
+                )
+            else:
+                matches = []
+                for candidate_index, section in enumerate(
+                        self.source_context["sections"]):
+                    candidate_start = section["raw_offset"] + section_offset
+                    if 0 <= section_offset < section["raw_size"]:
+                        matches.append((candidate_index, candidate_start))
+                if len(matches) == 1:
+                    section_index, raw_start = matches[0]
+                elif matches:
+                    resource_matches = []
+                    for candidate_index, candidate_start in matches:
+                        exact, _ = _resource_audit_find_source_leaf(
+                            self.source_context, candidate_index,
+                            section_offset, candidate_start, None,
+                        )
+                        if exact:
+                            resource_matches.append(
+                                (candidate_index, candidate_start, exact[0])
+                            )
+                    if len(resource_matches) == 1:
+                        section_index, raw_start, _ = resource_matches[0]
+                    else:
+                        finding["reasons"].append(
+                            "section offset is ambiguous without a section name"
+                        )
+
+        if section_error:
+            finding["reasons"].append(section_error)
+
+        out_of_range_reason = self._source_range_error(
+            section_index, section_offset, raw_start, size
+        )
+        if out_of_range_reason:
+            finding["classification"] = RESOURCE_RANGE_OUT_OF_RANGE
+            finding["classification_zh"] = RESOURCE_RANGE_STATUS_ZH[
+                RESOURCE_RANGE_OUT_OF_RANGE
+            ]
+            finding["status"] = self._permission_status(
+                RESOURCE_RANGE_OUT_OF_RANGE, permission
+            )
+            finding["reasons"].append(out_of_range_reason)
+            finding["source"] = self._source_failure_provenance(
+                section_index, section_offset, raw_start, size, rva,
+                locator_kind,
+            )
+            finding["provenance"] = {
+                "export_permission": permission,
+                "source": finding["source"],
+                "target": None,
+            }
+            self._add_flat_aliases(finding)
+            return finding
+
+        exact_leaves, containing_leaves = _resource_audit_find_source_leaf(
+            self.source_context, section_index, section_offset,
+            raw_start, rva,
+        )
+        source_leaf = exact_leaves[0] if exact_leaves else None
+        if len(exact_leaves) > 1:
+            finding["warnings"].append(
+                "multiple source resource entries match the recorded offset"
+            )
+
+        chosen_start = raw_start
+        chosen_size = size
+        if source_leaf is not None and source_leaf.get("bounds_valid"):
+            if size is None:
+                size = source_leaf["size"]
+                chosen_size = size
+                if end is None:
+                    end = raw_start + size
+            if raw_start == source_leaf["raw_offset"]:
+                chosen_start = source_leaf["raw_offset"]
+                chosen_size = source_leaf["size"]
+            elif raw_start is not None:
+                # The record may point at the IMAGE_RESOURCE_DATA_ENTRY.
+                chosen_start = source_leaf["raw_offset"]
+                chosen_size = source_leaf["size"]
+            if size is not None and size != source_leaf["size"]:
+                finding["warnings"].append(
+                    "recorded size differs from IMAGE_RESOURCE_DATA_ENTRY.Size"
+                )
+        elif size is None:
+            finding["classification"] = RESOURCE_RANGE_CANDIDATE
+            finding["classification_zh"] = RESOURCE_RANGE_STATUS_ZH[
+                RESOURCE_RANGE_CANDIDATE
+            ]
+            finding["status"] = self._permission_status(
+                RESOURCE_RANGE_CANDIDATE, permission
+            )
+            finding["reasons"].append(
+                "source offset is within the PE but no resource data entry or "
+                "size establishes its full range"
+            )
+            finding["candidates"] = [
+                _resource_audit_leaf_provenance(self.source_context, leaf)
+                for leaf in containing_leaves
+            ]
+            finding["source"] = self._source_failure_provenance(
+                section_index, section_offset, raw_start, size, rva,
+                locator_kind,
+            )
+            self._add_flat_aliases(finding)
+            return finding
+
+        source_bytes = self.source_context["data"][
+            chosen_start:chosen_start + chosen_size
+        ]
+        source_range = _resource_audit_range_info(
+            self.source_context, chosen_start, chosen_size
+        )
+        recorded_range = None
+        if raw_start is not None and size is not None:
+            recorded_range = _resource_audit_range_info(
+                self.source_context, raw_start, size
+            )
+
+        padding = None
+        if (source_leaf is not None and raw_start == source_leaf["raw_offset"]
+                and size is not None and size > source_leaf["size"]):
+            padding_start = source_leaf["raw_end_exclusive"]
+            padding_end = raw_start + size
+            padding_bytes = self.source_context["data"][padding_start:padding_end]
+            padding = {
+                "start": padding_start,
+                "end_exclusive": padding_end,
+                "byte_count": max(0, padding_end - padding_start),
+                "all_zero": padding_bytes == b"\0" * len(padding_bytes),
+                "sha256": sha256(padding_bytes).hexdigest() if padding_bytes else None,
+            }
+            finding["warnings"].append(
+                "recorded range includes bytes after the resource data entry; "
+                "the PE resource boundary was used for copy verification"
+            )
+
+        source_provenance = {
+            "artifact": _resource_audit_artifact_provenance(self.source_context),
+            "locator_kind": locator_kind,
+            "recorded_range": recorded_range,
+            "pe_resource_range": _resource_audit_leaf_provenance(
+                self.source_context, source_leaf
+            ),
+            "verified_range": source_range,
+            "trailing_alignment_padding": padding,
+            "matching_resource_count": len(exact_leaves),
+        }
+        finding["source"] = source_provenance
+
+        match = _resource_audit_match_target(
+            self.target_context,
+            source_bytes,
+            hints,
+            self.include_raw_occurrences,
+            self.max_candidates,
+        )
+        target_provenance = {
+            "artifact": _resource_audit_artifact_provenance(self.target_context),
+            "exact_resource_matches": [
+                _resource_audit_leaf_provenance(self.target_context, leaf)
+                for leaf in match["exact"]
+            ],
+            "raw_occurrences": match["raw_candidates"],
+            "hint_used": match["hint_used"],
+            "hint_fell_back": match["hint_fell_back"],
+            "identity_disambiguated": match["disambiguated"],
+        }
+        finding["target"] = target_provenance
+        finding["provenance"] = {
+            "schema": RESOURCE_RANGE_AUDIT_SCHEMA,
+            "export_permission": permission,
+            "source": source_provenance,
+            "target": target_provenance,
+            "range_sha256": source_range["sha256"],
+            "comparison": {
+                "byte_for_byte": True,
+                "method": "direct byte equality plus SHA-256 provenance",
+                "content_included": False,
+            },
+        }
+        finding["sha256"] = source_range["sha256"]
+
+        selected = match["selected"]
+        if len(selected) == 1:
+            target_leaf = selected[0]
+            target_range = _resource_audit_leaf_provenance(
+                self.target_context, target_leaf
+            )
+            target_provenance["verified_range"] = target_range
+            finding["target_range"] = target_range
+            finding["classification"] = RESOURCE_RANGE_VERIFIED
+            finding["classification_zh"] = RESOURCE_RANGE_STATUS_ZH[
+                RESOURCE_RANGE_VERIFIED
+            ]
+            finding["verified"] = True
+            finding["copy_verified"] = True
+            if match["disambiguated"]:
+                finding["warnings"].append(
+                    "identical resource bytes occur multiple times; resource "
+                    "identity hint selected the verified boundary"
+                )
+            if len(match["exact"]) == 1 and len(match["raw_candidates"]) > 1:
+                finding["warnings"].append(
+                    "identical bytes occur at multiple raw locations; the "
+                    "unique resource data-entry boundary confirms the copy"
+                )
+        elif len(selected) > 1:
+            finding["classification"] = RESOURCE_RANGE_CANDIDATE
+            finding["classification_zh"] = RESOURCE_RANGE_STATUS_ZH[
+                RESOURCE_RANGE_CANDIDATE
+            ]
+            finding["reasons"].append(
+                "multiple target resource data entries have identical ranges"
+            )
+            finding["candidates"] = [
+                _resource_audit_leaf_provenance(self.target_context, leaf)
+                for leaf in selected
+            ]
+        elif match["raw_candidates"]:
+            finding["classification"] = RESOURCE_RANGE_CANDIDATE
+            finding["classification_zh"] = RESOURCE_RANGE_STATUS_ZH[
+                RESOURCE_RANGE_CANDIDATE
+            ]
+            finding["reasons"].append(
+                "byte range was found, but no unique resource data-entry "
+                "boundary verifies it"
+            )
+            finding["candidates"] = match["raw_candidates"]
+        else:
+            finding["classification"] = RESOURCE_RANGE_NOT_FOUND
+            finding["classification_zh"] = RESOURCE_RANGE_STATUS_ZH[
+                RESOURCE_RANGE_NOT_FOUND
+            ]
+            finding["reasons"].append(
+                "source bytes were not found in the target PE"
+            )
+
+        finding["status"] = self._permission_status(
+            finding["classification"], permission
+        )
+        self._add_flat_aliases(finding)
+        return finding
+
+    def _permission_status(self, classification, permission):
+        if permission["status"] == "denied":
+            return RESOURCE_RANGE_EXPORT_DENIED
+        if (self.require_export_permission
+                and permission["status"] != "granted"):
+            return RESOURCE_RANGE_PERMISSION_REQUIRED
+        return classification
+
+    def _source_range_error(self, section_index, section_offset,
+                            raw_start, size):
+        if raw_start is None:
+            return "record does not contain a usable section offset, RVA, or raw offset"
+        if raw_start < 0 or raw_start >= len(self.source_context["data"]):
+            return "source offset is outside the sealed PE file"
+        if section_index is None:
+            return "source offset is not contained by any PE section raw range"
+        section = self.source_context["sections"][section_index]
+        if section_offset is not None and section_offset < 0:
+            return "source section offset is negative"
+        if raw_start < section["raw_offset"]:
+            return "source range starts before the section raw data"
+        if raw_start >= section["raw_end_exclusive"]:
+            return "source offset is beyond the section raw range"
+        claimed_end = raw_start + size if size is not None else None
+        if claimed_end is not None:
+            if size is not None and size < 0:
+                return "source range size is negative"
+            if claimed_end > section["raw_end_exclusive"]:
+                return "source range extends beyond the section raw range"
+            if claimed_end > len(self.source_context["data"]):
+                return "source range extends beyond the sealed PE file"
+        return None
+
+    def _source_failure_provenance(self, section_index, section_offset,
+                                   raw_start, size, rva, locator_kind):
+        range_info = None
+        if raw_start is not None and size is not None:
+            range_info = _resource_audit_range_info(
+                self.source_context, raw_start, size
+            )
+        section = None
+        if section_index is not None:
+            section = dict(self.source_context["sections"][section_index])
+        return {
+            "artifact": _resource_audit_artifact_provenance(self.source_context),
+            "locator_kind": locator_kind,
+            "section": section,
+            "section_offset": section_offset,
+            "rva": rva,
+            "raw_offset": raw_start,
+            "size_bytes": size,
+            "range": range_info,
+        }
+
+    def _add_flat_aliases(self, finding):
+        classification = finding.get("classification")
+        status = finding.get("status") or classification
+        finding["classification_en"] = RESOURCE_RANGE_STATUS_EN.get(
+            classification
+        )
+        finding["status_zh"] = RESOURCE_RANGE_STATUS_ZH.get(status)
+        finding["verdict"] = RESOURCE_RANGE_SHORT_STATUS.get(status, status)
+        finding["state"] = finding["verdict"]
+        finding["disposition"] = status
+        finding["copy_verdict"] = RESOURCE_RANGE_SHORT_STATUS.get(
+            classification, classification
+        )
+        finding["is_verified"] = classification == RESOURCE_RANGE_VERIFIED
+        finding["is_candidate"] = classification == RESOURCE_RANGE_CANDIDATE
+        finding["is_ambiguous"] = finding["is_candidate"]
+        finding["is_out_of_range"] = (
+            classification == RESOURCE_RANGE_OUT_OF_RANGE
+        )
+        source = finding.get("source") or {}
+        target_range = finding.get("target_range") or {}
+        source_range = source.get("verified_range") if isinstance(source, dict) else None
+        if not source_range and isinstance(source, dict):
+            source_range = source.get("recorded_range") or source.get("range")
+        source_artifact = source.get("artifact", {}) if isinstance(source, dict) else {}
+        target_artifact = {}
+        target = finding.get("target")
+        if isinstance(target, dict):
+            target_artifact = target.get("artifact", {})
+            if not target_range and target.get("verified_range"):
+                target_range = target["verified_range"]
+
+        finding["source_file_sha256"] = source_artifact.get("sha256")
+        finding["source_path"] = source_artifact.get("path")
+        finding["source_sha256"] = source_artifact.get("sha256")
+        if source_range:
+            finding["source_offset"] = source_range.get("raw_offset")
+            finding["source_end_exclusive"] = source_range.get("raw_end_exclusive")
+            finding["source_size"] = source_range.get("size_bytes")
+            finding["source_section"] = source_range.get("section_name")
+            finding["source_section_index"] = source_range.get("section_index")
+            finding["source_section_offset"] = source_range.get("section_offset")
+            finding["source_rva"] = source_range.get("rva")
+            finding["source_range_sha256"] = source_range.get("sha256")
+
+        finding["target_file_sha256"] = target_artifact.get("sha256")
+        finding["target_path"] = target_artifact.get("path")
+        finding["target_sha256"] = target_artifact.get("sha256")
+        if target_range:
+            finding["target_offset"] = target_range.get("raw_offset")
+            finding["target_end_exclusive"] = target_range.get("raw_end_exclusive")
+            finding["target_size"] = target_range.get("size_bytes")
+            finding["target_section"] = target_range.get("section_name")
+            finding["target_section_index"] = target_range.get("section_index")
+            finding["target_section_offset"] = target_range.get("section_offset")
+            finding["target_rva"] = target_range.get("rva")
+
+        candidate_offsets = []
+        for candidate in finding.get("candidates", []):
+            offset = candidate.get("raw_offset")
+            if offset is None and candidate.get("range"):
+                offset = candidate["range"].get("raw_offset")
+            if offset is not None:
+                candidate_offsets.append(offset)
+        finding["candidate_offsets"] = candidate_offsets
+
+
+def audit_resource_range(*args, **kwargs):
+    return audit_resource_ranges(*args, **kwargs)
+
+
+def audit_resource_transfers(*args, **kwargs):
+    return audit_resource_ranges(*args, **kwargs)
+
+
+def audit_resource_copy_ranges(*args, **kwargs):
+    return audit_resource_ranges(*args, **kwargs)
+
+
+def audit_copy_ranges(*args, **kwargs):
+    return audit_resource_ranges(*args, **kwargs)
+
+
+def audit_resource_copies(*args, **kwargs):
+    return audit_resource_ranges(*args, **kwargs)
+
+
+def audit_resource_range_transfers(*args, **kwargs):
+    return audit_resource_ranges(*args, **kwargs)
+
+
+def verify_resource_ranges(*args, **kwargs):
+    return audit_resource_ranges(*args, **kwargs)
+
+
+def audit_pe_resource_ranges(*args, **kwargs):
+    return audit_resource_ranges(*args, **kwargs)
+
+
+ResourceRangeAuditor.audit_ranges = ResourceRangeAuditor.audit
+ResourceRangeAuditor.review = ResourceRangeAuditor.audit
+ResourceRangeAuditor.run = ResourceRangeAuditor.audit
+
+
+def audit_resources(*args, **kwargs):
+    return audit_resource_ranges(*args, **kwargs)
+
+
+def audit_resource_exports(*args, **kwargs):
+    return audit_resource_ranges(*args, **kwargs)
+
+
+def audit_exported_resource_ranges(*args, **kwargs):
+    return audit_resource_ranges(*args, **kwargs)
+
+
+def review_resource_ranges(*args, **kwargs):
+    return audit_resource_ranges(*args, **kwargs)
+
+
+resource_range_audit = audit_resource_ranges
+ResourceRangeAudit = ResourceRangeAuditor
+ResourceAuditReport = ResourceRangeAuditReport
+RangeAuditor = ResourceRangeAuditor
+ResourceAuditor = ResourceRangeAuditor
+
+
+def _pe_audit_resource_ranges(self, target=None, records=None, **kwargs):
+    return audit_resource_ranges(self, target, records, **kwargs)
+
+
+PE.audit_resource_ranges = _pe_audit_resource_ranges
+PE.audit_resource_range = _pe_audit_resource_ranges
+PE.audit_resource_transfers = _pe_audit_resource_ranges
+PE.audit_ranges = _pe_audit_resource_ranges
+PE.resource_range_audit = _pe_audit_resource_ranges
+PE.review_resource_ranges = _pe_audit_resource_ranges
 
 
 def main():
