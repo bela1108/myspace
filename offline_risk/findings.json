@@ -1,0 +1,100 @@
+{
+  "case": "offline-exposure-accounting-2026-11",
+  "note": "Shared location manifest, anonymized. Four fake candidate release artifacts. Some findings are only known to belong to one of two candidate artifacts.",
+  "artifacts": ["rel-alpha", "rel-beta", "rel-gamma", "rel-delta"],
+  "findings": [
+    {
+      "id": "F-001",
+      "type": "Secret Keyword",
+      "hash": "3f8c2e91a7b44d08f6c15e92ab07d3c6e54f1902",
+      "attribution": {"kind": "definite", "artifact": "rel-alpha"},
+      "locations": ["src/config.py:12", "src/deploy.py:40"]
+    },
+    {
+      "id": "F-002",
+      "type": "Base64 High Entropy String",
+      "hash": "71bd0c4e9f2a3856d1c7e04b8f3a6925c0d47e1b",
+      "attribution": {"kind": "definite", "artifact": "rel-alpha"},
+      "locations": ["src/keys.py:3"]
+    },
+    {
+      "id": "F-003",
+      "type": "AWS Access Key",
+      "hash": "c05e91a2d7f43b68e0a19c3d5f7b2e4a6c8d0f13",
+      "attribution": {"kind": "definite", "artifact": "rel-beta"},
+      "locations": ["lib/auth.py:88"]
+    },
+    {
+      "id": "F-004",
+      "type": "Secret Keyword",
+      "hash": "3f8c2e91a7b44d08f6c15e92ab07d3c6e54f1902",
+      "attribution": {"kind": "definite", "artifact": "rel-beta"},
+      "locations": ["vendor/legacy.py:150"]
+    },
+    {
+      "id": "F-005",
+      "type": "Hex High Entropy String",
+      "hash": "8a4d2f06b1c39e57a0d8f2b4c6e1a39507d4c6f8",
+      "attribution": {"kind": "definite", "artifact": "rel-gamma"},
+      "locations": ["pkg/token.go:61"]
+    },
+    {
+      "id": "F-006",
+      "type": "Private Key",
+      "hash": "e27b49a0c6d81f3a5b9c0e2d4f6a8b1c3d5e7f09",
+      "attribution": {"kind": "definite", "artifact": "rel-delta"},
+      "locations": ["cmd/main.go:9"]
+    },
+    {
+      "id": "F-007",
+      "type": "Hex High Entropy String",
+      "hash": "55aa11bb22cc33dd44ee55ff66aa77bb88cc99dd",
+      "attribution": {"kind": "ambiguous", "candidates": ["rel-alpha", "rel-beta"]},
+      "locations": ["<redacted>:101"]
+    },
+    {
+      "id": "F-008",
+      "type": "Secret Keyword",
+      "hash": "12ab34cd56ef78ab90cd12ef34ab56cd78ef90ab",
+      "attribution": {"kind": "ambiguous", "candidates": ["rel-alpha", "rel-gamma"]},
+      "locations": ["<redacted>:55"]
+    },
+    {
+      "id": "F-009",
+      "type": "Base64 High Entropy String",
+      "hash": "fedcba9876543210fedcba9876543210fedcba98",
+      "attribution": {"kind": "ambiguous", "candidates": ["rel-beta", "rel-delta"]},
+      "locations": ["<redacted>:77"]
+    },
+    {
+      "id": "F-010",
+      "type": "JSON Web Token",
+      "hash": "0f1e2d3c4b5a69780f1e2d3c4b5a69780f1e2d3c",
+      "attribution": {"kind": "ambiguous", "candidates": ["rel-gamma", "rel-delta"]},
+      "locations": ["<redacted>:130"]
+    },
+    {
+      "id": "F-011",
+      "type": "Hex High Entropy String",
+      "hash": "55aa11bb22cc33dd44ee55ff66aa77bb88cc99dd",
+      "attribution": {"kind": "ambiguous", "candidates": ["rel-beta", "rel-gamma"]},
+      "locations": ["<redacted>:204"]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "E-1",
+      "kind": "mutex",
+      "findings": ["F-007", "F-008"],
+      "artifact": "rel-alpha",
+      "note": "Build manifest of rel-alpha contains only one of the two anonymized source modules; F-007 and F-008 cannot both belong to rel-alpha."
+    },
+    {
+      "id": "E-2",
+      "kind": "mutex",
+      "findings": ["F-009", "F-010"],
+      "artifact": "rel-delta",
+      "note": "Release log of rel-delta shows the two leak sites were introduced by different, non-overlapping exports; F-009 and F-010 cannot both belong to rel-delta."
+    }
+  ]
+}
