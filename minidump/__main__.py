@@ -8,6 +8,7 @@ import logging
 from minidump.minidumpfile import MinidumpFile
 from minidump.common_structs import hexdump
 from minidump.minidumpshell import MinidumpShell
+from minidump.annotationindex import AnnotationIndex
 from minidump._version import __banner__
 
 
@@ -24,6 +25,7 @@ def run():
 	parser.add_argument('--memory', action='store_true', help='List memory')
 	parser.add_argument('--sysinfo', action='store_true', help='Show sysinfo')
 	parser.add_argument('--comments', action='store_true', help='Show comments')
+	parser.add_argument('--annotation-index', action='store_true', help='Forensic annotation index of the comment streams')
 	parser.add_argument('--exception', action='store_true', help='Show exception records')
 	parser.add_argument('--handles', action='store_true', help='List handles')
 	parser.add_argument('--misc', action='store_true', help='Show misc info')
@@ -50,7 +52,6 @@ def run():
 	else:
 
 		mf = MinidumpFile.parse(args.minidumpfile)
-		reader = mf.get_reader()
 
 		if args.all or args.threads:
 			if mf.threads is not None:
@@ -82,6 +83,8 @@ def run():
 				print(str(mf.comment_a))
 			if mf.comment_w is not None:
 				print(str(mf.comment_w))
+		if args.all or args.annotation_index:
+			print(str(AnnotationIndex.from_minidump(mf)))
 		if args.all or args.handles:
 			if mf.handles is not None:
 				print(str(mf.handles))
@@ -96,6 +99,7 @@ def run():
 				print(str(mf.peb))
 
 		if args.read_addr:
+			reader = mf.get_reader()
 			buff_reader = reader.get_buffered_reader()
 			buff_reader.move(args.read_addr)
 			data = buff_reader.peek(args.read_size)
