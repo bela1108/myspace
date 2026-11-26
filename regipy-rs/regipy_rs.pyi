@@ -13,6 +13,7 @@ class NKRecord:
 
     name: str
     class_name: str
+    offset: int
     nk_offset: int
     subkey_count: int
     values_count: int

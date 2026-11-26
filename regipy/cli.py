@@ -3,7 +3,6 @@ import json
 import logging
 import os
 import time
-from dataclasses import asdict
 from typing import Optional
 
 import click
@@ -99,6 +98,16 @@ def parse_header(hive_path, verbose):
     required=False,
     help='If "-e" was specified, fetch only values for subkeys until this timestamp in isoformat',
 )
+@click.option(
+    "--evidence-reference",
+    "--include-evidence-reference",
+    "--evidence-locator",
+    "--provenance",
+    "include_evidence_reference",
+    is_flag=True,
+    default=False,
+    help="Add opt-in acquisition-file, physical record offset and sampling index locators",
+)
 def registry_dump(
     hive_path,
     output_path,
@@ -110,6 +119,7 @@ def registry_dump(
     do_not_fetch_values,
     start_date,
     end_date,
+    include_evidence_reference=False,
 ):
     _setup_logging(verbose=verbose)
     registry_hive = RegistryHive(hive_path, hive_type=hive_type, partial_hive_path=partial_hive_path)
@@ -135,12 +145,15 @@ def registry_dump(
             with open(output_path, "w") as output_file:
                 csvwriter: Optional[csv.DictWriter] = None
                 if timeline:
+                    fieldnames = ["timestamp", "subkey_name", "values_count", "values"]
+                    if include_evidence_reference:
+                        fieldnames.extend(["acquisition_file", "record_offset", "sample_index"])
                     csvwriter = csv.DictWriter(
                         output_file,
                         delimiter=",",
                         quotechar='"',
                         quoting=csv.QUOTE_MINIMAL,
-                        fieldnames=["timestamp", "subkey_name", "values_count", "values"],
+                        fieldnames=fieldnames,
                     )
                     csvwriter.writeheader()
 
@@ -151,23 +164,23 @@ def registry_dump(
                         fetch_values=not do_not_fetch_values,
                         start_date=start_date,
                         end_date=end_date,
+                        include_evidence_reference=include_evidence_reference,
                     )
                 ):
                     if timeline and csvwriter:
-                        csvwriter.writerow(
-                            {
-                                "subkey_name": entry.path,
-                                "timestamp": entry.timestamp,
-                                "values_count": entry.values_count,
-                                "values": entry.values,
-                            }
-                        )
+                        row = {
+                            "subkey_name": entry.path,
+                            "timestamp": entry.timestamp,
+                            "values_count": entry.values_count,
+                            "values": entry.values,
+                        }
+                        if include_evidence_reference and entry.evidence_reference is not None:
+                            row.update(entry.evidence_reference.to_dict())
+                        csvwriter.writerow(row)
                     else:
                         output_file.write(
                             json.dumps(
-                                asdict(
-                                    entry,
-                                ),
+                                entry.to_dict(include_evidence_reference=include_evidence_reference),
                                 separators=(
                                     ",",
                                     ":",
@@ -181,9 +194,14 @@ def registry_dump(
             return
     else:
         for subkey_count, entry in enumerate(
-            registry_hive.recurse_subkeys(name_key_entry, as_json=True, fetch_values=not do_not_fetch_values)
+            registry_hive.recurse_subkeys(
+                name_key_entry,
+                as_json=True,
+                fetch_values=not do_not_fetch_values,
+                include_evidence_reference=include_evidence_reference,
+            )
         ):
-            click.secho(json.dumps(asdict(entry), indent=4))
+            click.secho(json.dumps(entry.to_dict(include_evidence_reference=include_evidence_reference), indent=4))
 
     click.secho(f"Completed in {time.monotonic() - start_time}s ({subkey_count} subkeys enumerated)")
 

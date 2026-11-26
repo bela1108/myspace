@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Optional evidence-location references for dump exports**
+  - `regipy-dump --evidence-reference` adds an `evidence_reference` object to JSONL rows, or the `acquisition_file`, `record_offset` and `sample_index` columns to timeline CSV output
+  - The locator is the acquisition file plus the absolute NK-record offset plus the zero-based sampling index from the unsorted traversal. It survives sorting by key path and distinguishes duplicate key names without relying on values or timestamps
+  - `regipy.evidence.verify_evidence_reference()` / `verify_reference_in_export()` report each component separately, so a reordered sample or a different row can be identified even when the physical record still exists
+  - Old CSV rows without references can only be joined through the explicit mapping required by `resolve_legacy_csv_reference()`; no name/path inference against a new export is performed
+  - Default JSONL/CSV output is unchanged; references are emitted only when requested
+
 ## [6.5.2] - 2026-10-17
 
 ### Fixed

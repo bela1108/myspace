@@ -58,6 +58,7 @@ def dump_hive_to_json(
     name_key_entry: NKRecord,
     verbose=False,
     fetch_values=True,
+    include_evidence_reference=False,
 ):
     """
     Write the hive subkeys to a JSON-lines file, one line per entry.
@@ -65,16 +66,22 @@ def dump_hive_to_json(
     :param output_path: Output path to save the JSON
     :param name_key_entry: The NKRecord to start iterating from
     :param verbose: verbosity
+    :param include_evidence_reference: Emit optional evidence locators on each row
     :return: The result, as dict
     """
     subkey_count = 0
     with open(output_path, mode="w") as writer:
         for subkey_count, entry in enumerate(
-            registry_hive.recurse_subkeys(name_key_entry, as_json=True, fetch_values=fetch_values)
+            registry_hive.recurse_subkeys(
+                name_key_entry,
+                as_json=True,
+                fetch_values=fetch_values,
+                include_evidence_reference=include_evidence_reference,
+            )
         ):
             writer.write(
                 json.dumps(
-                    entry.to_dict(),
+                    entry.to_dict(include_evidence_reference=include_evidence_reference),
                     separators=(
                         ",",
                         ":",

@@ -44,3 +44,21 @@ class RegistryParsingException(RegipyException):
     """
 
     pass
+
+
+class EvidenceReferenceException(RegipyGeneralException):
+    """Base class for evidence-reference construction and lookup errors."""
+
+    pass
+
+
+class UnmappedLegacyReferenceException(EvidenceReferenceException):
+    """A legacy CSV row has no explicit mapping to an evidence reference."""
+
+    pass
+
+
+class AmbiguousLegacyReferenceException(EvidenceReferenceException):
+    """Explicit mapping keys for a legacy CSV row disagree."""
+
+    pass

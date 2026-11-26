@@ -20,6 +20,7 @@ class NKRecord:
     subkey_count: int
     values_count: int
     volatile_subkeys_count: int
+    offset: int
 
     def subkeys(self) -> Any: ...
     def find_subkey(self, key_name: str) -> NKRecord | None: ...

@@ -139,6 +139,32 @@ regipy-dump ~/Documents/TestEvidence/Registry/NTUSER-CCLEANER.DAT -o /tmp/output
 
 regipy-dump util can also output a timeline instead of a JSON, by adding the `-t` flag
 
+To keep a physical provenance locator on every exported row, add
+`--evidence-reference` (alias: `--evidence-locator` / `--provenance`):
+
+```bash
+regipy-dump /evidence/NTUSER.DAT -t -o /tmp/timeline.csv --evidence-reference
+```
+
+The CSV gains `acquisition_file`, `record_offset` and `sample_index` columns; JSONL
+rows gain an `evidence_reference` object with the same three fields. `record_offset`
+is the absolute offset of the NK record's `flags` field, and `sample_index` is the
+zero-based position in the *unsorted* traversal. Keep those columns/fields attached
+when sorting by path. The default export is byte-for-byte unchanged when the flag
+is omitted.
+
+```python
+from regipy.evidence import verify_reference_in_export
+
+# Rows from the next export, joined by file + physical offset rather than name.
+result = verify_reference_in_export(old_reference, next_export_rows, hive_path=hive_path)
+print(result.explain())
+```
+
+An old CSV that has no reference columns cannot be reverse-engineered by name.
+Pass an explicit mapping to `resolve_legacy_csv_reference(row, mapping)`; a missing
+mapping raises instead of guessing.
+
 #### Run relevant plugins on Hive
 
 ```bash

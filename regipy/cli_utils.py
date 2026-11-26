@@ -20,6 +20,7 @@ def get_filtered_subkeys(
     end_date: Optional[str] = None,
     verbose=False,
     fetch_values=True,
+    include_evidence_reference=False,
 ) -> Iterator[Subkey]:
     """
     Get records filtered by the specified timestamps
@@ -29,6 +30,8 @@ def get_filtered_subkeys(
                      in isoformat UTC, for example: 2020-02-18T14:15:00.000000
     :param end_date: Include only subkeys modified before the specified date
                      in isoformat UTC, for example: 2020-02-20T14:15:00.000000
+    :param include_evidence_reference: Attach optional acquisition-file, record-offset
+                                       and sampling-index locators to yielded entries
     """
     skipped_entries_count = 0
     start_dt: Optional[dt.datetime] = None
@@ -40,7 +43,13 @@ def get_filtered_subkeys(
         end_dt = pytz.utc.localize(dt.datetime.fromisoformat(end_date))
 
     subkey_count = 0
-    with progressbar(registry_hive.recurse_subkeys(name_key_entry, fetch_values=False)) as reg_subkeys:
+    with progressbar(
+        registry_hive.recurse_subkeys(
+            name_key_entry,
+            fetch_values=False,
+            include_evidence_reference=include_evidence_reference,
+        )
+    ) as reg_subkeys:
         for subkey_count, subkey in enumerate(reg_subkeys):
             if start_dt and subkey.timestamp < start_dt:
                 skipped_entries_count += 1
@@ -53,13 +62,16 @@ def get_filtered_subkeys(
                 continue
 
             nk = registry_hive.get_key(subkey.path)
-            yield Subkey(
+            entry = Subkey(
                 subkey_name=subkey.subkey_name,
                 path=subkey.path,
                 timestamp=subkey.timestamp,
                 values=list(nk.iter_values(as_json=True)) if fetch_values else [],
                 values_count=subkey.values_count,
             )
+            if subkey.evidence_reference is not None:
+                entry.with_evidence_reference(subkey.evidence_reference, include_in_dict=True)
+            yield entry
         if subkey_count is not None:
             logger.info(f"{skipped_entries_count} out of {subkey_count} subkeys were filtered out due to timestamp constraints")
 

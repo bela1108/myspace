@@ -1,6 +1,8 @@
 import binascii
 import datetime as dt
+import itertools
 import logging
+import os
 from dataclasses import asdict, dataclass, field
 from io import BytesIO
 from typing import Any, Optional, Union
@@ -17,6 +19,7 @@ from construct import (
     StreamError,
 )
 
+from regipy.evidence import EvidenceReference, build_evidence_reference
 from regipy.exceptions import (
     NoRegistrySubkeysException,
     RegipyGeneralException,
@@ -106,9 +109,9 @@ class Subkey:
     # This field will be used if a partial hive was given, if not it would be None.
     actual_path: Optional[str] = None
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self, include_evidence_reference: bool = False) -> dict[str, Any]:
         """Convert to dict with JSON-serializable values."""
-        return {
+        result = {
             "subkey_name": self.subkey_name,
             "path": self.path,
             "timestamp": self.timestamp.isoformat() if isinstance(self.timestamp, dt.datetime) else self.timestamp,
@@ -116,6 +119,22 @@ class Subkey:
             "values": [asdict(v) if isinstance(v, Value) else v for v in self.values],
             "actual_path": self.actual_path,
         }
+        if self.evidence_reference is not None and (
+            include_evidence_reference or getattr(self, "_include_evidence_reference", False)
+        ):
+            result["evidence_reference"] = self._evidence_reference.to_dict()
+        return result
+
+    @property
+    def evidence_reference(self) -> Optional[EvidenceReference]:
+        """Optional locator attached during an evidence-aware traversal."""
+        return getattr(self, "_evidence_reference", None)
+
+    def with_evidence_reference(self, reference: EvidenceReference, include_in_dict: bool = True) -> "Subkey":
+        """Attach a locator without adding a dataclass field to the public shape."""
+        self._evidence_reference = reference
+        self._include_evidence_reference = include_in_dict
+        return self
 
 
 class RIRecord:
@@ -140,6 +159,7 @@ class RegistryHive:
                                   this is actually a HKCU hive, starting from HKCU/Software
         """
 
+        self.hive_path = os.fspath(hive_path)
         self.partial_hive_path = None
         self.hive_type = None
 
@@ -178,6 +198,8 @@ class RegistryHive:
         as_json=False,
         is_init=True,
         fetch_values=True,
+        include_evidence_reference=False,
+        _evidence_sample_counter=None,
     ):
         """
         Recurse over a subkey, and yield all of its subkeys and values
@@ -187,7 +209,11 @@ class RegistryHive:
                           This string will be added as prefix to all paths.
         :param as_json: Whether to normalize the data as JSON or not
         :param fetch_values: If False, subkey values will not be returned, but the iteration will be faster
+        :param include_evidence_reference: Attach an opt-in evidence locator to every yielded Subkey
         """
+        if include_evidence_reference and _evidence_sample_counter is None:
+            _evidence_sample_counter = itertools.count()
+
         # If None, will start iterating from Root NK entry
         if not nk_record:
             nk_record = self.root
@@ -211,6 +237,8 @@ class RegistryHive:
                         as_json=as_json,
                         is_init=False,
                         fetch_values=fetch_values,
+                        include_evidence_reference=include_evidence_reference,
+                        _evidence_sample_counter=_evidence_sample_counter,
                     )
 
                 values = []
@@ -230,7 +258,7 @@ class RegistryHive:
                 # When as_json=True, convert timestamp to ISO format string
                 if as_json:
                     ts = ts.isoformat()
-                yield Subkey(
+                entry = Subkey(
                     subkey_name=subkey.name,
                     path=subkey_path,
                     timestamp=ts,
@@ -238,6 +266,12 @@ class RegistryHive:
                     values_count=subkey.values_count,
                     actual_path=(f"{self.partial_hive_path}{subkey_path}" if self.partial_hive_path else None),
                 )
+                if _evidence_sample_counter is not None:
+                    entry.with_evidence_reference(
+                        build_evidence_reference(self, subkey, next(_evidence_sample_counter)),
+                        include_in_dict=True,
+                    )
+                yield entry
 
         if is_init:
             # Get the values of the subkey
@@ -258,7 +292,7 @@ class RegistryHive:
             if as_json:
                 ts = ts.isoformat()
             subkey_path = path_root or "\\"
-            yield Subkey(
+            entry = Subkey(
                 subkey_name=nk_record.name,
                 path=subkey_path,
                 timestamp=ts,
@@ -266,6 +300,12 @@ class RegistryHive:
                 values_count=len(values),
                 actual_path=(f"{self.partial_hive_path}\\{subkey_path}" if self.partial_hive_path else None),
             )
+            if _evidence_sample_counter is not None:
+                entry.with_evidence_reference(
+                    build_evidence_reference(self, nk_record, next(_evidence_sample_counter)),
+                    include_in_dict=True,
+                )
+            yield entry
 
     def get_hbin_at_offset(self, offset=0):
         """
@@ -331,6 +371,14 @@ class RegistryHive:
         logger.debug(f"Found control sets: {result}")
         return result
 
+    def get_evidence_reference(self, key_path, sample_index=0) -> EvidenceReference:
+        """Build an evidence locator for an existing key path.
+
+        ``sample_index`` is supplied by the caller because it records the order
+        of the original export/traversal, not the position in a sorted view.
+        """
+        return build_evidence_reference(self, self.get_key(key_path), sample_index)
+
 
 class HBin:
     def __init__(self, stream):
@@ -387,6 +435,7 @@ class NKRecord:
         stream.seek(cell.offset)
         self.header = CM_KEY_NODE.parse_stream(stream)  # type: ignore[union-attr]
         self._stream = stream
+        self.cell_offset = cell.offset
 
         # Sometimes the key names are ASCII and sometimes UTF-16 little endian
         if self.header.flags.KEY_COMP_NAME:

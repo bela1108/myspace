@@ -23,13 +23,16 @@ integers the Rust core returns, so timestamp arithmetic is bit-identical
 between backends.
 """
 
+import itertools
 import logging
+import os
 
 try:
     import regipy_rs  # type: ignore[import-not-found]
 except ImportError as ex:  # pragma: no cover
     raise ImportError("The Rust backend requires the regipy-rs package. Install it with: pip install regipy[rust]") from ex
 
+from regipy.evidence import build_evidence_reference
 from regipy.exceptions import (
     NoRegistrySubkeysException,
     RegistryKeyNotFoundException,
@@ -82,6 +85,15 @@ class NKRecord:
     @property
     def volatile_subkeys_count(self):
         return self._nk.volatile_subkeys_count
+
+    @property
+    def cell_offset(self):
+        """Absolute file offset of the NK ``flags`` field, matching Python."""
+        return self._nk.offset
+
+    @property
+    def offset(self):
+        return self._nk.offset
 
     def iter_subkeys(self):
         if not self.subkey_count:
@@ -171,6 +183,7 @@ class RegistryHive:
                           or for some other reason regipy cannot identify the hive type
         :param partial_hive_path: The path from which the partial hive actually starts
         """
+        self.hive_path = os.fspath(hive_path)
         self.partial_hive_path = None
         self.hive_type = None
 
@@ -206,6 +219,7 @@ class RegistryHive:
         as_json=False,
         is_init=True,
         fetch_values=True,
+        include_evidence_reference=False,
     ):
         """
         Recurse over a subkey, and yield all of its subkeys and values
@@ -215,7 +229,9 @@ class RegistryHive:
                           This string will be added as prefix to all paths.
         :param as_json: Whether to normalize the data as JSON or not
         :param fetch_values: If False, subkey values will not be returned, but the iteration will be faster
+        :param include_evidence_reference: Attach optional evidence locators to yielded entries
         """
+        sample_counter = itertools.count() if include_evidence_reference else None
         start = nk_record._nk if nk_record is not None else None
         iterator = self._hive.recurse(
             start=start,
@@ -249,7 +265,7 @@ class RegistryHive:
                 else:
                     actual_path = f"{self.partial_hive_path}{path}" if self.partial_hive_path else None
                     entry_values_count = values_count
-                yield Subkey(
+                entry = Subkey(
                     subkey_name=name,
                     path=path,
                     # ISO string (as_json) or pytz.utc datetime, converted in
@@ -259,6 +275,13 @@ class RegistryHive:
                     values_count=entry_values_count,
                     actual_path=actual_path,
                 )
+                if sample_counter is not None:
+                    nk = self.get_key(path)
+                    entry.with_evidence_reference(
+                        build_evidence_reference(self, nk, next(sample_counter)),
+                        include_in_dict=True,
+                    )
+                yield entry
         except regipy_rs.ParsingError as ex:
             raise RegistryParsingException(str(ex))
 
@@ -315,3 +338,7 @@ class RegistryHive:
         result = [rf"\{subkey.name}\{registry_path}" for subkey in found_control_sets]
         logger.debug(f"Found control sets: {result}")
         return result
+
+    def get_evidence_reference(self, key_path, sample_index=0):
+        """Build an evidence locator for an existing key path."""
+        return build_evidence_reference(self, self.get_key(key_path), sample_index)
