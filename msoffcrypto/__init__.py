@@ -76,3 +76,34 @@ def OfficeFile(file):
         return Ppt97File(file)
     else:
         raise exceptions.FileFormatError("Unrecognized file format")
+
+
+from msoffcrypto.forensic_review import (  # noqa: E402
+    ConclusionStatus,
+    EvidenceStatus,
+    compare_office_structures,
+    compare_structures,
+    inspect_macro_free,
+    read_structure,
+    reconcile_archive_report,
+    reconcile_evidence,
+    reconcile_report,
+    review_archive_report,
+    verify_reseal_witness,
+)
+
+__all__ = [
+    "OfficeFile",
+    "exceptions",
+    "ConclusionStatus",
+    "EvidenceStatus",
+    "read_structure",
+    "compare_structures",
+    "compare_office_structures",
+    "verify_reseal_witness",
+    "inspect_macro_free",
+    "reconcile_report",
+    "reconcile_archive_report",
+    "review_archive_report",
+    "reconcile_evidence",
+]

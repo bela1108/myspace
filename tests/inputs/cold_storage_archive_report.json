@@ -1,0 +1,44 @@
+{
+  "archive_id": "fictional-cold-storage-096",
+  "description": "Fictional archive report used only for local structure reconciliation tests.",
+  "evidence": [
+    {
+      "id": "EVIDENCE-DOCX",
+      "file": "example_password.docx",
+      "logical_stream": "EncryptedPackage",
+      "public_structure": {
+        "profile": "ooxml-encrypted",
+        "encryption_format": "agile",
+        "required_streams": ["EncryptionInfo", "EncryptedPackage"]
+      },
+      "original_layout": {
+        "sector_size": 512,
+        "locations": {
+          "EncryptedPackage": 777
+        },
+        "note": "Stale physical sector from the pre-reorganization report."
+      },
+      "resealing_witness": {
+        "witness_id": "WITNESS-096-DOCX",
+        "authority": "Fictional cold-storage reseal ledger",
+        "verified": true,
+        "logical_stream": "EncryptedPackage",
+        "stream_sha256": "7237f501a21e67bd9808d41467abf9274b668bfec1ef90bd8fd8f925c084fbcc",
+        "reseal_event": "logical streams copied after shelf reorganization; physical sectors reassigned"
+      }
+    }
+  ],
+  "conclusions": [
+    {
+      "id": "CONCLUSION-ORIGINAL-LAYOUT",
+      "evidence_id": "EVIDENCE-DOCX",
+      "text": "该结论明确引用原布局，主张 EncryptedPackage 仍位于旧报告记录的扇区 777；该物理布局引用必须待核。"
+    },
+    {
+      "id": "CONCLUSION-STREAM-IDENTITY",
+      "evidence_id": "EVIDENCE-DOCX",
+      "basis": "stream_identity",
+      "text": "该结论引用已证实的逻辑流名称 EncryptedPackage、公开 OOXML 加密结构和外部复封见证，因此可以保留。"
+    }
+  ]
+}

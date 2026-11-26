@@ -48,6 +48,55 @@ def is_encrypted(file):
     return file.is_encrypted()
 
 
+REVIEW_COMMANDS = {
+    "review-report",
+    "review_report",
+    "reconcile-report",
+    "reconcile_report",
+    "forensic-review",
+    "structure-review",
+    "review",
+}
+
+
+def review_main(argv=None):
+    parser = argparse.ArgumentParser(prog="msoffcrypto review-report")
+    parser.add_argument("report", help="fictional archive report (JSON)")
+    parser.add_argument("sources", nargs="*", help="local Office files or source directories")
+    parser.add_argument("--base-dir", help="base directory for report-relative paths")
+    parser.add_argument("--witnesses", help="optional JSON witness registry")
+    parser.add_argument("--password", help="password for optional macro-free inspection")
+    parser.add_argument("--verify-macro-free", action="store_true", help="decrypt and inspect OOXML macros")
+    parser.add_argument("--markdown", action="store_true", help="print Markdown instead of JSON")
+    parser.add_argument("--json-out", help="write JSON report to this path")
+    args = parser.parse_args(argv)
+
+    from msoffcrypto.forensic_review import reconcile_archive_report
+
+    witnesses = None
+    if args.witnesses:
+        import json
+
+        with open(args.witnesses, "r", encoding="utf-8") as handle:
+            witnesses = json.load(handle)
+
+    result = reconcile_archive_report(
+        args.report,
+        sources=args.sources or None,
+        base_dir=args.base_dir,
+        witnesses=witnesses,
+        password=args.password,
+        verify_macro_free=args.verify_macro_free,
+    )
+    if args.json_out:
+        result.to_json(args.json_out)
+    if args.markdown:
+        print(result.to_markdown())
+    else:
+        print(result.to_json())
+    return 0
+
+
 parser = argparse.ArgumentParser()
 group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument("-p", "--password", nargs="?", const="", dest="password", help="password text")
@@ -58,8 +107,12 @@ parser.add_argument("infile", nargs="?", type=argparse.FileType("rb"), help="inp
 parser.add_argument("outfile", nargs="?", type=argparse.FileType("wb"), help="output file (if blank, stdout is used)")
 
 
-def main():
-    args = parser.parse_args()
+def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] in REVIEW_COMMANDS:
+        return review_main(argv[1:])
+
+    args = parser.parse_args(argv)
 
     if args.verbose:
         logger.removeHandler(logging.NullHandler())

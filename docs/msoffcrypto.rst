@@ -11,6 +11,14 @@ Subpackages
    msoffcrypto.format
    msoffcrypto.method
 
+msoffcrypto.forensic\_review module
+------------------------------------
+
+.. automodule:: msoffcrypto.forensic_review
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

@@ -166,6 +166,35 @@ with open("plain.xlsx", "rb") as f:
 ...
 ```
 
+### Cold-storage structure reconciliation
+
+`msoffcrypto.forensic_review` compares logical OLE stream names and public
+Office encryption structure while treating physical sector placement as
+report-only metadata. An evidence link is confirmed only when the logical name,
+public structure, and external resealing witness all match:
+
+```python
+from msoffcrypto.forensic_review import reconcile_archive_report
+
+report = reconcile_archive_report(
+    "cold_storage_report.json",
+    sources=["cold_copy.docx"],
+    base_dir="evidence",
+)
+
+for conclusion in report.conclusions:
+    print(conclusion.id, conclusion.status, conclusion.reasons)
+```
+
+A conclusion that expressly relies on the stale original physical layout is
+returned as `pending_verification`. A conclusion backed by a proven logical
+stream identity can remain as `retained`/`verified`. The same review is
+available from the command line:
+
+```bash
+msoffcrypto-tool review-report cold_storage_report.json --base-dir evidence
+```
+
 ## Supported encryption methods
 
 ### MS-OFFCRYPTO specs
