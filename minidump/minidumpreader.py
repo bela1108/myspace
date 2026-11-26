@@ -355,3 +355,15 @@ class MinidumpFileReader:
 			if segment.inrange(virt_addr):
 				return segment.read(virt_addr, size, self.file_handle)
 		raise Exception('Address not in memory range! %s' % hex(virt_addr))
+
+	def forensic_view(self, authorized_ranges=None, **kwargs):
+		from .forensic import MinidumpForensicView
+		return MinidumpForensicView(
+			self,
+			authorized_ranges=authorized_ranges,
+			**kwargs
+		)
+
+	def read_authorized(self, virt_addr, size, authorized_ranges=None, **kwargs):
+		view = self.forensic_view(authorized_ranges=authorized_ranges, **kwargs)
+		return view.read_authorized(virt_addr, size)

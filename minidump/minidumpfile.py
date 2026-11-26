@@ -79,6 +79,12 @@ class MinidumpFile:
 	def get_reader(self):
 		return MinidumpFileReader(self)
 
+	def forensic_view(self, authorized_ranges=None, **kwargs):
+		return self.get_reader().forensic_view(
+			authorized_ranges=authorized_ranges,
+			**kwargs
+		)
+
 	def _parse(self):
 		self.__parse_header()
 		self.__parse_directories()

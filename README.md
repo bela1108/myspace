@@ -28,6 +28,23 @@ Once in the shell, all commands are documented. Use the `?` command to see all o
 After parsing the minidump file, you can use the MinidumpFileReader and MinidumpBufferedReader objects to perform various searches/reads in the dumped process' address space.  
 Those objects will be able to read and search the VA of the dumped process and have a notion on integer sizes based on the CPU arch.
 
+## Authorized forensic reads
+`MinidumpFileReader.forensic_view(...)` builds a provenance-aware view over memory segments. Supply local half-open authorized intervals, then call `read(address, size)`:
+
+```python
+view = reader.forensic_view(authorized_ranges=[(0x1000, 0x1008)])
+receipt = view.read(0x1000, 16)
+
+if receipt.complete:
+    data = receipt.data
+    for fragment in receipt.fragments:
+        print(fragment.start_address, fragment.source_id, fragment.data.hex())
+else:
+    print(receipt.status, receipt.unauthorized, receipt.uncollected)
+```
+
+The receipt keeps `fragments` for bytes actually read, separate `unauthorized`, `uncollected`, and `multiple_sources` records, and leaves top-level `data` empty unless every requested byte is covered by exactly one licensed source. Unexpected cross-fragment read failures raise `CrossFragmentReadError`; its receipt retains completed audit fragments but never exposes an incomplete buffer as complete material.
+
 # Creating minidump file
 The ```createminidump.py``` script in the utils folder uses the Windows API to create minidump files. This script can also dump processes running on a different user context by enabling ```SeDebugPrivilege```.  
 Of course it only works if you are running it as administrator or a use that has ```SeDebugPrivilege```.
