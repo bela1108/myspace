@@ -1,0 +1,142 @@
+{
+  "common_evidence": "E-SIG-OSV",
+  "common_evidence_ids": [
+    "E-SIG-OSV"
+  ],
+  "duplicate_submissions": [
+    "SUB-SIG-OSV",
+    "SUB-WD-A12"
+  ],
+  "evidence_count": 5,
+  "needs_context": [
+    {
+      "code": "missing_remediation_context",
+      "context": {
+        "submission_id": "SUB-WD-MISSING"
+      },
+      "message": "remediation withdrawal lacks remediation id",
+      "record_id": "WD-MISSING-CONTEXT"
+    },
+    {
+      "code": "missing_evidence_id",
+      "context": {
+        "submission_id": "SUB-SIG-MISSING"
+      },
+      "message": "source sign-off has no evidence id",
+      "record_id": "SUB-SIG-MISSING"
+    },
+    {
+      "code": "missing_fragment_id",
+      "context": {
+        "submission_id": "SUB-DSP-MISSING"
+      },
+      "message": "disposition fragment has no id",
+      "record_id": "SUB-DSP-MISSING"
+    }
+  ],
+  "preserved": [
+    {
+      "advisory_id": "PYSEC-FAKE-0001",
+      "evidence_ids": [
+        "E-IMPACT-A1X",
+        "E-SIG-OSV"
+      ],
+      "fragment_id": "DSP-A-REM-1X",
+      "preserved_by": "E-IMPACT-A1X",
+      "release_line": "1",
+      "remediation_id": "REM-A-1X",
+      "scope": "remediation"
+    },
+    {
+      "advisory_id": "PYSEC-FAKE-0002",
+      "evidence_ids": [
+        "E-IMPACT-B20",
+        "E-SIG-OSV"
+      ],
+      "fragment_id": "DSP-B-REM-20",
+      "preserved_by": "E-IMPACT-B20",
+      "release_line": "2",
+      "remediation_id": "REM-B-20",
+      "scope": "remediation"
+    }
+  ],
+  "preserved_fragments": [
+    {
+      "advisory_id": "PYSEC-FAKE-0001",
+      "evidence_ids": [
+        "E-IMPACT-A1X",
+        "E-SIG-OSV"
+      ],
+      "fragment_id": "DSP-A-REM-1X",
+      "preserved_by": "E-IMPACT-A1X",
+      "release_line": "1",
+      "remediation_id": "REM-A-1X",
+      "scope": "remediation"
+    },
+    {
+      "advisory_id": "PYSEC-FAKE-0002",
+      "evidence_ids": [
+        "E-IMPACT-B20",
+        "E-SIG-OSV"
+      ],
+      "fragment_id": "DSP-B-REM-20",
+      "preserved_by": "E-IMPACT-B20",
+      "release_line": "2",
+      "remediation_id": "REM-B-20",
+      "scope": "remediation"
+    }
+  ],
+  "record_count": 14,
+  "reopen_list": [
+    {
+      "advisory_id": "PYSEC-FAKE-0001",
+      "fragment_id": "DSP-A-REM-12",
+      "reason": "remediation_withdrawn",
+      "release_line": "1.2.x",
+      "remediation_id": "REM-A-12",
+      "scope": "remediation",
+      "withdrawal_ids": [
+        "WD-A-REM12"
+      ]
+    }
+  ],
+  "reopened": [
+    {
+      "advisory_id": "PYSEC-FAKE-0001",
+      "fragment_id": "DSP-A-REM-12",
+      "reason": "remediation_withdrawn",
+      "release_line": "1.2.x",
+      "remediation_id": "REM-A-12",
+      "scope": "remediation",
+      "withdrawal_ids": [
+        "WD-A-REM12"
+      ]
+    }
+  ],
+  "unresolved": [
+    {
+      "code": "missing_remediation_context",
+      "context": {
+        "submission_id": "SUB-WD-MISSING"
+      },
+      "message": "remediation withdrawal lacks remediation id",
+      "record_id": "WD-MISSING-CONTEXT"
+    },
+    {
+      "code": "missing_evidence_id",
+      "context": {
+        "submission_id": "SUB-SIG-MISSING"
+      },
+      "message": "source sign-off has no evidence id",
+      "record_id": "SUB-SIG-MISSING"
+    },
+    {
+      "code": "missing_fragment_id",
+      "context": {
+        "submission_id": "SUB-DSP-MISSING"
+      },
+      "message": "disposition fragment has no id",
+      "record_id": "SUB-DSP-MISSING"
+    }
+  ]
+}

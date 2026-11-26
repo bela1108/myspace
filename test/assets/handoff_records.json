@@ -1,0 +1,150 @@
+{
+  "batch_id": "HANDOFF-FAKE-20261127",
+  "advisories": [
+    {
+      "id": "PYSEC-FAKE-0001",
+      "aliases": ["GHSA-fake-alpha-0001"]
+    },
+    {
+      "id": "PYSEC-FAKE-0002",
+      "aliases": ["GHSA-fake-beta-0002"]
+    }
+  ],
+  "records": [
+    {
+      "submission_id": "SUB-SIG-OSV",
+      "record_type": "source_signoff",
+      "evidence_id": "E-SIG-OSV",
+      "source_id": "osv-fake-mirror",
+      "advisory_ids": ["PYSEC-FAKE-0001", "PYSEC-FAKE-0002"],
+      "signed_by": "security-handoff@example.invalid",
+      "signed_at": "2026-11-26T08:00:00Z",
+      "signature_status": "verified"
+    },
+    {
+      "submission_id": "SUB-SIG-OSV",
+      "record_type": "source_signoff",
+      "evidence_id": "E-SIG-OSV",
+      "source_id": "osv-fake-mirror",
+      "advisory_ids": ["PYSEC-FAKE-0001", "PYSEC-FAKE-0002"],
+      "signed_by": "security-handoff@example.invalid",
+      "signed_at": "2026-11-26T08:00:00Z",
+      "signature_status": "verified"
+    },
+    {
+      "submission_id": "SUB-SIG-EXPIRED",
+      "record_type": "source_receipt",
+      "evidence_id": "E-SIG-REVOKED",
+      "source_id": "old-fake-mirror",
+      "advisory_ids": ["PYSEC-FAKE-0001"],
+      "status": "revoked"
+    },
+    {
+      "submission_id": "SUB-IMPACT-A12",
+      "record_type": "version_impact",
+      "evidence_id": "E-IMPACT-A12",
+      "advisory_id": "PYSEC-FAKE-0001",
+      "package": "Fake_Pkg",
+      "affected_versions": "<1.2.4",
+      "fixed_version": "1.2.4",
+      "release_line": "1.2",
+      "remediation_id": "REM-A-12"
+    },
+    {
+      "submission_id": "SUB-IMPACT-A1X",
+      "record_type": "version_impact",
+      "evidence_id": "E-IMPACT-A1X",
+      "advisory_id": "PYSEC-FAKE-0001",
+      "package": "fake-pkg",
+      "affected_versions": ">=1.3,<1.4.0",
+      "fixed_version": "1.4.0",
+      "release_line": "1.x",
+      "remediation_id": "REM-A-1X"
+    },
+    {
+      "submission_id": "SUB-IMPACT-B20",
+      "record_type": "version_impact",
+      "evidence_id": "E-IMPACT-B20",
+      "advisory_id": "PYSEC-FAKE-0002",
+      "package": "fake-pkg",
+      "affected_versions": "<2.4.0",
+      "fixed_version": "2.4.0",
+      "release_line": "2.x",
+      "remediation_id": "REM-B-20"
+    },
+    {
+      "submission_id": "SUB-DSP-A12",
+      "record_type": "disposition_fragment",
+      "fragment_id": "DSP-A-REM-12",
+      "advisory_id": "PYSEC-FAKE-0001",
+      "scope": "remediation",
+      "remediation_id": "REM-A-12",
+      "release_line": "1.2.x",
+      "package": "fake-pkg",
+      "conclusion": "signed_fixed",
+      "signed_by": "reviewer@example.invalid",
+      "evidence_ids": ["E-SIG-OSV", "E-IMPACT-A12"]
+    },
+    {
+      "submission_id": "SUB-DSP-A1X",
+      "record_type": "disposition_fragment",
+      "fragment_id": "DSP-A-REM-1X",
+      "advisory_id": "PYSEC-FAKE-0001",
+      "scope": "fix_recommendation",
+      "fix_id": "REM-A-1X",
+      "release_line": "1",
+      "package": "fake-pkg",
+      "conclusion": "signed_fixed",
+      "evidence_ids": ["E-SIG-REVOKED", "E-SIG-OSV", "E-IMPACT-A1X"]
+    },
+    {
+      "submission_id": "SUB-DSP-B20",
+      "record_type": "disposition_fragment",
+      "fragment_id": "DSP-B-REM-20",
+      "advisory_id": "GHSA-fake-beta-0002",
+      "scope": "patch",
+      "patch_id": "REM-B-20",
+      "release_line": "2",
+      "package": "fake-pkg",
+      "conclusion": "signed_fixed",
+      "evidence_ids": ["E-SIG-OSV", "E-IMPACT-B20"]
+    },
+    {
+      "submission_id": "SUB-WD-A12",
+      "record_type": "withdrawal",
+      "withdrawal_id": "WD-A-REM12",
+      "advisory_id": "GHSA-fake-alpha-0001",
+      "scope": "patch",
+      "patch_id": "REM-A-12",
+      "withdrawn_at": "2026-11-27T01:00:00Z",
+      "reason": "fake patch bundle recalled"
+    },
+    {
+      "submission_id": "SUB-WD-A12",
+      "record_type": "withdrawal",
+      "withdrawal_id": "WD-A-REM12",
+      "advisory_id": "GHSA-fake-alpha-0001",
+      "scope": "patch",
+      "patch_id": "REM-A-12",
+      "withdrawn_at": "2026-11-27T01:00:00Z",
+      "reason": "fake patch bundle recalled"
+    },
+    {
+      "submission_id": "SUB-WD-MISSING",
+      "record_type": "withdrawal_notice",
+      "withdrawal_id": "WD-MISSING-CONTEXT",
+      "scope": "remediation"
+    },
+    {
+      "submission_id": "SUB-SIG-MISSING",
+      "record_type": "source_signoff",
+      "source_id": "mystery-source"
+    },
+    {
+      "submission_id": "SUB-DSP-MISSING",
+      "record_type": "disposition_fragment",
+      "advisory_id": "PYSEC-FAKE-0001",
+      "scope": "advisory"
+    }
+  ]
+}
