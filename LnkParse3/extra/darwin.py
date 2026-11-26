@@ -1,5 +1,84 @@
 from LnkParse3.decorators import packed_uuid
 from LnkParse3.extra.lnk_extra_base import LnkExtraBase
+from LnkParse3.utils import parse_packed_uuid
+
+
+DARWIN_ANSI_START = 8
+DARWIN_ANSI_SIZE = 260
+DARWIN_UNICODE_START = DARWIN_ANSI_START + DARWIN_ANSI_SIZE
+DARWIN_UNICODE_SIZE = 520
+DARWIN_PACKED_PRODUCT_LENGTH = 20
+
+
+def decode_darwin_descriptor(data):
+    """Decode one DarwinData string without choosing ANSI or Unicode."""
+    result = {
+        "raw": None,
+        "form": None,
+        "form_number": None,
+        "has_feature": False,
+        "has_component": False,
+        "product_code_id": None,
+        "product_packed_code": None,
+        "feature_name": None,
+        "component_id": None,
+        "component_packed_id": None,
+        "decode_error": None,
+    }
+
+    if not data:
+        result["decode_error"] = "Darwin string is empty"
+        return result
+
+    text = str(data).split("\x00", 1)[0]
+    result["raw"] = text
+
+    if len(text) < DARWIN_PACKED_PRODUCT_LENGTH:
+        result["decode_error"] = "Darwin string is shorter than packed product code"
+        return result
+
+    product_packed = text[:DARWIN_PACKED_PRODUCT_LENGTH]
+    result["product_packed_code"] = product_packed
+    try:
+        result["product_code_id"] = parse_packed_uuid(product_packed)
+    except (IndexError, ValueError) as exc:
+        result["decode_error"] = f"invalid packed product code: {exc}"
+        return result
+
+    rest = text[DARWIN_PACKED_PRODUCT_LENGTH:]
+    terminators = [(position, char) for position, char in enumerate(rest) if char in "<>"]
+    if not terminators:
+        result["decode_error"] = "Darwin string has no '<' or '>' terminator"
+        return result
+
+    terminator_position, terminator = min(terminators, key=lambda item: item[0])
+    feature_name = rest[:terminator_position] or None
+    result["feature_name"] = feature_name
+    result["has_feature"] = feature_name is not None
+
+    if terminator == "<":
+        result["form_number"] = 3 if feature_name else 4
+        result["form"] = (
+            "product_feature_advertisement" if feature_name else "product_advertisement"
+        )
+        return result
+
+    component_packed = rest[terminator_position + 1 :][:DARWIN_PACKED_PRODUCT_LENGTH]
+    result["component_packed_id"] = component_packed or None
+    if not component_packed:
+        result["decode_error"] = "Darwin '>' terminator is not followed by a component code"
+        return result
+
+    try:
+        result["component_id"] = parse_packed_uuid(component_packed)
+    except (IndexError, ValueError) as exc:
+        result["decode_error"] = f"invalid packed component code: {exc}"
+        return result
+
+    result["has_component"] = True
+    result["form_number"] = 1 if feature_name else 2
+    result["form"] = "product_feature_component" if feature_name else "product_component"
+    return result
 
 
 """
@@ -40,18 +119,31 @@ class Darwin(LnkExtraBase):
         return "DARWIN_BLOCK"
 
     def darwin_data_ansi(self):
-        start = 8
-        end = start + 260
+        start = DARWIN_ANSI_START
+        end = start + DARWIN_ANSI_SIZE
         binary = self._raw[start:end]
         text = self.text_processor.read_string(binary)
         return text
 
     def darwin_data_unicode(self):
-        start = 268
-        end = start + 520
+        start = DARWIN_UNICODE_START
+        end = start + DARWIN_UNICODE_SIZE
         binary = self._raw[start:end]
         text = self.text_processor.read_unicode_string(binary)
         return text
+
+    def descriptor(self, encoding="unicode"):
+        if encoding.lower() in {"ansi", "ascii"}:
+            return decode_darwin_descriptor(self.darwin_data_ansi())
+        if encoding.lower() in {"unicode", "utf-16", "wide"}:
+            return decode_darwin_descriptor(self.darwin_data_unicode())
+        raise ValueError(f"unknown Darwin encoding: {encoding}")
+
+    def ansi_descriptor(self):
+        return self.descriptor("ansi")
+
+    def unicode_descriptor(self):
+        return self.descriptor("unicode")
 
     @packed_uuid
     def product_code_id(self):

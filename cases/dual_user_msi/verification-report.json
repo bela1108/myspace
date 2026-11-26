@@ -1,0 +1,326 @@
+{
+  "schema": "lnkparse.msi_case_report/v1",
+  "computer": "WORKSTATION-01",
+  "checks": [
+    {
+      "name": "alice_installed_component",
+      "lnk": "lnk/alice-installed.lnk",
+      "selector": {
+        "sid": "S-1-5-21-1111111111-2222222222-3333333333-1001"
+      },
+      "status": "installed_component",
+      "installed": true,
+      "installed_paths": [
+        "C:\\Users\\alice\\AppData\\Local\\Contoso\\Widget\\app.exe"
+      ],
+      "findings": [
+        {
+          "encoding": "ansi",
+          "form_number": 1,
+          "component_id": "BBBBBBBB-2222-3333-4444-555555555555",
+          "classification": "installed_component",
+          "installed_paths": [
+            "C:\\Users\\alice\\AppData\\Local\\Contoso\\Widget\\app.exe"
+          ],
+          "block_locator": "/Users/bill/领域专项项目/state/myspace-view-live-20261126.xGVp1n/workspaces/ds20261126-myspace-evid20-002/cases/dual_user_msi/lnk/alice-installed.lnk#offset=0x0000004c+DarwinDataAnsi",
+          "registration_locators": [
+            "MSI-registration.txt:12"
+          ]
+        },
+        {
+          "encoding": "unicode",
+          "form_number": 1,
+          "component_id": "BBBBBBBB-2222-3333-4444-555555555555",
+          "classification": "installed_component",
+          "installed_paths": [
+            "C:\\Users\\alice\\AppData\\Local\\Contoso\\Widget\\app.exe"
+          ],
+          "block_locator": "/Users/bill/领域专项项目/state/myspace-view-live-20261126.xGVp1n/workspaces/ds20261126-myspace-evid20-002/cases/dual_user_msi/lnk/alice-installed.lnk#offset=0x0000004c+DarwinDataUnicode",
+          "registration_locators": [
+            "MSI-registration.txt:12"
+          ]
+        }
+      ],
+      "conflicts": {
+        "product_code_id": false,
+        "feature_name": false,
+        "component_id": false,
+        "form_number": false,
+        "component_code": false,
+        "has_conflict": false
+      }
+    },
+    {
+      "name": "bob_advertised_feature_only",
+      "lnk": "lnk/bob-advertised-feature.lnk",
+      "selector": {
+        "sid": "S-1-5-21-1111111111-2222222222-3333333333-1002"
+      },
+      "status": "advertised_feature_only",
+      "installed": false,
+      "installed_paths": [],
+      "findings": [
+        {
+          "encoding": "ansi",
+          "form_number": 3,
+          "component_id": null,
+          "classification": "advertised_feature_only",
+          "installed_paths": [],
+          "block_locator": "/Users/bill/领域专项项目/state/myspace-view-live-20261126.xGVp1n/workspaces/ds20261126-myspace-evid20-002/cases/dual_user_msi/lnk/bob-advertised-feature.lnk#offset=0x0000004c+DarwinDataAnsi",
+          "registration_locators": [
+            "MSI-registration.txt:16"
+          ]
+        },
+        {
+          "encoding": "unicode",
+          "form_number": 3,
+          "component_id": null,
+          "classification": "advertised_feature_only",
+          "installed_paths": [],
+          "block_locator": "/Users/bill/领域专项项目/state/myspace-view-live-20261126.xGVp1n/workspaces/ds20261126-myspace-evid20-002/cases/dual_user_msi/lnk/bob-advertised-feature.lnk#offset=0x0000004c+DarwinDataUnicode",
+          "registration_locators": [
+            "MSI-registration.txt:16"
+          ]
+        }
+      ],
+      "conflicts": {
+        "product_code_id": false,
+        "feature_name": false,
+        "component_id": false,
+        "form_number": false,
+        "component_code": false,
+        "has_conflict": false
+      }
+    },
+    {
+      "name": "conflicting_ansi_unicode_user_machine",
+      "lnk": "lnk/conflicting-encodings-user-vs-machine.lnk",
+      "selector": {
+        "user": "alice",
+        "computer": "WORKSTATION-01"
+      },
+      "status": "conflicting_darwin_claims",
+      "installed": true,
+      "installed_paths": [
+        "C:\\Program Files\\Contoso\\Widget\\core.dll",
+        "C:\\Users\\alice\\AppData\\Local\\Contoso\\Widget\\app.exe"
+      ],
+      "findings": [
+        {
+          "encoding": "ansi",
+          "form_number": 1,
+          "component_id": "AAAAAAAA-1111-2222-3333-444444444444",
+          "classification": "installed_component",
+          "installed_paths": [
+            "C:\\Program Files\\Contoso\\Widget\\core.dll"
+          ],
+          "block_locator": "/Users/bill/领域专项项目/state/myspace-view-live-20261126.xGVp1n/workspaces/ds20261126-myspace-evid20-002/cases/dual_user_msi/lnk/conflicting-encodings-user-vs-machine.lnk#offset=0x0000004c+DarwinDataAnsi",
+          "registration_locators": [
+            "MSI-registration.txt:7"
+          ]
+        },
+        {
+          "encoding": "unicode",
+          "form_number": 2,
+          "component_id": "BBBBBBBB-2222-3333-4444-555555555555",
+          "classification": "installed_component",
+          "installed_paths": [
+            "C:\\Users\\alice\\AppData\\Local\\Contoso\\Widget\\app.exe"
+          ],
+          "block_locator": "/Users/bill/领域专项项目/state/myspace-view-live-20261126.xGVp1n/workspaces/ds20261126-myspace-evid20-002/cases/dual_user_msi/lnk/conflicting-encodings-user-vs-machine.lnk#offset=0x0000004c+DarwinDataUnicode",
+          "registration_locators": [
+            "MSI-registration.txt:12"
+          ]
+        }
+      ],
+      "conflicts": {
+        "product_code_id": false,
+        "feature_name": true,
+        "component_id": true,
+        "form_number": true,
+        "component_code": true,
+        "has_conflict": true
+      }
+    },
+    {
+      "name": "form1_feature_component",
+      "lnk": "lnk/darwin_forms/form1-feature-component.lnk",
+      "selector": {
+        "computer": "WORKSTATION-01"
+      },
+      "status": "installed_component",
+      "installed": true,
+      "installed_paths": [
+        "C:\\Program Files\\Contoso\\Widget\\core.dll"
+      ],
+      "findings": [
+        {
+          "encoding": "ansi",
+          "form_number": 1,
+          "component_id": "AAAAAAAA-1111-2222-3333-444444444444",
+          "classification": "installed_component",
+          "installed_paths": [
+            "C:\\Program Files\\Contoso\\Widget\\core.dll"
+          ],
+          "block_locator": "/Users/bill/领域专项项目/state/myspace-view-live-20261126.xGVp1n/workspaces/ds20261126-myspace-evid20-002/cases/dual_user_msi/lnk/darwin_forms/form1-feature-component.lnk#offset=0x0000004c+DarwinDataAnsi",
+          "registration_locators": [
+            "MSI-registration.txt:7"
+          ]
+        },
+        {
+          "encoding": "unicode",
+          "form_number": 1,
+          "component_id": "AAAAAAAA-1111-2222-3333-444444444444",
+          "classification": "installed_component",
+          "installed_paths": [
+            "C:\\Program Files\\Contoso\\Widget\\core.dll"
+          ],
+          "block_locator": "/Users/bill/领域专项项目/state/myspace-view-live-20261126.xGVp1n/workspaces/ds20261126-myspace-evid20-002/cases/dual_user_msi/lnk/darwin_forms/form1-feature-component.lnk#offset=0x0000004c+DarwinDataUnicode",
+          "registration_locators": [
+            "MSI-registration.txt:7"
+          ]
+        }
+      ],
+      "conflicts": {
+        "product_code_id": false,
+        "feature_name": false,
+        "component_id": false,
+        "form_number": false,
+        "component_code": false,
+        "has_conflict": false
+      }
+    },
+    {
+      "name": "form2_component_only",
+      "lnk": "lnk/darwin_forms/form2-component-only.lnk",
+      "selector": {
+        "computer": "WORKSTATION-01"
+      },
+      "status": "installed_component",
+      "installed": true,
+      "installed_paths": [
+        "C:\\Program Files\\Contoso\\Widget\\core.dll"
+      ],
+      "findings": [
+        {
+          "encoding": "ansi",
+          "form_number": 2,
+          "component_id": "AAAAAAAA-1111-2222-3333-444444444444",
+          "classification": "installed_component",
+          "installed_paths": [
+            "C:\\Program Files\\Contoso\\Widget\\core.dll"
+          ],
+          "block_locator": "/Users/bill/领域专项项目/state/myspace-view-live-20261126.xGVp1n/workspaces/ds20261126-myspace-evid20-002/cases/dual_user_msi/lnk/darwin_forms/form2-component-only.lnk#offset=0x0000004c+DarwinDataAnsi",
+          "registration_locators": [
+            "MSI-registration.txt:7"
+          ]
+        },
+        {
+          "encoding": "unicode",
+          "form_number": 2,
+          "component_id": "AAAAAAAA-1111-2222-3333-444444444444",
+          "classification": "installed_component",
+          "installed_paths": [
+            "C:\\Program Files\\Contoso\\Widget\\core.dll"
+          ],
+          "block_locator": "/Users/bill/领域专项项目/state/myspace-view-live-20261126.xGVp1n/workspaces/ds20261126-myspace-evid20-002/cases/dual_user_msi/lnk/darwin_forms/form2-component-only.lnk#offset=0x0000004c+DarwinDataUnicode",
+          "registration_locators": [
+            "MSI-registration.txt:7"
+          ]
+        }
+      ],
+      "conflicts": {
+        "product_code_id": false,
+        "feature_name": false,
+        "component_id": false,
+        "form_number": false,
+        "component_code": false,
+        "has_conflict": false
+      }
+    },
+    {
+      "name": "form3_feature_advertised",
+      "lnk": "lnk/darwin_forms/form3-feature-advertised.lnk",
+      "selector": {
+        "sid": "S-1-5-21-1111111111-2222222222-3333333333-1002"
+      },
+      "status": "advertised_feature_only",
+      "installed": false,
+      "installed_paths": [],
+      "findings": [
+        {
+          "encoding": "ansi",
+          "form_number": 3,
+          "component_id": null,
+          "classification": "advertised_feature_only",
+          "installed_paths": [],
+          "block_locator": "/Users/bill/领域专项项目/state/myspace-view-live-20261126.xGVp1n/workspaces/ds20261126-myspace-evid20-002/cases/dual_user_msi/lnk/darwin_forms/form3-feature-advertised.lnk#offset=0x0000004c+DarwinDataAnsi",
+          "registration_locators": [
+            "MSI-registration.txt:16"
+          ]
+        },
+        {
+          "encoding": "unicode",
+          "form_number": 3,
+          "component_id": null,
+          "classification": "advertised_feature_only",
+          "installed_paths": [],
+          "block_locator": "/Users/bill/领域专项项目/state/myspace-view-live-20261126.xGVp1n/workspaces/ds20261126-myspace-evid20-002/cases/dual_user_msi/lnk/darwin_forms/form3-feature-advertised.lnk#offset=0x0000004c+DarwinDataUnicode",
+          "registration_locators": [
+            "MSI-registration.txt:16"
+          ]
+        }
+      ],
+      "conflicts": {
+        "product_code_id": false,
+        "feature_name": false,
+        "component_id": false,
+        "form_number": false,
+        "component_code": false,
+        "has_conflict": false
+      }
+    },
+    {
+      "name": "form4_product_advertised",
+      "lnk": "lnk/darwin_forms/form4-product-advertised.lnk",
+      "selector": {
+        "sid": "S-1-5-21-1111111111-2222222222-3333333333-1002"
+      },
+      "status": "advertised_feature_only",
+      "installed": false,
+      "installed_paths": [],
+      "findings": [
+        {
+          "encoding": "ansi",
+          "form_number": 4,
+          "component_id": null,
+          "classification": "advertised_feature_only",
+          "installed_paths": [],
+          "block_locator": "/Users/bill/领域专项项目/state/myspace-view-live-20261126.xGVp1n/workspaces/ds20261126-myspace-evid20-002/cases/dual_user_msi/lnk/darwin_forms/form4-product-advertised.lnk#offset=0x0000004c+DarwinDataAnsi",
+          "registration_locators": [
+            "MSI-registration.txt:15"
+          ]
+        },
+        {
+          "encoding": "unicode",
+          "form_number": 4,
+          "component_id": null,
+          "classification": "advertised_feature_only",
+          "installed_paths": [],
+          "block_locator": "/Users/bill/领域专项项目/state/myspace-view-live-20261126.xGVp1n/workspaces/ds20261126-myspace-evid20-002/cases/dual_user_msi/lnk/darwin_forms/form4-product-advertised.lnk#offset=0x0000004c+DarwinDataUnicode",
+          "registration_locators": [
+            "MSI-registration.txt:15"
+          ]
+        }
+      ],
+      "conflicts": {
+        "product_code_id": false,
+        "feature_name": false,
+        "component_id": false,
+        "form_number": false,
+        "component_code": false,
+        "has_conflict": false
+      }
+    }
+  ]
+}

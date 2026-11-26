@@ -90,6 +90,7 @@ class LnkFile:
         index += self.string_data.size()
 
         # Parse Extra Data
+        self.extra_data_offset = index
         self.extras = ExtraData(
             indata=self.indata[index:], cp=self.cp, allow_terminal_blocks=self.allow_terminal_blocks
         )

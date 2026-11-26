@@ -1,0 +1,98 @@
+{
+  "schema": "lnkparse.msi_registration_excerpt/v1",
+  "line_file": "MSI-registration.txt",
+  "case": "dual_user_advertised_feature",
+  "computers": [
+    {
+      "name": "WORKSTATION-01",
+      "line": 2,
+      "users": [
+        {
+          "name": "MACHINE",
+          "sid": "S-1-5-18",
+          "scope": "machine",
+          "line": 4,
+          "products": [
+            {
+              "product_code": "11223344-5566-7788-99AA-BBCCDDEEFF00",
+              "compressed_product_code": "!%)S(5=RKNJu)mjJRBC!",
+              "advertised": false,
+              "line": 5,
+              "features": [
+                {
+                  "name": "CoreFeature",
+                  "state": "Installed",
+                  "line": 6,
+                  "components": [
+                    {
+                      "component_code": "AAAAAAAA-1111-2222-3333-444444444444",
+                      "compressed_component_code": "!+Lq_5]P{-mozx95M{x9",
+                      "line": 7,
+                      "installed": true,
+                      "installed_path": "C:\\Program Files\\Contoso\\Widget\\core.dll",
+                      "registry_key": "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Installer\\UserData\\S-1-5-18\\Components\\!+Lq_5]P{-mozx95M{x9"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "alice",
+          "sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+          "scope": "user",
+          "line": 9,
+          "products": [
+            {
+              "product_code": "11223344-5566-7788-99AA-BBCCDDEEFF00",
+              "compressed_product_code": "!%)S(5=RKNJu)mjJRBC!",
+              "advertised": false,
+              "line": 10,
+              "features": [
+                {
+                  "name": "AliceFeature",
+                  "state": "Installed",
+                  "line": 11,
+                  "components": [
+                    {
+                      "component_code": "BBBBBBBB-2222-3333-4444-555555555555",
+                      "compressed_component_code": "mdaDe!7fN4[M5LC!'6LC",
+                      "line": 12,
+                      "installed": true,
+                      "installed_path": "C:\\Users\\alice\\AppData\\Local\\Contoso\\Widget\\app.exe",
+                      "registry_key": "HKU\\S-1-5-21-1111111111-2222222222-3333333333-1001\\Software\\Microsoft\\Installer\\Components\\mdaDe!7fN4[M5LC!'6LC"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "bob",
+          "sid": "S-1-5-21-1111111111-2222222222-3333333333-1002",
+          "scope": "user",
+          "line": 14,
+          "products": [
+            {
+              "product_code": "11223344-5566-7788-99AA-BBCCDDEEFF00",
+              "compressed_product_code": "!%)S(5=RKNJu)mjJRBC!",
+              "advertised": true,
+              "line": 15,
+              "features": [
+                {
+                  "name": "BobAdvertisedFeature",
+                  "state": "Advertised",
+                  "advertised": true,
+                  "line": 16,
+                  "components": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

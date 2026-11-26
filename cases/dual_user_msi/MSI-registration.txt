@@ -1,0 +1,17 @@
+MSI registration excerpt - fictional same-computer/two-user case
+computer=WORKSTATION-01
+
+principal=MACHINE sid=S-1-5-18 scope=machine hive=UserData/S-1-5-18
+product={11223344-5566-7788-99AA-BBCCDDEEFF00} compressed=!%)S(5=RKNJu)mjJRBC! assignment=installed
+feature=CoreFeature state=Installed
+component={AAAAAAAA-1111-2222-3333-444444444444} compressed=!+Lq_5]P{-mozx95M{x9 installed_path=C:\Program Files\Contoso\Widget\core.dll key=HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData\S-1-5-18\Components\!+Lq_5]P{-mozx95M{x9
+
+principal=alice sid=S-1-5-21-1111111111-2222222222-3333333333-1001 scope=user hive=HKU/S-1-5-21-1111111111-2222222222-3333333333-1001
+product={11223344-5566-7788-99AA-BBCCDDEEFF00} compressed=!%)S(5=RKNJu)mjJRBC! assignment=installed context=per-user
+feature=AliceFeature state=Installed
+component={BBBBBBBB-2222-3333-4444-555555555555} compressed=mdaDe!7fN4[M5LC!'6LC installed_path=C:\Users\alice\AppData\Local\Contoso\Widget\app.exe key=HKU\S-1-5-21-1111111111-2222222222-3333333333-1001\Software\Microsoft\Installer\Components\mdaDe!7fN4[M5LC!'6LC
+
+principal=bob sid=S-1-5-21-1111111111-2222222222-3333333333-1002 scope=user hive=HKU/S-1-5-21-1111111111-2222222222-3333333333-1002
+product={11223344-5566-7788-99AA-BBCCDDEEFF00} compressed=!%)S(5=RKNJu)mjJRBC! assignment=advertised context=per-user
+feature=BobAdvertisedFeature state=Advertised components=0 key_path=<none>
+notice=Bob has no Components key path and no installed_path for this product
