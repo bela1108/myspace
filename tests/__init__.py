@@ -176,12 +176,14 @@ def test_classes():
     from .test_util import UtilTests
     from .test_parser import ParserTests
     from .test_core import CoreTests
+    from .test_handoff import HandoffTests
 
     return [
         AlgoTests,
         CMSTests,
         CRLTests,
         CSRTests,
+        HandoffTests,
         InitTests,
         KeysTests,
         OCSPTests,

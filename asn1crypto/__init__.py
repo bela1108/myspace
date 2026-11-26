@@ -7,7 +7,28 @@ __all__ = [
     '__version__',
     '__version_info__',
     'load_order',
+    'EvidenceIdentity',
+    'PresentableProjection',
+    'VerifiableMaterial',
+    'VerificationReceipt',
+    'LocalSignoff',
+    'HandoffBundle',
+    'TransferBundle',
+    'VerificationRequired',
+    'EvidenceMismatch',
 ]
+
+from .handoff import (  # noqa: E402
+    EvidenceIdentity,
+    PresentableProjection,
+    VerifiableMaterial,
+    VerificationReceipt,
+    LocalSignoff,
+    HandoffBundle,
+    TransferBundle,
+    VerificationRequired,
+    EvidenceMismatch,
+)
 
 
 def load_order():
@@ -43,5 +64,7 @@ def load_order():
         'asn1crypto.pdf',
         'asn1crypto.pkcs12',
         'asn1crypto.tsp',
+        'asn1crypto.handoff',
+        'asn1crypto.transfer',
         'asn1crypto',
     ]
