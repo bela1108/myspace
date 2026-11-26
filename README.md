@@ -18,6 +18,25 @@ One-shot parsing and information retrieval.
   
 ```minidump.py --all <mindidump file>  ```  
 See help for possible options.
+
+#### Offline evidence query
+
+Use `minidump.evidence` to attribute supplier statements to local minidumps:
+
+```python
+from minidump.evidence import EvidenceQuery, reconcile_briefing
+
+query = EvidenceQuery.from_paths(["first.dmp", "second.dmp"])
+result = reconcile_briefing(briefing, supplier_statement, query)
+```
+
+A statement updates the briefing only when its thread ID, header timestamp,
+and SHA-256 snapshot identity all match the attributed dump. Partial or
+conflicting confirmation leaves the original briefing unchanged;
+`result.reconstruct()` rebuilds that baseline, while
+`result.unverified_fields` lists identity fields that were not proven.
+`await EvidenceQuery.open_async(path_a, path_b)` keeps attribution tied to
+content and path, not async opening order.
 #### Shell
 There is and interactive command shell to get all info (modules, threads, excetpions etc) and browse the virtual memory of the process dumped (read/read int/read uint/move/peek/tell)  
   
