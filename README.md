@@ -76,6 +76,50 @@ cose_msg.decrypt()
 b'a secret message'
 ```
 
+### Strict Critical extension acceptance
+
+`verify_signature()` keeps its original behavior.  When a message declares
+Critical extensions, use `verify_strict()` and register a local handler for
+every extension the receiver understands:
+
+```python
+from pycose.messages import Sign1Message
+
+
+def delivery_window(value, context):
+    return value["not_before"] <= context.now <= value["not_after"]
+
+
+msg = Sign1Message.decode(received)
+msg.key = cose_key
+
+result = msg.verify_strict({1500: delivery_window}, now=now)
+assert result.signature_valid         # cryptography is reported separately
+assert result.critical[1500].accepted # local interpretation evidence
+assert result.accepted                # both layers of the decision
+```
+
+For `SignMessage`, the top-level header and each signer header are checked
+independently.  Handling an extension in the message header is not evidence
+that a signer understands it:
+
+```python
+result = sign_msg.verify_strict(
+    {1500: delivery_window},                 # message layer
+    signer_critical_extensions=[
+        {1500: delivery_window},             # signer 0 understands it
+        {},                                  # signer 1 does not
+    ],
+    now=now,
+)
+
+assert result.message.accepted
+assert result.signers[0].accepted
+assert not result.signers[1].accepted
+assert result.crypto_results == [True, True]
+assert not result.accepted                    # one signer rejected the extension
+```
+
 ### More examples
 More examples can be found [here](https://pycose.readthedocs.io/en/latest/examples.html)
 
@@ -98,4 +142,3 @@ The project depends on [pyca/cryptography](https://github.com/pyca/cryptography)
 ## Documentation
 
 More documentation on COSE and the `cose` API can be found at: https://pycose.readthedocs.io
-

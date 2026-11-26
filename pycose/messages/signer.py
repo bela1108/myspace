@@ -72,6 +72,28 @@ class CoseSignature(SignCommon):
     def encode(self, detached_payload: Optional[bytes] = None, *args, **kwargs) -> list:
         return [self.phdr_encoded, self.uhdr_encoded, self.compute_signature(detached_payload)]
 
+    def verify_strict(self,
+                      critical_extensions=None,
+                      detached_payload: Optional[bytes] = None,
+                      now=None,
+                      **kwargs):
+        """Verify this signer's signature and its own protected Critical fields."""
+        from pycose.critical import verify_signer_strict
+
+        return verify_signer_strict(
+            self,
+            critical_extensions=critical_extensions,
+            detached_payload=detached_payload,
+            now=now,
+            **kwargs
+        )
+
+    verify_critical = verify_strict
+    verify_with_extensions = verify_strict
+    verify_signature_strict = verify_strict
+    strict_verify = verify_strict
+    verify = verify_strict
+
     def __repr__(self) -> str:
         return f'<COSE_Signature: [{self._phdr}, {self._uhdr}, {utils.truncate(self._payload)}]>'
 

@@ -70,6 +70,38 @@ class Sign1Message(SignCommon):
 
         return cbor2.dumps(sig_structure)
 
+    def verify_strict(self,
+                      critical_extensions=None,
+                      detached_payload: Optional[bytes] = None,
+                      now=None,
+                      **kwargs):
+        """Verify the signature and the locally understood Critical extensions.
+
+        This is an opt-in strict entry point; :meth:`verify_signature` keeps its
+        existing behavior for older callers.  ``critical_extensions`` is a
+        mapping from protected-header label to handler (or a
+        :class:`~pycose.critical.CriticalExtensionRegistry`).  Only the protected
+        ``Critical`` declaration of this Sign1 message is trusted.
+
+        :returns: A :class:`~pycose.critical.StrictVerificationResult` with the
+            cryptographic result and per-extension results separately available.
+        """
+        from pycose.critical import verify_sign1_strict
+
+        return verify_sign1_strict(
+            self,
+            critical_extensions=critical_extensions,
+            detached_payload=detached_payload,
+            now=now,
+            **kwargs
+        )
+
+    verify_critical = verify_strict
+    verify_with_extensions = verify_strict
+    verify_signature_strict = verify_strict
+    strict_verify = verify_strict
+    verify = verify_strict
+
     def encode(self, tag: bool = True, sign: bool = True, detached_payload: Optional[bytes] = None, *args, **kwargs) -> CBOR:
         """ Encodes the message into a CBOR array with or without a CBOR tag. """
 

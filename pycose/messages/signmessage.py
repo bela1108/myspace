@@ -86,6 +86,43 @@ class _SignMessage(CoseMessage, metaclass=abc.ABCMeta):
 
         return message
 
+    def verify_strict(self,
+                      critical_extensions=None,
+                      signer_critical_extensions=None,
+                      detached_payload: Optional[bytes] = None,
+                      now=None,
+                      **kwargs):
+        """Verify all signatures and each layer's Critical declarations.
+
+        ``critical_extensions`` applies to the top-level message header only.
+        ``signer_critical_extensions`` applies to signer headers and can be a
+        mapping (shared by all signers), or a list with one mapping/registry per
+        signer.  Message-layer handlers are deliberately *not* reused for
+        signers: every signer has to provide its own handling evidence.
+
+        All signatures are still checked when one signer rejects an extension,
+        so callers can inspect the cryptographic outcome of every signer while
+        the overall result remains unaccepted.
+
+        :returns: A :class:`~pycose.critical.SignStrictVerificationResult`.
+        """
+        from pycose.critical import verify_sign_message_strict
+
+        return verify_sign_message_strict(
+            self,
+            critical_extensions=critical_extensions,
+            signer_critical_extensions=signer_critical_extensions,
+            detached_payload=detached_payload,
+            now=now,
+            **kwargs
+        )
+
+    verify_critical = verify_strict
+    verify_with_extensions = verify_strict
+    verify_signature_strict = verify_strict
+    strict_verify = verify_strict
+    verify = verify_strict
+
     def __repr__(self) -> str:
         phdr, uhdr = self._hdr_repr()
 

@@ -5,3 +5,15 @@ from .mac0message import Mac0Message  # noqa: F01
 from .macmessage import MacMessage  # noqa: F01
 from .sign1message import Sign1Message  # noqa: F01
 from .signmessage import SignMessage  # noqa: F01
+from pycose.critical import (  # noqa: F01
+    UNSUPPORTED,
+    CriticalCheckContext,
+    CriticalCheckResult,
+    CriticalExtensionRegistry,
+    CriticalVerificationResult,
+    LayerVerificationResult,
+    SignStrictVerificationResult,
+    SignerVerificationResult,
+    StrictVerificationResult,
+    verify_strict,
+)
