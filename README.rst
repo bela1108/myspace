@@ -86,6 +86,44 @@ For help on the calculator options run:
 
     $ cvss_calculator --help
 
+Offline queue audit
+~~~~~~~~~~~~~~~~~~~
+
+The `cvss.queue_audit` module audits a queue of CVSS-scored tickets
+offline. It keeps the submission-time version and vector of every ticket,
+derives a service priority from configurable tiers that are comparable
+across CVSS versions, and logs every queue movement with its reason.
+
+.. code-block:: python
+
+    from datetime import datetime, timedelta
+
+    from cvss.queue_audit import QueueAudit
+
+    tiers = [
+        {"name": "P1-critical", "min_score": 9.0, "max_score": 10.0,
+         "versions": ["3.0", "3.1", "4.0"]},
+        {"name": "P2-high", "min_score": 7.0, "max_score": 8.9,
+         "versions": ["3.0", "3.1", "4.0"]},
+        # ... CVSS 2.0 omitted: legacy v2-only tickets are held in a
+        # manual-handling slot outside the automatic queue.
+    ]
+    now = datetime(2026, 11, 26, 9, 0, 0)
+    audit = QueueAudit(tiers, clock=lambda: now)  # fixed clock for replays
+
+    audit.submit("T1", "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H")
+    audit.submit("T2", "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N")
+    audit.correct("T2", "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H")
+    audit.pin("T2", approver="handler-alice",
+              expires_at=now + timedelta(hours=2))
+    print(audit.queue())
+    print(audit.report())
+
+Only corrections that genuinely cross a tier boundary reorder the queue;
+within a tier, equal scores keep the existing queue order. Approved
+short-term jumps (pins) expire against the supplied clock and the ticket
+then returns to its natural position.
+
 Testing
 -------
 
