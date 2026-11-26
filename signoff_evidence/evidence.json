@@ -1,0 +1,387 @@
+{
+  "schema": "pe-signoff-structural-evidence/v1",
+  "scope": {
+    "offline": true,
+    "structural_only": true,
+    "signature_verification": "not_performed",
+    "trust_statement": "Hashes and offsets prove archival structure only; placeholder material is not a trusted signature."
+  },
+  "tool_versions": {
+    "pefile": "2024.8.26"
+  },
+  "artifact": {
+    "path": "signoff_evidence/minimal-two-receipt-sections.exe",
+    "name": "minimal-two-receipt-sections.exe",
+    "size_bytes": 2304,
+    "sha256": "08e4c8a4ee349ea8555ceed3df8349999e129a893975861d121c226e206957aa"
+  },
+  "pe_header_evidence": {
+    "machine": "0x8664",
+    "number_of_sections": 3,
+    "optional_header_magic": "0x20b",
+    "image_base": "0x140000000",
+    "section_alignment": "0x1000",
+    "file_alignment": "0x200",
+    "subsystem": 3,
+    "entry_point_rva": "0x1000"
+  },
+  "pefile_warnings": [
+    "Byte 0x00 makes up 67.6649% of the file's contents. This may indicate truncation / malformation."
+  ],
+  "sections": [
+    {
+      "source": "pefile.sections / IMAGE_SECTION_HEADER",
+      "name": ".text",
+      "index_in_header_table": 0,
+      "virtual_address": "0x1000",
+      "virtual_size_bytes": 1,
+      "virtual_end": "0x1001",
+      "raw_offset": "0x200",
+      "raw_offset_int": 512,
+      "raw_size_bytes": 512,
+      "raw_end_exclusive": "0x400",
+      "raw_sha256_including_alignment": "3d64acbf4147b610d88c922fab5f77a63dfd402f80a365fa5a88a87ea6e37b88",
+      "characteristics": "0x60000020",
+      "raw_offset_file_alignment_remainder": 0,
+      "raw_size_file_alignment_remainder": 0,
+      "virtual_address_section_alignment_remainder": 0,
+      "payload": null
+    },
+    {
+      "source": "pefile.sections / IMAGE_SECTION_HEADER",
+      "name": ".rcp0",
+      "index_in_header_table": 1,
+      "virtual_address": "0x2000",
+      "virtual_size_bytes": 218,
+      "virtual_end": "0x20da",
+      "raw_offset": "0x400",
+      "raw_offset_int": 1024,
+      "raw_size_bytes": 512,
+      "raw_end_exclusive": "0x600",
+      "raw_sha256_including_alignment": "0585c957db03ca86248c067b1ea781579c244b58c7c278ccd66bb62f508a789e",
+      "characteristics": "0x40000040",
+      "raw_offset_file_alignment_remainder": 0,
+      "raw_size_file_alignment_remainder": 0,
+      "virtual_address_section_alignment_remainder": 0,
+      "payload": {
+        "manifest_receipt_id": "RCPT-APPROVED-ALPHA",
+        "offset_in_section": 0,
+        "size_bytes": 218,
+        "sha256": "f0906f458a3cc357e4977616832665562e25b6cf320166f76183f83f1c301d85",
+        "manifest_sha256": "f0906f458a3cc357e4977616832665562e25b6cf320166f76183f83f1c301d85",
+        "hash_matches_manifest": true,
+        "retained_alignment_padding": {
+          "start_file_offset": "0x4da",
+          "end_exclusive_file_offset": "0x600",
+          "byte_count": 294,
+          "all_zero": true
+        }
+      }
+    },
+    {
+      "source": "pefile.sections / IMAGE_SECTION_HEADER",
+      "name": ".rcp1",
+      "index_in_header_table": 2,
+      "virtual_address": "0x3000",
+      "virtual_size_bytes": 219,
+      "virtual_end": "0x30db",
+      "raw_offset": "0x600",
+      "raw_offset_int": 1536,
+      "raw_size_bytes": 512,
+      "raw_end_exclusive": "0x800",
+      "raw_sha256_including_alignment": "2b45b73e280eb5fcec570eb7f5bbcb0ea73b18b03a6ba913522402c84266a058",
+      "characteristics": "0x40000040",
+      "raw_offset_file_alignment_remainder": 0,
+      "raw_size_file_alignment_remainder": 0,
+      "virtual_address_section_alignment_remainder": 0,
+      "payload": {
+        "manifest_receipt_id": "RCPT-COUNTERSIGN-BETA",
+        "offset_in_section": 0,
+        "size_bytes": 219,
+        "sha256": "27a6915c4fb0f916f3c0ba29b6ea79ee67258f69907bc49ea24f9bc96f458491",
+        "manifest_sha256": "27a6915c4fb0f916f3c0ba29b6ea79ee67258f69907bc49ea24f9bc96f458491",
+        "hash_matches_manifest": true,
+        "retained_alignment_padding": {
+          "start_file_offset": "0x6db",
+          "end_exclusive_file_offset": "0x800",
+          "byte_count": 293,
+          "all_zero": true
+        }
+      }
+    }
+  ],
+  "security_directory": {
+    "source": "pefile.OPTIONAL_HEADER.DATA_DIRECTORY[IMAGE_DIRECTORY_ENTRY_SECURITY]",
+    "directory_index": 4,
+    "directory_entry_encoding": "For this directory only, VirtualAddress is a raw file offset, not an RVA.",
+    "file_offset": "0x800",
+    "file_offset_int": 2048,
+    "size_bytes": 256,
+    "offset_8byte_aligned": true,
+    "size_8byte_aligned": true,
+    "win_certificates": [
+      {
+        "index": 0,
+        "header_file_offset": "0x800",
+        "declared_length_bytes": 125,
+        "aligned_span_bytes": 128,
+        "wRevision": "0x200",
+        "wCertificateType": "0x2",
+        "payload_file_range": {
+          "start": "0x808",
+          "end_exclusive": "0x87d",
+          "sha256": "051bf7510b56b62896f48963694087687f95534af7ec8dfb3f989fd4565765d9"
+        },
+        "alignment_padding": {
+          "start": "0x87d",
+          "end_exclusive": "0x880",
+          "byte_count": 3,
+          "all_zero": true
+        },
+        "next_offset_8byte_aligned": true,
+        "structural_note": "Placeholder envelope only; bCertificate is not parsed as PKCS#7."
+      },
+      {
+        "index": 1,
+        "header_file_offset": "0x880",
+        "declared_length_bytes": 125,
+        "aligned_span_bytes": 128,
+        "wRevision": "0x200",
+        "wCertificateType": "0x2",
+        "payload_file_range": {
+          "start": "0x888",
+          "end_exclusive": "0x8fd",
+          "sha256": "0d3fd933ebe58f0f65c5a3a7fe1a7f22224ddf477d56953ee4b19356f29f9edb"
+        },
+        "alignment_padding": {
+          "start": "0x8fd",
+          "end_exclusive": "0x900",
+          "byte_count": 3,
+          "all_zero": true
+        },
+        "next_offset_8byte_aligned": true,
+        "structural_note": "Placeholder envelope only; bCertificate is not parsed as PKCS#7."
+      }
+    ],
+    "parsed_record_count": 2,
+    "consumes_directory_exactly": true,
+    "starts_after_last_raw_section": true
+  },
+  "manifest_audit": {
+    "counts": {
+      "manifest_records": 4,
+      "real_receipt_sections": 2,
+      "matched_unique_materials": 2,
+      "missing_real_section": 1,
+      "duplicate_archive": 1,
+      "hash_mismatch": 0
+    },
+    "findings": [
+      {
+        "receipt_id": "RCPT-APPROVED-ALPHA",
+        "archive_accession": "SIGNBOOK-ALPHA",
+        "declared_source": "project_manifest",
+        "claimed_pe_section": ".rcp0",
+        "retention": "approved",
+        "payload_sha256": "f0906f458a3cc357e4977616832665562e25b6cf320166f76183f83f1c301d85",
+        "real_section_present": true,
+        "hash_matches_manifest": true,
+        "duplicate_of_evidence": null,
+        "evidence_ref": {
+          "source": "pefile.sections / IMAGE_SECTION_HEADER",
+          "pe_section": ".rcp0",
+          "file_offset": "0x400",
+          "raw_section_end_exclusive": "0x600",
+          "payload_size": 218,
+          "payload_sha256": "f0906f458a3cc357e4977616832665562e25b6cf320166f76183f83f1c301d85"
+        },
+        "classifications": [
+          "matched_real_section"
+        ],
+        "primary_classification": "matched_real_section"
+      },
+      {
+        "receipt_id": "RCPT-COUNTERSIGN-BETA",
+        "archive_accession": "SIGNBOOK-BETA",
+        "declared_source": "project_manifest",
+        "claimed_pe_section": ".rcp1",
+        "retention": "retained",
+        "payload_sha256": "27a6915c4fb0f916f3c0ba29b6ea79ee67258f69907bc49ea24f9bc96f458491",
+        "real_section_present": true,
+        "hash_matches_manifest": true,
+        "duplicate_of_evidence": null,
+        "evidence_ref": {
+          "source": "pefile.sections / IMAGE_SECTION_HEADER",
+          "pe_section": ".rcp1",
+          "file_offset": "0x600",
+          "raw_section_end_exclusive": "0x800",
+          "payload_size": 219,
+          "payload_sha256": "27a6915c4fb0f916f3c0ba29b6ea79ee67258f69907bc49ea24f9bc96f458491"
+        },
+        "classifications": [
+          "matched_real_section"
+        ],
+        "primary_classification": "matched_real_section"
+      },
+      {
+        "receipt_id": "RCPT-GHOST-MISSING-SECTION",
+        "archive_accession": "SIGNBOOK-GHOST",
+        "declared_source": "project_manifest",
+        "claimed_pe_section": ".rcp9",
+        "retention": "claimed",
+        "payload_sha256": "13aaca18d995438d51c672e438138f1643221cb750a5566c9538cbdf86fac757",
+        "real_section_present": false,
+        "evidence_ref": null,
+        "classifications": [
+          "missing_real_section"
+        ],
+        "primary_classification": "missing_real_section"
+      },
+      {
+        "receipt_id": "ARCHIVE-DUP-ALPHA",
+        "archive_accession": "SIGNBOOK-ALPHA-DUPLICATE",
+        "declared_source": "duplicate_archive",
+        "claimed_pe_section": ".rcp0",
+        "retention": "duplicate-copy",
+        "payload_sha256": "f0906f458a3cc357e4977616832665562e25b6cf320166f76183f83f1c301d85",
+        "real_section_present": true,
+        "hash_matches_manifest": true,
+        "duplicate_of_evidence": "RCPT-APPROVED-ALPHA",
+        "evidence_ref": {
+          "source": "pefile.sections / IMAGE_SECTION_HEADER",
+          "pe_section": ".rcp0",
+          "file_offset": "0x400",
+          "raw_section_end_exclusive": "0x600",
+          "payload_size": 218,
+          "payload_sha256": "f0906f458a3cc357e4977616832665562e25b6cf320166f76183f83f1c301d85"
+        },
+        "classifications": [
+          "duplicate_archive"
+        ],
+        "primary_classification": "duplicate_archive"
+      }
+    ]
+  },
+  "external_order_audit": {
+    "source": "external_registration",
+    "orders": [
+      {
+        "file": "external-registration-order-a.json",
+        "package_no": "PKG-WIN-0001",
+        "entries": [
+          {
+            "external_position_zero_based": 0,
+            "registration_no": "EXT-B-SECOND-IN-A",
+            "receipt_id": "RCPT-COUNTERSIGN-BETA",
+            "matched_by": "payload_sha256",
+            "physical_locators": [
+              {
+                "pe_section": ".rcp1",
+                "file_offset": "0x600",
+                "payload_sha256": "27a6915c4fb0f916f3c0ba29b6ea79ee67258f69907bc49ea24f9bc96f458491"
+              }
+            ],
+            "manifest_matches": [
+              "RCPT-COUNTERSIGN-BETA"
+            ],
+            "is_approved_retention_material": false
+          },
+          {
+            "external_position_zero_based": 1,
+            "registration_no": "EXT-A-APPROVED-SECOND-IN-A",
+            "receipt_id": "RCPT-APPROVED-ALPHA",
+            "matched_by": "payload_sha256",
+            "physical_locators": [
+              {
+                "pe_section": ".rcp0",
+                "file_offset": "0x400",
+                "payload_sha256": "f0906f458a3cc357e4977616832665562e25b6cf320166f76183f83f1c301d85"
+              }
+            ],
+            "manifest_matches": [
+              "RCPT-APPROVED-ALPHA",
+              "ARCHIVE-DUP-ALPHA"
+            ],
+            "is_approved_retention_material": true
+          }
+        ]
+      },
+      {
+        "file": "external-registration-order-b.json",
+        "package_no": "PKG-WIN-0001",
+        "entries": [
+          {
+            "external_position_zero_based": 0,
+            "registration_no": "EXT-A-APPROVED-SECOND-IN-A",
+            "receipt_id": "RCPT-APPROVED-ALPHA",
+            "matched_by": "payload_sha256",
+            "physical_locators": [
+              {
+                "pe_section": ".rcp0",
+                "file_offset": "0x400",
+                "payload_sha256": "f0906f458a3cc357e4977616832665562e25b6cf320166f76183f83f1c301d85"
+              }
+            ],
+            "manifest_matches": [
+              "RCPT-APPROVED-ALPHA",
+              "ARCHIVE-DUP-ALPHA"
+            ],
+            "is_approved_retention_material": true
+          },
+          {
+            "external_position_zero_based": 1,
+            "registration_no": "EXT-B-SECOND-IN-A",
+            "receipt_id": "RCPT-COUNTERSIGN-BETA",
+            "matched_by": "payload_sha256",
+            "physical_locators": [
+              {
+                "pe_section": ".rcp1",
+                "file_offset": "0x600",
+                "payload_sha256": "27a6915c4fb0f916f3c0ba29b6ea79ee67258f69907bc49ea24f9bc96f458491"
+              }
+            ],
+            "manifest_matches": [
+              "RCPT-COUNTERSIGN-BETA"
+            ],
+            "is_approved_retention_material": false
+          }
+        ]
+      }
+    ],
+    "swap_test": {
+      "approved_locator_order_a": {
+        "external_position_zero_based": 1,
+        "physical_locators": [
+          {
+            "pe_section": ".rcp0",
+            "file_offset": "0x400",
+            "payload_sha256": "f0906f458a3cc357e4977616832665562e25b6cf320166f76183f83f1c301d85"
+          }
+        ]
+      },
+      "approved_locator_order_b": {
+        "external_position_zero_based": 0,
+        "physical_locators": [
+          {
+            "pe_section": ".rcp0",
+            "file_offset": "0x400",
+            "payload_sha256": "f0906f458a3cc357e4977616832665562e25b6cf320166f76183f83f1c301d85"
+          }
+        ]
+      },
+      "same_physical_location_after_swap": true,
+      "external_positions_changed": true,
+      "passed": true,
+      "matching_key": "payload_sha256 -> project manifest -> IMAGE_SECTION_HEADER raw range"
+    }
+  },
+  "verdict": {
+    "expected_two_real_receipt_sections": true,
+    "structural_checks_passed": true,
+    "expected_dispositions_present": {
+      "missing_real_section": true,
+      "duplicate_archive": true
+    },
+    "errors": []
+  }
+}

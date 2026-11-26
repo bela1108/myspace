@@ -1,0 +1,16 @@
+{
+  "schema": "external-registration/v1-order-a",
+  "package_no": "PKG-WIN-0001",
+  "registrations": [
+    {
+      "registration_no": "EXT-B-SECOND-IN-A",
+      "receipt_id": "RCPT-COUNTERSIGN-BETA",
+      "payload_sha256": "27a6915c4fb0f916f3c0ba29b6ea79ee67258f69907bc49ea24f9bc96f458491"
+    },
+    {
+      "registration_no": "EXT-A-APPROVED-SECOND-IN-A",
+      "receipt_id": "RCPT-APPROVED-ALPHA",
+      "payload_sha256": "f0906f458a3cc357e4977616832665562e25b6cf320166f76183f83f1c301d85"
+    }
+  ]
+}

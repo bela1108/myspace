@@ -1,0 +1,63 @@
+{
+  "schema": "project-signoff-manifest/v1-structural-fixture",
+  "scope": "Offline structural reconciliation only; no signature trust validation.",
+  "pe_file": "minimal-two-receipt-sections.exe",
+  "windows_release_report": {
+    "registered_signature_package_count": 1,
+    "package_numbers": [
+      "PKG-WIN-0001"
+    ],
+    "pe_data_directory": "IMAGE_DIRECTORY_ENTRY_SECURITY",
+    "data_directory_index": 4,
+    "note": "One Windows data-directory registration can contain multiple aligned WIN_CERTIFICATE records."
+  },
+  "alignment_policy": {
+    "section_alignment": 4096,
+    "file_alignment": 512,
+    "win_certificate_alignment": 8,
+    "preserve_raw_padding": true
+  },
+  "receipts": [
+    {
+      "receipt_id": "RCPT-APPROVED-ALPHA",
+      "archive_accession": "SIGNBOOK-ALPHA",
+      "source": "project_manifest",
+      "pe_section": ".rcp0",
+      "payload_offset_in_section": 0,
+      "payload_size": 218,
+      "payload_sha256": "f0906f458a3cc357e4977616832665562e25b6cf320166f76183f83f1c301d85",
+      "retention": "approved"
+    },
+    {
+      "receipt_id": "RCPT-COUNTERSIGN-BETA",
+      "archive_accession": "SIGNBOOK-BETA",
+      "source": "project_manifest",
+      "pe_section": ".rcp1",
+      "payload_offset_in_section": 0,
+      "payload_size": 219,
+      "payload_sha256": "27a6915c4fb0f916f3c0ba29b6ea79ee67258f69907bc49ea24f9bc96f458491",
+      "retention": "retained"
+    },
+    {
+      "receipt_id": "RCPT-GHOST-MISSING-SECTION",
+      "archive_accession": "SIGNBOOK-GHOST",
+      "source": "project_manifest",
+      "pe_section": ".rcp9",
+      "payload_offset_in_section": 0,
+      "payload_size": 61,
+      "payload_sha256": "13aaca18d995438d51c672e438138f1643221cb750a5566c9538cbdf86fac757",
+      "retention": "claimed"
+    },
+    {
+      "receipt_id": "ARCHIVE-DUP-ALPHA",
+      "archive_accession": "SIGNBOOK-ALPHA-DUPLICATE",
+      "source": "duplicate_archive",
+      "pe_section": ".rcp0",
+      "duplicate_of": "RCPT-APPROVED-ALPHA",
+      "payload_offset_in_section": 0,
+      "payload_size": 218,
+      "payload_sha256": "f0906f458a3cc357e4977616832665562e25b6cf320166f76183f83f1c301d85",
+      "retention": "duplicate-copy"
+    }
+  ]
+}
