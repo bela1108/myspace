@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "records": [
+    {
+      "application_id": "APP-2026-092",
+      "legacy_department": "OLD-DEPT-092",
+      "normalized_name": "procurement-desk-092",
+      "applicable_from": "2026-01-01",
+      "applicable_to": "2027-12-31",
+      "legacy_csr": "procurement-legacy.csr",
+      "current_csr": "procurement-current.csr",
+      "change_id": "CHG-PROC-092"
+    }
+  ]
+}

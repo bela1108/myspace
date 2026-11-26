@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "declaration_id": "PROC-NAME-CHANGES-2026-092",
+  "normalization_policy": "asn1crypto-rfc5280-rdn-hierarchy-v1",
+  "mappings": [
+    {
+      "mapping_id": "CHG-PROC-092",
+      "status": "approved",
+      "normalization_policy": "asn1crypto-rfc5280-rdn-hierarchy-v1",
+      "legacy_department": "OLD-DEPT-092",
+      "normalized_name": "procurement-desk-092",
+      "applicable_from": "2026-01-01",
+      "applicable_to": "2027-12-31",
+      "legacy_attribute_types": [
+        "common_name",
+        "organizational_unit_name",
+        "organization_name"
+      ],
+      "legacy_subject_rdns": [
+        [
+          {"type": "common_name", "value": "procurement-desk-092"}
+        ],
+        [
+          {"type": "organizational_unit_name", "value": "General Affairs Department"}
+        ],
+        [
+          {"type": "organization_name", "value": "Legacy Example Bureau"}
+        ]
+      ],
+      "new_attribute_types": [
+        "common_name",
+        "organizational_unit_name",
+        "organization_name",
+        "organization_identifier"
+      ],
+      "new_subject_rdns": [
+        [
+          {"type": "common_name", "value": "procurement-portal.example.test"}
+        ],
+        [
+          {"type": "organizational_unit_name", "value": "Central Procurement Office"}
+        ],
+        [
+          {"type": "organization_name", "value": "Example Public Agency"}
+        ],
+        [
+          {"type": "organization_identifier", "value": "OLD-DEPT-092"}
+        ]
+      ],
+      "approved_normalization_map": {
+        "archive.legacy_department=OLD-DEPT-092": "organization_identifier=OLD-DEPT-092",
+        "archive.normalized_name=procurement-desk-092": "common_name=procurement-portal.example.test",
+        "organizational_unit_name=General Affairs Department": "organizational_unit_name=Central Procurement Office",
+        "organization_name=Legacy Example Bureau": "organization_name=Example Public Agency"
+      },
+      "approval_ticket": "PROC-RENAME-2026-092",
+      "approved_by": "local-acceptance-board"
+    }
+  ]
+}
