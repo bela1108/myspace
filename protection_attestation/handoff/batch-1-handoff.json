@@ -1,0 +1,43 @@
+{
+  "batch_id": "batch-1-handoff-2024-rules",
+  "title": "第一批：移交双工具输出受理",
+  "ruleset_id": "archivist-rules-2024.1",
+  "approvals": "protection_attestation/handoff/approvals.json",
+  "tool_outputs": [
+    "protection_attestation/handoff/tool-output-1-msoffcrypto.json",
+    "protection_attestation/handoff/tool-output-2-archive-desk.json"
+  ],
+  "packages": [
+    {
+      "package_id": "ARCH-001",
+      "path": "tests/inputs/ecma376agile_sha1_password.xlsx",
+      "approval_id": "AP-2024-018"
+    },
+    {
+      "package_id": "ARCH-002",
+      "path": "tests/inputs/example_password.docx",
+      "approval_id": "AP-2024-019"
+    },
+    {
+      "package_id": "ARCH-003",
+      "path": "tests/inputs/example_password.xlsx",
+      "approval_id": "AP-2024-020"
+    }
+  ],
+  "review_cases": [
+    {
+      "case_id": "CASE-NOTATION-001",
+      "package_id": "ARCH-001",
+      "expected_disposition": "notation_only",
+      "focus_fields": ["key_length_bits", "hash_algorithm", "encryption_suite"],
+      "summary": "16 字节与 128 位、SHA-1 说明与 SHA1 令牌是同一组参数"
+    },
+    {
+      "case_id": "CASE-UPDATE-002",
+      "package_id": "ARCH-002",
+      "expected_disposition": "actual_update",
+      "focus_fields": ["spin_count"],
+      "summary": "批准单为 50000 轮，保护包实测为 100000 轮，需要补签"
+    }
+  ]
+}

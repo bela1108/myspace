@@ -1,0 +1,63 @@
+{
+  "ledger": "Office protection parameters adopted by signed approvals",
+  "ledger_version": "handoff-2024",
+  "approvals": [
+    {
+      "package_id": "ARCH-001",
+      "approval_id": "AP-2024-018",
+      "status": "signed",
+      "signed_at": "2024-03-18",
+      "ruleset_id": "archivist-rules-2024.1",
+      "accepted_parameters": {
+        "protection_kind": "Agile",
+        "encryption_suite": "AES-128-CBC",
+        "cipher_algorithm": "AES",
+        "cipher_chaining": "CBC",
+        "key_length_bits": "128 位",
+        "hash_algorithm": "SHA-1",
+        "spin_count": 100000,
+        "salt_length_bytes": "16 字节",
+        "block_size_bytes": "16 字节",
+        "hash_size_bytes": 20
+      }
+    },
+    {
+      "package_id": "ARCH-002",
+      "approval_id": "AP-2024-019",
+      "status": "signed",
+      "signed_at": "2024-09-02",
+      "ruleset_id": "archivist-rules-2024.1",
+      "accepted_parameters": {
+        "protection_kind": "agile",
+        "encryption_suite": "AES-256-CBC",
+        "cipher_algorithm": "AES",
+        "cipher_chaining": "CBC",
+        "key_length_bits": 256,
+        "hash_algorithm": "SHA-512",
+        "spin_count": 50000,
+        "salt_length_bytes": 16,
+        "block_size_bytes": 16,
+        "hash_size_bytes": 64
+      }
+    },
+    {
+      "package_id": "ARCH-003",
+      "approval_id": "AP-2024-020",
+      "status": "signed",
+      "signed_at": "2024-10-21",
+      "ruleset_id": "archivist-rules-2024.1",
+      "accepted_parameters": {
+        "protection_kind": "agile",
+        "encryption_suite": "AES-256-CBC",
+        "cipher_algorithm": "AES",
+        "cipher_chaining": "CBC",
+        "key_length_bits": 256,
+        "hash_algorithm": "SHA-512",
+        "spin_count": 100000,
+        "salt_length_bytes": 16,
+        "block_size_bytes": 16,
+        "hash_size_bytes": 64
+      }
+    }
+  ]
+}

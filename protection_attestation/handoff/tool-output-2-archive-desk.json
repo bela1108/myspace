@@ -1,0 +1,68 @@
+{
+  "schema": "archive-desk-protection-export",
+  "tool": "archive-desk-scanner",
+  "tool_version": "3.4-historical",
+  "batch_purpose": "Handoff output using Chinese descriptive names and byte lengths",
+  "outputs": [
+    {
+      "package_id": "ARCH-001",
+      "approval_id": "AP-2024-018",
+      "path": "tests/inputs/ecma376agile_sha1_password.xlsx",
+      "sha256": "4d6437ede946382c471b681c7721e2874de569f829238c5a6b25321b172f104b",
+      "scanner": "archive-desk offline profile",
+      "summary": {
+        "protection": "Agile 密码加密",
+        "cipher_description": "AES-128-CBC",
+        "digest_description": "SHA-1 摘要算法",
+        "secret_key_length": {
+          "value": 16,
+          "unit": "字节"
+        },
+        "key_iterations": "100000 轮 PBKDF2",
+        "salt_length": "16 字节",
+        "block_length": "16 字节",
+        "digest_length": "20 字节"
+      }
+    },
+    {
+      "package_id": "ARCH-002",
+      "approval_id": "AP-2024-019",
+      "path": "tests/inputs/example_password.docx",
+      "sha256": "0605624697328060fdc75ca9929ea20b9d63ebed9387ff1a97aaf9979757234a",
+      "scanner": "archive-desk offline profile",
+      "summary": {
+        "protection": "Agile 密码加密",
+        "cipher_description": "AES-256-CBC",
+        "digest_description": "SHA-512 摘要算法",
+        "secret_key_length": {
+          "value": 32,
+          "unit": "字节"
+        },
+        "key_iterations": "100000 轮 PBKDF2",
+        "salt_length": "16 字节",
+        "block_length": "16 字节",
+        "digest_length": "64 字节"
+      }
+    },
+    {
+      "package_id": "ARCH-003",
+      "approval_id": "AP-2024-020",
+      "path": "tests/inputs/example_password.xlsx",
+      "sha256": "3f792e3902a615bf0e91771f3f3016b80d59098b8e492efcdc0752748e15b997",
+      "scanner": "archive-desk offline profile",
+      "summary": {
+        "protection": "Agile 密码加密",
+        "cipher_description": "AES-256-CBC",
+        "digest_description": "SHA-512 摘要算法",
+        "secret_key_length": {
+          "value": 32,
+          "unit": "字节"
+        },
+        "key_iterations": "100000 轮 PBKDF2",
+        "salt_length": "16 字节",
+        "block_length": "16 字节",
+        "digest_length": "64 字节"
+      }
+    }
+  ]
+}

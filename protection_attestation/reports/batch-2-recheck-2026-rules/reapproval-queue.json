@@ -1,0 +1,17 @@
+[
+  {
+    "package_id": "ARCH-002",
+    "field": "spin_count",
+    "status": "needs_signed_approval",
+    "approved_value": 50000,
+    "observed_value": 100000,
+    "approval_id": "AP-2024-019",
+    "approval_source": "protection_attestation/handoff/approvals.json",
+    "observed_source_id": "msoffcrypto-live-6.1.0",
+    "observed_locator": "EncryptionInfo XML: p:encryptedKey and keyData attributes",
+    "rule_ids": [
+      "count.integer_identity"
+    ],
+    "required_action": "Freeze prior use and obtain a newly signed approval for the changed protection parameter."
+  }
+]

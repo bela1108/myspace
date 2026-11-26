@@ -1,0 +1,1270 @@
+[
+  {
+    "package_id": "ARCH-001",
+    "field": "block_size_bytes",
+    "disposition": "notation_only",
+    "canonical_value": 16,
+    "raw_forms": [
+      {
+        "recorded_value": 16,
+        "source_id": "msoffcrypto-live-6.1.0",
+        "source_kind": "live_inspection",
+        "locator": "EncryptionInfo XML: p:encryptedKey and keyData attributes",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "16 字节",
+        "source_id": "AP-2024-018",
+        "source_kind": "approval",
+        "locator": "approvals[AP-2024-018].accepted_parameters.block_size_bytes",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": 16,
+        "source_id": "msoffcrypto-tool-6.1.0",
+        "source_kind": "tool_output",
+        "locator": "outputs[0].recorded_claims.block_size_bytes",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "16 字节",
+        "source_id": "archive-desk-scanner-3.4-historical",
+        "source_kind": "tool_output",
+        "locator": "outputs[0].summary.block_length",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      }
+    ],
+    "rule_ids": [
+      "length.bytes_identity"
+    ],
+    "conclusion": "Recorded notation differs, but normalized protection value is identical; transcription note only."
+  },
+  {
+    "package_id": "ARCH-001",
+    "field": "cipher_chaining",
+    "disposition": "notation_only",
+    "canonical_value": "CBC",
+    "raw_forms": [
+      {
+        "recorded_value": "ChainingModeCBC",
+        "source_id": "msoffcrypto-live-6.1.0",
+        "source_kind": "live_inspection",
+        "locator": "EncryptionInfo XML: p:encryptedKey and keyData attributes",
+        "rule_id": "enum.chaining_mode",
+        "notation_transform": true,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "CBC",
+        "source_id": "AP-2024-018",
+        "source_kind": "approval",
+        "locator": "approvals[AP-2024-018].accepted_parameters.cipher_chaining",
+        "rule_id": "enum.chaining_mode",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "ChainingModeCBC",
+        "source_id": "msoffcrypto-tool-6.1.0",
+        "source_kind": "tool_output",
+        "locator": "outputs[0].recorded_claims.cipher_chaining",
+        "rule_id": "enum.chaining_mode",
+        "notation_transform": true,
+        "historical_compatibility": false
+      }
+    ],
+    "rule_ids": [
+      "enum.chaining_mode"
+    ],
+    "conclusion": "Recorded notation differs, but normalized protection value is identical; transcription note only."
+  },
+  {
+    "package_id": "ARCH-001",
+    "field": "encryption_suite",
+    "disposition": "notation_only",
+    "canonical_value": "AES-128-CBC",
+    "raw_forms": [
+      {
+        "recorded_value": {
+          "cipher_algorithm": "AES",
+          "key_length_bits": 128,
+          "cipher_chaining": "ChainingModeCBC"
+        },
+        "source_id": "msoffcrypto-live-6.1.0",
+        "source_kind": "live_inspection",
+        "locator": "EncryptionInfo XML: p:encryptedKey and keyData attributes",
+        "rule_id": "suite.compose_office_attributes",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "AES-128-CBC",
+        "source_id": "AP-2024-018",
+        "source_kind": "approval",
+        "locator": "approvals[AP-2024-018].accepted_parameters.encryption_suite",
+        "rule_id": "suite.aes_description",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": {
+          "cipher_algorithm": "AES",
+          "key_length_bits": 128,
+          "cipher_chaining": "ChainingModeCBC"
+        },
+        "source_id": "msoffcrypto-tool-6.1.0",
+        "source_kind": "tool_output",
+        "locator": "outputs[0].recorded_claims.encryption_suite",
+        "rule_id": "suite.compose_office_attributes",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "AES-128-CBC",
+        "source_id": "archive-desk-scanner-3.4-historical",
+        "source_kind": "tool_output",
+        "locator": "outputs[0].summary.cipher_description",
+        "rule_id": "suite.aes_description",
+        "notation_transform": false,
+        "historical_compatibility": false
+      }
+    ],
+    "rule_ids": [
+      "suite.aes_description",
+      "suite.compose_office_attributes"
+    ],
+    "conclusion": "Recorded notation differs, but normalized protection value is identical; transcription note only."
+  },
+  {
+    "package_id": "ARCH-001",
+    "field": "hash_algorithm",
+    "disposition": "notation_only",
+    "canonical_value": "SHA-1",
+    "raw_forms": [
+      {
+        "recorded_value": "SHA1",
+        "source_id": "msoffcrypto-live-6.1.0",
+        "source_kind": "live_inspection",
+        "locator": "EncryptionInfo XML: p:encryptedKey and keyData attributes",
+        "rule_id": "hash.office_to_archival_hyphen",
+        "notation_transform": true,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "SHA-1",
+        "source_id": "AP-2024-018",
+        "source_kind": "approval",
+        "locator": "approvals[AP-2024-018].accepted_parameters.hash_algorithm",
+        "rule_id": "hash.archival_hyphen_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "SHA1",
+        "source_id": "msoffcrypto-tool-6.1.0",
+        "source_kind": "tool_output",
+        "locator": "outputs[0].recorded_claims.hash_algorithm",
+        "rule_id": "hash.office_to_archival_hyphen",
+        "notation_transform": true,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "SHA-1 摘要算法",
+        "source_id": "archive-desk-scanner-3.4-historical",
+        "source_kind": "tool_output",
+        "locator": "outputs[0].summary.digest_description",
+        "rule_id": "hash.description_to_archival_hyphen",
+        "notation_transform": true,
+        "historical_compatibility": false
+      }
+    ],
+    "rule_ids": [
+      "hash.archival_hyphen_identity",
+      "hash.description_to_archival_hyphen",
+      "hash.office_to_archival_hyphen"
+    ],
+    "conclusion": "Recorded notation differs, but normalized protection value is identical; transcription note only."
+  },
+  {
+    "package_id": "ARCH-001",
+    "field": "hash_size_bytes",
+    "disposition": "notation_only",
+    "canonical_value": 20,
+    "raw_forms": [
+      {
+        "recorded_value": 20,
+        "source_id": "msoffcrypto-live-6.1.0",
+        "source_kind": "live_inspection",
+        "locator": "EncryptionInfo XML: p:encryptedKey and keyData attributes",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": 20,
+        "source_id": "AP-2024-018",
+        "source_kind": "approval",
+        "locator": "approvals[AP-2024-018].accepted_parameters.hash_size_bytes",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": 20,
+        "source_id": "msoffcrypto-tool-6.1.0",
+        "source_kind": "tool_output",
+        "locator": "outputs[0].recorded_claims.hash_size_bytes",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "20 字节",
+        "source_id": "archive-desk-scanner-3.4-historical",
+        "source_kind": "tool_output",
+        "locator": "outputs[0].summary.digest_length",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      }
+    ],
+    "rule_ids": [
+      "length.bytes_identity"
+    ],
+    "conclusion": "Recorded notation differs, but normalized protection value is identical; transcription note only."
+  },
+  {
+    "package_id": "ARCH-001",
+    "field": "key_length_bits",
+    "disposition": "notation_only",
+    "canonical_value": 128,
+    "raw_forms": [
+      {
+        "recorded_value": 128,
+        "source_id": "msoffcrypto-live-6.1.0",
+        "source_kind": "live_inspection",
+        "locator": "EncryptionInfo XML: p:encryptedKey and keyData attributes",
+        "rule_id": "length.bits_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "128 位",
+        "source_id": "AP-2024-018",
+        "source_kind": "approval",
+        "locator": "approvals[AP-2024-018].accepted_parameters.key_length_bits",
+        "rule_id": "length.bits_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": 128,
+        "source_id": "msoffcrypto-tool-6.1.0",
+        "source_kind": "tool_output",
+        "locator": "outputs[0].recorded_claims.key_length_bits",
+        "rule_id": "length.bits_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": {
+          "value": 16,
+          "unit": "字节"
+        },
+        "source_id": "archive-desk-scanner-3.4-historical",
+        "source_kind": "tool_output",
+        "locator": "outputs[0].summary.secret_key_length",
+        "rule_id": "length.bytes_to_bits",
+        "notation_transform": true,
+        "historical_compatibility": false
+      }
+    ],
+    "rule_ids": [
+      "length.bits_identity",
+      "length.bytes_to_bits"
+    ],
+    "conclusion": "Recorded notation differs, but normalized protection value is identical; transcription note only."
+  },
+  {
+    "package_id": "ARCH-001",
+    "field": "protection_kind",
+    "disposition": "notation_only",
+    "canonical_value": "agile",
+    "raw_forms": [
+      {
+        "recorded_value": "agile",
+        "source_id": "msoffcrypto-live-6.1.0",
+        "source_kind": "live_inspection",
+        "locator": "EncryptionInfo XML: p:encryptedKey and keyData attributes",
+        "rule_id": "enum.protection_kind_alias",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "Agile",
+        "source_id": "AP-2024-018",
+        "source_kind": "approval",
+        "locator": "approvals[AP-2024-018].accepted_parameters.protection_kind",
+        "rule_id": "enum.protection_kind_alias",
+        "notation_transform": true,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "agile",
+        "source_id": "msoffcrypto-tool-6.1.0",
+        "source_kind": "tool_output",
+        "locator": "outputs[0].recorded_claims.protection_kind",
+        "rule_id": "enum.protection_kind_alias",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "Agile 密码加密",
+        "source_id": "archive-desk-scanner-3.4-historical",
+        "source_kind": "tool_output",
+        "locator": "outputs[0].summary.protection",
+        "rule_id": "enum.protection_kind_alias",
+        "notation_transform": true,
+        "historical_compatibility": false
+      }
+    ],
+    "rule_ids": [
+      "enum.protection_kind_alias"
+    ],
+    "conclusion": "Recorded notation differs, but normalized protection value is identical; transcription note only."
+  },
+  {
+    "package_id": "ARCH-001",
+    "field": "salt_length_bytes",
+    "disposition": "notation_only",
+    "canonical_value": 16,
+    "raw_forms": [
+      {
+        "recorded_value": 16,
+        "source_id": "msoffcrypto-live-6.1.0",
+        "source_kind": "live_inspection",
+        "locator": "EncryptionInfo XML: p:encryptedKey and keyData attributes",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "16 字节",
+        "source_id": "AP-2024-018",
+        "source_kind": "approval",
+        "locator": "approvals[AP-2024-018].accepted_parameters.salt_length_bytes",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": 16,
+        "source_id": "msoffcrypto-tool-6.1.0",
+        "source_kind": "tool_output",
+        "locator": "outputs[0].recorded_claims.salt_length_bytes",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "16 字节",
+        "source_id": "archive-desk-scanner-3.4-historical",
+        "source_kind": "tool_output",
+        "locator": "outputs[0].summary.salt_length",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      }
+    ],
+    "rule_ids": [
+      "length.bytes_identity"
+    ],
+    "conclusion": "Recorded notation differs, but normalized protection value is identical; transcription note only."
+  },
+  {
+    "package_id": "ARCH-001",
+    "field": "spin_count",
+    "disposition": "notation_only",
+    "canonical_value": 100000,
+    "raw_forms": [
+      {
+        "recorded_value": 100000,
+        "source_id": "msoffcrypto-live-6.1.0",
+        "source_kind": "live_inspection",
+        "locator": "EncryptionInfo XML: p:encryptedKey and keyData attributes",
+        "rule_id": "count.integer_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": 100000,
+        "source_id": "AP-2024-018",
+        "source_kind": "approval",
+        "locator": "approvals[AP-2024-018].accepted_parameters.spin_count",
+        "rule_id": "count.integer_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": 100000,
+        "source_id": "msoffcrypto-tool-6.1.0",
+        "source_kind": "tool_output",
+        "locator": "outputs[0].recorded_claims.spin_count",
+        "rule_id": "count.integer_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "100000 轮 PBKDF2",
+        "source_id": "archive-desk-scanner-3.4-historical",
+        "source_kind": "tool_output",
+        "locator": "outputs[0].summary.key_iterations",
+        "rule_id": "count.decorated_integer",
+        "notation_transform": true,
+        "historical_compatibility": false
+      }
+    ],
+    "rule_ids": [
+      "count.decorated_integer",
+      "count.integer_identity"
+    ],
+    "conclusion": "Recorded notation differs, but normalized protection value is identical; transcription note only."
+  },
+  {
+    "package_id": "ARCH-002",
+    "field": "block_size_bytes",
+    "disposition": "notation_only",
+    "canonical_value": 16,
+    "raw_forms": [
+      {
+        "recorded_value": 16,
+        "source_id": "msoffcrypto-live-6.1.0",
+        "source_kind": "live_inspection",
+        "locator": "EncryptionInfo XML: p:encryptedKey and keyData attributes",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": 16,
+        "source_id": "AP-2024-019",
+        "source_kind": "approval",
+        "locator": "approvals[AP-2024-019].accepted_parameters.block_size_bytes",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": 16,
+        "source_id": "msoffcrypto-tool-6.1.0",
+        "source_kind": "tool_output",
+        "locator": "outputs[1].recorded_claims.block_size_bytes",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "16 字节",
+        "source_id": "archive-desk-scanner-3.4-historical",
+        "source_kind": "tool_output",
+        "locator": "outputs[1].summary.block_length",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      }
+    ],
+    "rule_ids": [
+      "length.bytes_identity"
+    ],
+    "conclusion": "Recorded notation differs, but normalized protection value is identical; transcription note only."
+  },
+  {
+    "package_id": "ARCH-002",
+    "field": "cipher_chaining",
+    "disposition": "notation_only",
+    "canonical_value": "CBC",
+    "raw_forms": [
+      {
+        "recorded_value": "ChainingModeCBC",
+        "source_id": "msoffcrypto-live-6.1.0",
+        "source_kind": "live_inspection",
+        "locator": "EncryptionInfo XML: p:encryptedKey and keyData attributes",
+        "rule_id": "enum.chaining_mode",
+        "notation_transform": true,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "CBC",
+        "source_id": "AP-2024-019",
+        "source_kind": "approval",
+        "locator": "approvals[AP-2024-019].accepted_parameters.cipher_chaining",
+        "rule_id": "enum.chaining_mode",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "ChainingModeCBC",
+        "source_id": "msoffcrypto-tool-6.1.0",
+        "source_kind": "tool_output",
+        "locator": "outputs[1].recorded_claims.cipher_chaining",
+        "rule_id": "enum.chaining_mode",
+        "notation_transform": true,
+        "historical_compatibility": false
+      }
+    ],
+    "rule_ids": [
+      "enum.chaining_mode"
+    ],
+    "conclusion": "Recorded notation differs, but normalized protection value is identical; transcription note only."
+  },
+  {
+    "package_id": "ARCH-002",
+    "field": "encryption_suite",
+    "disposition": "notation_only",
+    "canonical_value": "AES-256-CBC",
+    "raw_forms": [
+      {
+        "recorded_value": {
+          "cipher_algorithm": "AES",
+          "key_length_bits": 256,
+          "cipher_chaining": "ChainingModeCBC"
+        },
+        "source_id": "msoffcrypto-live-6.1.0",
+        "source_kind": "live_inspection",
+        "locator": "EncryptionInfo XML: p:encryptedKey and keyData attributes",
+        "rule_id": "suite.compose_office_attributes",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "AES-256-CBC",
+        "source_id": "AP-2024-019",
+        "source_kind": "approval",
+        "locator": "approvals[AP-2024-019].accepted_parameters.encryption_suite",
+        "rule_id": "suite.aes_description",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": {
+          "cipher_algorithm": "AES",
+          "key_length_bits": 256,
+          "cipher_chaining": "ChainingModeCBC"
+        },
+        "source_id": "msoffcrypto-tool-6.1.0",
+        "source_kind": "tool_output",
+        "locator": "outputs[1].recorded_claims.encryption_suite",
+        "rule_id": "suite.compose_office_attributes",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "AES-256-CBC",
+        "source_id": "archive-desk-scanner-3.4-historical",
+        "source_kind": "tool_output",
+        "locator": "outputs[1].summary.cipher_description",
+        "rule_id": "suite.aes_description",
+        "notation_transform": false,
+        "historical_compatibility": false
+      }
+    ],
+    "rule_ids": [
+      "suite.aes_description",
+      "suite.compose_office_attributes"
+    ],
+    "conclusion": "Recorded notation differs, but normalized protection value is identical; transcription note only."
+  },
+  {
+    "package_id": "ARCH-002",
+    "field": "hash_algorithm",
+    "disposition": "notation_only",
+    "canonical_value": "SHA-512",
+    "raw_forms": [
+      {
+        "recorded_value": "SHA512",
+        "source_id": "msoffcrypto-live-6.1.0",
+        "source_kind": "live_inspection",
+        "locator": "EncryptionInfo XML: p:encryptedKey and keyData attributes",
+        "rule_id": "hash.office_to_archival_hyphen",
+        "notation_transform": true,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "SHA-512",
+        "source_id": "AP-2024-019",
+        "source_kind": "approval",
+        "locator": "approvals[AP-2024-019].accepted_parameters.hash_algorithm",
+        "rule_id": "hash.archival_hyphen_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "SHA512",
+        "source_id": "msoffcrypto-tool-6.1.0",
+        "source_kind": "tool_output",
+        "locator": "outputs[1].recorded_claims.hash_algorithm",
+        "rule_id": "hash.office_to_archival_hyphen",
+        "notation_transform": true,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "SHA-512 摘要算法",
+        "source_id": "archive-desk-scanner-3.4-historical",
+        "source_kind": "tool_output",
+        "locator": "outputs[1].summary.digest_description",
+        "rule_id": "hash.description_to_archival_hyphen",
+        "notation_transform": true,
+        "historical_compatibility": false
+      }
+    ],
+    "rule_ids": [
+      "hash.archival_hyphen_identity",
+      "hash.description_to_archival_hyphen",
+      "hash.office_to_archival_hyphen"
+    ],
+    "conclusion": "Recorded notation differs, but normalized protection value is identical; transcription note only."
+  },
+  {
+    "package_id": "ARCH-002",
+    "field": "hash_size_bytes",
+    "disposition": "notation_only",
+    "canonical_value": 64,
+    "raw_forms": [
+      {
+        "recorded_value": 64,
+        "source_id": "msoffcrypto-live-6.1.0",
+        "source_kind": "live_inspection",
+        "locator": "EncryptionInfo XML: p:encryptedKey and keyData attributes",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": 64,
+        "source_id": "AP-2024-019",
+        "source_kind": "approval",
+        "locator": "approvals[AP-2024-019].accepted_parameters.hash_size_bytes",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": 64,
+        "source_id": "msoffcrypto-tool-6.1.0",
+        "source_kind": "tool_output",
+        "locator": "outputs[1].recorded_claims.hash_size_bytes",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "64 字节",
+        "source_id": "archive-desk-scanner-3.4-historical",
+        "source_kind": "tool_output",
+        "locator": "outputs[1].summary.digest_length",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      }
+    ],
+    "rule_ids": [
+      "length.bytes_identity"
+    ],
+    "conclusion": "Recorded notation differs, but normalized protection value is identical; transcription note only."
+  },
+  {
+    "package_id": "ARCH-002",
+    "field": "key_length_bits",
+    "disposition": "notation_only",
+    "canonical_value": 256,
+    "raw_forms": [
+      {
+        "recorded_value": 256,
+        "source_id": "msoffcrypto-live-6.1.0",
+        "source_kind": "live_inspection",
+        "locator": "EncryptionInfo XML: p:encryptedKey and keyData attributes",
+        "rule_id": "length.bits_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": 256,
+        "source_id": "AP-2024-019",
+        "source_kind": "approval",
+        "locator": "approvals[AP-2024-019].accepted_parameters.key_length_bits",
+        "rule_id": "length.bits_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": 256,
+        "source_id": "msoffcrypto-tool-6.1.0",
+        "source_kind": "tool_output",
+        "locator": "outputs[1].recorded_claims.key_length_bits",
+        "rule_id": "length.bits_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": {
+          "value": 32,
+          "unit": "字节"
+        },
+        "source_id": "archive-desk-scanner-3.4-historical",
+        "source_kind": "tool_output",
+        "locator": "outputs[1].summary.secret_key_length",
+        "rule_id": "length.bytes_to_bits",
+        "notation_transform": true,
+        "historical_compatibility": false
+      }
+    ],
+    "rule_ids": [
+      "length.bits_identity",
+      "length.bytes_to_bits"
+    ],
+    "conclusion": "Recorded notation differs, but normalized protection value is identical; transcription note only."
+  },
+  {
+    "package_id": "ARCH-002",
+    "field": "protection_kind",
+    "disposition": "notation_only",
+    "canonical_value": "agile",
+    "raw_forms": [
+      {
+        "recorded_value": "agile",
+        "source_id": "msoffcrypto-live-6.1.0",
+        "source_kind": "live_inspection",
+        "locator": "EncryptionInfo XML: p:encryptedKey and keyData attributes",
+        "rule_id": "enum.protection_kind_alias",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "agile",
+        "source_id": "AP-2024-019",
+        "source_kind": "approval",
+        "locator": "approvals[AP-2024-019].accepted_parameters.protection_kind",
+        "rule_id": "enum.protection_kind_alias",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "agile",
+        "source_id": "msoffcrypto-tool-6.1.0",
+        "source_kind": "tool_output",
+        "locator": "outputs[1].recorded_claims.protection_kind",
+        "rule_id": "enum.protection_kind_alias",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "Agile 密码加密",
+        "source_id": "archive-desk-scanner-3.4-historical",
+        "source_kind": "tool_output",
+        "locator": "outputs[1].summary.protection",
+        "rule_id": "enum.protection_kind_alias",
+        "notation_transform": true,
+        "historical_compatibility": false
+      }
+    ],
+    "rule_ids": [
+      "enum.protection_kind_alias"
+    ],
+    "conclusion": "Recorded notation differs, but normalized protection value is identical; transcription note only."
+  },
+  {
+    "package_id": "ARCH-002",
+    "field": "salt_length_bytes",
+    "disposition": "notation_only",
+    "canonical_value": 16,
+    "raw_forms": [
+      {
+        "recorded_value": 16,
+        "source_id": "msoffcrypto-live-6.1.0",
+        "source_kind": "live_inspection",
+        "locator": "EncryptionInfo XML: p:encryptedKey and keyData attributes",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": 16,
+        "source_id": "AP-2024-019",
+        "source_kind": "approval",
+        "locator": "approvals[AP-2024-019].accepted_parameters.salt_length_bytes",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": 16,
+        "source_id": "msoffcrypto-tool-6.1.0",
+        "source_kind": "tool_output",
+        "locator": "outputs[1].recorded_claims.salt_length_bytes",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "16 字节",
+        "source_id": "archive-desk-scanner-3.4-historical",
+        "source_kind": "tool_output",
+        "locator": "outputs[1].summary.salt_length",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      }
+    ],
+    "rule_ids": [
+      "length.bytes_identity"
+    ],
+    "conclusion": "Recorded notation differs, but normalized protection value is identical; transcription note only."
+  },
+  {
+    "package_id": "ARCH-003",
+    "field": "block_size_bytes",
+    "disposition": "notation_only",
+    "canonical_value": 16,
+    "raw_forms": [
+      {
+        "recorded_value": 16,
+        "source_id": "msoffcrypto-live-6.1.0",
+        "source_kind": "live_inspection",
+        "locator": "EncryptionInfo XML: p:encryptedKey and keyData attributes",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": 16,
+        "source_id": "AP-2024-020",
+        "source_kind": "approval",
+        "locator": "approvals[AP-2024-020].accepted_parameters.block_size_bytes",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": 16,
+        "source_id": "msoffcrypto-tool-6.1.0",
+        "source_kind": "tool_output",
+        "locator": "outputs[2].recorded_claims.block_size_bytes",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "16 字节",
+        "source_id": "archive-desk-scanner-3.4-historical",
+        "source_kind": "tool_output",
+        "locator": "outputs[2].summary.block_length",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      }
+    ],
+    "rule_ids": [
+      "length.bytes_identity"
+    ],
+    "conclusion": "Recorded notation differs, but normalized protection value is identical; transcription note only."
+  },
+  {
+    "package_id": "ARCH-003",
+    "field": "cipher_chaining",
+    "disposition": "notation_only",
+    "canonical_value": "CBC",
+    "raw_forms": [
+      {
+        "recorded_value": "ChainingModeCBC",
+        "source_id": "msoffcrypto-live-6.1.0",
+        "source_kind": "live_inspection",
+        "locator": "EncryptionInfo XML: p:encryptedKey and keyData attributes",
+        "rule_id": "enum.chaining_mode",
+        "notation_transform": true,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "CBC",
+        "source_id": "AP-2024-020",
+        "source_kind": "approval",
+        "locator": "approvals[AP-2024-020].accepted_parameters.cipher_chaining",
+        "rule_id": "enum.chaining_mode",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "ChainingModeCBC",
+        "source_id": "msoffcrypto-tool-6.1.0",
+        "source_kind": "tool_output",
+        "locator": "outputs[2].recorded_claims.cipher_chaining",
+        "rule_id": "enum.chaining_mode",
+        "notation_transform": true,
+        "historical_compatibility": false
+      }
+    ],
+    "rule_ids": [
+      "enum.chaining_mode"
+    ],
+    "conclusion": "Recorded notation differs, but normalized protection value is identical; transcription note only."
+  },
+  {
+    "package_id": "ARCH-003",
+    "field": "encryption_suite",
+    "disposition": "notation_only",
+    "canonical_value": "AES-256-CBC",
+    "raw_forms": [
+      {
+        "recorded_value": {
+          "cipher_algorithm": "AES",
+          "key_length_bits": 256,
+          "cipher_chaining": "ChainingModeCBC"
+        },
+        "source_id": "msoffcrypto-live-6.1.0",
+        "source_kind": "live_inspection",
+        "locator": "EncryptionInfo XML: p:encryptedKey and keyData attributes",
+        "rule_id": "suite.compose_office_attributes",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "AES-256-CBC",
+        "source_id": "AP-2024-020",
+        "source_kind": "approval",
+        "locator": "approvals[AP-2024-020].accepted_parameters.encryption_suite",
+        "rule_id": "suite.aes_description",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": {
+          "cipher_algorithm": "AES",
+          "key_length_bits": 256,
+          "cipher_chaining": "ChainingModeCBC"
+        },
+        "source_id": "msoffcrypto-tool-6.1.0",
+        "source_kind": "tool_output",
+        "locator": "outputs[2].recorded_claims.encryption_suite",
+        "rule_id": "suite.compose_office_attributes",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "AES-256-CBC",
+        "source_id": "archive-desk-scanner-3.4-historical",
+        "source_kind": "tool_output",
+        "locator": "outputs[2].summary.cipher_description",
+        "rule_id": "suite.aes_description",
+        "notation_transform": false,
+        "historical_compatibility": false
+      }
+    ],
+    "rule_ids": [
+      "suite.aes_description",
+      "suite.compose_office_attributes"
+    ],
+    "conclusion": "Recorded notation differs, but normalized protection value is identical; transcription note only."
+  },
+  {
+    "package_id": "ARCH-003",
+    "field": "hash_algorithm",
+    "disposition": "notation_only",
+    "canonical_value": "SHA-512",
+    "raw_forms": [
+      {
+        "recorded_value": "SHA512",
+        "source_id": "msoffcrypto-live-6.1.0",
+        "source_kind": "live_inspection",
+        "locator": "EncryptionInfo XML: p:encryptedKey and keyData attributes",
+        "rule_id": "hash.office_to_archival_hyphen",
+        "notation_transform": true,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "SHA-512",
+        "source_id": "AP-2024-020",
+        "source_kind": "approval",
+        "locator": "approvals[AP-2024-020].accepted_parameters.hash_algorithm",
+        "rule_id": "hash.archival_hyphen_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "SHA512",
+        "source_id": "msoffcrypto-tool-6.1.0",
+        "source_kind": "tool_output",
+        "locator": "outputs[2].recorded_claims.hash_algorithm",
+        "rule_id": "hash.office_to_archival_hyphen",
+        "notation_transform": true,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "SHA-512 摘要算法",
+        "source_id": "archive-desk-scanner-3.4-historical",
+        "source_kind": "tool_output",
+        "locator": "outputs[2].summary.digest_description",
+        "rule_id": "hash.description_to_archival_hyphen",
+        "notation_transform": true,
+        "historical_compatibility": false
+      }
+    ],
+    "rule_ids": [
+      "hash.archival_hyphen_identity",
+      "hash.description_to_archival_hyphen",
+      "hash.office_to_archival_hyphen"
+    ],
+    "conclusion": "Recorded notation differs, but normalized protection value is identical; transcription note only."
+  },
+  {
+    "package_id": "ARCH-003",
+    "field": "hash_size_bytes",
+    "disposition": "notation_only",
+    "canonical_value": 64,
+    "raw_forms": [
+      {
+        "recorded_value": 64,
+        "source_id": "msoffcrypto-live-6.1.0",
+        "source_kind": "live_inspection",
+        "locator": "EncryptionInfo XML: p:encryptedKey and keyData attributes",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": 64,
+        "source_id": "AP-2024-020",
+        "source_kind": "approval",
+        "locator": "approvals[AP-2024-020].accepted_parameters.hash_size_bytes",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": 64,
+        "source_id": "msoffcrypto-tool-6.1.0",
+        "source_kind": "tool_output",
+        "locator": "outputs[2].recorded_claims.hash_size_bytes",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "64 字节",
+        "source_id": "archive-desk-scanner-3.4-historical",
+        "source_kind": "tool_output",
+        "locator": "outputs[2].summary.digest_length",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      }
+    ],
+    "rule_ids": [
+      "length.bytes_identity"
+    ],
+    "conclusion": "Recorded notation differs, but normalized protection value is identical; transcription note only."
+  },
+  {
+    "package_id": "ARCH-003",
+    "field": "key_length_bits",
+    "disposition": "notation_only",
+    "canonical_value": 256,
+    "raw_forms": [
+      {
+        "recorded_value": 256,
+        "source_id": "msoffcrypto-live-6.1.0",
+        "source_kind": "live_inspection",
+        "locator": "EncryptionInfo XML: p:encryptedKey and keyData attributes",
+        "rule_id": "length.bits_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": 256,
+        "source_id": "AP-2024-020",
+        "source_kind": "approval",
+        "locator": "approvals[AP-2024-020].accepted_parameters.key_length_bits",
+        "rule_id": "length.bits_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": 256,
+        "source_id": "msoffcrypto-tool-6.1.0",
+        "source_kind": "tool_output",
+        "locator": "outputs[2].recorded_claims.key_length_bits",
+        "rule_id": "length.bits_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": {
+          "value": 32,
+          "unit": "字节"
+        },
+        "source_id": "archive-desk-scanner-3.4-historical",
+        "source_kind": "tool_output",
+        "locator": "outputs[2].summary.secret_key_length",
+        "rule_id": "length.bytes_to_bits",
+        "notation_transform": true,
+        "historical_compatibility": false
+      }
+    ],
+    "rule_ids": [
+      "length.bits_identity",
+      "length.bytes_to_bits"
+    ],
+    "conclusion": "Recorded notation differs, but normalized protection value is identical; transcription note only."
+  },
+  {
+    "package_id": "ARCH-003",
+    "field": "protection_kind",
+    "disposition": "notation_only",
+    "canonical_value": "agile",
+    "raw_forms": [
+      {
+        "recorded_value": "agile",
+        "source_id": "msoffcrypto-live-6.1.0",
+        "source_kind": "live_inspection",
+        "locator": "EncryptionInfo XML: p:encryptedKey and keyData attributes",
+        "rule_id": "enum.protection_kind_alias",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "agile",
+        "source_id": "AP-2024-020",
+        "source_kind": "approval",
+        "locator": "approvals[AP-2024-020].accepted_parameters.protection_kind",
+        "rule_id": "enum.protection_kind_alias",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "agile",
+        "source_id": "msoffcrypto-tool-6.1.0",
+        "source_kind": "tool_output",
+        "locator": "outputs[2].recorded_claims.protection_kind",
+        "rule_id": "enum.protection_kind_alias",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "Agile 密码加密",
+        "source_id": "archive-desk-scanner-3.4-historical",
+        "source_kind": "tool_output",
+        "locator": "outputs[2].summary.protection",
+        "rule_id": "enum.protection_kind_alias",
+        "notation_transform": true,
+        "historical_compatibility": false
+      }
+    ],
+    "rule_ids": [
+      "enum.protection_kind_alias"
+    ],
+    "conclusion": "Recorded notation differs, but normalized protection value is identical; transcription note only."
+  },
+  {
+    "package_id": "ARCH-003",
+    "field": "salt_length_bytes",
+    "disposition": "notation_only",
+    "canonical_value": 16,
+    "raw_forms": [
+      {
+        "recorded_value": 16,
+        "source_id": "msoffcrypto-live-6.1.0",
+        "source_kind": "live_inspection",
+        "locator": "EncryptionInfo XML: p:encryptedKey and keyData attributes",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": 16,
+        "source_id": "AP-2024-020",
+        "source_kind": "approval",
+        "locator": "approvals[AP-2024-020].accepted_parameters.salt_length_bytes",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": 16,
+        "source_id": "msoffcrypto-tool-6.1.0",
+        "source_kind": "tool_output",
+        "locator": "outputs[2].recorded_claims.salt_length_bytes",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "16 字节",
+        "source_id": "archive-desk-scanner-3.4-historical",
+        "source_kind": "tool_output",
+        "locator": "outputs[2].summary.salt_length",
+        "rule_id": "length.bytes_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      }
+    ],
+    "rule_ids": [
+      "length.bytes_identity"
+    ],
+    "conclusion": "Recorded notation differs, but normalized protection value is identical; transcription note only."
+  },
+  {
+    "package_id": "ARCH-003",
+    "field": "spin_count",
+    "disposition": "notation_only",
+    "canonical_value": 100000,
+    "raw_forms": [
+      {
+        "recorded_value": 100000,
+        "source_id": "msoffcrypto-live-6.1.0",
+        "source_kind": "live_inspection",
+        "locator": "EncryptionInfo XML: p:encryptedKey and keyData attributes",
+        "rule_id": "count.integer_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": 100000,
+        "source_id": "AP-2024-020",
+        "source_kind": "approval",
+        "locator": "approvals[AP-2024-020].accepted_parameters.spin_count",
+        "rule_id": "count.integer_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": 100000,
+        "source_id": "msoffcrypto-tool-6.1.0",
+        "source_kind": "tool_output",
+        "locator": "outputs[2].recorded_claims.spin_count",
+        "rule_id": "count.integer_identity",
+        "notation_transform": false,
+        "historical_compatibility": false
+      },
+      {
+        "recorded_value": "100000 轮 PBKDF2",
+        "source_id": "archive-desk-scanner-3.4-historical",
+        "source_kind": "tool_output",
+        "locator": "outputs[2].summary.key_iterations",
+        "rule_id": "count.decorated_integer",
+        "notation_transform": true,
+        "historical_compatibility": false
+      }
+    ],
+    "rule_ids": [
+      "count.decorated_integer",
+      "count.integer_identity"
+    ],
+    "conclusion": "Recorded notation differs, but normalized protection value is identical; transcription note only."
+  }
+]

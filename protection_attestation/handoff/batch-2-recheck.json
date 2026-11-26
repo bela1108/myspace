@@ -1,0 +1,43 @@
+{
+  "batch_id": "batch-2-recheck-2026-rules",
+  "title": "第二批：现包复核与新版规则兼容",
+  "ruleset_id": "archivist-rules-2026.2",
+  "approvals": "protection_attestation/handoff/approvals.json",
+  "tool_outputs": [
+    "protection_attestation/handoff/tool-output-1-msoffcrypto.json",
+    "protection_attestation/handoff/tool-output-2-archive-desk.json"
+  ],
+  "packages": [
+    {
+      "package_id": "ARCH-001",
+      "path": "tests/inputs/ecma376agile_sha1_password.xlsx",
+      "approval_id": "AP-2024-018"
+    },
+    {
+      "package_id": "ARCH-002",
+      "path": "tests/inputs/example_password.docx",
+      "approval_id": "AP-2024-019"
+    },
+    {
+      "package_id": "ARCH-003",
+      "path": "tests/inputs/example_password.xlsx",
+      "approval_id": "AP-2024-020"
+    }
+  ],
+  "review_cases": [
+    {
+      "case_id": "CASE-NOTATION-001",
+      "package_id": "ARCH-001",
+      "expected_disposition": "notation_only",
+      "focus_fields": ["key_length_bits", "hash_algorithm", "encryption_suite"],
+      "summary": "新规则仍接受历史批准单 SHA-1 与中文长度单位"
+    },
+    {
+      "case_id": "CASE-UPDATE-002",
+      "package_id": "ARCH-002",
+      "expected_disposition": "actual_update",
+      "focus_fields": ["spin_count"],
+      "summary": "规则升级不吞掉实际 spinCount 更新，仍进入补签队列"
+    }
+  ]
+}

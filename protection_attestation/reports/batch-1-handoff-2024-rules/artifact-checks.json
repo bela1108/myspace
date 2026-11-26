@@ -1,0 +1,74 @@
+[
+  {
+    "package_id": "ARCH-001",
+    "source_id": "msoffcrypto-tool-6.1.0",
+    "recorded_sha256": "4d6437ede946382c471b681c7721e2874de569f829238c5a6b25321b172f104b",
+    "actual_sha256": "4d6437ede946382c471b681c7721e2874de569f829238c5a6b25321b172f104b",
+    "status": "verified",
+    "rule": {
+      "rule_id": "integrity.sha256_exact",
+      "rule_version": "1.0",
+      "accepted_form": "64 lowercase hexadecimal SHA-256 digest"
+    }
+  },
+  {
+    "package_id": "ARCH-001",
+    "source_id": "archive-desk-scanner-3.4-historical",
+    "recorded_sha256": "4d6437ede946382c471b681c7721e2874de569f829238c5a6b25321b172f104b",
+    "actual_sha256": "4d6437ede946382c471b681c7721e2874de569f829238c5a6b25321b172f104b",
+    "status": "verified",
+    "rule": {
+      "rule_id": "integrity.sha256_exact",
+      "rule_version": "1.0",
+      "accepted_form": "64 lowercase hexadecimal SHA-256 digest"
+    }
+  },
+  {
+    "package_id": "ARCH-002",
+    "source_id": "msoffcrypto-tool-6.1.0",
+    "recorded_sha256": "0605624697328060fdc75ca9929ea20b9d63ebed9387ff1a97aaf9979757234a",
+    "actual_sha256": "0605624697328060fdc75ca9929ea20b9d63ebed9387ff1a97aaf9979757234a",
+    "status": "verified",
+    "rule": {
+      "rule_id": "integrity.sha256_exact",
+      "rule_version": "1.0",
+      "accepted_form": "64 lowercase hexadecimal SHA-256 digest"
+    }
+  },
+  {
+    "package_id": "ARCH-002",
+    "source_id": "archive-desk-scanner-3.4-historical",
+    "recorded_sha256": "0605624697328060fdc75ca9929ea20b9d63ebed9387ff1a97aaf9979757234a",
+    "actual_sha256": "0605624697328060fdc75ca9929ea20b9d63ebed9387ff1a97aaf9979757234a",
+    "status": "verified",
+    "rule": {
+      "rule_id": "integrity.sha256_exact",
+      "rule_version": "1.0",
+      "accepted_form": "64 lowercase hexadecimal SHA-256 digest"
+    }
+  },
+  {
+    "package_id": "ARCH-003",
+    "source_id": "msoffcrypto-tool-6.1.0",
+    "recorded_sha256": "3f792e3902a615bf0e91771f3f3016b80d59098b8e492efcdc0752748e15b997",
+    "actual_sha256": "3f792e3902a615bf0e91771f3f3016b80d59098b8e492efcdc0752748e15b997",
+    "status": "verified",
+    "rule": {
+      "rule_id": "integrity.sha256_exact",
+      "rule_version": "1.0",
+      "accepted_form": "64 lowercase hexadecimal SHA-256 digest"
+    }
+  },
+  {
+    "package_id": "ARCH-003",
+    "source_id": "archive-desk-scanner-3.4-historical",
+    "recorded_sha256": "3f792e3902a615bf0e91771f3f3016b80d59098b8e492efcdc0752748e15b997",
+    "actual_sha256": "3f792e3902a615bf0e91771f3f3016b80d59098b8e492efcdc0752748e15b997",
+    "status": "verified",
+    "rule": {
+      "rule_id": "integrity.sha256_exact",
+      "rule_version": "1.0",
+      "accepted_form": "64 lowercase hexadecimal SHA-256 digest"
+    }
+  }
+]

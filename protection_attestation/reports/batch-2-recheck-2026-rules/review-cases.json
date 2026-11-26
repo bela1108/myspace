@@ -1,0 +1,30 @@
+[
+  {
+    "case_id": "CASE-NOTATION-001",
+    "package_id": "ARCH-001",
+    "expected_disposition": "notation_only",
+    "focus_fields": [
+      "key_length_bits",
+      "hash_algorithm",
+      "encryption_suite"
+    ],
+    "summary": "新规则仍接受历史批准单 SHA-1 与中文长度单位",
+    "actual_disposition": "notation_only",
+    "verified": true,
+    "matching_transcription_note_count": 3,
+    "matching_difference_count": 0
+  },
+  {
+    "case_id": "CASE-UPDATE-002",
+    "package_id": "ARCH-002",
+    "expected_disposition": "actual_update",
+    "focus_fields": [
+      "spin_count"
+    ],
+    "summary": "规则升级不吞掉实际 spinCount 更新，仍进入补签队列",
+    "actual_disposition": "actual_update_requires_reapproval",
+    "verified": true,
+    "matching_transcription_note_count": 0,
+    "matching_difference_count": 1
+  }
+]

@@ -1,0 +1,77 @@
+{
+  "schema": "office-protection-tool-output",
+  "tool": "msoffcrypto-tool",
+  "tool_version": "6.1.0",
+  "batch_purpose": "Handoff output using Office attribute names and bit lengths",
+  "outputs": [
+    {
+      "package_id": "ARCH-001",
+      "approval_id": "AP-2024-018",
+      "path": "tests/inputs/ecma376agile_sha1_password.xlsx",
+      "sha256": "4d6437ede946382c471b681c7721e2874de569f829238c5a6b25321b172f104b",
+      "plaintext_accessed": false,
+      "recorded_claims": {
+        "protection_kind": "agile",
+        "encryption_suite": {
+          "cipher_algorithm": "AES",
+          "key_length_bits": 128,
+          "cipher_chaining": "ChainingModeCBC"
+        },
+        "cipher_algorithm": "AES",
+        "cipher_chaining": "ChainingModeCBC",
+        "key_length_bits": 128,
+        "hash_algorithm": "SHA1",
+        "spin_count": 100000,
+        "salt_length_bytes": 16,
+        "block_size_bytes": 16,
+        "hash_size_bytes": 20
+      }
+    },
+    {
+      "package_id": "ARCH-002",
+      "approval_id": "AP-2024-019",
+      "path": "tests/inputs/example_password.docx",
+      "sha256": "0605624697328060fdc75ca9929ea20b9d63ebed9387ff1a97aaf9979757234a",
+      "plaintext_accessed": false,
+      "recorded_claims": {
+        "protection_kind": "agile",
+        "encryption_suite": {
+          "cipher_algorithm": "AES",
+          "key_length_bits": 256,
+          "cipher_chaining": "ChainingModeCBC"
+        },
+        "cipher_algorithm": "AES",
+        "cipher_chaining": "ChainingModeCBC",
+        "key_length_bits": 256,
+        "hash_algorithm": "SHA512",
+        "spin_count": 100000,
+        "salt_length_bytes": 16,
+        "block_size_bytes": 16,
+        "hash_size_bytes": 64
+      }
+    },
+    {
+      "package_id": "ARCH-003",
+      "approval_id": "AP-2024-020",
+      "path": "tests/inputs/example_password.xlsx",
+      "sha256": "3f792e3902a615bf0e91771f3f3016b80d59098b8e492efcdc0752748e15b997",
+      "plaintext_accessed": false,
+      "recorded_claims": {
+        "protection_kind": "agile",
+        "encryption_suite": {
+          "cipher_algorithm": "AES",
+          "key_length_bits": 256,
+          "cipher_chaining": "ChainingModeCBC"
+        },
+        "cipher_algorithm": "AES",
+        "cipher_chaining": "ChainingModeCBC",
+        "key_length_bits": 256,
+        "hash_algorithm": "SHA512",
+        "spin_count": 100000,
+        "salt_length_bytes": 16,
+        "block_size_bytes": 16,
+        "hash_size_bytes": 64
+      }
+    }
+  ]
+}
