@@ -1,0 +1,16 @@
+{
+  "policyId": "key-module-replacement-restrictions-001",
+  "description": "Independent list: only replacement eligibility is declared here. No types, no lifecycles.",
+  "replacementRules": [
+    {
+      "installedRef": "module-alpha",
+      "spareRef": "spare-k100-shared",
+      "note": "Shared repair-case spare is approved for Alpha field swaps."
+    },
+    {
+      "installedRef": "module-bravo",
+      "spareRef": "spare-k100-shared",
+      "note": "The same shared spare is approved for Bravo field swaps."
+    }
+  ]
+}

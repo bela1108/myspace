@@ -1,0 +1,18 @@
+{
+  "dispositionListId": "local-disposition-2026-11-27",
+  "description": "Local handling records. Only 'recalled' entries count as recall coverage.",
+  "dispositions": [
+    {
+      "bomRef": "device-bravo",
+      "disposition": "recalled",
+      "reference": "RC-2026-1102",
+      "note": "Device Bravo physically returned; its installed module is covered by the device recall."
+    },
+    {
+      "bomRef": "module-bravo",
+      "disposition": "recalled",
+      "reference": "RC-2026-1102",
+      "note": "Module serial confirmed on intake with device Bravo."
+    }
+  ]
+}

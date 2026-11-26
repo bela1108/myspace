@@ -4,6 +4,8 @@
 
 * [Build & Serialize](complex_serialize.py)
 * [Deserialize](complex_deserialize.py)
+* [Key module recall reconciliation](key_module_recall/README.md) - hardware BOM,
+  independent replacement policy and disposition list with a JSON round trip
 
 ## Data models
 

@@ -1,0 +1,59 @@
+{
+  "inventoryId": "key-module-recall-inventory-001",
+  "description": "Physical asset inventory. Component type and lifecycle are authoritative here.",
+  "assets": [
+    {
+      "bomRef": "device-alpha",
+      "name": "Edge Gateway Alpha",
+      "componentType": "device",
+      "lifecycle": "installed",
+      "version": "HW-G2",
+      "serialNumber": "GW-ALPHA-001",
+      "description": "Field device with an old-type cryptographic key module installed."
+    },
+    {
+      "bomRef": "module-alpha",
+      "name": "Legacy Key Module K-100",
+      "componentType": "cryptographic-asset",
+      "lifecycle": "installed",
+      "version": "K-100 Rev.3",
+      "serialNumber": "KM-ALPHA-7741",
+      "parentRef": "device-alpha",
+      "description": "Old-type key module actually installed in device Alpha."
+    },
+    {
+      "bomRef": "device-bravo",
+      "name": "Edge Gateway Bravo",
+      "componentType": "device",
+      "lifecycle": "installed",
+      "version": "HW-G2",
+      "serialNumber": "GW-BRAVO-002",
+      "description": "Field device with an old-type cryptographic key module installed."
+    },
+    {
+      "bomRef": "module-bravo",
+      "name": "Legacy Key Module K-100",
+      "componentType": "cryptographic-asset",
+      "lifecycle": "installed",
+      "version": "K-100 Rev.3",
+      "serialNumber": "KM-BRAVO-7742",
+      "parentRef": "device-bravo",
+      "description": "Old-type key module actually installed in device Bravo."
+    },
+    {
+      "bomRef": "spare-k100-shared",
+      "name": "Legacy Key Module K-100 (shared repair spare)",
+      "componentType": "cryptographic-asset",
+      "lifecycle": "sealed",
+      "version": "K-100 Rev.3",
+      "serialNumber": "KM-SPARE-9001",
+      "description": "Single shared spare held in the repair case for both gateways.",
+      "seal": {
+        "sealId": "WHS-SEAL-2026-0441",
+        "location": "Central warehouse, rack R-12, bin 7",
+        "sealedSince": "2026-10-02",
+        "note": "Sealed pending the recall decision; still owned as a replaceable spare."
+      }
+    }
+  ]
+}
