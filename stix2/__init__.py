@@ -56,6 +56,22 @@ from .patterns import (
     WithinQualifier,
 )
 from .registry import _collect_stix2_mappings
+from .temporal_conjunction import (
+    ALL_LEGAL_TIMES_SUPPORTED,
+    CREDIBLE_COMMON_POINT,
+    INSUFFICIENT_EVIDENCE,
+    NO_COMMON_POINT,
+    ConjunctionStatus,
+    TimeWindow,
+    build_indicator_filters,
+    conjunction_query,
+    conjunctive_query,
+    evaluate_pair,
+    local_conjunctive_query,
+    minute_window,
+    query_conjunction,
+    week_window,
+)
 from .v21 import *  # This import will always be the latest STIX 2.X version
 from .version import DEFAULT_VERSION, __version__
 from .versioning import new_version, revoke
