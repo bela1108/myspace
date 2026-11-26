@@ -1,0 +1,20 @@
+Interval witness
+  left:        ./examples/sample_exe64.elf
+  right:       ./examples/sample_exe64.elf
+  attribution: repo
+  load:        [0x400400, 0x4005b9)
+
+Unchanged (3 segments)
+  [0x400400, 0x40042a)  left=/usr/src/packages/BUILD/glibc-2.11.1/csu::/usr/src/packages/BUILD/glibc-2.11.1/sysdeps/x86_64/elf/start.S:65  right=/usr/src/packages/BUILD/glibc-2.11.1/csu::/usr/src/packages/BUILD/glibc-2.11.1/sysdeps/x86_64/elf/start.S:65
+  [0x4004ec, 0x400517)  left=/tmp/ebenders::/tmp/ebenders/z.c:2  right=/tmp/ebenders::/tmp/ebenders/z.c:2
+  [0x400520, 0x4005b9)  left=/usr/src/packages/BUILD/glibc-2.11.1/csu::/usr/src/packages/BUILD/glibc-2.11.1/csu/elf-init.c:140  right=/usr/src/packages/BUILD/glibc-2.11.1/csu::/usr/src/packages/BUILD/glibc-2.11.1/csu/elf-init.c:140
+
+Changed (0 segments)
+  (none)
+
+Unconfirmed by both (2 segments)
+  [0x40042a, 0x4004ec)  left=<none>  right=<none>
+  [0x400517, 0x400520)  left=<none>  right=<none>
+
+Line-table holes (0 entries)
+  (none)
