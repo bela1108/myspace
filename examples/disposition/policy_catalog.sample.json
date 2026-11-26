@@ -1,0 +1,11 @@
+{
+  "policies": [
+    {
+      "policy_id": "EP-WIN-2026-11",
+      "version": "2026.11.2",
+      "evidence_valid_days": 7,
+      "requirements": []
+    }
+  ]
+}
+

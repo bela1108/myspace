@@ -1,0 +1,26 @@
+{
+  "records": [
+    {
+      "record_id": "APR-RELEASE-002",
+      "device_id": "PC-RELEASE-02",
+      "policy_id": "EP-WIN-2026-11",
+      "policy_version": "2026.11.2",
+      "decision": "approved_release",
+      "decided_at": "2026-11-24T09:40:00+08:00",
+      "effective_at": "2026-11-24T10:00:00+08:00",
+      "approver": "Legal Custodian",
+      "reference": "independent-legal-register/2026-W47.md#APR-RELEASE-002"
+    },
+    {
+      "record_id": "APR-STALE-001",
+      "device_id": "PC-ROLLBACK-01",
+      "policy_id": "EP-WIN-2026-11",
+      "policy_version": "2026.11.2",
+      "decision": "approved",
+      "decided_at": "2026-11-25T11:00:00+08:00",
+      "approver": "Legal Custodian",
+      "reference": "independent-legal-register/2026-W47.md#APR-STALE-001"
+    }
+  ]
+}
+

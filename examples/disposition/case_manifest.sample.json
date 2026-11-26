@@ -1,0 +1,109 @@
+{
+  "case_id": "LEGAL-HOLD-WEEK-47-SAMPLE",
+  "as_of": "2026-11-27T10:00:00+08:00",
+  "reviewer": "DFIR on-call",
+  "standard": "SEC-EP-WIN-2026-11 endpoint security policy; offline plugin evidence TTL 7 days",
+  "policy_catalog": "policy_catalog.sample.json",
+  "approval_files": ["independent_approvals.sample.json"],
+  "devices": [
+    {
+      "device_id": "PC-RELEASE-02",
+      "batch": "first-batch",
+      "observations": [
+        {
+          "policy_id": "EP-WIN-2026-11",
+          "policy_version": "2026.11.2",
+          "assertion_key": "execution_policy:ExecutionPolicy",
+          "plugin": "execution_policy",
+          "field": "execution_policy",
+          "value": "AllSigned",
+          "expected_value": "AllSigned",
+          "event_type": "apply",
+          "chronology_at": "2026-11-21T09:00:00+08:00",
+          "collected_at": "2026-11-26T09:30:00+08:00",
+          "ticket": "CHG-1001"
+        },
+        {
+          "policy_id": "EP-WIN-2026-11",
+          "policy_version": "2026.11.2",
+          "assertion_key": "execution_policy:ExecutionPolicy",
+          "plugin": "execution_policy",
+          "field": "execution_policy",
+          "value": "RemoteSigned",
+          "expected_value": "AllSigned",
+          "event_type": "overwrite",
+          "chronology_at": "2026-11-22T10:00:00+08:00",
+          "collected_at": "2026-11-26T09:30:00+08:00",
+          "ticket": "CHG-1008"
+        },
+        {
+          "policy_id": "EP-WIN-2026-11",
+          "policy_version": "2026.11.2",
+          "assertion_key": "execution_policy:ExecutionPolicy",
+          "plugin": "execution_policy",
+          "field": "execution_policy",
+          "value": "AllSigned",
+          "expected_value": "AllSigned",
+          "event_type": "apply",
+          "chronology_at": "2026-11-23T15:00:00+08:00",
+          "collected_at": "2026-11-26T09:30:00+08:00",
+          "ticket": "CHG-1015"
+        },
+        {
+          "policy_id": "EP-WIN-2026-11",
+          "policy_version": "2026.11.2",
+          "assertion_key": "baseline_hash",
+          "plugin": "custom_baseline",
+          "field": "policy_hash",
+          "value": "sha256:9f2c7d41b7a8",
+          "compliant": true,
+          "chronology_at": "2026-11-23T15:05:00+08:00",
+          "collected_at": "2026-11-26T09:30:00+08:00"
+        }
+      ]
+    },
+    {
+      "device_id": "PC-ROLLBACK-01",
+      "batch": "second-batch",
+      "observations": [
+        {
+          "policy_id": "EP-WIN-2026-11",
+          "policy_version": "2026.11.2",
+          "assertion_key": "execution_policy:ExecutionPolicy",
+          "plugin": "execution_policy",
+          "field": "execution_policy",
+          "value": "AllSigned",
+          "expected_value": "AllSigned",
+          "event_type": "apply",
+          "chronology_at": "2026-11-24T09:00:00+08:00",
+          "collected_at": "2026-11-26T21:10:00+08:00",
+          "ticket": "CHG-1022"
+        },
+        {
+          "policy_id": "EP-WIN-2026-11",
+          "policy_version": "2026.11.2",
+          "assertion_key": "baseline_hash",
+          "plugin": "custom_baseline",
+          "field": "policy_hash",
+          "value": "sha256:9f2c7d41b7a8",
+          "compliant": true,
+          "chronology_at": "2026-11-24T09:05:00+08:00",
+          "collected_at": "2026-11-26T21:10:00+08:00"
+        },
+        {
+          "policy_id": "EP-WIN-2026-11",
+          "policy_version": "2026.11.1",
+          "assertion_key": "execution_policy:ExecutionPolicy",
+          "plugin": "execution_policy",
+          "field": "execution_policy",
+          "value": "RemoteSigned",
+          "expected_value": "AllSigned",
+          "event_type": "rollback",
+          "chronology_at": "2026-11-26T20:15:00+08:00",
+          "collected_at": "2026-11-26T21:10:00+08:00",
+          "ticket": "RB-20261126-03"
+        }
+      ]
+    }
+  ]
+}
