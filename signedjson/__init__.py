@@ -25,3 +25,23 @@ try:
 except PackageNotFoundError:  # pragma: nocover
     # package is not installed
     pass
+
+from signedjson.approvals import (
+    ApprovalReconciler,
+    MissingCoverageError,
+    ReconciliationResult,
+    reconcile_approvals,
+    reconcile_manifest,
+    reconcile_release,
+    verify_approvals,
+)
+
+__all__ = [
+    "ApprovalReconciler",
+    "MissingCoverageError",
+    "ReconciliationResult",
+    "reconcile_approvals",
+    "reconcile_manifest",
+    "reconcile_release",
+    "verify_approvals",
+]
