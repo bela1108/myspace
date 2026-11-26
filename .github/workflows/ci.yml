@@ -64,6 +64,9 @@ jobs:
       - name: Run packaging tests
         run: pytest -v regipy_tests/test_packaging.py
 
+      - name: Run cross-hive correlation tests
+        run: pytest -v regipy_tests/test_cross_hive.py
+
       - name: Run plugin validation
         run: PYTHONPATH=. python regipy_tests/validation/plugin_validation.py
 
