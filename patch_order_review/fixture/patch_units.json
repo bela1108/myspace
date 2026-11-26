@@ -1,0 +1,53 @@
+{
+  "schema": "patch-order-review/patch-units/v1",
+  "units": [
+    {
+      "id": "L7-A-150",
+      "lines": ["line-7"],
+      "title": "argonvale 1.4.1 -> 1.5.0",
+      "requires": {"argonvale": "==1.4.1"},
+      "change": {"argonvale": "1.5.0"},
+      "note": "First sequential schema step; 0008 is transient until the follow-up unit."
+    },
+    {
+      "id": "L7-A-160",
+      "lines": ["line-7"],
+      "title": "argonvale 1.5.0 -> 1.6.0",
+      "requires": {"argonvale": "==1.5.0"},
+      "change": {"argonvale": "1.6.0"},
+      "note": "Second sequential schema step; closes the accepted transient 0008."
+    },
+    {
+      "id": "L8-B-201--L7-C-091",
+      "lines": ["line-8", "line-7"],
+      "title": "basaltine 2.0.0 -> 2.0.1 with cinderloom 1.0.1 -> 0.9.1",
+      "requires": {"basaltine": "==2.0.0", "cinderloom": "==1.0.1"},
+      "change": {"basaltine": "2.0.1", "cinderloom": "0.9.1"},
+      "note": "Atomic cross-line step. The 2.0.1 metadata regression forces the phased cinderloom downgrade."
+    },
+    {
+      "id": "L8-B-210--L7-C-101",
+      "lines": ["line-8", "line-7"],
+      "title": "basaltine 2.0.1 -> 2.1.0 with cinderloom 0.9.1 -> 1.0.1",
+      "requires": {"basaltine": "==2.0.1", "cinderloom": "==0.9.1"},
+      "change": {"basaltine": "2.1.0", "cinderloom": "1.0.1"},
+      "note": "Closes 0002, restores the signed cinderloom boundary, and closes the 0007 regression."
+    },
+    {
+      "id": "L8-B-220",
+      "lines": ["line-8"],
+      "title": "basaltine 2.0.0 -> 2.2.0 bridge release",
+      "requires": {"basaltine": "==2.0.0", "argonvale": ">=1.5.0", "cinderloom": ">=1.0.0,<1.1"},
+      "change": {"basaltine": "2.2.0"},
+      "note": "Bundles the 2.0.1 migration without installing its broken metadata; keeps cinderloom closed."
+    },
+    {
+      "id": "L8-D-330",
+      "lines": ["line-8"],
+      "title": "driftpin 3.2.1 -> 3.3.0",
+      "requires": {"driftpin": "==3.2.1", "basaltine": ">=2.1.0", "cinderloom": ">=1.0.1"},
+      "change": {"driftpin": "3.3.0"},
+      "note": "Unlocks the 3.3 relay line and unavoidably exposes the accepted residual 0006."
+    }
+  ]
+}

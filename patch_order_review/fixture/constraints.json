@@ -1,0 +1,51 @@
+{
+  "schema": "patch-order-review/constraints/v1",
+  "candidate_lock_space": {
+    "argonvale": ["1.4.1", "1.5.0", "1.6.0"],
+    "cinderloom": ["0.9.1", "1.0.1"],
+    "basaltine": ["2.0.0", "2.0.1", "2.1.0", "2.2.0"],
+    "driftpin": ["3.2.1", "3.3.0"]
+  },
+  "terminal_requirements": {
+    "argonvale": ">=1.6.0",
+    "cinderloom": "==1.0.1",
+    "basaltine": ">=2.1.0,<2.3",
+    "driftpin": "==3.3.0"
+  },
+  "lock_constraints": [
+    {
+      "id": "COMPAT-001",
+      "when": {"basaltine": "==2.0.1"},
+      "require": {"cinderloom": "<1.0.0"},
+      "reason": "2.0.1 metadata regression RG-4411 still loads the legacy ABI slot."
+    },
+    {
+      "id": "COMPAT-002",
+      "when": {"basaltine": ">=2.1.0,<2.3"},
+      "require": {"cinderloom": ">=1.0.0,<1.1"},
+      "reason": "2.1.0 and the 2.2.0 bridge both require the signed ABI boundary."
+    },
+    {
+      "id": "COMPAT-003",
+      "when": {"cinderloom": "<1.0.0"},
+      "require": {"driftpin": "<3.3.0"},
+      "reason": "The legacy cinderloom ABI cannot speak the 3.3 relay handshake."
+    },
+    {
+      "id": "COMPAT-004",
+      "when": {"driftpin": ">=3.3.0"},
+      "require": {"basaltine": ">=2.1.0", "cinderloom": ">=1.0.1"},
+      "reason": "The 3.3 relay handshake requires both the coordinator fix and the 1.0.1 ABI boundary."
+    },
+    {
+      "id": "COMPAT-005",
+      "when": {"basaltine": ">=2.2.0"},
+      "require": {"argonvale": ">=1.5.0"},
+      "reason": "The 2.2.0 bridge bundles the 2.0.1 migration but requires the 1.5.0 runtime schema."
+    }
+  ],
+  "version_gap": {
+    "metric": "sum over packages of |major| + |minor| + |patch| between baseline and terminal lock",
+    "note": "A smaller endpoint gap is the tempting optimisation target; it deliberately ignores intermediate states."
+  }
+}

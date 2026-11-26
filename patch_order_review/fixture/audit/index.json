@@ -1,0 +1,193 @@
+{
+  "schema": "patch-order-review/audit-index/v1",
+  "generator": "pip_audit._format.json.JsonFormat",
+  "routes": {
+    "min_delta": {
+      "label": "Minimum endpoint gap / sequential patch walk",
+      "lanes": [
+        "line-7",
+        "line-8"
+      ],
+      "intent": "Reach the nearest fixed versions with the smallest terminal version gap.",
+      "units": [
+        "L7-A-150",
+        "L7-A-160",
+        "L8-B-201--L7-C-091",
+        "L8-B-210--L7-C-101",
+        "L8-D-330"
+      ],
+      "steps": [
+        {
+          "index": 0,
+          "unit": null,
+          "lock": {
+            "argonvale": "1.4.1",
+            "cinderloom": "1.0.1",
+            "basaltine": "2.0.0",
+            "driftpin": "3.2.1"
+          },
+          "unit_issues": [],
+          "constraint_violations": [],
+          "file": "min_delta/step_00.json",
+          "sha256": "53b074a9f196f3093ca75225fd68e0750494ee6f3c3109862c623738cc67c382"
+        },
+        {
+          "index": 1,
+          "unit": "L7-A-150",
+          "lock": {
+            "argonvale": "1.5.0",
+            "cinderloom": "1.0.1",
+            "basaltine": "2.0.0",
+            "driftpin": "3.2.1"
+          },
+          "unit_issues": [],
+          "constraint_violations": [],
+          "file": "min_delta/step_01.json",
+          "sha256": "7545274bf94730fa59d7f0c087815f5b45a54fe55eebf3af50c99ed71f24f7f2"
+        },
+        {
+          "index": 2,
+          "unit": "L7-A-160",
+          "lock": {
+            "argonvale": "1.6.0",
+            "cinderloom": "1.0.1",
+            "basaltine": "2.0.0",
+            "driftpin": "3.2.1"
+          },
+          "unit_issues": [],
+          "constraint_violations": [],
+          "file": "min_delta/step_02.json",
+          "sha256": "9e2180b9d0c87442f74a5f3b3e2ccfb7d18327af53a2703f0604dc2688d9c96e"
+        },
+        {
+          "index": 3,
+          "unit": "L8-B-201--L7-C-091",
+          "lock": {
+            "argonvale": "1.6.0",
+            "cinderloom": "0.9.1",
+            "basaltine": "2.0.1",
+            "driftpin": "3.2.1"
+          },
+          "unit_issues": [],
+          "constraint_violations": [],
+          "file": "min_delta/step_03.json",
+          "sha256": "2759525aa0a8fc3b61a67578ae986a933a329240c0e84a50fcd87c204af3ddc4"
+        },
+        {
+          "index": 4,
+          "unit": "L8-B-210--L7-C-101",
+          "lock": {
+            "argonvale": "1.6.0",
+            "cinderloom": "1.0.1",
+            "basaltine": "2.1.0",
+            "driftpin": "3.2.1"
+          },
+          "unit_issues": [],
+          "constraint_violations": [],
+          "file": "min_delta/step_04.json",
+          "sha256": "9727d27390b4095adcff0f5e2a405152a11636811c966394ba61df1fed85bf1b"
+        },
+        {
+          "index": 5,
+          "unit": "L8-D-330",
+          "lock": {
+            "argonvale": "1.6.0",
+            "cinderloom": "1.0.1",
+            "basaltine": "2.1.0",
+            "driftpin": "3.3.0"
+          },
+          "unit_issues": [],
+          "constraint_violations": [],
+          "file": "min_delta/step_05.json",
+          "sha256": "97f6203a8625572ebfd9be99897145aea4424bd605a0f01fd06d5148cf45c765"
+        }
+      ]
+    },
+    "bridge_release": {
+      "label": "Bridge release / hold the signed ABI boundary",
+      "lanes": [
+        "line-7",
+        "line-8"
+      ],
+      "intent": "Use the 2.2.0 bridge and never downgrade cinderloom below the signed 1.0.1 boundary.",
+      "units": [
+        "L7-A-150",
+        "L7-A-160",
+        "L8-B-220",
+        "L8-D-330"
+      ],
+      "steps": [
+        {
+          "index": 0,
+          "unit": null,
+          "lock": {
+            "argonvale": "1.4.1",
+            "cinderloom": "1.0.1",
+            "basaltine": "2.0.0",
+            "driftpin": "3.2.1"
+          },
+          "unit_issues": [],
+          "constraint_violations": [],
+          "file": "bridge_release/step_00.json",
+          "sha256": "53b074a9f196f3093ca75225fd68e0750494ee6f3c3109862c623738cc67c382"
+        },
+        {
+          "index": 1,
+          "unit": "L7-A-150",
+          "lock": {
+            "argonvale": "1.5.0",
+            "cinderloom": "1.0.1",
+            "basaltine": "2.0.0",
+            "driftpin": "3.2.1"
+          },
+          "unit_issues": [],
+          "constraint_violations": [],
+          "file": "bridge_release/step_01.json",
+          "sha256": "7545274bf94730fa59d7f0c087815f5b45a54fe55eebf3af50c99ed71f24f7f2"
+        },
+        {
+          "index": 2,
+          "unit": "L7-A-160",
+          "lock": {
+            "argonvale": "1.6.0",
+            "cinderloom": "1.0.1",
+            "basaltine": "2.0.0",
+            "driftpin": "3.2.1"
+          },
+          "unit_issues": [],
+          "constraint_violations": [],
+          "file": "bridge_release/step_02.json",
+          "sha256": "9e2180b9d0c87442f74a5f3b3e2ccfb7d18327af53a2703f0604dc2688d9c96e"
+        },
+        {
+          "index": 3,
+          "unit": "L8-B-220",
+          "lock": {
+            "argonvale": "1.6.0",
+            "cinderloom": "1.0.1",
+            "basaltine": "2.2.0",
+            "driftpin": "3.2.1"
+          },
+          "unit_issues": [],
+          "constraint_violations": [],
+          "file": "bridge_release/step_03.json",
+          "sha256": "b0c0c4e96dab319e70d434bd0418542e085b7d0a1f4c539d42b18296e6263c39"
+        },
+        {
+          "index": 4,
+          "unit": "L8-D-330",
+          "lock": {
+            "argonvale": "1.6.0",
+            "cinderloom": "1.0.1",
+            "basaltine": "2.2.0",
+            "driftpin": "3.3.0"
+          },
+          "unit_issues": [],
+          "constraint_violations": [],
+          "file": "bridge_release/step_04.json",
+          "sha256": "2c88a73535dcc7ba270f34080d2918a0aef6d94b14de2138b44e9d6a358c209d"
+        }
+      ]
+    }
+  }
+}

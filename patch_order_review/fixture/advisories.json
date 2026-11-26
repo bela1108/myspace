@@ -1,0 +1,70 @@
+{
+  "schema": "patch-order-review/advisories/v1",
+  "source": "synthetic local advisory mirror (offline fixture)",
+  "advisories": [
+    {
+      "id": "PYSEC-2026-0001",
+      "package": "argonvale",
+      "affected": ">=1.4.0,<1.4.1",
+      "fixed": ["1.4.1"],
+      "severity": "high",
+      "summary": "Query planner accepts unescaped predicate fragments from remote schema hints."
+    },
+    {
+      "id": "PYSEC-2026-0002",
+      "package": "basaltine",
+      "affected": ">=2.0.0,<2.1.0",
+      "fixed": ["2.1.0", "2.2.0"],
+      "severity": "high",
+      "summary": "Coordinator replay cache reuses a nonce across legacy and bridge framings."
+    },
+    {
+      "id": "PYSEC-2026-0003",
+      "package": "cinderloom",
+      "affected": "<1.0.0",
+      "fixed": ["1.0.0", "1.0.1"],
+      "severity": "critical",
+      "summary": "Plugin loader resolves a signed plugin through an unverified legacy search path."
+    },
+    {
+      "id": "PYSEC-2026-0004",
+      "package": "driftpin",
+      "affected": "<3.2.1",
+      "fixed": ["3.2.1"],
+      "severity": "medium",
+      "summary": "Transport retry reuses an expired relay ticket after a clock rollback."
+    },
+    {
+      "id": "PYSEC-2026-0005",
+      "package": "cinderloom",
+      "affected": ">=1.0.0,<1.0.1",
+      "fixed": ["1.0.1"],
+      "severity": "high",
+      "summary": "ABI shim copies plugin capabilities without validating the capability mask."
+    },
+    {
+      "id": "PYSEC-2026-0006",
+      "package": "driftpin",
+      "affected": ">=3.3.0,<3.5.0",
+      "fixed": [],
+      "severity": "medium",
+      "summary": "Relay hello accepts a downgraded capability set; no upstream fix is published."
+    },
+    {
+      "id": "PYSEC-2026-0007",
+      "package": "basaltine",
+      "affected": "==2.0.1",
+      "fixed": ["2.1.0", "2.2.0"],
+      "severity": "medium",
+      "summary": "2.0.1 metadata regression installs the legacy nonce key together with the new framing."
+    },
+    {
+      "id": "PYSEC-2026-0008",
+      "package": "argonvale",
+      "affected": "==1.5.0",
+      "fixed": ["1.6.0"],
+      "severity": "low",
+      "summary": "1.5.0 schema migration leaves the legacy JSON adapter reachable until 1.6.0."
+    }
+  ]
+}

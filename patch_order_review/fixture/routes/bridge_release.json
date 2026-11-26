@@ -1,0 +1,12 @@
+{
+  "id": "bridge_release",
+  "label": "Bridge release / hold the signed ABI boundary",
+  "lanes": ["line-7", "line-8"],
+  "intent": "Use the 2.2.0 bridge and never downgrade cinderloom below the signed 1.0.1 boundary.",
+  "units": [
+    "L7-A-150",
+    "L7-A-160",
+    "L8-B-220",
+    "L8-D-330"
+  ]
+}

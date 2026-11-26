@@ -1,0 +1,77 @@
+{
+  "schema": "patch-order-review/dispositions/v1",
+  "board": "Legacy Maintenance Risk Board (fictional)",
+  "review_as_of": "2026-11-27",
+  "policy": {
+    "locked_risk_reopen_is_blocking": true,
+    "unlisted_transient_is_blocking": true,
+    "terminal_residual_requires_acceptance": true,
+    "endpoint_only_comparison_is_insufficient": true
+  },
+  "locked_closed": [
+    {
+      "id": "PYSEC-2026-0001",
+      "package": "argonvale",
+      "signed_by": "runtime-maintenance",
+      "signed_on": "2026-08-14",
+      "reopenable": false,
+      "note": "Signed after the 1.4.1 hotfix; no downgrade is permitted on either maintenance line."
+    },
+    {
+      "id": "PYSEC-2026-0003",
+      "package": "cinderloom",
+      "signed_by": "abi-security",
+      "signed_on": "2026-07-30",
+      "reopenable": false,
+      "note": "Critical plugin-loader finding. The board explicitly marked this disposition non-reopenable."
+    },
+    {
+      "id": "PYSEC-2026-0004",
+      "package": "driftpin",
+      "signed_by": "data-plane-security",
+      "signed_on": "2026-09-02",
+      "reopenable": false,
+      "note": "Relay-ticket rollback fix was signed against 3.2.1."
+    },
+    {
+      "id": "PYSEC-2026-0005",
+      "package": "cinderloom",
+      "signed_by": "abi-security",
+      "signed_on": "2026-09-21",
+      "reopenable": false,
+      "note": "Capability-mask validation was signed against 1.0.1."
+    }
+  ],
+  "remediation_targets": [
+    {
+      "id": "PYSEC-2026-0002",
+      "package": "basaltine",
+      "required_at": "terminal",
+      "note": "Regression wave RG-2031-07 must leave both candidate locks with 0002 closed."
+    }
+  ],
+  "accepted_transient": [
+    {
+      "id": "PYSEC-2026-0008",
+      "package": "argonvale",
+      "severity": "low",
+      "max_consecutive_states": 2,
+      "mitigation": "Set ARGONVALE_LEGACY_JSON=0 and keep WAF rule W-118 enabled for the migration window.",
+      "owner": "runtime-oncall",
+      "expires": "2026-12-15",
+      "note": "Unavoidable while the sequential 1.5.0 schema step is resident; closed by 1.6.0."
+    }
+  ],
+  "accepted_residual": [
+    {
+      "id": "PYSEC-2026-0006",
+      "package": "driftpin",
+      "severity": "medium",
+      "mitigation": "Apply egress allowlist DP-EGRESS-3 and signed relay pinning until an upstream fix exists.",
+      "owner": "data-plane-security",
+      "expires": "2027-03-31",
+      "review_cadence": "monthly",
+      "note": "No fixed release exists in 3.3.0 or the candidate 3.4.x bridge line."
+    }
+  ]
+}

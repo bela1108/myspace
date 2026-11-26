@@ -1,0 +1,13 @@
+{
+  "id": "min_delta",
+  "label": "Minimum endpoint gap / sequential patch walk",
+  "lanes": ["line-7", "line-8"],
+  "intent": "Reach the nearest fixed versions with the smallest terminal version gap.",
+  "units": [
+    "L7-A-150",
+    "L7-A-160",
+    "L8-B-201--L7-C-091",
+    "L8-B-210--L7-C-101",
+    "L8-D-330"
+  ]
+}
