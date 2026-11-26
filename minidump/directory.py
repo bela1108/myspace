@@ -2,6 +2,19 @@
 from minidump.constants import MINIDUMP_STREAM_TYPE
 from minidump.common_structs import MINIDUMP_LOCATION_DESCRIPTOR
 
+
+def __getattr__(name):
+	# Lazy re-export so callers can keep using the directory module for the
+	# offline index without creating an import cycle.
+	if name in (
+		'OfflineDirectoryIndex', 'DirectoryIndexBuilder', 'OfflineDirectoryIndexBuilder',
+		'DirectoryIndex', 'SourceIdentity', 'SealedReceipt', 'DirectoryCursor',
+		'MisappliedCursorError', 'SourceIdentityMismatchError',
+	):
+		from minidump import offline_index
+		return getattr(offline_index, name)
+	raise AttributeError("module %r has no attribute %r" % (__name__, name))
+
 class MINIDUMP_DIRECTORY:
 	def __init__(self):
 		self.StreamType:MINIDUMP_STREAM_TYPE = None

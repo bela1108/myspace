@@ -28,6 +28,26 @@ Once in the shell, all commands are documented. Use the `?` command to see all o
 After parsing the minidump file, you can use the MinidumpFileReader and MinidumpBufferedReader objects to perform various searches/reads in the dumped process' address space.  
 Those objects will be able to read and search the VA of the dumped process and have a notion on integer sizes based on the CPU arch.
 
+## Resumable offline directory index
+Directory parsing can be checkpointed between processes without trusting state from a
+different file:
+
+```python
+from minidump.offline_index import OfflineDirectoryIndex
+
+index = OfflineDirectoryIndex("incident.dmp", "incident.offline-index.json")
+index.build(max_entries=2)   # persist a partial checkpoint
+index.close()
+
+index = OfflineDirectoryIndex("incident.dmp", "incident.offline-index.json")
+index.build()                # resume from the last confirmed entry
+```
+
+The index binds the header, each directory entry, and each read receipt to a
+SHA-256 source identity. If the path now holds another file, resuming raises
+`MisappliedCursorError`; the old receipts stay in the index. Pass
+`allow_source_change=True` only to start a separate section for the replacement.
+
 # Creating minidump file
 The ```createminidump.py``` script in the utils folder uses the Windows API to create minidump files. This script can also dump processes running on a different user context by enabling ```SeDebugPrivilege```.  
 Of course it only works if you are running it as administrator or a use that has ```SeDebugPrivilege```.

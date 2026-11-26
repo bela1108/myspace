@@ -31,6 +31,14 @@ def run():
 	parser.add_argument('--all', action='store_true', help='Show all info')
 	parser.add_argument('-r', '--read-addr', type=lambda x: int(x,0), help='Dump a memory region from the process\'s addres space')
 	parser.add_argument('-s', '--read-size', type=lambda x: int(x,0), default = 0x20, help='Dump a memory region from the process\'s addres space')
+	parser.add_argument('--index', '--directory-index', dest='directory_index', default=None,
+		help='Path of a resumable offline directory index (JSON)')
+	parser.add_argument('--build-index', '--build-directory-index', dest='build_directory_index',
+		action='store_true', help='Build or resume the directory index, then exit')
+	parser.add_argument('--max-index-entries', '--directory-index-max-entries', dest='max_index_entries',
+		type=int, default=None, help='Read at most this many new directory entries')
+	parser.add_argument('--allow-source-change', action='store_true',
+		help='Explicitly start a new index section when the same path now holds another file')
 
 	args = parser.parse_args()
 	if args.verbose == 0:
@@ -48,8 +56,28 @@ def run():
 		shell.cmdloop()
 
 	else:
+		if args.build_directory_index:
+			index = MinidumpFile.build_directory_index(
+				args.minidumpfile,
+				args.directory_index,
+				max_entries=args.max_index_entries,
+				allow_source_change=args.allow_source_change,
+			)
+			print('Directory index: %s' % index)
+			print('Source identity: %s' % index.source_id)
+			print('Confirmed entries: %d/%d' % (index.next_entry, index.number_of_streams))
+			for entry in index.entries:
+				print('  [%d] %s size=%d rva=0x%x' % (
+					entry.index, entry.stream_type_name, entry.data_size, entry.rva))
+			index.close()
+			return
 
-		mf = MinidumpFile.parse(args.minidumpfile)
+		mf = MinidumpFile.parse(
+			args.minidumpfile,
+			index_path=args.directory_index,
+			max_index_entries=args.max_index_entries,
+			allow_source_change=args.allow_source_change,
+		)
 		reader = mf.get_reader()
 
 		if args.all or args.threads:

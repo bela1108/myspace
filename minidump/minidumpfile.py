@@ -17,6 +17,7 @@ from minidump.streams import *
 from minidump.common_structs import *
 from minidump.constants import MINIDUMP_STREAM_TYPE
 from minidump.directory import MINIDUMP_DIRECTORY
+from minidump.offline_index import OfflineDirectoryIndex
 from minidump.streams.SystemInfoStream import PROCESSOR_ARCHITECTURE
 from minidump.structures.peb import PEB
 
@@ -27,6 +28,7 @@ class MinidumpFile:
 		self.file_handle = None
 		self.header:MinidumpHeader = None
 		self.directories: List[MINIDUMP_DIRECTORY] = []
+		self.directory_index: OfflineDirectoryIndex = None
 
 		self.threads_ex:MinidumpThreadExList = None
 		self.threads:MinidumpThreadList = None
@@ -46,15 +48,31 @@ class MinidumpFile:
 		self.peb:PEB = None
 
 	@staticmethod
-	def parse(filename):
+	def parse(filename, index_path = None, max_index_entries = None, allow_source_change = False):
 		mf = MinidumpFile()
 		mf.filename = filename
 		mf.file_handle = open(filename, 'rb')
-		mf._parse()
+		if index_path is None:
+			mf._parse()
+		else:
+			mf._parse_from_directory_index(index_path, max_index_entries, allow_source_change)
 		return mf
 
 	@staticmethod
-	def parse_external(file_handle, filename = ''):
+	def build_directory_index(filename, index_path = None, max_entries = None, allow_source_change = False, recover = True):
+		"""Build (or resume) a source-bound offline index of the stream directory."""
+		index = OfflineDirectoryIndex(
+			filename,
+			index_path,
+			allow_source_change = allow_source_change,
+			recover = recover,
+		)
+		return index.build(max_entries = max_entries)
+
+	build_offline_directory_index = build_directory_index
+
+	@staticmethod
+	def parse_external(file_handle, filename = '', index_path = None, max_index_entries = None, allow_source_change = False):
 		"""
 		External file handle must be an object that exposes basic file IO functionality
 		that you'd get by python's file buffer (read, seek, tell etc.)
@@ -62,22 +80,69 @@ class MinidumpFile:
 		mf = MinidumpFile()
 		mf.filename = filename
 		mf.file_handle = file_handle
-		mf._parse()
+		if index_path is None:
+			mf._parse()
+		else:
+			mf._parse_from_directory_index(index_path, max_index_entries, allow_source_change)
 		return mf
 
 	@staticmethod
-	def parse_bytes(data):
-		return MinidumpFile.parse_buff(io.BytesIO(data))
+	def parse_bytes(data, index_path = None, max_index_entries = None, allow_source_change = False):
+		return MinidumpFile.parse_buff(
+			io.BytesIO(data),
+			index_path = index_path,
+			max_index_entries = max_index_entries,
+			allow_source_change = allow_source_change,
+		)
 
 	@staticmethod
-	def parse_buff(buffer):
+	def parse_buff(buffer, index_path = None, max_index_entries = None, allow_source_change = False):
 		mf = MinidumpFile()
 		mf.file_handle = buffer
-		mf._parse()
+		if index_path is None:
+			mf._parse()
+		else:
+			mf._parse_from_directory_index(index_path, max_index_entries, allow_source_change)
 		return mf
 
 	def get_reader(self):
 		return MinidumpFileReader(self)
+
+	def close(self):
+		if self.directory_index is not None:
+			self.directory_index.close()
+			self.directory_index = None
+		if self.file_handle is not None and not getattr(self.file_handle, 'closed', False):
+			self.file_handle.close()
+
+	def build_offline_index(self, index_path = None, max_entries = None, allow_source_change = False, recover = True):
+		source = self.filename if self.filename else self.file_handle
+		index = OfflineDirectoryIndex(
+			source,
+			index_path,
+			allow_source_change = allow_source_change,
+			recover = recover,
+		)
+		return index.build(max_entries = max_entries)
+
+	def _parse_from_directory_index(self, index_path, max_entries = None, allow_source_change = False):
+		source = self.filename if self.filename else self.file_handle
+		self.directory_index = MinidumpFile.build_directory_index(
+			source,
+			index_path,
+			max_entries = max_entries,
+			allow_source_change = allow_source_change,
+		)
+		self.header = self.directory_index.header
+		self.directories = self.directory_index.directories
+		if not self.directory_index.complete:
+			logging.warning('Directory index is partial: %d of %d entries are confirmed',
+				self.directory_index.next_entry, self.directory_index.number_of_streams)
+		self.__parse_directories()
+		try:
+			self.__parse_peb()
+		except Exception as e:
+			logging.exception('PEB parsing error!')
 
 	def _parse(self):
 		self.__parse_header()
