@@ -16,6 +16,7 @@ msoffcrypto-tool
    :caption: Contents:
 
    cli
+   handoff
    msoffcrypto
 
 .. * :ref:`genindex`
