@@ -33,7 +33,7 @@ import uuid
 from collections import Counter, defaultdict
 from functools import lru_cache, wraps
 from hashlib import md5, sha1, sha256, sha512
-from typing import Union
+from typing import NamedTuple, Optional, Tuple, Union
 
 import ordlookup
 
@@ -1603,6 +1603,89 @@ class ImportData(DataContainer):
                 self.pe.set_bytes_at_offset(self.name_offset, val)
 
         self.__dict__[name] = val
+
+
+class DependencyEvidence(NamedTuple):
+    """Read-only provenance for one symbol declaration in an import table.
+
+    table:          ``PE.IMPORT_TABLE_DIRECT`` or ``PE.IMPORT_TABLE_DELAY``
+    dll:            Name of the dependency as stored in the PE image.
+    symbol:         Name from a name-based import, ``None`` for ordinal-only
+                    imports even if a table can resolve the ordinal.
+    ordinal:        Ordinal for ordinal-only imports, otherwise ``None``.
+    hint:           Hint value carried by a name-based import.
+    resolved_name:  Preferred ordinal-table interpretation, ``None`` when no
+                    in-range table explains the ordinal.
+    candidates:     Every in-range ordinal-table interpretation; a single
+                    item means the resolution is unique.
+    thunk_rva:      RVA of the thunk that produced the declaration.
+    """
+
+    table: str
+    dll: bytes
+    symbol: Optional[bytes]
+    ordinal: Optional[int]
+    hint: Optional[int]
+    resolved_name: Optional[bytes]
+    candidates: Tuple[bytes, ...]
+    thunk_rva: Optional[int]
+
+    def explanation_names(self):
+        """Return every name this declaration can legitimately explain."""
+
+        if self.symbol is not None:
+            return (self.symbol,)
+        return tuple(self.candidates)
+
+    def matches(self, dll, symbol):
+        """Match a name-only manifest pair without losing provenance."""
+
+        if dll.lower() != self.dll.lower():
+            return False
+        if self.symbol is not None:
+            return self.symbol.lower() == symbol.lower()
+        return any(name.lower() == symbol.lower() for name in self.candidates)
+
+
+class ManifestDependency(NamedTuple):
+    """A name-only dependency declaration kept separate from PE evidence."""
+
+    dll: bytes
+    symbol: bytes
+
+    @classmethod
+    def from_entry(cls, entry):
+        if isinstance(entry, ManifestDependency):
+            return entry
+        if isinstance(entry, (bytes, str)):
+            if isinstance(entry, str):
+                entry = entry.encode()
+            dll, separator, symbol = entry.rpartition(b".")
+            if not separator:
+                raise PEFormatError(
+                    "Manifest entries must use the 'dll.symbol' form or be "
+                    "(dll, symbol) pairs."
+                )
+            return cls(dll, symbol)
+        try:
+            dll, symbol = entry
+        except (TypeError, ValueError) as excp:
+            raise PEFormatError(
+                "Manifest entries must be (dll, symbol) pairs."
+            ) from excp
+        if isinstance(dll, str):
+            dll = dll.encode()
+        if isinstance(symbol, str):
+            symbol = symbol.encode()
+        return cls(dll, symbol)
+
+
+class DependencyMatch(NamedTuple):
+    """Result of cross-referencing one manifest entry against PE evidence."""
+
+    dependency: ManifestDependency
+    status: str
+    candidates: Tuple[DependencyEvidence, ...]
 
 
 class ExportDirData(DataContainer):
@@ -6287,6 +6370,161 @@ class PE:
             table.append(thunk_data)
 
         return table
+
+    # Read-only dependency evidence API. Unlike the parsed import directory
+    # entries, the records returned here never overwrite the ordinal-only
+    # declaration with a looked-up name; every interpretation is kept side by
+    # side together with the import table it originated from.
+    IMPORT_TABLE_DIRECT = "direct"
+    IMPORT_TABLE_DELAY = "delay"
+
+    DEPENDENCY_MATCH_CONFIRMED = "confirmed"
+    DEPENDENCY_MATCH_PENDING = "pending"
+    DEPENDENCY_MATCH_AMBIGUOUS = "ambiguous"
+    DEPENDENCY_MATCH_UNRESOLVED = "unresolved"
+
+    def _get_import_descriptors_for_evidence(self, directory_index):
+        attribute_name = DIRECTORY_ENTRY[directory_index][6:]
+        if hasattr(self, attribute_name):
+            return getattr(self, attribute_name)
+        try:
+            directory = self.OPTIONAL_HEADER.DATA_DIRECTORY[directory_index]
+        except IndexError:
+            return []
+        if not directory.VirtualAddress:
+            return []
+        if directory_index == DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_IMPORT"]:
+            return self.parse_import_directory(directory.VirtualAddress, directory.Size)
+        return self.parse_delay_import_directory(directory.VirtualAddress, directory.Size)
+
+    def get_dependency_evidence(
+        self,
+        library_versions=None,
+        ordinal_tables=None,
+    ):
+        """Return read-only evidence for every direct and delayed import.
+
+        Each record keeps the import table it comes from so two declarations
+        with the same resolved name can never hide each other. Symbols that
+        were imported by ordinal retain the ordinal and carry every name the
+        ordinal tables can explain for the relevant library version; multiple
+        names are returned as candidates instead of being collapsed.
+
+        ``library_versions`` maps DLL names (``bytes`` or ``str``) to the
+        version of the library the released file was linked against. The
+        optional ``ordinal_tables`` sequence follows the
+        ``ordlookup.OrdinalTable`` structure and defaults to the shipped
+        tables.
+        """
+
+        if library_versions is None:
+            library_versions = {}
+        if ordinal_tables is None:
+            ordinal_tables = ordlookup.default_ordinal_tables
+
+        normalized_versions = {
+            (name.lower() if isinstance(name, bytes) else name.lower().encode()): version
+            for name, version in library_versions.items()
+        }
+
+        evidence = []
+        table_specs = (
+            (
+                DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_IMPORT"],
+                self.IMPORT_TABLE_DIRECT,
+            ),
+            (
+                DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT"],
+                self.IMPORT_TABLE_DELAY,
+            ),
+        )
+        for directory_index, table in table_specs:
+            descriptors = self._get_import_descriptors_for_evidence(directory_index)
+            for descriptor in descriptors:
+                dll = descriptor.dll
+                version = normalized_versions.get(dll.lower())
+                for symbol in descriptor.imports:
+                    ordinal = symbol.ordinal if symbol.import_by_ordinal else None
+                    declared_name = None if ordinal is not None else symbol.name
+                    candidates = ()
+                    resolved_name = None
+                    if ordinal is not None:
+                        resolved_name, candidates = ordlookup.ordinal_lookup_candidates(
+                            dll.lower(),
+                            ordinal,
+                            version,
+                            ordinal_tables,
+                        )
+                    evidence.append(
+                        DependencyEvidence(
+                            table=table,
+                            dll=dll,
+                            symbol=declared_name,
+                            ordinal=ordinal,
+                            hint=symbol.hint,
+                            resolved_name=resolved_name,
+                            candidates=candidates,
+                            thunk_rva=symbol.thunk_rva,
+                        )
+                    )
+        return tuple(evidence)
+
+    def cross_reference_dependencies(
+        self,
+        manifest,
+        library_versions=None,
+        ordinal_tables=None,
+        evidence=None,
+    ):
+        """Compare a name-only dependency manifest against import evidence.
+
+        Manifest entries are ``(dll, symbol)`` pairs, either dotted
+        ``dll.symbol`` strings/bytes or two-item sequences. A name found in
+        the direct import table is confirmed. A name only backed by the delay
+        import table remains pending, because delay imports are resolved at
+        run time rather than at load time. Evidence from different tables or
+        several ordinal interpretations produces an ambiguous result with all
+        candidates attached. Everything else is unresolved.
+
+        The PE image is never modified.
+        """
+
+        if evidence is None:
+            evidence = self.get_dependency_evidence(
+                library_versions=library_versions,
+                ordinal_tables=ordinal_tables,
+            )
+
+        matches = []
+        for entry in manifest:
+            dependency = ManifestDependency.from_entry(entry)
+            candidates = tuple(
+                item
+                for item in evidence
+                if item.matches(dependency.dll, dependency.symbol)
+            )
+            tables = {item.table for item in candidates}
+            interpretations = {
+                name
+                for item in candidates
+                for name in item.explanation_names()
+            }
+            if not candidates:
+                status = self.DEPENDENCY_MATCH_UNRESOLVED
+            elif len(interpretations) > 1 or len(tables) > 1:
+                status = self.DEPENDENCY_MATCH_AMBIGUOUS
+            elif self.IMPORT_TABLE_DELAY in tables:
+                status = self.DEPENDENCY_MATCH_PENDING
+            else:
+                status = self.DEPENDENCY_MATCH_CONFIRMED
+            matches.append(
+                DependencyMatch(
+                    dependency=dependency,
+                    status=status,
+                    candidates=candidates,
+                )
+            )
+        return tuple(matches)
 
     def get_memory_mapped_image(self, max_virtual_address=0x10000000, ImageBase=None):
         """Returns the data corresponding to the memory layout of the PE file.
