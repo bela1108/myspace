@@ -53,6 +53,38 @@ msoffcrypto-tool document.doc --test -v
 
 It returns `1` if the file is encrypted, `0` if not.
 
+#### Read-only forensic receipts
+
+The receipt mode records what can be learned from an Office container without
+loading a key, decrypting content, or asking for a password.  It keeps the
+initial format conclusion, a digest over reproducible public properties, and
+later corrections in an append-only journal:
+
+    msoffcrypto-tool --inspect document.docx
+    msoffcrypto-tool --receipt case.json --sample document.docx --sample legacy.xls
+    msoffcrypto-tool --receipt case.json --status
+    msoffcrypto-tool --receipt case.json --correct obs-... --field format --value doc97 --reason "reviewer correction"
+    msoffcrypto-tool --receipt case.json --verify
+
+The JSON snapshot is always valid.  A sidecar journal is written first and is
+replayed on the next run.  If a process stops halfway through a journal line,
+only that incomplete tail is discarded; complete observations keep their
+confirmed or pending status.  A confirmed format conclusion can be renewed
+once during recovery, and a second renewal is refused.  Accepting a correction
+appends an event for one observation and never removes another pending one.
+
+The same operations are available as a library:
+
+    from msoffcrypto.receipt import Receipt, inspect_file, write_receipt
+
+    observation = inspect_file("document.docx")
+    receipt = write_receipt(["document.docx", "legacy.xls"], "case.json")
+    receipt.correct(observation.observation_id, "format", "doc97", reason="review")
+    receipt.resume(["document.docx", "legacy.xls"])
+
+Old receipts that only contain a format-identification list remain readable.
+Existing `OfficeFile` format detection is unchanged.
+
 #### Encryption (OOXML only, experimental)
 
 > [!IMPORTANT]

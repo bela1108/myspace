@@ -76,3 +76,76 @@ def OfficeFile(file):
         return Ppt97File(file)
     else:
         raise exceptions.FileFormatError("Unrecognized file format")
+
+
+_RECEIPT_EXPORTS = {
+    "Receipt",
+    "ReceiptLedger",
+    "AdjudicationRecord",
+    "AdjudicationLedger",
+    "ReviewLedger",
+    "ReadOnlyReceipt",
+    "ForensicReceipt",
+    "read_only_receipt",
+    "FormatReceipt",
+    "ReceiptReport",
+    "ForensicReviewReport",
+    "Observation",
+    "FormatObservation",
+    "FormatConclusion",
+    "PublicProperties",
+    "Correction",
+    "Renewal",
+    "Record",
+    "ReviewRecord",
+    "ReceiptRecord",
+    "ObservationRecord",
+    "ConclusionRecord",
+    "ObservationStatus",
+    "ConclusionStatus",
+    "ReceiptStatus",
+    "ReviewStatus",
+    "InterruptedWriteError",
+    "ReceiptError",
+    "InspectionError",
+    "inspect_file",
+    "inspect_bytes",
+    "inspect_office_file",
+    "read_only_inspect",
+    "observe_file",
+    "observe_format",
+    "format_observation",
+    "detect_format",
+    "identify_format",
+    "inspect_office",
+    "create_observation",
+    "build_observation",
+    "load_receipt",
+    "read_receipt",
+    "open_receipt",
+    "write_receipt",
+    "create_receipt",
+    "resume_receipt",
+    "correct_observation",
+    "renew_observation",
+    "accept_correction",
+    "record_observation",
+    "initial_format_conclusion",
+    "initial_conclusion",
+    "verify_receipt",
+    "migrate_legacy_receipt",
+}
+
+
+def __getattr__(name):
+    """Expose the receipt API without importing it for ordinary decryption."""
+
+    if name in {"receipt", "forensic_receipt", "inspection", "attestation"}:
+        import importlib
+
+        return importlib.import_module("msoffcrypto." + name)
+    if name in _RECEIPT_EXPORTS:
+        from msoffcrypto import receipt as _receipt
+
+        return getattr(_receipt, name)
+    raise AttributeError("module 'msoffcrypto' has no attribute {!r}".format(name))
