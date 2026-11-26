@@ -6,6 +6,7 @@ from auditlog import get_logentry_model
 from auditlog.context import auditlog_disabled
 from auditlog.diff import model_instance_diff
 from auditlog.models import _get_manager_from_settings
+from auditlog.relations import build_relation_snapshots, get_db_alias
 from auditlog.signals import post_log, pre_log
 
 
@@ -57,7 +58,12 @@ def log_update(sender, instance, **kwargs):
     """
     if not instance._state.adding and instance.pk is not None:
         update_fields = kwargs.get("update_fields", None)
-        old = _get_manager_from_settings(sender).filter(pk=instance.pk).first()
+        old = (
+            _get_manager_from_settings(sender)
+            .using(get_db_alias(instance))
+            .filter(pk=instance.pk)
+            .first()
+        )
         _create_log_entry(
             action=get_logentry_model().Action.UPDATE,
             instance=instance,
@@ -128,12 +134,19 @@ def _create_log_entry(
     error = None
     log_entry = None
     changes = None
+    relation_snapshots = None
     try:
         changes = model_instance_diff(
             diff_old,
             diff_new,
             fields_to_check=fields_to_check,
             use_json_for_changes=use_json_for_changes,
+        )
+        relation_snapshots = build_relation_snapshots(
+            instance._meta.model,
+            diff_old,
+            diff_new,
+            changes,
         )
 
         if force_log or changes:
@@ -142,6 +155,8 @@ def _create_log_entry(
                 action=action,
                 changes=changes,
                 force_log=force_log,
+                relation_snapshots=relation_snapshots,
+                _auditlog_using=get_db_alias(instance),
             )
     except BaseException as e:
         error = e
@@ -173,7 +188,8 @@ def make_log_m2m_changes(field_name):
             return
         LogEntry = get_logentry_model()
 
-        model_manager = _get_manager_from_settings(kwargs["model"])
+        alias = kwargs.get("using") or get_db_alias(kwargs["instance"])
+        model_manager = _get_manager_from_settings(kwargs["model"]).using(alias)
 
         if action == "post_clear":
             changed_queryset = model_manager.all()
@@ -186,6 +202,7 @@ def make_log_m2m_changes(field_name):
                 kwargs["instance"],
                 "add",
                 field_name,
+                using=alias,
             )
         elif action in ["post_remove", "post_clear"]:
             LogEntry.objects.log_m2m_changes(
@@ -193,6 +210,7 @@ def make_log_m2m_changes(field_name):
                 kwargs["instance"],
                 "delete",
                 field_name,
+                using=alias,
             )
 
     return log_m2m_changes

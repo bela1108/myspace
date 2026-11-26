@@ -17,7 +17,7 @@ from django.core.exceptions import (
     ObjectDoesNotExist,
     ValidationError,
 )
-from django.db import DEFAULT_DB_ALIAS, models
+from django.db import DEFAULT_DB_ALIAS, connections, models
 from django.db.models import Q, QuerySet
 from django.utils import formats
 from django.utils import timezone as django_timezone
@@ -35,7 +35,9 @@ class LogEntryManager(models.Manager):
     Custom manager for the :py:class:`LogEntry` model.
     """
 
-    def log_create(self, instance, force_log: bool = False, **kwargs):
+    def log_create(
+        self, instance, force_log: bool = False, using=None, **kwargs
+    ):
         """
         Helper method to create a new log entry. This method automatically populates some fields when no
         explicit value is given.
@@ -49,14 +51,21 @@ class LogEntryManager(models.Manager):
         :rtype: LogEntry
         """
         from auditlog.cid import get_cid
+        from auditlog.relations import build_relation_snapshots, get_db_alias
 
         changes = kwargs.get("changes", None)
         pk = self._get_pk_value(instance)
+        alias = (
+            using
+            or kwargs.pop("_auditlog_using", None)
+            or get_db_alias(instance)
+        )
+        if alias not in connections.settings:
+            alias = DEFAULT_DB_ALIAS
 
         if changes is not None or force_log:
-            kwargs.setdefault(
-                "content_type", ContentType.objects.get_for_model(instance)
-            )
+            content_type_manager = ContentType.objects.db_manager(alias)
+            kwargs.setdefault("content_type", content_type_manager.get_for_model(instance))
             kwargs.setdefault("object_pk", pk)
             try:
                 object_repr = smart_str(instance)
@@ -74,13 +83,27 @@ class LogEntryManager(models.Manager):
             if callable(get_additional_data):
                 kwargs.setdefault("additional_data", get_additional_data())
 
+            if "relation_snapshots" not in kwargs:
+                kwargs["relation_snapshots"] = build_relation_snapshots(
+                    instance._meta.model,
+                    None,
+                    instance,
+                    changes,
+                )
+
             # set correlation id
             kwargs.setdefault("cid", get_cid())
-            return self.create(**kwargs)
+            return self.using(alias).create(**kwargs)
         return None
 
     def log_m2m_changes(
-        self, changed_queryset, instance, operation, field_name, **kwargs
+        self,
+        changed_queryset,
+        instance,
+        operation,
+        field_name,
+        using=None,
+        **kwargs,
     ):
         """Create a new "changed" log entry from m2m record.
 
@@ -97,12 +120,13 @@ class LogEntryManager(models.Manager):
         :rtype: LogEntry
         """
         from auditlog.cid import get_cid
+        from auditlog.relations import get_db_alias
 
         pk = self._get_pk_value(instance)
         if changed_queryset:
-            kwargs.setdefault(
-                "content_type", ContentType.objects.get_for_model(instance)
-            )
+            alias = using or get_db_alias(instance)
+            content_type_manager = ContentType.objects.db_manager(alias)
+            kwargs.setdefault("content_type", content_type_manager.get_for_model(instance))
             kwargs.setdefault("object_pk", pk)
             try:
                 object_repr = smart_str(instance)
@@ -128,7 +152,7 @@ class LogEntryManager(models.Manager):
             }
 
             kwargs.setdefault("cid", get_cid())
-            return self.create(**kwargs)
+            return self.using(alias).create(**kwargs)
 
         return None
 
@@ -384,6 +408,9 @@ class AbstractLogEntry(models.Model):
     additional_data = models.JSONField(
         blank=True, null=True, verbose_name=_("additional data")
     )
+    relation_snapshots = models.JSONField(
+        blank=True, null=True, verbose_name=_("related object snapshots")
+    )
     actor_email = models.CharField(
         blank=True, null=True, max_length=254, verbose_name=_("actor email")
     )
@@ -428,17 +455,47 @@ class AbstractLogEntry(models.Model):
         :param separator: The string to place between each field.
         :return: A readable string of the changes in this log entry.
         """
+        from auditlog.relations import relation_was_configured
+
         substrings = []
+        try:
+            relation_model = self.content_type.model_class()
+        except ObjectDoesNotExist:
+            relation_model = None
 
         for field, value in sorted(self.changes_dict.items()):
             if isinstance(value, (list, tuple)) and len(value) == 2:
                 # handle regular field change
+                old, new = value
+                try:
+                    model_field = (
+                        relation_model._meta.get_field(field)
+                        if relation_model is not None
+                        else None
+                    )
+                except FieldDoesNotExist:
+                    model_field = None
+                if (
+                    model_field is not None
+                    and getattr(model_field, "is_relation", False)
+                    and not getattr(model_field, "many_to_many", False)
+                    and (
+                        getattr(model_field, "many_to_one", False)
+                        or getattr(model_field, "one_to_one", False)
+                    )
+                    and (
+                        self.relation_snapshots
+                        or relation_was_configured(relation_model, model_field.name)
+                    )
+                ):
+                    old = self._get_changes_display_for_fk_field(model_field, old, 0)
+                    new = self._get_changes_display_for_fk_field(model_field, new, 1)
                 substring = "{field_name:s}{colon:s}{old:s}{arrow:s}{new:s}".format(
                     field_name=field,
                     colon=colon,
-                    old=value[0],
+                    old=old,
                     arrow=arrow,
-                    new=value[1],
+                    new=new,
                 )
                 substrings.append(substring)
             elif isinstance(value, dict) and value.get("type") == "m2m":
@@ -458,7 +515,10 @@ class AbstractLogEntry(models.Model):
         from auditlog.registry import auditlog
 
         # Get the model and model_fields, but gracefully handle the case where the model no longer exists
-        model = self.content_type.model_class()
+        try:
+            model = self.content_type.model_class()
+        except ObjectDoesNotExist:
+            model = None
         model_fields = None
         if auditlog.contains(model._meta.model):
             model_fields = auditlog.get_model_fields(model._meta.model)
@@ -508,7 +568,7 @@ class AbstractLogEntry(models.Model):
                 except AttributeError:
                     # if the field is a relationship it has no internal type and exclude it
                     continue
-                for value in values:
+                for index, value in enumerate(values):
                     # handle case where field is a datetime, date, or time type
                     if field_type in ["DateTimeField", "DateField", "TimeField"]:
                         try:
@@ -524,7 +584,9 @@ class AbstractLogEntry(models.Model):
                         except ValueError:
                             pass
                     elif field_type in ["ForeignKey", "OneToOneField"]:
-                        value = self._get_changes_display_for_fk_field(field, value)
+                        value = self._get_changes_display_for_fk_field(
+                            field, value, index
+                        )
 
                     truncate_at = settings.AUDITLOG_CHANGE_DISPLAY_TRUNCATE_LENGTH
                     if 0 <= truncate_at < len(value):
@@ -542,11 +604,58 @@ class AbstractLogEntry(models.Model):
         return changes_display_dict
 
     def _get_changes_display_for_fk_field(
-        self, field: models.ForeignKey | models.OneToOneField, value: Any
+        self,
+        field: models.ForeignKey | models.OneToOneField,
+        value: Any,
+        index: int | None = None,
     ) -> str:
         """
         :return: A string representing a given FK value and the field to which it belongs
         """
+        from auditlog.relations import (
+            NO_SNAPSHOT,
+            get_snapshot_entry,
+            relation_was_configured,
+            snapshot_display,
+            snapshot_reference,
+        )
+
+        if index is not None and self.relation_snapshots:
+            snapshot = get_snapshot_entry(self, field.name, index)
+            if snapshot is not NO_SNAPSHOT:
+                if snapshot is None:
+                    if value == "None":
+                        return "None"
+                    return (
+                        "Evidence gap: historical display unavailable for "
+                        f"'{field.related_model.__name__}' ({value})"
+                    )
+                display = snapshot_display(snapshot)
+                if display is not None:
+                    return display
+                return (
+                    "Evidence gap: historical display unavailable for "
+                    f"{snapshot_reference(snapshot)}"
+                )
+
+        # A log created after snapshots were enabled but without a snapshot is
+        # incomplete evidence.  Old logs from models that never opted in keep the
+        # legacy behaviour for backwards compatibility.
+        try:
+            model = self.content_type.model_class()
+        except ObjectDoesNotExist:
+            model = None
+        if (
+            index is not None
+            and model is not None
+            and value != "None"
+            and relation_was_configured(model, field.name)
+        ):
+            return (
+                "Evidence gap: historical display unavailable for "
+                f"'{field.related_model.__name__}' ({value})"
+            )
+
         # Return "None" if the FK value is "None".
         if value == "None":
             return value
@@ -562,11 +671,23 @@ class AbstractLogEntry(models.Model):
         # Attempt to return the string representation of the object
         try:
             related_model_manager = _get_manager_from_settings(field.related_model)
-
+            alias = getattr(getattr(self, "_state", None), "db", None)
+            if alias:
+                related_model_manager = related_model_manager.using(alias)
             return smart_str(related_model_manager.get(pk=pk_value))
         # ObjectDoesNotExist will be raised if the object was deleted.
         except ObjectDoesNotExist:
             return f"Deleted '{field.related_model.__name__}' ({value})"
+
+    def get_relation_snapshot(self, field_name: str, index: int = 1):
+        """Return the snapshot for a field side (0=old, 1=new).
+
+        ``None`` means the side had no value.  ``NO_SNAPSHOT`` means the log
+        predates the snapshot configuration and therefore has an evidence gap.
+        """
+        from auditlog.relations import get_snapshot_entry
+
+        return get_snapshot_entry(self, field_name, index)
 
 
 class LogEntry(AbstractLogEntry):

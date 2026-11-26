@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     "custom_logentry_app",
     "auditlog",
     "test_app",
+    "relation_test_app",
 ]
 
 
@@ -80,6 +81,17 @@ elif TEST_DB_BACKEND == "sqlite3":
                 ),
             ),
         }
+    }
+    DATABASES["other"] = {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": os.getenv(
+            "TEST_DB_OTHER_NAME",
+            (
+                ":memory:"
+                if os.getenv("TOX_PARALLEL_ENV")
+                else "test_auditlog_other.sqlite3"
+            ),
+        ),
     }
 else:
     raise ValueError(f"Unsupported database backend: {TEST_DB_BACKEND}")

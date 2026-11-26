@@ -2,6 +2,13 @@
 
 ## Next Release
 
+#### Improvements
+
+- Store opt-in historical relation snapshots (model label, primary key, database
+  alias, masked display fields) when a log entry is created. Snapshot-aware
+  admin/history rendering keeps old values readable after related objects are
+  renamed or deleted and flags legacy entries with missing evidence.
+
 ## 3.4.2 (2026-11-08)
 
 #### Improvements

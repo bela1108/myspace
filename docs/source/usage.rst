@@ -167,6 +167,40 @@ the first half of the string with asterisks.
 
     Masking fields
 
+**Related object snapshots**
+
+Foreign-key changes are normally stored as primary keys. Displaying those changes
+by looking up the current object is unreliable: the related object may have been
+renamed, moved to another database, or deleted. Opt a foreign-key field into a
+relation snapshot to store the object reference and display information as it
+was when the log entry was created::
+
+    auditlog.register(
+        Ticket,
+        relation_fields={
+            "approver": {
+                "fields": ["display_name", "email"],
+                "display": "display_name",
+            },
+        },
+    )
+
+Each snapshot records the target model label, primary key, database alias, and
+the allowed display fields. Only fields listed in ``fields`` are persisted;
+values that are masked on the related model (or listed in ``mask_fields`` in the
+relation specification) are masked in the snapshot too. ``display`` may name an
+allowed field or a dotted path to a callable accepting the related object. Pass
+``relation_fields=True`` to snapshot every forward relation, or an iterable of
+field names to snapshot only those relations.
+
+Snapshots are written on the same database connection and inside the same
+transaction as the logged object. A rolled-back business transaction therefore
+does not leave a successful log entry behind.
+
+Existing log entries remain readable after enabling snapshots. If an old entry
+has no snapshot for a configured relation, the change display is marked as an
+evidence gap rather than substituting the current object's representation.
+
 **Many-to-many fields**
 
 Changes to many-to-many fields are not tracked by default. If you want to enable tracking of a many-to-many field on a model, pass ``m2m_fields`` to the ``register`` method:
@@ -675,4 +709,3 @@ The mixin provides the following configuration options:
 - ``show_auditlog_history_link``: Set to ``True`` to display the "View" link in the admin changelist
 - ``auditlog_history_template``: Template to use for rendering the history page (default: ``auditlog/object_history.html``)
 - ``auditlog_history_per_page``: Number of log entries to display per page (default: 10)
-

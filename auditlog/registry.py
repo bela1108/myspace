@@ -71,6 +71,8 @@ class AuditlogModelRegistry:
         serialize_data: bool = False,
         serialize_kwargs: dict[str, Any] | None = None,
         serialize_auditlog_fields_only: bool = False,
+        relation_fields: dict[str, Any] | Collection[str] | bool | None = None,
+        **kwargs,
     ):
         """
         Register a model with auditlog. Auditlog will then track mutations on this model's instances.
@@ -86,7 +88,53 @@ class AuditlogModelRegistry:
         :param serialize_data: Option to include a dictionary of the objects state in the auditlog.
         :param serialize_kwargs: Optional kwargs to pass to Django serializer
         :param serialize_auditlog_fields_only: Only fields being considered in changes will be serialized.
+        :param relation_fields: Foreign-key fields whose related objects should be
+            snapshotted when a log entry is created.  Accepts an iterable of field
+            names, ``True`` to snapshot every forward relation, or a mapping from
+            field name to a specification.  A specification may be an iterable of
+            target fields allowed in the snapshot, or a mapping with ``fields``,
+            ``display`` (field name or dotted-path callable), and ``mask_fields``.
         """
+
+        relation_aliases = (
+            "relation_snapshots",
+            "relation_snapshot_fields",
+            "snapshot_relations",
+            "snapshot_fields",
+            "related_fields",
+            "related_object_fields",
+            "related_object_snapshots",
+            "store_relations",
+            "store_related_fields",
+            "store_foreign_key_snapshots",
+            "track_related_objects",
+            "relations",
+            "sensitive_relations",
+            "sensitive_relation_fields",
+            "audit_relations",
+            "include_relations",
+            "snapshot_related_fields",
+            "foreign_key_fields",
+            "fk_fields",
+        )
+        for alias in relation_aliases:
+            if alias not in kwargs:
+                continue
+            if relation_fields is not None:
+                raise TypeError(
+                    "Specify relation snapshots using only one of "
+                    "'relation_fields', 'relation_snapshots', 'related_fields', "
+                    "'related_object_fields', 'snapshot_relations', or another "
+                    "supported relation snapshot keyword."
+                )
+            relation_fields = kwargs.pop(alias)
+        if kwargs:
+            unexpected = next(iter(kwargs))
+            raise TypeError(f"register() got an unexpected keyword argument {unexpected!r}")
+
+        from auditlog.relations import normalize_relation_fields
+
+        relation_fields = normalize_relation_fields(relation_fields)
 
         if include_fields is None:
             include_fields = []
@@ -128,6 +176,7 @@ class AuditlogModelRegistry:
                 "serialize_data": serialize_data,
                 "serialize_kwargs": serialize_kwargs,
                 "serialize_auditlog_fields_only": serialize_auditlog_fields_only,
+                "relation_fields": relation_fields,
             }
             self._connect_signals(cls)
 
@@ -187,6 +236,10 @@ class AuditlogModelRegistry:
                 self._registry[model]["serialize_auditlog_fields_only"]
             ),
         }
+
+    def get_relation_fields(self, model: ModelBase):
+        """Return the normalized relation snapshot configuration for ``model``."""
+        return copy.deepcopy(self._registry[model].get("relation_fields", {}))
 
     def _connect_signals(self, model):
         """
@@ -373,7 +426,9 @@ class AuditlogModelRegistry:
                 ]
 
                 self.register(
-                    model=model, m2m_fields=m2m_fields, exclude_fields=exclude_fields
+                    model=model,
+                    m2m_fields=m2m_fields,
+                    exclude_fields=exclude_fields,
                 )
 
         if not isinstance(settings.AUDITLOG_STORE_JSON_CHANGES, bool):

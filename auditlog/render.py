@@ -65,10 +65,55 @@ def _render_field_changes(log_entry, atom_changes):
 
     for i, (field, change) in enumerate(sorted(atom_changes.items()), 1):
         field_name = get_field_verbose_name(log_entry, field)
-        values = ["***", "***"] if field == "password" else change
+        values = ["***", "***"] if field == "password" else list(change)
+        values = _render_values_for_relation(log_entry, field, values)
         rows.append(_format_row(i, field_name, *values))
 
     return f"<table>{''.join(rows)}</table>"
+
+
+def _render_values_for_relation(log_entry, field_name, values):
+    from auditlog.relations import (
+        NO_SNAPSHOT,
+        get_snapshot_current_state,
+        get_snapshot_entry,
+        relation_was_configured,
+    )
+
+    model = log_entry.content_type.model_class()
+    if model is None:
+        return values
+    try:
+        field = model._meta.get_field(field_name)
+    except FieldDoesNotExist:
+        return values
+    if not (
+        getattr(field, "is_relation", False)
+        and not getattr(field, "many_to_many", False)
+        and (getattr(field, "many_to_one", False) or getattr(field, "one_to_one", False))
+    ):
+        return values
+
+    uses_snapshots = bool(log_entry.relation_snapshots) or relation_was_configured(
+        model, field.name
+    )
+    if not uses_snapshots:
+        return values
+
+    rendered = []
+    for index, value in enumerate(values):
+        display = log_entry._get_changes_display_for_fk_field(
+            field, value, index
+        )
+        snapshot = get_snapshot_entry(log_entry, field.name, index)
+        if (
+            snapshot not in (NO_SNAPSHOT, None)
+            and value != "None"
+            and get_snapshot_current_state(snapshot) == "missing"
+        ):
+            display += " [target no longer available]"
+        rendered.append(display)
+    return rendered
 
 
 def _render_m2m_changes(log_entry, m2m_changes):
