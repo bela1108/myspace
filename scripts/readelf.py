@@ -623,7 +623,7 @@ class ReadElf:
                       self._emitline(f"\nDisplaying notes found in: {section.name}")
                       self._emitline('  Owner                Data size        Description')
                       self._emitline('  {} {}\t{}'.format(
-                          note['n_name'].ljust(20),
+                          (note['n_name'] or '').ljust(20),
                           self._format_hex(note['n_descsz'], fieldsize=8),
                           describe_note(note, self.elffile.header.e_machine)))
 
