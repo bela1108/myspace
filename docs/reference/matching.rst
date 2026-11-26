@@ -57,6 +57,34 @@ SigmaCorrelationRuleMatcher
    :undoc-members:
    :show-inheritance:
 
+Notification Selection
+----------------------
+
+.. autoclass:: sigma.matching.NotificationSelector
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: sigma.matching.NotificationSelection
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: sigma.matching.Notification
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: sigma.matching.Responsibility
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: sigma.matching.EvidenceRecord
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Internal Components
 -------------------
 

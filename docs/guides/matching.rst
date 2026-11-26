@@ -192,6 +192,56 @@ when integrating with resource-managed environments:
             for m in matcher.match(event):
                 handle_match(m)
 
+Notification Selection and Deduplication
+----------------------------------------
+
+Offline matches can be passed to
+:class:`~sigma.matching.NotificationSelector` after matching. The selector groups
+matches from the same event and only compresses alerts when the winning rule has a
+declared succession/coverage relationship, compatible accountability, and a severity
+that does not downgrade the compressed alert.
+
+Rule metadata can use the nested form:
+
+.. code-block:: yaml
+
+    name: credential_access_cover
+    level: critical
+    responsibility:
+      item: ACCT-CRED-001
+      group: identity-defense
+      owner: identity-oncall
+    supersedes:
+      - old_rule_name
+    covers:
+      - old_rule_name
+
+Flat aliases such as ``responsible_group`` and ``superseded_by`` are also accepted.
+Pass currently disabled rule references with ``offline_rules`` so an absent successor
+can still explain why an older alert is retained:
+
+.. code-block:: python
+
+    from sigma.matching import NotificationSelector
+
+    selection = NotificationSelector(
+        offline_rules=['credential_access_cover'],
+    ).select(matches)
+
+    for notification in selection.notifications:
+        print(notification.explain())
+        print(notification.responsible_group)
+        print(notification.compressed_refs)
+
+The result preserves deep-copied event evidence in ``notification.evidence``. Mutual
+suppression declarations are reported in ``selection.conflicts``; equal-severity
+cycles are retained instead of silently dropping notifications.
+
+A finite fake-event scenario is available at
+``examples/notification_selector_demo.py``. It shows four rules firing on one event,
+compression while the successor is active, and revival of the older notification after
+the successor is taken offline.
+
 Correlation Rules
 -----------------
 
