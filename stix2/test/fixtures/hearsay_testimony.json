@@ -1,0 +1,105 @@
+{
+  "name": "two-relay-votes-and-one-independent-rebuttal",
+  "claim_id": "campaign-039-uses-resolver",
+  "upstream_observations": [
+    {
+      "id": "observed-data--upstream-alpha",
+      "type": "observed-data",
+      "modified": "2026-11-21T08:00:00Z",
+      "claim_id": "campaign-039-uses-resolver",
+      "stance": "supports"
+    },
+    {
+      "id": "observed-data--upstream-beta",
+      "type": "observed-data",
+      "modified": "2026-11-21T08:05:00Z",
+      "claim_id": "campaign-039-uses-resolver",
+      "stance": "supports"
+    }
+  ],
+  "testimonies": [
+    {
+      "id": "testimony--relay-alpha",
+      "type": "opinion",
+      "opinion": "agree",
+      "upstream_ref": "observed-data--upstream-alpha",
+      "apparent_source": "stringer--alpha"
+    },
+    {
+      "id": "testimony--relay-beta",
+      "type": "opinion",
+      "opinion": "strongly-agree",
+      "upstream_ref": "observed-data--upstream-beta",
+      "apparent_source": "stringer--beta"
+    },
+    {
+      "id": "testimony--independent-rebuttal",
+      "type": "opinion",
+      "opinion": "strongly-disagree",
+      "claim_id": "campaign-039-uses-resolver",
+      "source_ref": "identity--independent-observer"
+    }
+  ],
+  "relationships": [
+    {
+      "id": "relationship--relay-alpha",
+      "type": "relationship",
+      "relationship_type": "relays",
+      "source_ref": "testimony--relay-alpha",
+      "target_ref": "observed-data--upstream-alpha"
+    },
+    {
+      "id": "relationship--relay-beta",
+      "type": "relationship",
+      "relationship_type": "relays",
+      "source_ref": "testimony--relay-beta",
+      "target_ref": "observed-data--upstream-beta"
+    },
+    {
+      "id": "relationship--confirmed-same-collector",
+      "type": "relationship",
+      "relationship_type": "same-collector-as",
+      "source_ref": "testimony--relay-alpha",
+      "target_ref": "testimony--relay-beta",
+      "x_confirmation": "collector-ledger-039"
+    },
+    {
+      "id": "relationship--unknown-display-name-link",
+      "type": "relationship",
+      "relationship_type": "display-name-resembles",
+      "source_ref": "testimony--relay-alpha",
+      "target_ref": "testimony--relay-beta"
+    }
+  ],
+  "independent_source_statements": [
+    {
+      "id": "source-declaration--hearsay-039",
+      "version": 1,
+      "modified": "2026-11-20T10:00:00Z",
+      "statement_type": "independent-source-declaration",
+      "sources": [
+        "testimony--relay-alpha",
+        "testimony--relay-beta",
+        "testimony--independent-rebuttal"
+      ],
+      "independent": true
+    },
+    {
+      "id": "source-declaration--hearsay-039",
+      "version": 2,
+      "modified": "2026-11-22T10:00:00Z",
+      "statement_type": "source-revision",
+      "same_source_groups": [
+        [
+          "testimony--relay-alpha",
+          "testimony--relay-beta"
+        ]
+      ],
+      "independent_groups": [
+        [
+          "testimony--independent-rebuttal"
+        ]
+      ]
+    }
+  ]
+}

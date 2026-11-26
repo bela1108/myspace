@@ -56,6 +56,13 @@ from .patterns import (
     WithinQualifier,
 )
 from .registry import _collect_stix2_mappings
+from .testimony_review import (
+    HEARSAY_CLAIM_ID, EvidenceReview, LocalTestimonyReview, TestimonyReview,
+    Upstream, hearsay_demo, hearsay_fixture,
+    local_testimony_review, maximal_coexisting_evidence_sets,
+    maximum_coexisting_evidence_sets, reconcile_testimonies,
+    review_testimony, review_testimonies,
+)
 from .v21 import *  # This import will always be the latest STIX 2.X version
 from .version import DEFAULT_VERSION, __version__
 from .versioning import new_version, revoke
