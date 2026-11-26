@@ -1,0 +1,1076 @@
+{
+  "schema": "msoffcrypto.handover-plan/v1",
+  "generated_at": "2031-05-01T08:00:00Z",
+  "clock": {
+    "start": "2031-05-01T08:00:00Z",
+    "end": "2031-05-01T15:00:00Z",
+    "timezone": "UTC"
+  },
+  "request_digest": "f60c7f2c8658cc3857790843805b227e28a5f31f2e9909c2240d4763552884b9",
+  "summary": {
+    "total": 7,
+    "complete": 4,
+    "partial": 2,
+    "blocked": 1,
+    "operations": 12,
+    "deferred": 3,
+    "handovers": 2,
+    "required_handovers": 4
+  },
+  "policy": {
+    "clock_start": "2031-05-01T08:00:00Z",
+    "clock_end": "2031-05-01T15:00:00Z",
+    "allowed_checks": [
+      "sealed_receipt",
+      "shell"
+    ],
+    "duties": [
+      {
+        "id": "ooxml-shell",
+        "format": "ooxml",
+        "required_checks": [
+          "shell"
+        ],
+        "custodian": "records-desk",
+        "inspect_seconds": 60,
+        "seal_seconds": 30,
+        "handover_seconds": 150,
+        "deliver": false,
+        "match": {}
+      },
+      {
+        "id": "doc-receipt",
+        "format": "doc97",
+        "required_checks": [
+          "sealed_receipt"
+        ],
+        "custodian": "evidence-custodian",
+        "inspect_seconds": 90,
+        "seal_seconds": 30,
+        "handover_seconds": 150,
+        "deliver": null,
+        "match": {}
+      },
+      {
+        "id": "xls-receipt",
+        "format": "xls97",
+        "required_checks": [
+          "sealed_receipt"
+        ],
+        "custodian": "evidence-custodian",
+        "inspect_seconds": 90,
+        "seal_seconds": 30,
+        "handover_seconds": 150,
+        "deliver": null,
+        "match": {}
+      },
+      {
+        "id": "ppt-receipt",
+        "format": "ppt97",
+        "required_checks": [
+          "sealed_receipt"
+        ],
+        "custodian": "evidence-custodian",
+        "inspect_seconds": 90,
+        "seal_seconds": 30,
+        "handover_seconds": 150,
+        "deliver": null,
+        "match": {}
+      },
+      {
+        "id": "payload-check",
+        "format": "ooxml",
+        "required_checks": [
+          "payload_decrypt"
+        ],
+        "custodian": "evidence-custodian",
+        "inspect_seconds": 60,
+        "seal_seconds": 30,
+        "handover_seconds": 150,
+        "deliver": null,
+        "match": {}
+      }
+    ],
+    "custodian_windows": {
+      "evidence-custodian": [
+        {
+          "id": "slot-a",
+          "start": "2031-05-01T10:00:00Z",
+          "end": "2031-05-01T10:04:00Z"
+        },
+        {
+          "id": "slot-b",
+          "start": "2031-05-01T13:00:00Z",
+          "end": "2031-05-01T13:05:00Z"
+        }
+      ]
+    },
+    "items": [
+      {
+        "id": "ev-001-docx-agile",
+        "evidence_digest": "30c7498a3ead4667c92362d3b2c72ad211080f988c037187a4bf72eed410bf94",
+        "required_checks": [
+          "shell"
+        ],
+        "selected_check": "shell",
+        "custodian": "records-desk",
+        "available_from": "2031-05-01T08:00:00Z",
+        "available_until": "2031-05-01T12:00:00Z",
+        "expires_at": "2031-05-01T12:00:00Z"
+      },
+      {
+        "id": "ev-002-docx-standard",
+        "evidence_digest": "4d42b2bf86c7bf7d0ecfdaecdba3652a33b9de91a0c10a65b31aad752ba14e2e",
+        "required_checks": [
+          "shell"
+        ],
+        "selected_check": "shell",
+        "custodian": "records-desk",
+        "available_from": "2031-05-01T08:00:00Z",
+        "available_until": "2031-05-01T08:30:00Z",
+        "expires_at": "2031-05-01T08:30:00Z"
+      },
+      {
+        "id": "ev-003-doc-rc4",
+        "evidence_digest": "a9739a829bb0efd482aca4635b2e0e01e784284cc267765265fe08eb1668226e",
+        "required_checks": [
+          "sealed_receipt"
+        ],
+        "selected_check": "sealed_receipt",
+        "custodian": "evidence-custodian",
+        "available_from": "2031-05-01T09:00:00Z",
+        "available_until": "2031-05-01T11:00:00Z",
+        "expires_at": "2031-05-01T11:00:00Z"
+      },
+      {
+        "id": "ev-004-xls-rc4",
+        "evidence_digest": "a132736124f5c1b216329ca93bf5f448a7ada71966923df46a7bb7228cb982a4",
+        "required_checks": [
+          "sealed_receipt"
+        ],
+        "selected_check": "sealed_receipt",
+        "custodian": "evidence-custodian",
+        "available_from": "2031-05-01T09:00:00Z",
+        "available_until": "2031-05-01T10:30:00Z",
+        "expires_at": "2031-05-01T10:30:00Z"
+      },
+      {
+        "id": "ev-005-ppt-rc4",
+        "evidence_digest": "dc790f8d90fd3591103dc228889fc4792236ab5a911a1a51f38061608ac48750",
+        "required_checks": [
+          "sealed_receipt"
+        ],
+        "selected_check": "sealed_receipt",
+        "custodian": "evidence-custodian",
+        "available_from": "2031-05-01T09:30:00Z",
+        "available_until": "2031-05-01T09:45:00Z",
+        "expires_at": "2031-05-01T14:00:00Z"
+      },
+      {
+        "id": "ev-006-xls-xor",
+        "evidence_digest": "6a2ffe1585208eea3254629847f37d6eefb753b38b90ab71f4ce091a733a9b24",
+        "required_checks": [
+          "sealed_receipt"
+        ],
+        "selected_check": "sealed_receipt",
+        "custodian": "evidence-custodian",
+        "available_from": "2031-05-01T11:00:00Z",
+        "available_until": "2031-05-01T11:10:00Z",
+        "expires_at": "2031-05-01T11:10:00Z"
+      },
+      {
+        "id": "ev-007-docx-payload",
+        "evidence_digest": "e2fa4a4b990660ee64ba9479bb30e5558f7f894475522029eb02d57aa6e4afcf",
+        "required_checks": [
+          "payload_decrypt"
+        ],
+        "selected_check": null,
+        "custodian": "evidence-custodian",
+        "available_from": null,
+        "available_until": null,
+        "expires_at": null
+      }
+    ]
+  },
+  "items": [
+    {
+      "id": "ev-001-docx-agile",
+      "label": "../tests/inputs/example_password.docx",
+      "path": "../tests/inputs/example_password.docx",
+      "format": "ooxml",
+      "scheme": "agile",
+      "cipher": "AES",
+      "key_bits": 256,
+      "encrypted": true,
+      "evidence_digest": "30c7498a3ead4667c92362d3b2c72ad211080f988c037187a4bf72eed410bf94",
+      "file_sha256": "0605624697328060fdc75ca9929ea20b9d63ebed9387ff1a97aaf9979757234a",
+      "format_evidence": {
+        "schema": "msoffcrypto.offline-format-evidence/v1",
+        "format": "ooxml",
+        "container": "ole",
+        "encrypted": true,
+        "scheme": "agile",
+        "cipher": "AES",
+        "key_bits": 256,
+        "hash_algorithm": "SHA512",
+        "spin_count": 100000,
+        "key_types": [
+          "password",
+          "private_key",
+          "secret_key"
+        ],
+        "protected_streams": [
+          "EncryptionInfo",
+          "EncryptedPackage"
+        ],
+        "file_size": 18432,
+        "file_sha256": "0605624697328060fdc75ca9929ea20b9d63ebed9387ff1a97aaf9979757234a",
+        "verifier_sha256": "241927e65c9cdc271361936846e8b86bbbf8c9dc52065a454bb1a8a551c57a30",
+        "details": {
+          "cipher_chaining": "ChainingModeCBC",
+          "block_size": 16,
+          "key_data_hash_algorithm": "SHA512",
+          "password_hash_algorithm": "SHA512",
+          "password_key_bits": 256,
+          "key_encryptor_count": 1,
+          "data_integrity": true,
+          "encrypted_key_value_sha256": "11e856f456315a7f0f28ec76471ef3c1e3a3241855d4022839ed28870f45dcb2"
+        },
+        "supported": true,
+        "error": null,
+        "evidence_digest": "30c7498a3ead4667c92362d3b2c72ad211080f988c037187a4bf72eed410bf94"
+      },
+      "duty_id": "ooxml-shell",
+      "required_checks": [
+        "shell"
+      ],
+      "selected_check": "shell",
+      "custodian": "records-desk",
+      "available_from": "2031-05-01T08:00:00Z",
+      "available_until": "2031-05-01T12:00:00Z",
+      "expires_at": "2031-05-01T12:00:00Z",
+      "status": "complete",
+      "operations": [
+        "inspect"
+      ],
+      "deferred": []
+    },
+    {
+      "id": "ev-002-docx-standard",
+      "label": "../tests/inputs/ecma376standard_password.docx",
+      "path": "../tests/inputs/ecma376standard_password.docx",
+      "format": "ooxml",
+      "scheme": "standard",
+      "cipher": "AES",
+      "key_bits": 128,
+      "encrypted": true,
+      "evidence_digest": "4d42b2bf86c7bf7d0ecfdaecdba3652a33b9de91a0c10a65b31aad752ba14e2e",
+      "file_sha256": "d265dcf02f7d552486229b8c67a627ef3752fe6802b02fd2d2d485fcfbbac5de",
+      "format_evidence": {
+        "schema": "msoffcrypto.offline-format-evidence/v1",
+        "format": "ooxml",
+        "container": "ole",
+        "encrypted": true,
+        "scheme": "standard",
+        "cipher": "AES",
+        "key_bits": 128,
+        "hash_algorithm": "SHA1",
+        "spin_count": null,
+        "key_types": [
+          "password",
+          "secret_key"
+        ],
+        "protected_streams": [
+          "EncryptionInfo",
+          "EncryptedPackage"
+        ],
+        "file_size": 7168,
+        "file_sha256": "d265dcf02f7d552486229b8c67a627ef3752fe6802b02fd2d2d485fcfbbac5de",
+        "verifier_sha256": "0b3d032844f5cad0559aae1fc7e4da233aa9b5497c8582f8e486175de1924457",
+        "details": {
+          "flags": 36,
+          "alg_id": 26126,
+          "alg_id_hash": 32772,
+          "provider_type": 24,
+          "csp_name": "Microsoft Enhanced RSA and AES Cryptographic Provider",
+          "verifier_hash_size": 20
+        },
+        "supported": true,
+        "error": null,
+        "evidence_digest": "4d42b2bf86c7bf7d0ecfdaecdba3652a33b9de91a0c10a65b31aad752ba14e2e"
+      },
+      "duty_id": "ooxml-shell",
+      "required_checks": [
+        "shell"
+      ],
+      "selected_check": "shell",
+      "custodian": "records-desk",
+      "available_from": "2031-05-01T08:00:00Z",
+      "available_until": "2031-05-01T08:30:00Z",
+      "expires_at": "2031-05-01T08:30:00Z",
+      "status": "complete",
+      "operations": [
+        "inspect"
+      ],
+      "deferred": []
+    },
+    {
+      "id": "ev-003-doc-rc4",
+      "label": "../tests/inputs/rc4cryptoapi_password.doc",
+      "path": "../tests/inputs/rc4cryptoapi_password.doc",
+      "format": "doc97",
+      "scheme": "rc4_cryptoapi",
+      "cipher": "RC4",
+      "key_bits": 128,
+      "encrypted": true,
+      "evidence_digest": "a9739a829bb0efd482aca4635b2e0e01e784284cc267765265fe08eb1668226e",
+      "file_sha256": "9c5217bea80fb1a7811ad7709dd9bb35f6c639bac7154580dd4c99d54e1fc0e0",
+      "format_evidence": {
+        "schema": "msoffcrypto.offline-format-evidence/v1",
+        "format": "doc97",
+        "container": "ole",
+        "encrypted": true,
+        "scheme": "rc4_cryptoapi",
+        "cipher": "RC4",
+        "key_bits": 128,
+        "hash_algorithm": "SHA1",
+        "spin_count": null,
+        "key_types": [
+          "password"
+        ],
+        "protected_streams": [
+          "wordDocument",
+          "1Table"
+        ],
+        "file_size": 23040,
+        "file_sha256": "9c5217bea80fb1a7811ad7709dd9bb35f6c639bac7154580dd4c99d54e1fc0e0",
+        "verifier_sha256": "2600acbcd4393f9e2bb4e7f540e52cd2cbc458d2bd8eba184b66dd631767cfe3",
+        "details": {
+          "encryption_version": [
+            4,
+            2
+          ],
+          "alg_id": 26625,
+          "provider_type": 1
+        },
+        "supported": true,
+        "error": null,
+        "evidence_digest": "a9739a829bb0efd482aca4635b2e0e01e784284cc267765265fe08eb1668226e"
+      },
+      "duty_id": "doc-receipt",
+      "required_checks": [
+        "sealed_receipt"
+      ],
+      "selected_check": "sealed_receipt",
+      "custodian": "evidence-custodian",
+      "available_from": "2031-05-01T09:00:00Z",
+      "available_until": "2031-05-01T11:00:00Z",
+      "expires_at": "2031-05-01T11:00:00Z",
+      "status": "partial",
+      "operations": [
+        "inspect",
+        "seal"
+      ],
+      "deferred": [
+        {
+          "item_id": "ev-003-doc-rc4",
+          "operation": "handover",
+          "check": "sealed_receipt",
+          "custodian": "evidence-custodian",
+          "reason": "custodian_conflict",
+          "detail": "另一个移交占用了剩余窗口",
+          "location": "ev-003-doc-rc4:handover:evidence-custodian",
+          "blocking": [
+            "ev-004-xls-rc4"
+          ],
+          "requested_from": "2031-05-01T10:02:30Z",
+          "requested_until": "2031-05-01T10:05:00Z",
+          "extension_seconds": 150,
+          "requested_action": "在证据到期前延长保管员窗口"
+        }
+      ]
+    },
+    {
+      "id": "ev-004-xls-rc4",
+      "label": "../tests/inputs/rc4cryptoapi_password.xls",
+      "path": "../tests/inputs/rc4cryptoapi_password.xls",
+      "format": "xls97",
+      "scheme": "rc4_cryptoapi",
+      "cipher": "RC4",
+      "key_bits": 128,
+      "encrypted": true,
+      "evidence_digest": "a132736124f5c1b216329ca93bf5f448a7ada71966923df46a7bb7228cb982a4",
+      "file_sha256": "b804cba40c27ea88f2ea994b6b7d75145661532f9356e7246d2499f63d58abfe",
+      "format_evidence": {
+        "schema": "msoffcrypto.offline-format-evidence/v1",
+        "format": "xls97",
+        "container": "ole",
+        "encrypted": true,
+        "scheme": "rc4_cryptoapi",
+        "cipher": "RC4",
+        "key_bits": 128,
+        "hash_algorithm": "SHA1",
+        "spin_count": null,
+        "key_types": [
+          "password"
+        ],
+        "protected_streams": [
+          "Workbook"
+        ],
+        "file_size": 25600,
+        "file_sha256": "b804cba40c27ea88f2ea994b6b7d75145661532f9356e7246d2499f63d58abfe",
+        "verifier_sha256": "d65d4553172ff6ce29a05c46ed8fa82cde77af16e3d8e8fd4ebc3dc99d4d18f5",
+        "details": {
+          "encryption_version": [
+            4,
+            2
+          ],
+          "alg_id": 26625,
+          "provider_type": 1
+        },
+        "supported": true,
+        "error": null,
+        "evidence_digest": "a132736124f5c1b216329ca93bf5f448a7ada71966923df46a7bb7228cb982a4"
+      },
+      "duty_id": "xls-receipt",
+      "required_checks": [
+        "sealed_receipt"
+      ],
+      "selected_check": "sealed_receipt",
+      "custodian": "evidence-custodian",
+      "available_from": "2031-05-01T09:00:00Z",
+      "available_until": "2031-05-01T10:30:00Z",
+      "expires_at": "2031-05-01T10:30:00Z",
+      "status": "complete",
+      "operations": [
+        "inspect",
+        "seal",
+        "handover"
+      ],
+      "deferred": []
+    },
+    {
+      "id": "ev-005-ppt-rc4",
+      "label": "../tests/inputs/rc4cryptoapi_password.ppt",
+      "path": "../tests/inputs/rc4cryptoapi_password.ppt",
+      "format": "ppt97",
+      "scheme": "rc4_cryptoapi",
+      "cipher": "RC4",
+      "key_bits": 128,
+      "encrypted": true,
+      "evidence_digest": "dc790f8d90fd3591103dc228889fc4792236ab5a911a1a51f38061608ac48750",
+      "file_sha256": "17a57bcbe7cb517c088410fed763ccc58b9b10d23258571c1ab67830d2591a49",
+      "format_evidence": {
+        "schema": "msoffcrypto.offline-format-evidence/v1",
+        "format": "ppt97",
+        "container": "ole",
+        "encrypted": true,
+        "scheme": "rc4_cryptoapi",
+        "cipher": "RC4",
+        "key_bits": 128,
+        "hash_algorithm": "SHA1",
+        "spin_count": null,
+        "key_types": [
+          "password"
+        ],
+        "protected_streams": [
+          "Current User",
+          "PowerPoint Document"
+        ],
+        "file_size": 43008,
+        "file_sha256": "17a57bcbe7cb517c088410fed763ccc58b9b10d23258571c1ab67830d2591a49",
+        "verifier_sha256": "0f95d44660e548cade252873f9b946c168f970c9a73bdf5d7fc83ddd3711ab6d",
+        "details": {
+          "encryption_version": [
+            4,
+            2
+          ],
+          "alg_id": 26625,
+          "provider_type": 1
+        },
+        "supported": true,
+        "error": null,
+        "evidence_digest": "dc790f8d90fd3591103dc228889fc4792236ab5a911a1a51f38061608ac48750"
+      },
+      "duty_id": "ppt-receipt",
+      "required_checks": [
+        "sealed_receipt"
+      ],
+      "selected_check": "sealed_receipt",
+      "custodian": "evidence-custodian",
+      "available_from": "2031-05-01T09:30:00Z",
+      "available_until": "2031-05-01T09:45:00Z",
+      "expires_at": "2031-05-01T14:00:00Z",
+      "status": "complete",
+      "operations": [
+        "inspect",
+        "seal",
+        "handover"
+      ],
+      "deferred": []
+    },
+    {
+      "id": "ev-006-xls-xor",
+      "label": "../tests/inputs/xor_password_123456789012345.xls",
+      "path": "../tests/inputs/xor_password_123456789012345.xls",
+      "format": "xls97",
+      "scheme": "xor",
+      "cipher": "XOR",
+      "key_bits": 16,
+      "encrypted": true,
+      "evidence_digest": "6a2ffe1585208eea3254629847f37d6eefb753b38b90ab71f4ce091a733a9b24",
+      "file_sha256": "c75375186933e2413325c4e64ce76903452d51413816d0df1d5fd677ea4dd76d",
+      "format_evidence": {
+        "schema": "msoffcrypto.offline-format-evidence/v1",
+        "format": "xls97",
+        "container": "ole",
+        "encrypted": true,
+        "scheme": "xor",
+        "cipher": "XOR",
+        "key_bits": 16,
+        "hash_algorithm": null,
+        "spin_count": null,
+        "key_types": [
+          "password"
+        ],
+        "protected_streams": [
+          "Workbook"
+        ],
+        "file_size": 91136,
+        "file_sha256": "c75375186933e2413325c4e64ce76903452d51413816d0df1d5fd677ea4dd76d",
+        "verifier_sha256": null,
+        "details": {},
+        "supported": true,
+        "error": null,
+        "evidence_digest": "6a2ffe1585208eea3254629847f37d6eefb753b38b90ab71f4ce091a733a9b24"
+      },
+      "duty_id": "xls-receipt",
+      "required_checks": [
+        "sealed_receipt"
+      ],
+      "selected_check": "sealed_receipt",
+      "custodian": "evidence-custodian",
+      "available_from": "2031-05-01T11:00:00Z",
+      "available_until": "2031-05-01T11:10:00Z",
+      "expires_at": "2031-05-01T11:10:00Z",
+      "status": "partial",
+      "operations": [
+        "inspect",
+        "seal"
+      ],
+      "deferred": [
+        {
+          "item_id": "ev-006-xls-xor",
+          "operation": "handover",
+          "check": "sealed_receipt",
+          "custodian": "evidence-custodian",
+          "reason": "custodian_window_after_expiry",
+          "detail": "下一个保管员窗口在证据到期后才开始",
+          "location": "ev-006-xls-xor:handover:evidence-custodian",
+          "blocking": [],
+          "requested_from": "2031-05-01T11:02:00Z",
+          "requested_until": "2031-05-01T11:04:30Z",
+          "extension_seconds": 150,
+          "requested_action": "在证据到期前延长保管员窗口"
+        }
+      ]
+    },
+    {
+      "id": "ev-007-docx-payload",
+      "label": "../tests/inputs/example_password.xlsx",
+      "path": "../tests/inputs/example_password.xlsx",
+      "format": "ooxml",
+      "scheme": "agile",
+      "cipher": "AES",
+      "key_bits": 256,
+      "encrypted": true,
+      "evidence_digest": "e2fa4a4b990660ee64ba9479bb30e5558f7f894475522029eb02d57aa6e4afcf",
+      "file_sha256": "3f792e3902a615bf0e91771f3f3016b80d59098b8e492efcdc0752748e15b997",
+      "format_evidence": {
+        "schema": "msoffcrypto.offline-format-evidence/v1",
+        "format": "ooxml",
+        "container": "ole",
+        "encrypted": true,
+        "scheme": "agile",
+        "cipher": "AES",
+        "key_bits": 256,
+        "hash_algorithm": "SHA512",
+        "spin_count": 100000,
+        "key_types": [
+          "password",
+          "private_key",
+          "secret_key"
+        ],
+        "protected_streams": [
+          "EncryptionInfo",
+          "EncryptedPackage"
+        ],
+        "file_size": 14848,
+        "file_sha256": "3f792e3902a615bf0e91771f3f3016b80d59098b8e492efcdc0752748e15b997",
+        "verifier_sha256": "951db28b29416c896f890ffade03fbf9227bc8b8790b541805cce7a9e6655cd9",
+        "details": {
+          "cipher_chaining": "ChainingModeCBC",
+          "block_size": 16,
+          "key_data_hash_algorithm": "SHA512",
+          "password_hash_algorithm": "SHA512",
+          "password_key_bits": 256,
+          "key_encryptor_count": 1,
+          "data_integrity": true,
+          "encrypted_key_value_sha256": "6df82af10befa77c22391586560c0a5a404c2dc8c9f9586cbdee25ca478ad48b"
+        },
+        "supported": true,
+        "error": null,
+        "evidence_digest": "e2fa4a4b990660ee64ba9479bb30e5558f7f894475522029eb02d57aa6e4afcf"
+      },
+      "duty_id": "payload-check",
+      "required_checks": [
+        "payload_decrypt"
+      ],
+      "selected_check": null,
+      "custodian": "evidence-custodian",
+      "available_from": null,
+      "available_until": null,
+      "expires_at": null,
+      "status": "blocked",
+      "operations": [],
+      "deferred": [
+        {
+          "item_id": "ev-007-docx-payload",
+          "operation": "plan",
+          "check": null,
+          "custodian": null,
+          "reason": "check_not_allowed",
+          "detail": "所需检查 ['payload_decrypt'] 无法被允许运行的检查 ['sealed_receipt', 'shell'] 覆盖",
+          "location": "ev-007-docx-payload:plan:-",
+          "blocking": [],
+          "requested_from": null,
+          "requested_until": null,
+          "extension_seconds": null,
+          "requested_action": "为该职责启用一种允许运行的外壳检查"
+        }
+      ]
+    }
+  ],
+  "operations": [
+    {
+      "item_id": "ev-002-docx-standard",
+      "operation": "inspect",
+      "check": "shell",
+      "start": "2031-05-01T08:00:00Z",
+      "end": "2031-05-01T08:01:00Z",
+      "duration_seconds": 60,
+      "custodian": null,
+      "artifact_kind": null,
+      "artifact_digest": null,
+      "receipt_id": null,
+      "evidence_digest": "4d42b2bf86c7bf7d0ecfdaecdba3652a33b9de91a0c10a65b31aad752ba14e2e",
+      "file_sha256": "d265dcf02f7d552486229b8c67a627ef3752fe6802b02fd2d2d485fcfbbac5de",
+      "format": "ooxml",
+      "scheme": "standard",
+      "outer_wrapper_only": true
+    },
+    {
+      "item_id": "ev-001-docx-agile",
+      "operation": "inspect",
+      "check": "shell",
+      "start": "2031-05-01T08:01:00Z",
+      "end": "2031-05-01T08:02:00Z",
+      "duration_seconds": 60,
+      "custodian": null,
+      "artifact_kind": null,
+      "artifact_digest": null,
+      "receipt_id": null,
+      "evidence_digest": "30c7498a3ead4667c92362d3b2c72ad211080f988c037187a4bf72eed410bf94",
+      "file_sha256": "0605624697328060fdc75ca9929ea20b9d63ebed9387ff1a97aaf9979757234a",
+      "format": "ooxml",
+      "scheme": "agile",
+      "outer_wrapper_only": true
+    },
+    {
+      "item_id": "ev-004-xls-rc4",
+      "operation": "inspect",
+      "check": "sealed_receipt",
+      "start": "2031-05-01T09:00:00Z",
+      "end": "2031-05-01T09:01:30Z",
+      "duration_seconds": 90,
+      "custodian": null,
+      "artifact_kind": null,
+      "artifact_digest": null,
+      "receipt_id": null,
+      "evidence_digest": "a132736124f5c1b216329ca93bf5f448a7ada71966923df46a7bb7228cb982a4",
+      "file_sha256": "b804cba40c27ea88f2ea994b6b7d75145661532f9356e7246d2499f63d58abfe",
+      "format": "xls97",
+      "scheme": "rc4_cryptoapi",
+      "outer_wrapper_only": true
+    },
+    {
+      "item_id": "ev-004-xls-rc4",
+      "operation": "seal",
+      "check": "sealed_receipt",
+      "start": "2031-05-01T09:01:30Z",
+      "end": "2031-05-01T09:02:00Z",
+      "duration_seconds": 30,
+      "custodian": "evidence-custodian",
+      "artifact_kind": "sealed_receipt",
+      "artifact_digest": "88d33c10ea84546381618bd2f4d478a5dab7ed4631dfd92e7b88d69c7791ec13",
+      "receipt_id": "88d33c10ea845463",
+      "evidence_digest": "a132736124f5c1b216329ca93bf5f448a7ada71966923df46a7bb7228cb982a4",
+      "file_sha256": "b804cba40c27ea88f2ea994b6b7d75145661532f9356e7246d2499f63d58abfe",
+      "format": "xls97",
+      "scheme": "rc4_cryptoapi",
+      "outer_wrapper_only": true
+    },
+    {
+      "item_id": "ev-003-doc-rc4",
+      "operation": "inspect",
+      "check": "sealed_receipt",
+      "start": "2031-05-01T09:02:00Z",
+      "end": "2031-05-01T09:03:30Z",
+      "duration_seconds": 90,
+      "custodian": null,
+      "artifact_kind": null,
+      "artifact_digest": null,
+      "receipt_id": null,
+      "evidence_digest": "a9739a829bb0efd482aca4635b2e0e01e784284cc267765265fe08eb1668226e",
+      "file_sha256": "9c5217bea80fb1a7811ad7709dd9bb35f6c639bac7154580dd4c99d54e1fc0e0",
+      "format": "doc97",
+      "scheme": "rc4_cryptoapi",
+      "outer_wrapper_only": true
+    },
+    {
+      "item_id": "ev-003-doc-rc4",
+      "operation": "seal",
+      "check": "sealed_receipt",
+      "start": "2031-05-01T09:03:30Z",
+      "end": "2031-05-01T09:04:00Z",
+      "duration_seconds": 30,
+      "custodian": "evidence-custodian",
+      "artifact_kind": "sealed_receipt",
+      "artifact_digest": "bc202678208036afc123753b0c965f2fe2f68bcba5a12f87dc14b11d3e8d289f",
+      "receipt_id": "bc202678208036af",
+      "evidence_digest": "a9739a829bb0efd482aca4635b2e0e01e784284cc267765265fe08eb1668226e",
+      "file_sha256": "9c5217bea80fb1a7811ad7709dd9bb35f6c639bac7154580dd4c99d54e1fc0e0",
+      "format": "doc97",
+      "scheme": "rc4_cryptoapi",
+      "outer_wrapper_only": true
+    },
+    {
+      "item_id": "ev-005-ppt-rc4",
+      "operation": "inspect",
+      "check": "sealed_receipt",
+      "start": "2031-05-01T09:30:00Z",
+      "end": "2031-05-01T09:31:30Z",
+      "duration_seconds": 90,
+      "custodian": null,
+      "artifact_kind": null,
+      "artifact_digest": null,
+      "receipt_id": null,
+      "evidence_digest": "dc790f8d90fd3591103dc228889fc4792236ab5a911a1a51f38061608ac48750",
+      "file_sha256": "17a57bcbe7cb517c088410fed763ccc58b9b10d23258571c1ab67830d2591a49",
+      "format": "ppt97",
+      "scheme": "rc4_cryptoapi",
+      "outer_wrapper_only": true
+    },
+    {
+      "item_id": "ev-005-ppt-rc4",
+      "operation": "seal",
+      "check": "sealed_receipt",
+      "start": "2031-05-01T09:31:30Z",
+      "end": "2031-05-01T09:32:00Z",
+      "duration_seconds": 30,
+      "custodian": "evidence-custodian",
+      "artifact_kind": "sealed_receipt",
+      "artifact_digest": "5ffcca9c628d7906d2b8bc174cc9cbb2bba9f5c6197484253eaa15af51382584",
+      "receipt_id": "5ffcca9c628d7906",
+      "evidence_digest": "dc790f8d90fd3591103dc228889fc4792236ab5a911a1a51f38061608ac48750",
+      "file_sha256": "17a57bcbe7cb517c088410fed763ccc58b9b10d23258571c1ab67830d2591a49",
+      "format": "ppt97",
+      "scheme": "rc4_cryptoapi",
+      "outer_wrapper_only": true
+    },
+    {
+      "item_id": "ev-004-xls-rc4",
+      "operation": "handover",
+      "check": "sealed_receipt",
+      "start": "2031-05-01T10:00:00Z",
+      "end": "2031-05-01T10:02:30Z",
+      "duration_seconds": 150,
+      "custodian": "evidence-custodian",
+      "artifact_kind": "sealed_receipt",
+      "artifact_digest": "88d33c10ea84546381618bd2f4d478a5dab7ed4631dfd92e7b88d69c7791ec13",
+      "receipt_id": "88d33c10ea845463",
+      "evidence_digest": "a132736124f5c1b216329ca93bf5f448a7ada71966923df46a7bb7228cb982a4",
+      "file_sha256": "b804cba40c27ea88f2ea994b6b7d75145661532f9356e7246d2499f63d58abfe",
+      "format": "xls97",
+      "scheme": "rc4_cryptoapi",
+      "outer_wrapper_only": true
+    },
+    {
+      "item_id": "ev-006-xls-xor",
+      "operation": "inspect",
+      "check": "sealed_receipt",
+      "start": "2031-05-01T11:00:00Z",
+      "end": "2031-05-01T11:01:30Z",
+      "duration_seconds": 90,
+      "custodian": null,
+      "artifact_kind": null,
+      "artifact_digest": null,
+      "receipt_id": null,
+      "evidence_digest": "6a2ffe1585208eea3254629847f37d6eefb753b38b90ab71f4ce091a733a9b24",
+      "file_sha256": "c75375186933e2413325c4e64ce76903452d51413816d0df1d5fd677ea4dd76d",
+      "format": "xls97",
+      "scheme": "xor",
+      "outer_wrapper_only": true
+    },
+    {
+      "item_id": "ev-006-xls-xor",
+      "operation": "seal",
+      "check": "sealed_receipt",
+      "start": "2031-05-01T11:01:30Z",
+      "end": "2031-05-01T11:02:00Z",
+      "duration_seconds": 30,
+      "custodian": "evidence-custodian",
+      "artifact_kind": "sealed_receipt",
+      "artifact_digest": "9de39061f908447f3e9213ac7dfaeaa3cac442f17ba8696aa28d25a3e4025420",
+      "receipt_id": "9de39061f908447f",
+      "evidence_digest": "6a2ffe1585208eea3254629847f37d6eefb753b38b90ab71f4ce091a733a9b24",
+      "file_sha256": "c75375186933e2413325c4e64ce76903452d51413816d0df1d5fd677ea4dd76d",
+      "format": "xls97",
+      "scheme": "xor",
+      "outer_wrapper_only": true
+    },
+    {
+      "item_id": "ev-005-ppt-rc4",
+      "operation": "handover",
+      "check": "sealed_receipt",
+      "start": "2031-05-01T13:00:00Z",
+      "end": "2031-05-01T13:02:30Z",
+      "duration_seconds": 150,
+      "custodian": "evidence-custodian",
+      "artifact_kind": "sealed_receipt",
+      "artifact_digest": "5ffcca9c628d7906d2b8bc174cc9cbb2bba9f5c6197484253eaa15af51382584",
+      "receipt_id": "5ffcca9c628d7906",
+      "evidence_digest": "dc790f8d90fd3591103dc228889fc4792236ab5a911a1a51f38061608ac48750",
+      "file_sha256": "17a57bcbe7cb517c088410fed763ccc58b9b10d23258571c1ab67830d2591a49",
+      "format": "ppt97",
+      "scheme": "rc4_cryptoapi",
+      "outer_wrapper_only": true
+    }
+  ],
+  "deferred": [
+    {
+      "item_id": "ev-003-doc-rc4",
+      "operation": "handover",
+      "check": "sealed_receipt",
+      "custodian": "evidence-custodian",
+      "reason": "custodian_conflict",
+      "detail": "另一个移交占用了剩余窗口",
+      "location": "ev-003-doc-rc4:handover:evidence-custodian",
+      "blocking": [
+        "ev-004-xls-rc4"
+      ],
+      "requested_from": "2031-05-01T10:02:30Z",
+      "requested_until": "2031-05-01T10:05:00Z",
+      "extension_seconds": 150,
+      "requested_action": "在证据到期前延长保管员窗口"
+    },
+    {
+      "item_id": "ev-006-xls-xor",
+      "operation": "handover",
+      "check": "sealed_receipt",
+      "custodian": "evidence-custodian",
+      "reason": "custodian_window_after_expiry",
+      "detail": "下一个保管员窗口在证据到期后才开始",
+      "location": "ev-006-xls-xor:handover:evidence-custodian",
+      "blocking": [],
+      "requested_from": "2031-05-01T11:02:00Z",
+      "requested_until": "2031-05-01T11:04:30Z",
+      "extension_seconds": 150,
+      "requested_action": "在证据到期前延长保管员窗口"
+    },
+    {
+      "item_id": "ev-007-docx-payload",
+      "operation": "plan",
+      "check": null,
+      "custodian": null,
+      "reason": "check_not_allowed",
+      "detail": "所需检查 ['payload_decrypt'] 无法被允许运行的检查 ['sealed_receipt', 'shell'] 覆盖",
+      "location": "ev-007-docx-payload:plan:-",
+      "blocking": [],
+      "requested_from": null,
+      "requested_until": null,
+      "extension_seconds": null,
+      "requested_action": "为该职责启用一种允许运行的外壳检查"
+    }
+  ],
+  "conflicts": [
+    {
+      "item_id": "ev-003-doc-rc4",
+      "operation": "handover",
+      "check": "sealed_receipt",
+      "custodian": "evidence-custodian",
+      "reason": "custodian_conflict",
+      "detail": "另一个移交占用了剩余窗口",
+      "location": "ev-003-doc-rc4:handover:evidence-custodian",
+      "blocking": [
+        "ev-004-xls-rc4"
+      ],
+      "requested_from": "2031-05-01T10:02:30Z",
+      "requested_until": "2031-05-01T10:05:00Z",
+      "extension_seconds": 150,
+      "requested_action": "在证据到期前延长保管员窗口"
+    },
+    {
+      "item_id": "ev-006-xls-xor",
+      "operation": "handover",
+      "check": "sealed_receipt",
+      "custodian": "evidence-custodian",
+      "reason": "custodian_window_after_expiry",
+      "detail": "下一个保管员窗口在证据到期后才开始",
+      "location": "ev-006-xls-xor:handover:evidence-custodian",
+      "blocking": [],
+      "requested_from": "2031-05-01T11:02:00Z",
+      "requested_until": "2031-05-01T11:04:30Z",
+      "extension_seconds": 150,
+      "requested_action": "在证据到期前延长保管员窗口"
+    }
+  ],
+  "handovers": [
+    {
+      "item_id": "ev-004-xls-rc4",
+      "operation": "handover",
+      "check": "sealed_receipt",
+      "custodian": "evidence-custodian",
+      "start": "2031-05-01T10:00:00Z",
+      "end": "2031-05-01T10:02:30Z",
+      "artifact_kind": "sealed_receipt",
+      "artifact_digest": "88d33c10ea84546381618bd2f4d478a5dab7ed4631dfd92e7b88d69c7791ec13",
+      "receipt_id": "88d33c10ea845463"
+    },
+    {
+      "item_id": "ev-005-ppt-rc4",
+      "operation": "handover",
+      "check": "sealed_receipt",
+      "custodian": "evidence-custodian",
+      "start": "2031-05-01T13:00:00Z",
+      "end": "2031-05-01T13:02:30Z",
+      "artifact_kind": "sealed_receipt",
+      "artifact_digest": "5ffcca9c628d7906d2b8bc174cc9cbb2bba9f5c6197484253eaa15af51382584",
+      "receipt_id": "5ffcca9c628d7906"
+    }
+  ],
+  "handover_requirements": [
+    {
+      "item_id": "ev-003-doc-rc4",
+      "artifact_kind": "sealed_receipt",
+      "custodian": "evidence-custodian",
+      "status": "deferred",
+      "receipt_id": "bc202678208036af"
+    },
+    {
+      "item_id": "ev-004-xls-rc4",
+      "artifact_kind": "sealed_receipt",
+      "custodian": "evidence-custodian",
+      "status": "scheduled",
+      "receipt_id": "88d33c10ea845463"
+    },
+    {
+      "item_id": "ev-005-ppt-rc4",
+      "artifact_kind": "sealed_receipt",
+      "custodian": "evidence-custodian",
+      "status": "scheduled",
+      "receipt_id": "5ffcca9c628d7906"
+    },
+    {
+      "item_id": "ev-006-xls-xor",
+      "artifact_kind": "sealed_receipt",
+      "custodian": "evidence-custodian",
+      "status": "deferred",
+      "receipt_id": "9de39061f908447f"
+    }
+  ],
+  "receipts": [
+    {
+      "schema": "msoffcrypto.sealed-receipt/v1",
+      "item_id": "ev-003-doc-rc4",
+      "duty_id": "doc-receipt",
+      "format": "doc97",
+      "scheme": "rc4_cryptoapi",
+      "encrypted": true,
+      "evidence_digest": "a9739a829bb0efd482aca4635b2e0e01e784284cc267765265fe08eb1668226e",
+      "file_sha256": "9c5217bea80fb1a7811ad7709dd9bb35f6c639bac7154580dd4c99d54e1fc0e0",
+      "file_size": 23040,
+      "custodian": "evidence-custodian",
+      "required_checks": [
+        "sealed_receipt"
+      ],
+      "sealed_from": "offline-wrapper-evidence",
+      "receipt_id": "bc202678208036af",
+      "receipt_digest": "bc202678208036afc123753b0c965f2fe2f68bcba5a12f87dc14b11d3e8d289f"
+    },
+    {
+      "schema": "msoffcrypto.sealed-receipt/v1",
+      "item_id": "ev-004-xls-rc4",
+      "duty_id": "xls-receipt",
+      "format": "xls97",
+      "scheme": "rc4_cryptoapi",
+      "encrypted": true,
+      "evidence_digest": "a132736124f5c1b216329ca93bf5f448a7ada71966923df46a7bb7228cb982a4",
+      "file_sha256": "b804cba40c27ea88f2ea994b6b7d75145661532f9356e7246d2499f63d58abfe",
+      "file_size": 25600,
+      "custodian": "evidence-custodian",
+      "required_checks": [
+        "sealed_receipt"
+      ],
+      "sealed_from": "offline-wrapper-evidence",
+      "receipt_id": "88d33c10ea845463",
+      "receipt_digest": "88d33c10ea84546381618bd2f4d478a5dab7ed4631dfd92e7b88d69c7791ec13"
+    },
+    {
+      "schema": "msoffcrypto.sealed-receipt/v1",
+      "item_id": "ev-005-ppt-rc4",
+      "duty_id": "ppt-receipt",
+      "format": "ppt97",
+      "scheme": "rc4_cryptoapi",
+      "encrypted": true,
+      "evidence_digest": "dc790f8d90fd3591103dc228889fc4792236ab5a911a1a51f38061608ac48750",
+      "file_sha256": "17a57bcbe7cb517c088410fed763ccc58b9b10d23258571c1ab67830d2591a49",
+      "file_size": 43008,
+      "custodian": "evidence-custodian",
+      "required_checks": [
+        "sealed_receipt"
+      ],
+      "sealed_from": "offline-wrapper-evidence",
+      "receipt_id": "5ffcca9c628d7906",
+      "receipt_digest": "5ffcca9c628d7906d2b8bc174cc9cbb2bba9f5c6197484253eaa15af51382584"
+    },
+    {
+      "schema": "msoffcrypto.sealed-receipt/v1",
+      "item_id": "ev-006-xls-xor",
+      "duty_id": "xls-receipt",
+      "format": "xls97",
+      "scheme": "xor",
+      "encrypted": true,
+      "evidence_digest": "6a2ffe1585208eea3254629847f37d6eefb753b38b90ab71f4ce091a733a9b24",
+      "file_sha256": "c75375186933e2413325c4e64ce76903452d51413816d0df1d5fd677ea4dd76d",
+      "file_size": 91136,
+      "custodian": "evidence-custodian",
+      "required_checks": [
+        "sealed_receipt"
+      ],
+      "sealed_from": "offline-wrapper-evidence",
+      "receipt_id": "9de39061f908447f",
+      "receipt_digest": "9de39061f908447f3e9213ac7dfaeaa3cac442f17ba8696aa28d25a3e4025420"
+    }
+  ],
+  "replay": {
+    "event_order": [
+      "inspect",
+      "seal",
+      "handover"
+    ],
+    "uses_wall_clock": false,
+    "command": "python -m msoffcrypto.handover PLAN.json --replay --format json"
+  },
+  "plan_digest": "d29842e448f5f892242f33e15cd2f90d52e98054c6b03024be5b673b69f20b40"
+}

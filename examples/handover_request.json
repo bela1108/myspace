@@ -1,0 +1,118 @@
+{
+  "schema": "msoffcrypto.handover-request/v1",
+  "clock_start": "2031-05-01T08:00:00Z",
+  "clock_end": "2031-05-01T15:00:00Z",
+  "allowed_checks": ["shell", "sealed_receipt"],
+  "defaults": {
+    "inspect_seconds": "60s",
+    "seal_seconds": "30s",
+    "handover_seconds": "150s"
+  },
+  "duties": [
+    {
+      "id": "ooxml-shell",
+      "format": "ooxml",
+      "required_checks": ["shell"],
+      "custodian": "records-desk",
+      "inspect_seconds": "60s",
+      "deliver": false
+    },
+    {
+      "id": "doc-receipt",
+      "format": "doc97",
+      "required_checks": ["sealed_receipt"],
+      "custodian": "evidence-custodian",
+      "inspect_seconds": "90s",
+      "seal_seconds": "30s",
+      "handover_seconds": "150s"
+    },
+    {
+      "id": "xls-receipt",
+      "format": "xls97",
+      "required_checks": ["sealed_receipt"],
+      "custodian": "evidence-custodian",
+      "inspect_seconds": "90s",
+      "seal_seconds": "30s",
+      "handover_seconds": "150s"
+    },
+    {
+      "id": "ppt-receipt",
+      "format": "ppt97",
+      "required_checks": ["sealed_receipt"],
+      "custodian": "evidence-custodian",
+      "inspect_seconds": "90s",
+      "seal_seconds": "30s",
+      "handover_seconds": "150s"
+    },
+    {
+      "id": "payload-check",
+      "format": "ooxml",
+      "required_checks": ["payload_decrypt"],
+      "custodian": "evidence-custodian"
+    }
+  ],
+  "custodian_windows": {
+    "evidence-custodian": [
+      {"id": "slot-a", "start": "2031-05-01T10:00:00Z", "end": "2031-05-01T10:04:00Z"},
+      {"id": "slot-b", "start": "2031-05-01T13:00:00Z", "end": "2031-05-01T13:05:00Z"}
+    ]
+  },
+  "evidence": [
+    {
+      "id": "ev-001-docx-agile",
+      "path": "../tests/inputs/example_password.docx",
+      "duty": "ooxml-shell",
+      "available_from": "2031-05-01T08:00:00Z",
+      "available_until": "2031-05-01T12:00:00Z",
+      "expires_at": "2031-05-01T12:00:00Z"
+    },
+    {
+      "id": "ev-002-docx-standard",
+      "path": "../tests/inputs/ecma376standard_password.docx",
+      "duty": "ooxml-shell",
+      "available_from": "2031-05-01T08:00:00Z",
+      "available_until": "2031-05-01T08:30:00Z",
+      "expires_at": "2031-05-01T08:30:00Z"
+    },
+    {
+      "id": "ev-003-doc-rc4",
+      "path": "../tests/inputs/rc4cryptoapi_password.doc",
+      "duty": "doc-receipt",
+      "available_from": "2031-05-01T09:00:00Z",
+      "available_until": "2031-05-01T11:00:00Z",
+      "expires_at": "2031-05-01T11:00:00Z"
+    },
+    {
+      "id": "ev-004-xls-rc4",
+      "path": "../tests/inputs/rc4cryptoapi_password.xls",
+      "duty": "xls-receipt",
+      "available_from": "2031-05-01T09:00:00Z",
+      "available_until": "2031-05-01T10:30:00Z",
+      "expires_at": "2031-05-01T10:30:00Z"
+    },
+    {
+      "id": "ev-005-ppt-rc4",
+      "path": "../tests/inputs/rc4cryptoapi_password.ppt",
+      "duty": "ppt-receipt",
+      "available_from": "2031-05-01T09:30:00Z",
+      "available_until": "2031-05-01T09:45:00Z",
+      "expires_at": "2031-05-01T14:00:00Z"
+    },
+    {
+      "id": "ev-006-xls-xor",
+      "path": "../tests/inputs/xor_password_123456789012345.xls",
+      "duty": "xls-receipt",
+      "available_from": "2031-05-01T11:00:00Z",
+      "available_until": "2031-05-01T11:10:00Z",
+      "expires_at": "2031-05-01T11:10:00Z"
+    },
+    {
+      "id": "ev-007-docx-payload",
+      "path": "../tests/inputs/example_password.xlsx",
+      "duty": "payload-check",
+      "available_from": "2031-05-01T08:00:00Z",
+      "available_until": "2031-05-01T12:00:00Z",
+      "expires_at": "2031-05-01T12:00:00Z"
+    }
+  ]
+}

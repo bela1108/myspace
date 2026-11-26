@@ -8,7 +8,9 @@ Subpackages
    :maxdepth: 1
 
    msoffcrypto.exceptions
+   msoffcrypto.evidence
    msoffcrypto.format
+   msoffcrypto.handover
    msoffcrypto.method
 
 Module contents

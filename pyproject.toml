@@ -28,6 +28,7 @@ sphinxcontrib-autoprogram = "^0.1.8"
 
 [tool.poetry.scripts]
 msoffcrypto-tool = 'msoffcrypto.__main__:main'
+msoffcrypto-handover = 'msoffcrypto.handover:main'
 
 [tool.poetry.requires-plugins]
 poetry-plugin-export = ">=1.8"

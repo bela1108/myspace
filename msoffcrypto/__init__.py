@@ -76,3 +76,14 @@ def OfficeFile(file):
         return Ppt97File(file)
     else:
         raise exceptions.FileFormatError("Unrecognized file format")
+
+
+# The offline evidence reader is imported at the end so ``OfficeFile`` remains
+# available during format-module initialization.  It only reads protection
+# headers and never decrypts a payload.
+from msoffcrypto.evidence import (  # noqa: E402  (public convenience exports)
+    FormatEvidence as FormatEvidence,
+    format_evidence as format_evidence,
+    inspect_file as inspect_file,
+    inspect_offline as inspect_offline,
+)

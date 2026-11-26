@@ -166,6 +166,43 @@ with open("plain.xlsx", "rb") as f:
 ...
 ```
 
+### Offline wrapper evidence and handover planning
+
+For audits that must inspect encrypted evidence without a password, `msoffcrypto.evidence` reads only the protection wrapper (the OLE directory and the format's encryption header). It never decrypts the payload or executes macros.
+
+```python
+from msoffcrypto.evidence import inspect_file
+
+evidence = inspect_file("encrypted.docx")
+print(evidence.format, evidence.scheme, evidence.cipher, evidence.key_bits)
+print(evidence.evidence_digest, evidence.file_sha256)
+```
+
+`msoffcrypto.handover` turns that evidence into a deterministic verification schedule. It takes a local duty list, attachment availability windows, custodian windows, and the allowed check kinds. It selects the cheapest allowed check for each duty (shell-only duties are not upgraded to receipts) and reports every location that needs an extension.
+
+The request keys are `clock_start`, `allowed_checks`, `duties`, `custodian_windows`, and `evidence`. Each evidence item can point at a local `path` or embed a previously produced `format_evidence` object; the latter makes the generated plan replayable without the source attachment.
+
+```python
+import json
+
+from msoffcrypto.handover import build_plan, replay_plan
+
+with open("examples/handover_request.json", encoding="utf-8") as handle:
+    request = json.load(handle)
+plan = build_plan(request, base_dir="examples")
+result = replay_plan(plan)  # uses only the plan's virtual clock
+assert result["ok"]
+```
+
+The example plan is replayable without opening the source files:
+
+```bash
+python -m msoffcrypto.handover examples/handover_request.json --format markdown
+python -m msoffcrypto.handover examples/handover_plan.json --replay --format json
+```
+
+`examples/handover_plan.json` contains the embedded evidence digests, scheduled operations, sealed receipts, and the blocked locations; `examples/handover_plan.md` is the custodian-facing version.
+
 ## Supported encryption methods
 
 ### MS-OFFCRYPTO specs
