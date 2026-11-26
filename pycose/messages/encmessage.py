@@ -122,6 +122,20 @@ class EncMessage(enccommon.EncCommon):
 
         return payload
 
+    def accept(self, manifest, test_keys=None, constraints=None, **kwargs):
+        """Locally accept this envelope without returning its plaintext."""
+
+        from pycose.envelope_acceptance import accept_envelope
+
+        return accept_envelope(self, manifest, test_keys, constraints, **kwargs)
+
+    def check_acceptance(self, manifest, test_keys=None, constraints=None, **kwargs):
+        """Non-raising local acceptance check for this envelope."""
+
+        from pycose.envelope_acceptance import check_envelope
+
+        return check_envelope(self, manifest, test_keys, constraints, **kwargs)
+
     @property
     def recipients(self) -> List['Recipient']:
         return self._recipients

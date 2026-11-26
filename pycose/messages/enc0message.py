@@ -68,6 +68,20 @@ class Enc0Message(enccommon.EncCommon):
         res = super(Enc0Message, self).encode(message, tag)
         return res
 
+    def accept(self, manifest, test_keys=None, constraints=None, **kwargs):
+        """Locally accept this envelope without returning its plaintext."""
+
+        from pycose.envelope_acceptance import accept_envelope
+
+        return accept_envelope(self, manifest, test_keys, constraints, **kwargs)
+
+    def check_acceptance(self, manifest, test_keys=None, constraints=None, **kwargs):
+        """Non-raising local acceptance check for this envelope."""
+
+        from pycose.envelope_acceptance import check_envelope
+
+        return check_envelope(self, manifest, test_keys, constraints, **kwargs)
+
     def __repr__(self) -> str:
         phdr, uhdr = self._hdr_repr()
 

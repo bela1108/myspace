@@ -53,6 +53,7 @@ Table of Contents
    pycose/messages/index.rst
    pycose/keys/index.rst
    pycose/algorithms.rst
+   pycose/envelope_acceptance.rst
 
 .. toctree::
    :maxdepth: 2
