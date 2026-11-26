@@ -32,6 +32,21 @@ Secret Type: Secret Keyword
 Should this string be committed to the repository? (y)es, (n)o, (s)kip, (q)uit:
 ```
 
+## Offline Acceptance Sampling
+
+Use `python -m detect_secrets.offline_acceptance evidence.json` to answer the file-level
+question: how many negative files may still contain missed problems at a stated confidence level?
+The evidence document must contain a frozen file manifest, scan-completion records, one
+without-replacement sample per stratum, independent blind reviews, and per-stratum significance
+allocations whose sum is no greater than the batch budget. The calculation uses an exact
+hypergeometric lower-tail inversion, so every integer upper bound is independently reproducible.
+
+Sampled files without a conclusive review are counted as possible missed problems. A file with
+multiple review findings is still one problem file. Positive and unscanned files do not belong
+to the negative sampling population; unscanned files are reported separately outside the
+confidence bound. The audit output contains only stratum counts and bounds, never file names,
+hashes, findings, or sample text.
+
 There are two common cases for manual labelling:
 
 1. Allows plugin developers to label data, to more systematically measure the success of their
@@ -199,6 +214,8 @@ $ detect-secrets audit --report .secret.baseline
     }
 ]
 ```
+
+## Offline Acceptance Chain
 
 You can also select only the real secrets with the option `--only-real`:
 
