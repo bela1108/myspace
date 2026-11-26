@@ -3,6 +3,7 @@ from typing import Any
 from typing import NamedTuple
 from typing import NoReturn
 from typing import Optional
+from typing import Sequence
 from typing import Set
 
 from .core.potential_secret import PotentialSecret
@@ -41,6 +42,37 @@ class SecretContext(NamedTuple):
 
     # ...or error information. But it has an XOR relationship.
     error: Optional[SecretNotFoundOnSpecifiedLineError] = None
+
+    # Optional context used by backend/UI integrations. These are intentionally
+    # additive so older callers can keep constructing SecretContext positionally.
+    known_secrets: Sequence[Any] = ()
+    line_secrets: Sequence[Any] = ()
+    candidates: Sequence[Any] = ()
+    all_secrets: Sequence[Any] = ()
+    secrets: Sequence[Any] = ()
+    known_findings: Sequence[Any] = ()
+    findings: Sequence[Any] = ()
+
+    # A validated source-string range for the current candidate, if the caller
+    # has one. When omitted, formatting falls back to exact text lookup and
+    # refuses to render the line if that lookup is not unambiguous enough.
+    secret_span: Optional[Any] = None
+    current_span: Optional[Any] = None
+
+    # Display options (also accepted as keyword arguments to format_context).
+    max_width: Optional[int] = None
+    width: Optional[int] = None
+    use_color: Optional[bool] = None
+    tab_width: int = 8
+    line: Optional[str] = None
+    lines: Optional[Sequence[str]] = None
+    line_number: Optional[int] = None
+
+    # Some callers name the active item explicitly instead of using `secret`.
+    candidate: Optional[PotentialSecret] = None
+    current_candidate: Optional[PotentialSecret] = None
+    current: Optional[PotentialSecret] = None
+    secret_candidate: Optional[PotentialSecret] = None
 
 
 class NamedIO(TextIOBase):

@@ -30,6 +30,7 @@ class PotentialSecret:
         line_number: int = 0,
         is_secret: Optional[bool] = None,
         is_verified: bool = False,
+        **kwargs: Any,
     ) -> None:
         """
         :param type: human-readable secret type, defined by the plugin
@@ -47,6 +48,12 @@ class PotentialSecret:
         self.set_secret(secret)
         self.is_secret = is_secret
         self.is_verified = is_verified
+
+        # Source-string location metadata is optional and intentionally kept
+        # out of equality/hash calculations. Line numbers alone are not enough
+        # to disambiguate two identical strings on the same line.
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
         # If two PotentialSecrets have the same values for these fields,
         # they are considered equal. Note that line numbers aren't included
@@ -85,6 +92,13 @@ class PotentialSecret:
             'line_number',
             'is_secret',
             'is_verified',
+            'secret_span',
+            'secret_start',
+            'secret_end',
+            'secret_position',
+            'start',
+            'end',
+            'column',
         }:
             if parameter in data:
                 kwargs[parameter] = data[parameter]
@@ -109,6 +123,13 @@ class PotentialSecret:
 
         if hasattr(self, 'is_secret') and self.is_secret is not None:
             attributes['is_secret'] = self.is_secret
+
+        for parameter in (
+            'secret_span', 'secret_start', 'secret_end', 'secret_position',
+            'start', 'end', 'column',
+        ):
+            if hasattr(self, parameter) and getattr(self, parameter) is not None:
+                attributes[parameter] = getattr(self, parameter)
 
         return attributes
 

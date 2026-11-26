@@ -2,6 +2,9 @@
 The audit module allows analysts to easily scan the baseline, and verify whether
 the secrets flagged are actually secrets.
 """
+from typing import Any
+from typing import List
+
 from . import io
 from ..core import baseline
 from ..exceptions import NoLineNumberError
@@ -22,12 +25,12 @@ def audit_baseline(filename: str) -> None:
     secrets = get_baseline_from_file(filename)
 
     secrets.trim()
-    if _classify_secrets(get_secret_iterator(secrets)):
+    if _classify_secrets(get_secret_iterator(secrets), secrets):
         io.print_message('Saving progress...')
         baseline.save_to_file(secrets, filename)
 
 
-def _classify_secrets(iterator: BidirectionalIterator) -> bool:
+def _classify_secrets(iterator: BidirectionalIterator, collection: Any = None) -> bool:
     """
     :returns: True if changes were made.
     """
@@ -37,15 +40,25 @@ def _classify_secrets(iterator: BidirectionalIterator) -> bool:
 
     for secret in iterator:
         try:
-            secret.secret_value = get_raw_secret_from_file(secret)
+            # Use one LineGetter for both locating the value and rendering the
+            # snippet. This prevents a mid-review file change from producing a
+            # value/range decision based on one snapshot and a display based on
+            # another.
+            line_getter = open_file(secret.filename)
+            secret.secret_value = get_raw_secret_from_file(
+                secret,
+                line_getter_factory=lambda filename: line_getter,
+            )
+            known_secrets = _get_secrets_on_same_line(collection, secret)
             io.clear_screen()
             io.print_context(
                 SecretContext(
                     current_index=iterator.index + 1,
                     num_total_secrets=len(iterator.collection),
                     secret=secret,
+                    known_secrets=known_secrets,
                     snippet=get_code_snippet(
-                        lines=open_file(secret.filename).raw_lines,
+                        lines=line_getter.raw_lines,
                         line_number=secret.line_number,
                     ),
                 ),
@@ -93,3 +106,21 @@ def _classify_secrets(iterator: BidirectionalIterator) -> bool:
             has_changes = True
 
     return has_changes
+
+
+def _get_secrets_on_same_line(collection: Any, secret: Any) -> List[Any]:
+    """Return all known findings sharing this file/line, for redaction."""
+    if collection is None:
+        return [secret]
+
+    try:
+        candidates = collection[secret.filename]
+    except (AttributeError, KeyError, TypeError):     # pragma: no cover
+        return [secret]
+
+    return [
+        candidate
+        for candidate in candidates
+        if candidate.filename == secret.filename
+        if candidate.line_number == secret.line_number
+    ]

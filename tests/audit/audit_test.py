@@ -137,7 +137,11 @@ def test_ensure_file_transformers_are_used(printer):
         assert not m.called
 
     line_number = list(secrets[str(Path('test_data/config.env'))])[0].line_number
-    assert lines[line_number - 1] in printer.message
+    # The source line is still used to verify the transformer path, but the
+    # secret itself must never be written to the terminal/plain-text output.
+    assert lines[line_number - 1] not in printer.message
+    assert lines[line_number - 1].split('=')[0] in printer.message
+    assert '*' in printer.message
 
 
 def test_fails_if_no_line_numbers_found(printer):

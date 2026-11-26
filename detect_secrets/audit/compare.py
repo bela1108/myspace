@@ -187,6 +187,7 @@ def _display_difference_to_user(
                 current_index=iterator.index + 1,
                 num_total_secrets=len(iterator.collection),
                 secret=secret,
+                known_secrets=[secret],
                 header='{status}      {value}'.format(
                     status=colorize('Status:', AnsiColor.BOLD),
                     value='>> {} <<'.format(
