@@ -296,6 +296,33 @@ class StructureMetaType(MetaType):
 
         return result
 
+    def layout_evidence(cls, data: Any = None, **kwargs: Any) -> Any:
+        """Return field layout evidence for this structure type."""
+        from dissect.cstruct.layout import layout_evidence
+
+        return layout_evidence(cls, data, **kwargs)
+
+    def reconcile_layout(cls, data: Any, **kwargs: Any) -> Any:
+        """Reconcile interpreted and compiled reads of this structure."""
+        from dissect.cstruct.layout import reconcile_layout
+
+        return reconcile_layout(cls, data, **kwargs)
+
+    def layout(cls, data: Any = None, **kwargs: Any) -> Any:
+        """Alias for layout_evidence."""
+        return cls.layout_evidence(data, **kwargs)
+
+    def explain_layout(cls, data: Any = None, **kwargs: Any) -> str:
+        """Return a human-readable layout evidence report."""
+        from dissect.cstruct.layout import explain_layout
+
+        return explain_layout(cls, data, **kwargs)
+
+    reconcile = reconcile_layout
+    evidence = layout_evidence
+    field_layout = layout_evidence
+    inspect_layout = layout_evidence
+
     def _write(cls, stream: BinaryIO, data: Structure, *, endian: Endianness) -> int:
         bit_buffer = None
         struct_start = stream.tell()

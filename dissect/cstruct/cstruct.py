@@ -439,6 +439,50 @@ class cstruct:
         """
         return self.resolve(name).read(stream)
 
+    def layout_evidence(
+        self,
+        name: str | type[BaseType],
+        data: bytes | BinaryIO | None = None,
+        **kwargs: Any,
+    ) -> Any:
+        """Build field layout evidence for a registered type."""
+        from dissect.cstruct.layout import layout_evidence
+
+        type_ = name if not isinstance(name, str) else self.resolve(name)
+        return layout_evidence(type_, data, **kwargs)
+
+    def reconcile_layout(
+        self,
+        name: str | type[BaseType],
+        data: bytes | BinaryIO,
+        **kwargs: Any,
+    ) -> Any:
+        """Reconcile compiled and interpreted reads for a registered type."""
+        from dissect.cstruct.layout import reconcile_layout
+
+        type_ = name if not isinstance(name, str) else self.resolve(name)
+        return reconcile_layout(type_, data, **kwargs)
+
+    def compare_layout_evidence(self, left: Any, right: Any, **kwargs: Any) -> Any:
+        """Compare two layout evidence reports."""
+        from dissect.cstruct.layout import compare_evidence
+
+        return compare_evidence(left, right, **kwargs)
+
+    def explain_layout(self, name: str | type[BaseType], data: bytes | BinaryIO | None = None, **kwargs: Any) -> str:
+        """Return a human-readable layout evidence report."""
+        from dissect.cstruct.layout import explain_layout
+
+        type_ = name if not isinstance(name, str) else self.resolve(name)
+        return explain_layout(type_, data, **kwargs)
+
+    layout = layout_evidence
+    evidence = layout_evidence
+    field_layout = layout_evidence
+    field_layout_evidence = layout_evidence
+    inspect_layout = layout_evidence
+    layoutstruct = layout_evidence
+
     def resolve(self, name: type[BaseType] | str) -> type[BaseType]:
         """Resolve a type name to get the actual type object.
 
