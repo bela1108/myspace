@@ -31,6 +31,10 @@ use it without installing, by locally adjusting `PYTHONPATH`.
 from your own code. For a detailed usage guide and links to examples,
 please consult the [user's guide](doc/user-guide.md).
 
+For page-budgeted, read-only preservation of ELF notes (sections and program
+headers) so that specified product claims stay independently verifiable, see
+the [preservation planner](doc/preservation.md).
+
 ## Contributing
 
 See the [Hacking Guide](doc/hacking-guide.md).

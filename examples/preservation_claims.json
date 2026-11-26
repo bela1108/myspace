@@ -1,0 +1,45 @@
+{
+  "page_size": 4096,
+  "budget": 1,
+  "claims": [
+    {
+      "id": "android-api-r21c",
+      "description": "The delivered artifact was built for Android API 21 (NDK r21c).",
+      "match": {
+        "name": "Android",
+        "type": "NT_VERSION",
+        "desc_sha256": "95ba08e6d20e0d693961483e5bdc999b0bdd54adffc96f100e1e4712e8e8cad2"
+      },
+      "provenance": {
+        "view": "section",
+        "name": ".note.android.ident"
+      }
+    },
+    {
+      "id": "build-id-b02145ac",
+      "description": "The delivered bytes are the artifact with GNU build-id b02145ac36c63893b40481e2b55aaeca2cb29f45.",
+      "match": {
+        "name": "GNU",
+        "type": "NT_GNU_BUILD_ID",
+        "desc_sha256": "9c303c12bad3f4c058d9cf9527dc8ded15cd3e91df00d79f7b1fb106332fd92b"
+      },
+      "provenance": {
+        "view": "section",
+        "name": ".note.gnu.build-id"
+      }
+    },
+    {
+      "id": "gold-linker-1.12",
+      "description": "The artifact was linked with GNU gold 1.12.",
+      "match": {
+        "name": "GNU",
+        "type": "NT_GNU_GOLD_VERSION",
+        "desc_sha256": "6d2648517bed8efb61161adf5e39f337dbf1d26cc4d16559994a808260dcb139"
+      },
+      "provenance": {
+        "view": "section",
+        "name": ".note.gnu.gold-version"
+      }
+    }
+  ]
+}

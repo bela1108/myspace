@@ -1,0 +1,45 @@
+{
+  "page_size": 4096,
+  "budget": 0,
+  "claims": [
+    {
+      "id": "linux-abi-2.6.4",
+      "description": "The artifact declares a Linux 2.6.4 ABI baseline.",
+      "match": {
+        "name": "GNU",
+        "type": "NT_GNU_ABI_TAG",
+        "desc_sha256": "5fb15c5bf52c651e1468a62f25120d3bf63d62b6ba27c1c29b9481e7d1355f9a"
+      },
+      "provenance": {
+        "view": "section",
+        "name": ".note.ABI-tag"
+      }
+    },
+    {
+      "id": "suse-note-1",
+      "description": "The artifact carries the SuSE vendor note.",
+      "match": {
+        "name": "SuSE",
+        "type": 1163097427,
+        "desc_sha256": "427fbfff8df99e05a9e0987a14e8f705fff061a0fd9f22127563cbb46782be56"
+      },
+      "provenance": {
+        "view": "section",
+        "name": ".note.SuSE"
+      }
+    },
+    {
+      "id": "build-id-8e50cda8",
+      "description": "The delivered bytes are the artifact with GNU build-id 8e50cda8e25993499ac4aa2d8deaf58d0949d47d.",
+      "match": {
+        "name": "GNU",
+        "type": "NT_GNU_BUILD_ID",
+        "desc_sha256": "842008187ca89a5c41399898e92c13ae50b14e91bb91d1aa786f43556bcc48ae"
+      },
+      "provenance": {
+        "view": "section",
+        "name": ".note.gnu.build-id"
+      }
+    }
+  ]
+}
