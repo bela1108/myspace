@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections import defaultdict
+from datetime import timedelta
 from statistics import median
 from typing import Any
 
@@ -17,6 +17,7 @@ from sigma.correlations import (
     SigmaRuleReference,
 )
 from sigma.matching.event import Event
+from sigma.matching.evidence import CorrelationEvidence, RetractionResult
 from sigma.matching.match import SigmaMatch
 from sigma.matching.state import SlidingWindowState
 
@@ -36,6 +37,13 @@ class SigmaCorrelationRuleMatcher:
             window_seconds=rule.timespan.seconds,
             max_entries=max_state,
         )
+        # Group keys whose correlation is currently considered fired, so that a
+        # continuously satisfied condition only emits a match on the rising edge.
+        self._fired_groups: set[tuple[Any, ...]] = set()
+        # Evidence snapshot captured at firing time, keyed by group. Retained even
+        # after the contributing events leave the window so retractions can be
+        # discharged against the original triggering evidence.
+        self._fired_evidence: dict[tuple[Any, ...], list[CorrelationEvidence]] = {}
         # Track which base rule names are relevant
         self._rule_names: set[str] = set()
         if rule.rules:
@@ -51,8 +59,157 @@ class SigmaCorrelationRuleMatcher:
         self._state.add(group_key, match)
 
         window_matches = self._state.get_window(group_key, match.timestamp)
-        result = self._evaluate(window_matches, group_key, match.timestamp)
-        return result
+        fired = self._is_satisfied(window_matches)
+        if fired and group_key not in self._fired_groups:
+            self._fired_groups.add(group_key)
+            result = self._evaluate(window_matches, group_key, match.timestamp)
+            for correlation_match in result:
+                self._fired_evidence[group_key] = list(correlation_match.evidence or [])
+            return result
+        if not fired:
+            self._fired_groups.discard(group_key)
+            self._fired_evidence.pop(group_key, None)
+        return []
+
+    def retract_event(self, event: Event) -> RetractionResult:
+        """Remove an event and discharge responsibility for the groups it affected.
+
+        Returns a :class:`RetractionResult` describing the correlation matches that
+        remain active (with rebuilt evidence excluding the retracted event) and those
+        that must be revoked because the condition no longer holds.
+        """
+        affected_keys = self._state.remove_event(event)
+        if not affected_keys:
+            return RetractionResult(retracted_event=event)
+        active: list[SigmaMatch] = []
+        revoked: list[SigmaMatch] = []
+        # Every currently fired group must be re-checked: groups touched by the
+        # retraction may be revoked or rebuilt, while untouched fired groups remain
+        # active and still belong on the discharge checklist.
+        affected_set = set(affected_keys)
+        candidate_keys = list(self._fired_groups)
+        for group_key in affected_set.difference(self._fired_groups):
+            candidate_keys.append(group_key)
+        for group_key in candidate_keys:
+            was_fired = group_key in self._fired_groups
+            now = self._state.latest_timestamp(group_key) or event.timestamp
+            window_matches = self._state.get_window(group_key, now)
+            still_fired = self._is_satisfied(window_matches)
+            if still_fired:
+                active.extend(self._evaluate(window_matches, group_key, now))
+            if was_fired and not still_fired:
+                self._fired_groups.discard(group_key)
+                evidence = self._fired_evidence.pop(group_key, [])
+                revoked.append(
+                    SigmaMatch(
+                        rule=self.rule,
+                        events=[],
+                        timestamp=now,
+                        group_values=self._make_group_values(group_key),
+                        evidence=evidence,
+                    )
+                )
+        return RetractionResult(retracted_event=event, active=active, revoked=revoked)
+
+    def _is_satisfied(self, window_matches: list[SigmaMatch]) -> bool:
+        """Return whether the correlation condition holds for the current window."""
+        ctype = self.rule.type
+        condition = self.rule.condition
+
+        if ctype == SigmaCorrelationType.EVENT_COUNT:
+            return self._count_condition_holds(window_matches, condition)
+        if ctype == SigmaCorrelationType.VALUE_COUNT:
+            return self._value_count_holds(window_matches, condition)
+        if ctype in (
+            SigmaCorrelationType.VALUE_SUM,
+            SigmaCorrelationType.VALUE_AVG,
+            SigmaCorrelationType.VALUE_MEDIAN,
+            SigmaCorrelationType.VALUE_PERCENTILE,
+        ):
+            return self._aggregate_holds(window_matches, condition, ctype)
+        if ctype == SigmaCorrelationType.TEMPORAL:
+            return self._temporal_holds(window_matches)
+        if ctype == SigmaCorrelationType.TEMPORAL_ORDERED:
+            return self._temporal_ordered_holds(window_matches)
+        return False
+
+    def _count_condition_holds(self, matches: list[SigmaMatch], condition: Any) -> bool:
+        if not isinstance(condition, SigmaCorrelationCondition):
+            return False
+        return self._compare(condition.op, len(matches), condition.count)
+
+    def _value_count_holds(self, matches: list[SigmaMatch], condition: Any) -> bool:
+        if not isinstance(condition, SigmaCorrelationCondition) or condition.fieldref is None:
+            return False
+        values: set[Any] = set()
+        for match in matches:
+            for event in match.events:
+                value = event.data.get(condition.fieldref)
+                if value is not None:
+                    values.add(value)
+        return self._compare(condition.op, len(values), condition.count)
+
+    def _aggregate_holds(
+        self, matches: list[SigmaMatch], condition: Any, ctype: SigmaCorrelationType
+    ) -> bool:
+        if not isinstance(condition, SigmaCorrelationCondition) or condition.fieldref is None:
+            return False
+        values: list[float] = []
+        for match in matches:
+            for event in match.events:
+                value = event.data.get(condition.fieldref)
+                if value is not None:
+                    try:
+                        values.append(float(value))
+                    except (ValueError, TypeError):
+                        pass
+        if not values:
+            return False
+        if ctype == SigmaCorrelationType.VALUE_SUM:
+            result: float = sum(values)
+        elif ctype == SigmaCorrelationType.VALUE_AVG:
+            result = sum(values) / len(values)
+        elif ctype == SigmaCorrelationType.VALUE_MEDIAN:
+            result = median(values)
+        else:
+            percentile = condition.percentile or 95
+            sorted_values = sorted(values)
+            index = min(int(len(sorted_values) * percentile / 100), len(sorted_values) - 1)
+            result = sorted_values[index]
+        return self._compare(condition.op, result, condition.count)
+
+    def _temporal_holds(self, matches: list[SigmaMatch]) -> bool:
+        if isinstance(self.rule.condition, SigmaExtendedCorrelationCondition):
+            fired_rules = {
+                name for match in matches if (name := getattr(match.rule, "name", None))
+            }
+            return self._eval_extended_expr(self.rule.condition.parsed, fired_rules)
+        matched_rules = {
+            match.rule.name
+            for match in matches
+            if hasattr(match.rule, "name") and match.rule.name
+        }
+        return bool(self._rule_names) and self._rule_names.issubset(matched_rules)
+
+    def _temporal_ordered_holds(self, matches: list[SigmaMatch]) -> bool:
+        if isinstance(self.rule.condition, SigmaExtendedCorrelationCondition):
+            rule_first_fire: dict[str, Any] = {}
+            for match in sorted(matches, key=lambda item: item.timestamp):
+                name = getattr(match.rule, "name", None)
+                if name and name not in rule_first_fire:
+                    rule_first_fire[name] = match.timestamp
+            ok, _ = self._eval_ordered_extended_expr(self.rule.condition.parsed, rule_first_fire)
+            return ok
+        if not self.rule.rules:
+            return False
+        expected_order = [ref.reference for ref in self.rule.rules]
+        seen_index = 0
+        for match in sorted(matches, key=lambda item: item.timestamp):
+            if hasattr(match.rule, "name") and match.rule.name == expected_order[seen_index]:
+                seen_index += 1
+                if seen_index >= len(expected_order):
+                    return True
+        return False
 
     def _extract_group_key(self, match: SigmaMatch) -> tuple[Any, ...]:
         """Extract group-by field values from match events."""
@@ -146,6 +303,45 @@ class SigmaCorrelationRuleMatcher:
             return None
         return dict(zip(self.rule.group_by, group_key))
 
+    def _build_correlation_match(
+        self,
+        matches: list[SigmaMatch],
+        group_key: tuple[Any, ...],
+        now: Any,
+    ) -> SigmaMatch:
+        """Build a correlation match and bind every contributing event as evidence.
+
+        Each evidence item carries the shift / receiving window that accepted the
+        underlying event, the rule that produced the contributing match, and the
+        trigger window: the rule timespan looking back from the event's timestamp.
+        """
+        group_values = self._make_group_values(group_key)
+        evidence: list[CorrelationEvidence] = []
+        for contributing_match in matches:
+            rule_name = getattr(contributing_match.rule, "name", None) or ""
+            for event in contributing_match.events:
+                event_timestamp = event.timestamp
+                evidence.append(
+                    CorrelationEvidence(
+                        event=event,
+                        rule_name=rule_name,
+                        shift=event.shift,
+                        event_timestamp=event_timestamp,
+                        window_start=event_timestamp
+                        - timedelta(seconds=self.rule.timespan.seconds),
+                        window_end=event_timestamp,
+                        timespan_seconds=self.rule.timespan.seconds,
+                        group_values=group_values,
+                    )
+                )
+        return SigmaMatch(
+            rule=self.rule,
+            events=self._collect_events(matches),
+            timestamp=now,
+            group_values=group_values,
+            evidence=evidence,
+        )
+
     def _eval_event_count(
         self,
         matches: list[SigmaMatch],
@@ -157,14 +353,7 @@ class SigmaCorrelationRuleMatcher:
             return []
         count = len(matches)
         if self._compare(condition.op, count, condition.count):
-            return [
-                SigmaMatch(
-                    rule=self.rule,
-                    events=self._collect_events(matches),
-                    timestamp=now,
-                    group_values=self._make_group_values(group_key),
-                )
-            ]
+            return [self._build_correlation_match(matches, group_key, now)]
         return []
 
     def _eval_value_count(
@@ -187,14 +376,7 @@ class SigmaCorrelationRuleMatcher:
                 if val is not None:
                     values.add(val)
         if self._compare(condition.op, len(values), condition.count):
-            return [
-                SigmaMatch(
-                    rule=self.rule,
-                    events=self._collect_events(matches),
-                    timestamp=now,
-                    group_values=self._make_group_values(group_key),
-                )
-            ]
+            return [self._build_correlation_match(matches, group_key, now)]
         return []
 
     def _eval_extended_expr(
@@ -259,28 +441,14 @@ class SigmaCorrelationRuleMatcher:
                 name for m in matches if (name := getattr(m.rule, "name", None))
             }
             if self._eval_extended_expr(self.rule.condition.parsed, fired_rules):
-                return [
-                    SigmaMatch(
-                        rule=self.rule,
-                        events=self._collect_events(matches),
-                        timestamp=now,
-                        group_values=self._make_group_values(group_key),
-                    )
-                ]
+                return [self._build_correlation_match(matches, group_key, now)]
             return []
         matched_rules: set[str] = set()
         for m in matches:
             if hasattr(m.rule, "name") and m.rule.name:
                 matched_rules.add(m.rule.name)
         if self._rule_names and self._rule_names.issubset(matched_rules):
-            return [
-                SigmaMatch(
-                    rule=self.rule,
-                    events=self._collect_events(matches),
-                    timestamp=now,
-                    group_values=self._make_group_values(group_key),
-                )
-            ]
+            return [self._build_correlation_match(matches, group_key, now)]
         return []
 
     def _eval_temporal_ordered(
@@ -298,14 +466,7 @@ class SigmaCorrelationRuleMatcher:
                     rule_first_fire[name] = m.timestamp
             ok, _ = self._eval_ordered_extended_expr(self.rule.condition.parsed, rule_first_fire)
             if ok:
-                return [
-                    SigmaMatch(
-                        rule=self.rule,
-                        events=self._collect_events(matches),
-                        timestamp=now,
-                        group_values=self._make_group_values(group_key),
-                    )
-                ]
+                return [self._build_correlation_match(matches, group_key, now)]
             return []
         if not self.rule.rules:
             return []
@@ -316,14 +477,7 @@ class SigmaCorrelationRuleMatcher:
             if hasattr(m.rule, "name") and m.rule.name == expected_order[seen_idx]:
                 seen_idx += 1
                 if seen_idx >= len(expected_order):
-                    return [
-                        SigmaMatch(
-                            rule=self.rule,
-                            events=self._collect_events(matches),
-                            timestamp=now,
-                            group_values=self._make_group_values(group_key),
-                        )
-                    ]
+                    return [self._build_correlation_match(matches, group_key, now)]
         return []
 
     def _eval_value_aggregate(
@@ -369,12 +523,5 @@ class SigmaCorrelationRuleMatcher:
             return []
 
         if self._compare(condition.op, result, condition.count):
-            return [
-                SigmaMatch(
-                    rule=self.rule,
-                    events=self._collect_events(matches),
-                    timestamp=now,
-                    group_values=self._make_group_values(group_key),
-                )
-            ]
+            return [self._build_correlation_match(matches, group_key, now)]
         return []

@@ -9,6 +9,7 @@ from sigma.collection import SigmaCollection
 from sigma.correlations import SigmaCorrelationRule, SigmaExtendedCorrelationCondition
 from sigma.matching.compiler import MatchCompiler
 from sigma.matching.correlation_matcher import SigmaCorrelationRuleMatcher
+from sigma.matching.evidence import RetractionResult
 from sigma.matching.event import Event, EventLogSource
 from sigma.matching.match import SigmaMatch
 from sigma.matching.rule_matcher import SigmaRuleMatcher
@@ -99,6 +100,20 @@ class SigmaMatcher:
         for event in events:
             all_matches.extend(self.match(event))
         return all_matches
+
+    def retract_event(self, event: Event) -> list[RetractionResult]:
+        """Retract a previously processed event from every correlation matcher.
+
+        Returns one :class:`RetractionResult` per correlation rule that tracked the
+        event. Ordinary base-rule matches keep their existing structure; only the
+        correlation layer produces responsibility discharge information.
+        """
+        results: list[RetractionResult] = []
+        for correlation_matcher in self._correlation_matchers:
+            result = correlation_matcher.retract_event(event)
+            if result.active or result.revoked:
+                results.append(result)
+        return results
 
     def _get_matchers(self, logsource: EventLogSource) -> list[SigmaRuleMatcher]:
         """Get all rule matchers whose logsource contains the event's logsource."""

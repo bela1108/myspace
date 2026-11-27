@@ -5,7 +5,15 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from sigma.collection import SigmaCollection
-from sigma.matching import Event, EventLogSource, SigmaMatch, SigmaMatcher
+from sigma.matching import (
+    CorrelationEvidence,
+    Event,
+    EventLogSource,
+    EventRevision,
+    RetractionResult,
+    SigmaMatch,
+    SigmaMatcher,
+)
 
 
 @pytest.fixture
@@ -1443,3 +1451,399 @@ detection:
         assert len(self._match(yaml_str, {"field": "test\ndata"})) == 1  # dot matches newline
         assert len(self._match(yaml_str, {"field": "testXdata"})) == 1
         assert len(self._match(yaml_str, {"field": "no match"})) == 0
+
+
+class TestCorrelationEvidence:
+    """Evidence items bind contributing events to their shift and trigger window."""
+
+    _YAML = """
+title: Login Rule
+name: login_rule
+status: test
+logsource:
+    category: test
+    product: test
+detection:
+    selection:
+        event: "login"
+    condition: selection
+---
+title: Access Rule
+name: access_rule
+status: test
+logsource:
+    category: test
+    product: test
+detection:
+    selection:
+        event: "access"
+    condition: selection
+---
+title: Temporal Correlation
+name: temporal_corr
+status: test
+correlation:
+    type: temporal
+    rules:
+        - login_rule
+        - access_rule
+    group-by:
+        - user
+    timespan: 5m
+"""
+
+    def test_correlation_match_carries_window_bound_evidence(self):
+        collection = SigmaCollection.from_yaml(self._YAML)
+        ls = EventLogSource(category="test", product="test")
+        t1 = datetime(2026, 11, 28, 1, 0, tzinfo=timezone.utc)
+        t2 = t1 + timedelta(minutes=4)
+        with SigmaMatcher(collection) as matcher:
+            login = Event(
+                timestamp=t1,
+                logsource=ls,
+                data={"event": "login", "user": "alice"},
+                shift="night-a",
+            )
+            access = Event(
+                timestamp=t2,
+                logsource=ls,
+                data={"event": "access", "user": "alice"},
+                shift="night-b",
+            )
+            base_matches = matcher.match(login)
+            matches = matcher.match(access)
+
+        correlation = next(m for m in matches if m.rule.name == "temporal_corr")
+        # Ordinary base-rule matches keep their original structure.
+        assert base_matches[0].evidence is None
+        assert base_matches[0].rule.name == "login_rule"
+
+        assert isinstance(correlation.evidence, list)
+        assert len(correlation.evidence) == 2
+        assert all(isinstance(item, CorrelationEvidence) for item in correlation.evidence)
+        by_rule = {item.rule_name: item for item in correlation.evidence}
+        assert by_rule["login_rule"].shift == "night-a"
+        assert by_rule["access_rule"].shift == "night-b"
+        assert by_rule["login_rule"].event is login
+        assert by_rule["access_rule"].event is access
+        for item in correlation.evidence:
+            assert item.timespan_seconds == 300
+            assert item.window_end == item.event_timestamp
+            assert item.window_start == item.event_timestamp - timedelta(seconds=300)
+            assert item.group_values == {"user": "alice"}
+
+    def test_evidence_defaults_to_none_for_plain_matches(self):
+        yaml_str = """
+title: Test Rule
+name: test_rule
+logsource:
+    category: test
+    product: test
+detection:
+    selection:
+        field: value
+    condition: selection
+"""
+        collection = SigmaCollection.from_yaml(yaml_str)
+        with SigmaMatcher(collection) as matcher:
+            matches = matcher.match(
+                Event(
+                    timestamp=datetime.now(tz=timezone.utc),
+                    logsource=EventLogSource(category="test", product="test"),
+                    data={"field": "value"},
+                )
+            )
+        assert len(matches) == 1
+        assert matches[0].evidence is None
+
+
+class TestCorrelationRetraction:
+    """Retracting an event produces a responsibility discharge checklist."""
+
+    _COUNT_YAML = """
+title: Base Rule
+name: base_rule
+status: test
+logsource:
+    category: test
+    product: test
+detection:
+    selection:
+        field: "trigger"
+    condition: selection
+---
+title: Count Correlation
+name: count_corr
+status: test
+correlation:
+    type: event_count
+    rules:
+        - base_rule
+    group-by:
+        - src_ip
+    timespan: 5m
+    condition:
+        gte: 3
+"""
+
+    def _event(self, ts: datetime, src_ip: str, shift: str) -> Event:
+        return Event(
+            timestamp=ts,
+            logsource=EventLogSource(category="test", product="test"),
+            data={"field": "trigger", "src_ip": src_ip},
+            shift=shift,
+        )
+
+    def test_retraction_revokes_correlation_and_preserves_evidence(self):
+        """Alert fires across two shifts; removing the prior-shift event revokes it."""
+        collection = SigmaCollection.from_yaml(self._COUNT_YAML)
+        base = datetime(2026, 11, 28, 1, 0, tzinfo=timezone.utc)
+        with SigmaMatcher(collection) as matcher:
+            prior_shift_event = self._event(base, "1.1.1.1", "night-a")
+            current_events = [
+                self._event(base + timedelta(minutes=1), "1.1.1.1", "night-b"),
+                self._event(base + timedelta(minutes=2), "1.1.1.1", "night-b"),
+            ]
+            fired = None
+            for event in [prior_shift_event, *current_events]:
+                matches = matcher.match(event)
+                fired = next((m for m in matches if m.rule.name == "count_corr"), fired)
+            assert fired is not None
+            firing_evidence = list(fired.evidence)
+
+            results = matcher.retract_event(prior_shift_event)
+
+        assert len(results) == 1
+        result = results[0]
+        assert isinstance(result, RetractionResult)
+        assert result.retracted_event is prior_shift_event
+        assert result.active == []
+        assert len(result.revoked) == 1
+        revoked = result.revoked[0]
+        assert revoked.rule.name == "count_corr"
+        # The discharge checklist keeps the original triggering evidence snapshot.
+        assert revoked.evidence == firing_evidence
+        assert [item.shift for item in revoked.evidence] == [
+            "night-a",
+            "night-b",
+            "night-b",
+        ]
+
+    def test_retraction_keeps_current_shift_responsibility_when_condition_holds(self):
+        """With gte 2, dropping one of three events leaves the current-shift match active."""
+        yaml_str = self._COUNT_YAML.replace("gte: 3", "gte: 2")
+        collection = SigmaCollection.from_yaml(yaml_str)
+        base = datetime(2026, 11, 28, 1, 0, tzinfo=timezone.utc)
+        with SigmaMatcher(collection) as matcher:
+            prior_shift_event = self._event(base, "2.2.2.2", "night-a")
+            current_events = [
+                self._event(base + timedelta(minutes=1), "2.2.2.2", "night-b"),
+                self._event(base + timedelta(minutes=2), "2.2.2.2", "night-b"),
+            ]
+            for event in [prior_shift_event, *current_events]:
+                matcher.match(event)
+
+            results = matcher.retract_event(prior_shift_event)
+
+        assert len(results) == 1
+        result = results[0]
+        assert result.revoked == []
+        assert len(result.active) == 1
+        active = result.active[0]
+        assert active.rule.name == "count_corr"
+        assert len(active.events) == 2
+        assert all(event.shift == "night-b" for event in active.events)
+        assert [item.shift for item in active.evidence] == ["night-b", "night-b"]
+
+    def test_retraction_isolates_group_keys(self):
+        """Retracting one group's event leaves another fired group's responsibility intact."""
+        yaml_str = self._COUNT_YAML.replace("gte: 3", "gte: 2")
+        collection = SigmaCollection.from_yaml(yaml_str)
+        base = datetime(2026, 11, 28, 1, 0, tzinfo=timezone.utc)
+        with SigmaMatcher(collection) as matcher:
+            group_a = [
+                self._event(base, "10.0.0.1", "night-a"),
+                self._event(base + timedelta(minutes=1), "10.0.0.1", "night-b"),
+            ]
+            group_b = [
+                self._event(base, "10.0.0.2", "night-b"),
+                self._event(base + timedelta(minutes=1), "10.0.0.2", "night-b"),
+            ]
+            for event in [*group_a, *group_b]:
+                matcher.match(event)
+
+            results = matcher.retract_event(group_a[0])
+
+        assert len(results) == 1
+        result = results[0]
+        # Group A drops below the threshold, group B remains active.
+        assert [match.group_values for match in result.revoked] == [
+            {"src_ip": "10.0.0.1"}
+        ]
+        assert [match.group_values for match in result.active] == [
+            {"src_ip": "10.0.0.2"}
+        ]
+        assert all(event.data["src_ip"] == "10.0.0.2" for event in result.active[0].events)
+
+    def test_retracting_temporal_contributor_revokes_only_that_correlation(self):
+        collection = SigmaCollection.from_yaml(TestCorrelationEvidence._YAML)
+        ls = EventLogSource(category="test", product="test")
+        t1 = datetime(2026, 11, 28, 1, 0, tzinfo=timezone.utc)
+        with SigmaMatcher(collection) as matcher:
+            login = Event(
+                timestamp=t1,
+                logsource=ls,
+                data={"event": "login", "user": "alice"},
+                shift="night-a",
+            )
+            access = Event(
+                timestamp=t1 + timedelta(minutes=4),
+                logsource=ls,
+                data={"event": "access", "user": "alice"},
+                shift="night-b",
+            )
+            matcher.match(login)
+            matcher.match(access)
+
+            results = matcher.retract_event(login)
+
+        assert len(results) == 1
+        result = results[0]
+        assert result.active == []
+        assert len(result.revoked) == 1
+        assert {item.rule_name for item in result.revoked[0].evidence} == {
+            "login_rule",
+            "access_rule",
+        }
+
+    def test_retraction_of_unknown_event_returns_no_results(self):
+        collection = SigmaCollection.from_yaml(self._COUNT_YAML)
+        base = datetime(2026, 11, 28, 1, 0, tzinfo=timezone.utc)
+        with SigmaMatcher(collection) as matcher:
+            for minute in range(3):
+                matcher.match(self._event(base + timedelta(minutes=minute), "3.3.3.3", "night-a"))
+            unknown = self._event(base, "9.9.9.9", "night-b")
+            assert matcher.retract_event(unknown) == []
+
+    def test_retraction_revokes_extended_not_correlation(self):
+        base_rules = """
+title: Failed Logon
+name: failed_logon
+status: test
+logsource:
+    category: test
+    product: test
+detection:
+    selection:
+        event: "failed_logon"
+    condition: selection
+---
+title: Successful Logon
+name: successful_logon
+status: test
+logsource:
+    category: test
+    product: test
+detection:
+    selection:
+        event: "successful_logon"
+    condition: selection
+"""
+        correlation_yaml = """
+title: NOT Correlation
+name: ext_not_corr
+status: test
+correlation:
+    type: temporal
+    condition: failed_logon and not successful_logon
+    timespan: 5m
+    group-by:
+        - user
+"""
+        collection = SigmaCollection.from_yaml(base_rules + "---\n" + correlation_yaml)
+        ls = EventLogSource(category="test", product="test")
+        now = datetime(2026, 11, 28, 1, 0, tzinfo=timezone.utc)
+        with SigmaMatcher(collection) as matcher:
+            failed = Event(
+                timestamp=now,
+                logsource=ls,
+                data={"event": "failed_logon", "user": "alice"},
+                shift="night-a",
+            )
+            matches = matcher.match(failed)
+            assert any(m.rule.name == "ext_not_corr" for m in matches)
+
+            results = matcher.retract_event(failed)
+
+        assert len(results) == 1
+        assert results[0].active == []
+        assert len(results[0].revoked) == 1
+        assert [item.rule_name for item in results[0].revoked[0].evidence] == [
+            "failed_logon"
+        ]
+
+
+class TestCorrelationEdgeTriggering:
+    """A continuously satisfied correlation only reports on the rising edge."""
+
+    def test_no_duplicate_matches_while_condition_holds(self):
+        yaml_str = TestCorrelationRetraction._COUNT_YAML
+        collection = SigmaCollection.from_yaml(yaml_str)
+        base = datetime(2026, 11, 28, 1, 0, tzinfo=timezone.utc)
+        ls = EventLogSource(category="test", product="test")
+        with SigmaMatcher(collection) as matcher:
+            correlations = []
+            for minute in range(5):
+                matches = matcher.match(
+                    Event(
+                        timestamp=base + timedelta(minutes=minute),
+                        logsource=ls,
+                        data={"field": "trigger", "src_ip": "4.4.4.4"},
+                    )
+                )
+                correlations.extend(
+                    m for m in matches if m.rule.name == "count_corr"
+                )
+        assert len(correlations) == 1
+
+
+class TestEventRevision:
+    """Revisions preserve who confirmed the original event."""
+
+    @staticmethod
+    def _event() -> Event:
+        return Event(
+            timestamp=datetime(2026, 11, 28, 1, 0, tzinfo=timezone.utc),
+            logsource=EventLogSource(),
+            data={"status": "open"},
+            confirmed_by="alice",
+        )
+
+    def test_revision_keeps_original_confirmer(self):
+        event = self._event()
+        returned = event.revise({"status": "updated"}, confirmed_by="bob")
+        assert returned is event
+        assert event.confirmed_by == "bob"
+        assert event.data == {"status": "updated"}
+        assert len(event.revision_history) == 1
+        record = event.revision_history[0]
+        assert isinstance(record, EventRevision)
+        assert record.revision == 1
+        assert record.data == {"status": "open"}
+        assert record.confirmed_by == "alice"
+        assert event.original_confirmer() == "alice"
+
+    def test_multiple_revisions_keep_full_confirmation_trail(self):
+        event = self._event()
+        event.revise({"status": "updated"}, confirmed_by="bob")
+        event.revise({"status": "resolved"})
+        assert event.original_confirmer() == "alice"
+        assert [record.confirmed_by for record in event.revision_history] == ["alice", "bob"]
+        assert [record.revision for record in event.revision_history] == [1, 2]
+        # The latest revision without an explicit confirmer leaves the current one intact.
+        assert event.confirmed_by == "bob"
+
+    def test_event_without_revision_reports_current_confirmer(self):
+        event = self._event()
+        assert event.original_confirmer() == "alice"
+        assert event.revision_history == []

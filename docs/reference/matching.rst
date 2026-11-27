@@ -25,6 +25,11 @@ Event
    :undoc-members:
    :show-inheritance:
 
+.. autoclass:: sigma.matching.EventRevision
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 SigmaMatcher
 ------------
 
@@ -37,6 +42,22 @@ SigmaMatch
 ----------
 
 .. autoclass:: sigma.matching.SigmaMatch
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+CorrelationEvidence
+-------------------
+
+.. autoclass:: sigma.matching.CorrelationEvidence
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+RetractionResult
+----------------
+
+.. autoclass:: sigma.matching.RetractionResult
    :members:
    :undoc-members:
    :show-inheritance:

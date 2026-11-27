@@ -4,6 +4,7 @@ from collections import defaultdict, deque
 from datetime import datetime, timedelta
 from typing import Any
 
+from sigma.matching.event import Event
 from sigma.matching.match import SigmaMatch
 
 
@@ -27,6 +28,35 @@ class SlidingWindowState:
         """Get all matches within the time window for the given group key."""
         self._evict_group(group_key, now)
         return [match for _, match in self._state[group_key]]
+
+    def latest_timestamp(self, group_key: tuple[Any, ...]) -> datetime | None:
+        """Return the newest timestamp tracked for a group, or None if it is empty."""
+        entries = self._state.get(group_key)
+        if entries:
+            return entries[-1][0]
+        return None
+
+    def remove_event(self, event: Event) -> list[tuple[Any, ...]]:
+        """Remove every match carrying ``event`` and return the affected group keys.
+
+        A single event may back more than one stored match (for example when several
+        base rules match it), so all entries referencing it are removed. Empty groups
+        are pruned the same way window eviction prunes them.
+        """
+        affected: list[tuple[Any, ...]] = []
+        for group_key, entries in list(self._state.items()):
+            remaining = deque(
+                (timestamp, match)
+                for timestamp, match in entries
+                if event not in match.events
+            )
+            if len(remaining) != len(entries):
+                affected.append(group_key)
+                if remaining:
+                    self._state[group_key] = remaining
+                else:
+                    del self._state[group_key]
+        return affected
 
     def _evict_group(self, group_key: tuple[Any, ...], now: datetime) -> None:
         """Remove entries outside the time window."""

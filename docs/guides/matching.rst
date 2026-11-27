@@ -243,3 +243,59 @@ Two constructor parameters control memory use for correlation state:
   correlation match to avoid unbounded memory growth on high-cardinality rules.
 * ``max_correlation_state`` (default ``None``, unlimited) — limits the total number of
   entries retained in the sliding window per group key.
+
+Shift Attribution, Evidence and Retraction
+------------------------------------------
+
+Night-time alerts often fire after a handover, with the largest contributing events arriving
+during the previous shift. To support responsibility ("discharge") workflows, the matching
+engine records where each contributing event came from and allows events to be retracted.
+
+Tag an :class:`~sigma.matching.Event` with the shift or receiving window that accepted it via
+the optional ``shift`` field, and record who confirmed it with ``confirmed_by``:
+
+.. code-block:: python
+
+    event = Event(
+        timestamp=datetime.now(timezone.utc),
+        logsource=EventLogSource(product="windows"),
+        data={"EventID": 4625},
+        shift="night-a",
+        confirmed_by="alice",
+    )
+
+When a correlation rule fires, the returned :class:`~sigma.matching.SigmaMatch` carries an
+``evidence`` list (it stays ``None`` for ordinary rule matches, whose structure is unchanged).
+Each :class:`~sigma.matching.CorrelationEvidence` item binds a contributing event to:
+
+* the base rule that produced the contributing match (``rule_name``),
+* the shift that received the underlying event (``shift``),
+* the trigger window of the correlation rule (``window_start``, ``window_end`` and
+  ``timespan_seconds``).
+
+Correlation matches are emitted on the rising edge only: a condition that stays satisfied does
+not produce duplicate matches on every subsequent event.
+
+Call :meth:`~sigma.matching.SigmaMatcher.retract_event` to withdraw an event. Every affected
+correlation rule returns a :class:`~sigma.matching.RetractionResult`:
+
+* ``active`` matches still satisfy their condition and carry rebuilt evidence without the
+  retracted event, so the current shift keeps responsibility for them.
+* ``revoked`` matches no longer hold. They keep the evidence snapshot captured at firing time,
+  providing the discharge checklist.
+
+.. code-block:: python
+
+    for result in matcher.retract_event(stale_event):
+        for match in result.revoked:
+            print(f"Revoked {match.rule.name}, evidence shifts: "
+                  f"{[item.shift for item in match.evidence]}")
+
+Revising Events
+---------------
+
+When an event is corrected after a handover, use :meth:`~sigma.matching.Event.revise`. The
+previously visible state — including whoever originally confirmed it — is appended to
+``revision_history`` as an :class:`~sigma.matching.EventRevision`, so the original confirmer
+remains reachable via :meth:`~sigma.matching.Event.original_confirmer` across any number of
+later revisions.

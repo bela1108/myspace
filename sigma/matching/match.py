@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from sigma.matching.evidence import CorrelationEvidence
     from sigma.matching.event import Event
     from sigma.rule.base import SigmaRuleBase
 
@@ -17,3 +18,5 @@ class SigmaMatch:
     events: list[Event]
     timestamp: datetime
     group_values: dict[str, Any] | None = None
+    # Only populated for correlation matches; ordinary rule matches stay unchanged.
+    evidence: list[CorrelationEvidence] | None = None
