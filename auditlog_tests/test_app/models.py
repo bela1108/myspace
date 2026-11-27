@@ -189,6 +189,49 @@ class OtherModelForReusableThroughModel(models.Model):
     history = AuditlogHistoryField(delete_related=True)
 
 
+class MembershipTargetModel(models.Model):
+    """
+    A target of a many-to-many relation whose display text may not be unique.
+    """
+
+    name = models.CharField(max_length=200)
+
+    def __str__(self):
+        # Deliberately return a non-unique display name so audit records must
+        # rely on the stored primary key to tell targets apart.
+        return "same display name"
+
+
+class MembershipThroughModel(models.Model):
+    """
+    A custom through model carrying the validity period of a relationship edge.
+    """
+
+    member = models.ForeignKey(
+        "MembershipModel", on_delete=models.CASCADE, related_name="+"
+    )
+    target = models.ForeignKey(
+        MembershipTargetModel, on_delete=models.CASCADE, related_name="+"
+    )
+    valid_from = models.DateTimeField(null=True, blank=True)
+    valid_until = models.DateTimeField(null=True, blank=True)
+
+
+class MembershipModel(models.Model):
+    """
+    A model with a many-to-many relation whose edges have a validity period.
+    """
+
+    name = models.CharField(max_length=200)
+    members = models.ManyToManyField(
+        MembershipTargetModel,
+        through=MembershipThroughModel,
+        related_name="memberships",
+    )
+
+    history = AuditlogHistoryField(delete_related=True)
+
+
 @auditlog.register(include_fields=["label"])
 class SimpleIncludeModel(models.Model):
     """
@@ -494,6 +537,7 @@ auditlog.register(ManyRelatedModel.recursive.through)
 m2m_only_auditlog.register(ManyRelatedModel, m2m_fields={"related"})
 m2m_only_auditlog.register(ModelForReusableThroughModel, m2m_fields={"related"})
 m2m_only_auditlog.register(OtherModelForReusableThroughModel, m2m_fields={"related"})
+m2m_only_auditlog.register(MembershipModel, m2m_fields={"members"})
 m2m_only_auditlog.register(SecretM2MModel, m2m_fields={"m2m_related"})
 m2m_only_auditlog.register(SwappedManagerModel, m2m_fields={"m2m_related"})
 auditlog.register(SimpleExcludeModel, exclude_fields=["text"])

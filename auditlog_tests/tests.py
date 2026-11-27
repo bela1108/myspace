@@ -39,6 +39,9 @@ from test_app.models import (
     CustomMaskModel,
     DateTimeFieldModel,
     JSONModel,
+    MembershipModel,
+    MembershipTargetModel,
+    MembershipThroughModel,
     ManyRelatedModel,
     ManyRelatedOtherModel,
     ModelForReusableThroughModel,
@@ -498,16 +501,21 @@ class ManyRelatedModelTest(TestCase):
     def test_changes(self):
         self.obj.related.add(self.related)
         log_entry = self.obj.history.first()
+        change = log_entry.changes["related"]
         self.assertEqual(
-            log_entry.changes,
             {
-                "related": {
-                    "type": "m2m",
-                    "operation": "add",
-                    "objects": [smart_str(self.related)],
-                }
+                "type": change["type"],
+                "operation": change["operation"],
+                "objects": change["objects"],
+            },
+            {
+                "type": "m2m",
+                "operation": "add",
+                "objects": [smart_str(self.related)],
             },
         )
+        self.assertEqual(change["object_ids"], [self.related.pk])
+        self.assertEqual(change["direction"], "forward")
 
     def test_changes_str(self):
         self.obj.related.add(self.related)
@@ -520,14 +528,12 @@ class ManyRelatedModelTest(TestCase):
         self.obj.related.add(self.related)
         log_entry = self.obj.history.first()
         self.assertEqual(
-            log_entry.changes,
-            {
-                "related": {
-                    "type": "m2m",
-                    "operation": "add",
-                    "objects": [smart_str(self.related)],
-                }
-            },
+            log_entry.changes["related"]["objects"],
+            [smart_str(self.related)],
+        )
+        self.assertEqual(
+            log_entry.changes["related"]["object_ids"],
+            [self.related.pk],
         )
         # Add same related obj again.
         self.obj.related.add(self.related)
@@ -547,6 +553,191 @@ class ManyRelatedModelTest(TestCase):
         self.obj_reusable.related.add(self.obj_reusable_related)
         entries = self.obj_reusable.history.all()
         self.assertEqual(len(entries), 1)
+
+
+class ThroughRelationEvidenceTest(TestCase):
+    """
+    Audit records keep direction-aware evidence for custom through relations.
+    """
+
+    def setUp(self):
+        self.member = MembershipModel.objects.create(name="member")
+        # Both targets deliberately render to the same display text.
+        self.target_one = MembershipTargetModel.objects.create(name="one")
+        self.target_two = MembershipTargetModel.objects.create(name="two")
+        self.valid_from = datetime.datetime(2026, 1, 1, 9, 0, 0, tzinfo=timezone.utc)
+        self.valid_until = datetime.datetime(
+            2026, 12, 31, 23, 59, 59, tzinfo=timezone.utc
+        )
+        self.period = {
+            "valid_from": self.valid_from,
+            "valid_until": self.valid_until,
+        }
+
+    def _add_edge(self, target, **through_defaults):
+        self.member.members.add(target, through_defaults=through_defaults)
+
+    def test_add_records_display_names_and_identity_separately(self):
+        self._add_edge(self.target_one, **self.period)
+
+        log_entry = self.member.history.first()
+        change = log_entry.changes["members"]
+        self.assertEqual(change["objects"], [smart_str(self.target_one)])
+        self.assertEqual(change["object_ids"], [self.target_one.pk])
+        self.assertEqual(change["direction"], "forward")
+
+        edge = change["edges"][0]
+        self.assertEqual(edge["through_model"], "test_app.MembershipThroughModel")
+        self.assertEqual(edge["source_model"], "test_app.MembershipModel")
+        self.assertEqual(edge["source_pk"], self.member.pk)
+        self.assertEqual(edge["target_model"], "test_app.MembershipTargetModel")
+        self.assertEqual(edge["target_pk"], self.target_one.pk)
+        self.assertEqual(edge["direction"], "forward")
+        self.assertEqual(
+            edge["fields"],
+            {
+                "valid_from": "2026-01-01T09:00:00Z",
+                "valid_until": "2026-12-31T23:59:59Z",
+            },
+        )
+
+    def test_targets_with_identical_display_text_remain_distinguishable(self):
+        self.assertEqual(smart_str(self.target_one), smart_str(self.target_two))
+
+        self._add_edge(self.target_one, **self.period)
+        first_entry = self.member.history.first()
+
+        self._add_edge(self.target_two)
+        second_entry = self.member.history.first()
+
+        self.assertNotEqual(first_entry.pk, second_entry.pk)
+        self.assertEqual(
+            first_entry.changes["members"]["objects"],
+            second_entry.changes["members"]["objects"],
+        )
+        self.assertEqual(
+            first_entry.changes["members"]["object_ids"], [self.target_one.pk]
+        )
+        self.assertEqual(
+            second_entry.changes["members"]["object_ids"], [self.target_two.pk]
+        )
+        self.assertEqual(
+            first_entry.changes["members"]["edges"][0]["target_pk"],
+            self.target_one.pk,
+        )
+        self.assertEqual(
+            second_entry.changes["members"]["edges"][0]["target_pk"],
+            self.target_two.pk,
+        )
+
+    def test_forward_and_reverse_point_to_the_same_edge(self):
+        self._add_edge(self.target_one, **self.period)
+        forward_entry = self.member.history.first()
+        forward_edge = forward_entry.changes["members"]["edges"][0]
+
+        self.member.members.remove(self.target_one)
+        self.target_one.memberships.add(
+            self.member, through_defaults=self.period
+        )
+        reverse_log_entry = LogEntry.objects.get_for_object(self.target_one).first()
+        self.assertEqual(reverse_log_entry.object_pk, str(self.target_one.pk))
+        reverse_change = reverse_log_entry.changes["members"]
+        reverse_edge = reverse_change["edges"][0]
+
+        self.assertEqual(reverse_change["direction"], "reverse")
+        self.assertEqual(reverse_change["object_ids"], [self.member.pk])
+        self.assertEqual(reverse_change["objects"], [smart_str(self.member)])
+        self.assertEqual(reverse_edge["direction"], "reverse")
+        self.assertEqual(reverse_edge["through_model"], forward_edge["through_model"])
+        self.assertEqual(reverse_edge["source_pk"], forward_edge["target_pk"])
+        self.assertEqual(reverse_edge["target_pk"], forward_edge["source_pk"])
+        self.assertEqual(reverse_edge["fields"], forward_edge["fields"])
+
+    def test_clear_keeps_validity_period_of_removed_edges(self):
+        self._add_edge(self.target_one, **self.period)
+        self._add_edge(self.target_two)
+        self.member.members.clear()
+
+        self.assertFalse(MembershipThroughModel.objects.exists())
+        log_entry = self.member.history.first()
+        change = log_entry.changes["members"]
+        self.assertEqual(change["operation"], "delete")
+        self.assertEqual(
+            change["object_ids"],
+            [self.target_one.pk, self.target_two.pk],
+        )
+        self.assertEqual(len(change["edges"]), 2)
+        edge = next(
+            edge
+            for edge in change["edges"]
+            if edge["target_pk"] == self.target_one.pk
+        )
+        self.assertEqual(
+            edge["fields"],
+            {
+                "valid_from": "2026-01-01T09:00:00Z",
+                "valid_until": "2026-12-31T23:59:59Z",
+            },
+        )
+
+    def test_clear_on_empty_relation_creates_no_log_entry(self):
+        before = LogEntry.objects.count()
+        self.member.members.clear()
+        self.assertEqual(LogEntry.objects.count(), before)
+
+    def test_reverse_clear_keeps_validity_period_of_removed_edge(self):
+        self._add_edge(self.target_one, **self.period)
+        self.target_one.memberships.clear()
+
+        self.assertFalse(MembershipThroughModel.objects.exists())
+        log_entry = LogEntry.objects.get_for_object(self.target_one).first()
+        change = log_entry.changes["members"]
+        self.assertEqual(change["operation"], "delete")
+        self.assertEqual(change["direction"], "reverse")
+        self.assertEqual(change["object_ids"], [self.member.pk])
+        edge = change["edges"][0]
+        self.assertEqual(edge["direction"], "reverse")
+        self.assertEqual(edge["source_pk"], self.target_one.pk)
+        self.assertEqual(edge["target_pk"], self.member.pk)
+        self.assertEqual(
+            edge["fields"],
+            {
+                "valid_from": "2026-01-01T09:00:00Z",
+                "valid_until": "2026-12-31T23:59:59Z",
+            },
+        )
+
+    def test_remove_records_edge_evidence_before_deletion(self):
+        self._add_edge(self.target_one, **self.period)
+        self.member.members.remove(self.target_one)
+
+        self.assertFalse(MembershipThroughModel.objects.exists())
+        log_entry = self.member.history.first()
+        change = log_entry.changes["members"]
+        self.assertEqual(change["operation"], "delete")
+        self.assertEqual(change["object_ids"], [self.target_one.pk])
+        self.assertEqual(
+            change["edges"][0]["fields"]["valid_until"], "2026-12-31T23:59:59Z"
+        )
+
+    def test_legacy_entry_with_only_display_names_still_renders(self):
+        log_entry = LogEntry.objects.log_create(
+            self.member,
+            action=LogEntry.Action.UPDATE,
+            changes={
+                "members": {
+                    "type": "m2m",
+                    "operation": "add",
+                    "objects": ["same display name"],
+                }
+            },
+        )
+        self.assertEqual(
+            log_entry.changes_str, "members: add ['same display name']"
+        )
+        self.assertEqual(
+            log_entry.changes_str, "members: add ['same display name']"
+        )
 
 
 class MiddlewareTest(TestCase):
@@ -1399,7 +1590,7 @@ class RegisterModelSettingsTest(TestCase):
 
         self.assertTrue(self.test_auditlog.contains(SimpleExcludeModel))
         self.assertTrue(self.test_auditlog.contains(ChoicesFieldModel))
-        self.assertEqual(len(self.test_auditlog.get_models()), 36)
+        self.assertEqual(len(self.test_auditlog.get_models()), 39)
 
     def test_register_models_register_model_with_attrs(self):
         self.test_auditlog._register_models(
@@ -3144,14 +3335,12 @@ class BaseManagerSettingTest(TestCase):
 
         log_entry = LogEntry.objects.get_for_object(m2m_two).first()
         self.assertEqual(
-            log_entry.changes,
-            {
-                "m2m_related": {
-                    "type": "m2m",
-                    "operation": "add",
-                    "objects": [smart_str(obj_two)],
-                }
-            },
+            log_entry.changes["m2m_related"]["objects"],
+            [smart_str(obj_two)],
+        )
+        self.assertEqual(
+            log_entry.changes["m2m_related"]["object_ids"],
+            [obj_two.pk],
         )
         self.assertEqual(
             log_entry.changes_str, f"m2m_related: add {[smart_str(obj_two)]}"

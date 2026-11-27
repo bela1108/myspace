@@ -2,6 +2,10 @@
 
 ## Next Release
 
+#### Improvements
+
+- Store direction-aware relationship evidence for many-to-many changes: related object primary keys, the through row identity, the operation direction, and a snapshot of user-defined through columns (e.g. validity periods). Forward and reverse operations resolve to the same edge, and `remove`/`clear` snapshot through rows before deletion so removed edges remain traceable. The legacy `objects` display list is preserved for backwards compatibility.
+
 ## 3.4.2 (2026-11-08)
 
 #### Improvements

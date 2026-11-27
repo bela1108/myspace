@@ -179,6 +179,41 @@ This functionality is based on the ``m2m_changed`` signal sent by the ``through`
 
 Note that when the user changes multiple many-to-many fields on the same object through the admin, both adding and removing some objects from each, this code will generate multiple log entries: each log entry will represent a single operation (add or delete) of a single field, e.g. if you both add and delete values from 2 fields on the same form in the same request, you'll get 4 log entries.
 
+In addition to the textual ``objects`` list, each many-to-many change stores identity and direction-aware relationship evidence so the exact edge can be reconstructed even when related objects share the same display text:
+
+- ``object_ids``: primary keys of the related objects.
+- ``direction``: ``forward`` when the operation was performed on the model that defines the field, ``reverse`` when it was performed from the related side. Forward and reverse operations on the same edge reference the same through row.
+- ``edges``: one entry per affected through row containing the through model and primary key, the source and target model/primary key (interpreted according to ``direction``), and a ``fields`` snapshot of the user-defined through columns, such as a validity period. Columns captured on ``remove`` and ``clear`` are snapshotted before the through rows are deleted, so the validity period of a removed edge remains available afterwards.
+
+.. code-block:: json
+
+    {
+        "members": {
+            "type": "m2m",
+            "operation": "add",
+            "objects": ["same display name"],
+            "object_ids": [42],
+            "direction": "forward",
+            "edges": [
+                {
+                    "through_model": "app.MembershipThrough",
+                    "through_pk": 7,
+                    "source_model": "app.Membership",
+                    "source_pk": 3,
+                    "target_model": "app.Target",
+                    "target_pk": 42,
+                    "direction": "forward",
+                    "fields": {
+                        "valid_from": "2026-01-01T09:00:00Z",
+                        "valid_until": "2026-12-31T23:59:59Z"
+                    }
+                }
+            ]
+        }
+    }
+
+Older entries that only contain ``objects`` remain readable and do not need to be migrated.
+
 .. versionadded:: 2.1.0
 
 **Serialized Data**
@@ -675,4 +710,3 @@ The mixin provides the following configuration options:
 - ``show_auditlog_history_link``: Set to ``True`` to display the "View" link in the admin changelist
 - ``auditlog_history_template``: Template to use for rendering the history page (default: ``auditlog/object_history.html``)
 - ``auditlog_history_per_page``: Number of log entries to display per page (default: 10)
-

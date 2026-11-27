@@ -80,7 +80,14 @@ class LogEntryManager(models.Manager):
         return None
 
     def log_m2m_changes(
-        self, changed_queryset, instance, operation, field_name, **kwargs
+        self,
+        changed_queryset,
+        instance,
+        operation,
+        field_name,
+        edges=None,
+        reverse=False,
+        **kwargs,
     ):
         """Create a new "changed" log entry from m2m record.
 
@@ -92,6 +99,10 @@ class LogEntryManager(models.Manager):
         :type action: str
         :param field_name: The name of the changed m2m field.
         :type field_name: str
+        :param edges: Direction-aware evidence for each affected through row.
+        :type edges: list[dict] or None
+        :param reverse: Whether the change was triggered from the reverse side.
+        :type reverse: bool
         :param kwargs: Field overrides for the :py:class:`LogEntry` object.
         :return: The new log entry or `None` if there were no changes.
         :rtype: LogEntry
@@ -118,13 +129,22 @@ class LogEntryManager(models.Manager):
             if callable(get_additional_data):
                 kwargs.setdefault("additional_data", get_additional_data())
 
-            objects = [smart_str(instance) for instance in changed_queryset]
+            objects = [smart_str(item) for item in changed_queryset]
+            object_ids = [item.pk for item in changed_queryset]
+            change = {
+                "type": "m2m",
+                "operation": operation,
+                # Kept for backwards compatibility with entries that only
+                # stored display names; use ``object_ids``/``edges`` to tell
+                # apart objects sharing the same display text.
+                "objects": objects,
+                "object_ids": object_ids,
+                "direction": "reverse" if reverse else "forward",
+            }
+            if edges is not None:
+                change["edges"] = edges
             kwargs["changes"] = {
-                field_name: {
-                    "type": "m2m",
-                    "operation": operation,
-                    "objects": objects,
-                }
+                field_name: change
             }
 
             kwargs.setdefault("cid", get_cid())
