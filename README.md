@@ -26,7 +26,19 @@ Once in the shell, all commands are documented. Use the `?` command to see all o
 
 # Advanced usage
 After parsing the minidump file, you can use the MinidumpFileReader and MinidumpBufferedReader objects to perform various searches/reads in the dumped process' address space.  
-Those objects will be able to read and search the VA of the dumped process and have a notion on integer sizes based on the CPU arch.
+Those objects will be able to read and search the VA of the dumped process and have a notion on integer sizes based on the CPU arch.  
+
+# Stack fragment cross-check (no stack bytes)
+When two investigators are only allowed to exchange approved stack fragment coordinates, the minidump.stackindex module builds a byte-free index per dump and reconciles two indexes.
+
+- Coordinates identify a call site by thread id plus instruction pointer; captured stack ranges are attached as evidence but are not part of the identity.
+- Every entry records where its evidence comes from: thread id, instruction pointer and stack range point at ThreadListStream, while image ownership and version point at ModuleListStream. No stack content is ever read into the index.
+- The shared permission list (JSON) is enforced first: coordinates missing from the list never appear in the index or in the reconciliation output and are reported separately as suppressed.
+- reconcile() returns an independent intersection plus the unverified fragments on each side. Different collection boundaries are flagged collection_boundary and differing image builds are flagged sample_version, so a match is kept even when the two samples diverge.
+
+The regression suite builds two synthetic read-only dumps in memory and exercises the shared permission list, including revoking one permission and asserting that the coordinate disappears from every output section. Run it with:
+
+python -m unittest tests.test_stackindex -v
 
 # Creating minidump file
 The ```createminidump.py``` script in the utils folder uses the Windows API to create minidump files. This script can also dump processes running on a different user context by enabling ```SeDebugPrivilege```.  
