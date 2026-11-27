@@ -41,3 +41,45 @@ documented [in-toto#663](https://github.com/in-toto/in-toto/issues/663).
 ```{eval-rst}
 .. autofunction:: in_toto.verifylib.in_toto_verify
 ```
+
+### Offline Rework Verification
+
+When an intermediate product is reworked after downstream spot-checks were
+already performed on the original product, the following helpers decide from
+signed link metadata which evidence still carries over and which
+responsibility is reactivated.  The decision combines material identity, the
+rework completion time and the replacement types authorized by each
+inspection.
+
+```{eval-rst}
+.. autoclass:: in_toto.reworklib.ArtifactChange
+   :members:
+```
+
+```{eval-rst}
+.. autoclass:: in_toto.reworklib.ReplacementType
+   :members:
+```
+
+```{eval-rst}
+.. autoclass:: in_toto.reworklib.InspectionStatus
+   :members:
+```
+
+```{eval-rst}
+.. autoclass:: in_toto.reworklib.InspectionRecord
+   :members:
+```
+
+```{eval-rst}
+.. autoclass:: in_toto.reworklib.ReworkVerificationReport
+   :members:
+```
+
+```{eval-rst}
+.. autofunction:: in_toto.reworklib.classify_artifacts
+```
+
+```{eval-rst}
+.. autofunction:: in_toto.reworklib.verify_rework
+```
