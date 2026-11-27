@@ -102,6 +102,24 @@ To include unvalidated plugins (which may return incomplete or inaccurate data):
 
 Unvalidated plugins will log a warning when executed. Use them at your own discretion.
 
+Distinguishing empty results from unchecked or partial acquisitions:
+
+.. code:: python
+
+    # Adds a reserved _coverage section without changing plugin entries:
+    result = run_relevant_plugins(reg, as_json=True, include_coverage=True)
+    result["_coverage"]["plugins"]["typed_paths"]["status"]
+    # "no_results", "partial_scope", "not_checked", "results", or "error"
+
+.. code:: bash
+
+    regipy-plugins-run /path/to/hive -o output.json --include-coverage
+
+``no_results`` means the plugin ran over the full hive and found nothing (a
+conclusive absence). ``partial_scope`` means only the recorded acquisition scope
+was checked, and ``not_checked`` means the plugin had no precondition to run
+(for example an unrecognized hive type).
+
 Available Plugins
 ^^^^^^^^^^^^^^^^^
 

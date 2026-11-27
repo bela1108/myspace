@@ -5,6 +5,8 @@ from tempfile import mktemp
 
 import pytest
 
+from regipy_tests.synthetic import make_empty_typed_paths_backups
+
 
 def extract_lzma(path):
     tempfile_path = mktemp()
@@ -184,3 +186,9 @@ def system_hive_with_filetime(test_data_dir):
     temp_path = extract_lzma(os.path.join(test_data_dir, "SYSTEM_WIN_10_1709.xz"))
     yield temp_path
     os.remove(temp_path)
+
+
+@pytest.fixture()
+def synthetic_empty_typed_paths_backups(test_data_dir, tmp_path):
+    """Two byte-identical empty acquisitions (different scope) plus an unrecognized hive."""
+    return make_empty_typed_paths_backups(Path(test_data_dir), tmp_path)

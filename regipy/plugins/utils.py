@@ -3,6 +3,12 @@ import logging
 from typing import Any, Callable, Union
 
 from regipy import NKRecord
+from regipy.plugins.coverage import (
+    REASON_UNVALIDATED_PLUGIN,
+    PluginCoverage,
+    assess_plugin_coverage,
+    build_coverage_report,
+)
 from regipy.plugins.plugin import PLUGINS
 from regipy.plugins.validation_status import (
     is_plugin_validated,
@@ -91,6 +97,7 @@ def run_relevant_plugins(
     plugins=None,
     include_unvalidated=False,
     continue_on_error=False,
+    include_coverage=False,
 ):
     """
     Execute the relevant plugins on the hive
@@ -106,11 +113,17 @@ def run_relevant_plugins(
                               {"error": "<message>"} and the run continues. If False (default),
                               the original behavior applies: ModuleNotFoundError is logged and
                               the plugin is skipped, and any other exception propagates.
+    :param include_coverage: Whether to add a reserved ``_coverage`` key describing, per plugin,
+                             whether it was checked, whether its result is conclusive, and the
+                             acquisition scope. Defaults to False so the original result shape is
+                             preserved exactly.
     :return: The result, as dict
     """
     plugin_results = {}
+    plugin_coverage: dict[str, PluginCoverage] = {}
     for plugin_class in PLUGINS:
         plugin = plugin_class(registry_hive, as_json=as_json)
+        plugin_name = plugin.NAME or plugin.__class__.__name__
 
         # If the list of plugins is defined, but the plugin is not in the list skip it.
         if plugins and plugin.NAME not in plugins:
@@ -120,24 +133,45 @@ def run_relevant_plugins(
         if not is_plugin_validated(plugin.NAME):
             if not include_unvalidated:
                 logger.debug(f"Skipping unvalidated plugin: {plugin.NAME}")
+                if include_coverage:
+                    plugin.skip_reason = (
+                        f"Plugin '{plugin.NAME}' has no validation test case and was skipped; "
+                        "pass include_unvalidated=True to run it."
+                    )
+                    plugin.skip_reason_code = REASON_UNVALIDATED_PLUGIN
+                    plugin_coverage[plugin_name] = assess_plugin_coverage(plugin, executed=False)
                 continue
             # Always warn when running unvalidated plugins
             warn_unvalidated_plugin(plugin.NAME)
 
         if plugin.can_run():
             try:
+                plugin.executed = True
                 plugin.run()
                 plugin_results[plugin.NAME] = plugin.entries
+                if include_coverage:
+                    plugin_coverage[plugin_name] = assess_plugin_coverage(plugin, executed=True)
             except ModuleNotFoundError as e:
+                plugin.error = e
                 logger.error(f"Plugin {plugin.NAME} has missing dependencies")
+                if include_coverage:
+                    plugin_coverage[plugin_name] = assess_plugin_coverage(plugin, executed=True, error=e)
                 if continue_on_error:
                     plugin_results[plugin.NAME] = {"error": str(e)}
             except Exception as e:
+                plugin.error = e
                 # Always log the failure for visibility, regardless of continue_on_error setting
                 logger.exception(f"Plugin {plugin.NAME} failed: {e}")
+                if include_coverage:
+                    plugin_coverage[plugin_name] = assess_plugin_coverage(plugin, executed=True, error=e)
                 if not continue_on_error:
                     raise
                 # A single failing plugin must not abort the whole run -
                 # record the failure and continue to the next plugin.
                 plugin_results[plugin.NAME] = {"error": str(e)}
+        elif include_coverage:
+            plugin_coverage[plugin_name] = assess_plugin_coverage(plugin, executed=False)
+
+    if include_coverage:
+        plugin_results["_coverage"] = build_coverage_report(registry_hive, plugin_coverage)
     return plugin_results

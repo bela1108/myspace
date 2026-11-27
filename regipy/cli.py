@@ -238,7 +238,26 @@ def registry_dump(
     help="Continue running the remaining plugins when a plugin fails, "
     'recording the failure in the result as {"error": "<message>"} instead of aborting.',
 )
-def run_plugins(hive_path, output_path, plugins, hive_type, partial_hive_path, verbose, include_unvalidated, continue_on_error):
+@click.option(
+    "--include-coverage",
+    "--coverage",
+    "include_coverage",
+    is_flag=True,
+    default=False,
+    help="Add a reserved _coverage section that distinguishes checked-empty results, "
+    "unchecked plugins (no precondition), and partial acquisition scopes.",
+)
+def run_plugins(
+    hive_path,
+    output_path,
+    plugins,
+    hive_type,
+    partial_hive_path,
+    verbose,
+    include_unvalidated,
+    continue_on_error,
+    include_coverage,
+):
     _setup_logging(verbose=verbose)
     registry_hive = RegistryHive(hive_path, hive_type=hive_type, partial_hive_path=partial_hive_path)
     click.secho(f"Loaded {len(PLUGINS)} plugins", fg="white")
@@ -271,6 +290,7 @@ def run_plugins(hive_path, output_path, plugins, hive_type, partial_hive_path, v
         plugins=plugins,
         include_unvalidated=include_unvalidated,
         continue_on_error=continue_on_error,
+        include_coverage=include_coverage,
     )
 
     # If output path was set, dump results to disk
@@ -283,10 +303,15 @@ def run_plugins(hive_path, output_path, plugins, hive_type, partial_hive_path, v
             return
     else:
         print(json.dumps(plugin_results, indent=4))
+    matched_plugin_count = len(plugin_results) - (1 if include_coverage else 0)
     click.secho(
-        f"Finished: {len(plugin_results)}/{len(PLUGINS)} plugins matched the hive type",
+        f"Finished: {matched_plugin_count}/{len(PLUGINS)} plugins matched the hive type",
         fg="green",
     )
+    if include_coverage:
+        summary = plugin_results["_coverage"]["summary"]
+        counts = ", ".join(f"{status}={count}" for status, count in summary.items())
+        click.secho(f"Coverage: {counts}", fg="green")
 
 
 @click.command()
