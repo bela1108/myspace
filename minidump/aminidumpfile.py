@@ -32,12 +32,35 @@ class AsyncFile:
 	def tell(self):
 		return self.fhandle.tell()
 
+class AsyncBytesIO:
+	"""
+	Async wrapper around io.BytesIO, exposes the same async read/seek
+	interface as AsyncFile so in-memory buffers can be parsed via the
+	async entry points.
+	"""
+	def __init__(self, data):
+		self.buff = io.BytesIO(data)
+
+	async def read(self, n = -1):
+		return self.buff.read(n)
+
+	async def seek(self, n, beg = 0):
+		return self.buff.seek(n, beg)
+
+	def tell(self):
+		return self.buff.tell()
+
 class AMinidumpFile:
 	def __init__(self):
 		self.filename = None
 		self.file_handle = None
 		self.header = None
 		self.directories = []
+
+		# Minimal structural evidence of streams whose type is not recognized.
+		# Each directory entry is kept as a separate element, even when
+		# multiple entries share the same stream type value.
+		self.unknown_streams = []
 
 		self.threads_ex = None
 		self.threads = None
@@ -76,13 +99,13 @@ class AMinidumpFile:
 
 	@staticmethod
 	async def parse_bytes(data):
-		return await AMinidumpFile.parse_buff(io.BytesIO(data))
+		return await AMinidumpFile.parse_buff(AsyncBytesIO(data))
 
 	@staticmethod
-	def parse_buff(buffer):
+	async def parse_buff(buffer):
 		mf = AMinidumpFile()
 		mf.file_handle = buffer
-		mf._parse()
+		await mf._parse()
 		return mf
 
 	def get_reader(self):
@@ -102,9 +125,9 @@ class AMinidumpFile:
 				self.directories.append(minidump_dir)
 			else:
 				await self.file_handle.seek(self.header.StreamDirectoryRva + i * 12, 0 )
-				t = await self.file_handle.read(4)
-				user_stream_type_value = int.from_bytes(t, byteorder = 'little', signed = False)
-				logging.debug('Found Unknown UserStream directory Type: %x' % (user_stream_type_value))
+				unknown_stream = await MinidumpUnknownStream.aparse(self.file_handle)
+				self.unknown_streams.append(unknown_stream)
+				logging.debug('Found Unknown UserStream directory Type: %x' % (unknown_stream.stream_type_value))
 
 	async def __parse_directories(self):
 

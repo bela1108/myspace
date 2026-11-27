@@ -28,6 +28,11 @@ class MinidumpFile:
 		self.header:MinidumpHeader = None
 		self.directories: List[MINIDUMP_DIRECTORY] = []
 
+		# Minimal structural evidence of streams whose type is not recognized.
+		# Each directory entry is kept as a separate element, even when
+		# multiple entries share the same stream type value.
+		self.unknown_streams: List[MinidumpUnknownStream] = []
+
 		self.threads_ex:MinidumpThreadExList = None
 		self.threads:MinidumpThreadList = None
 		self.modules:MinidumpModuleList = None
@@ -97,8 +102,9 @@ class MinidumpFile:
 				self.directories.append(minidump_dir)
 			else:
 				self.file_handle.seek(self.header.StreamDirectoryRva + i * 12, 0 )
-				user_stream_type_value = MINIDUMP_DIRECTORY.get_stream_type_value(self.file_handle)
-				logging.debug('Found Unknown UserStream directory Type: %x' % (user_stream_type_value))
+				unknown_stream = MinidumpUnknownStream.parse(self.file_handle)
+				self.unknown_streams.append(unknown_stream)
+				logging.debug('Found Unknown UserStream directory Type: %x' % (unknown_stream.stream_type_value))
 
 	def __parse_directories(self):
 

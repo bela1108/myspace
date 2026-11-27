@@ -19,6 +19,7 @@ from .ThreadExListStream import *
 from .ThreadInfoListStream import *
 from .ThreadListStream import *
 from .TokenStream import *
+from .UnknownStream import *
 from .UnloadedModuleListStream import *
 
 
@@ -44,6 +45,7 @@ __ThreadExListStream__ = ['MinidumpThreadExList', 'MINIDUMP_THREAD_EX', 'MINIDUM
 __ThreadInfoListStream__ = ['MinidumpThreadInfoList','MINIDUMP_THREAD_INFO_LIST', 'MINIDUMP_THREAD_INFO', 'DumpFlags']
 __ThreadListStream__ = ['MinidumpThreadList','MINIDUMP_THREAD', 'MINIDUMP_THREAD_LIST']
 __TokenStream__ = []
+__UnknownStream__ = ['MinidumpUnknownStream']
 __UnloadedModuleListStream__ = ['MinidumpUnloadedModuleList', 'MINIDUMP_UNLOADED_MODULE', 'MINIDUMP_UNLOADED_MODULE_LIST']
 
-__all__ = __CommentStreamA__ + __CommentStreamW__ + __ContextStream__ + __ExceptionStream__ + __FunctionTableStream__ + __HandleDataStream__ + __HandleOperationListStream__ + __JavaScriptDataStream__ + __LastReservedStream__ + __Memory64ListStream__ + __MemoryInfoListStream__ + __MemoryListStream__ + __MiscInfoStream__ + __ModuleListStream__ + __ProcessVmCountersStream__ + __SystemInfoStream__ + __SystemMemoryInfoStream__ + __ThreadExListStream__ + __ThreadInfoListStream__ + __ThreadListStream__ + __TokenStream__ + __UnloadedModuleListStream__
+__all__ = __CommentStreamA__ + __CommentStreamW__ + __ContextStream__ + __ExceptionStream__ + __FunctionTableStream__ + __HandleDataStream__ + __HandleOperationListStream__ + __JavaScriptDataStream__ + __LastReservedStream__ + __Memory64ListStream__ + __MemoryInfoListStream__ + __MemoryListStream__ + __MiscInfoStream__ + __ModuleListStream__ + __ProcessVmCountersStream__ + __SystemInfoStream__ + __SystemMemoryInfoStream__ + __ThreadExListStream__ + __ThreadInfoListStream__ + __ThreadListStream__ + __TokenStream__ + __UnknownStream__ + __UnloadedModuleListStream__
