@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - Declarative syntax for structures and unions in `dissect.cstruct.declarative`, using classes with type annotations.
+- `manifest` (also available through `dumpstruct(..., allowlist=...)`) summarizes the byte ranges of approved
+  members, their count dependencies, shared bytes and whether they can be restored from the approved slices.
 
 ### Changed
 

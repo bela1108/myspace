@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dissect.cstruct.bitbuffer import BitBuffer
 from dissect.cstruct.cstruct import cstruct, ctypes, ctypes_type
-from dissect.cstruct.dump import dumpstruct, hexdump
+from dissect.cstruct.dump import dumpstruct, dumpstruct_manifest, hexdump, manifest
 from dissect.cstruct.exception import (
     Error,
     NullPointerDereference,
@@ -80,10 +80,12 @@ __all__ = [
     "ctypes",
     "ctypes_type",
     "dumpstruct",
+    "dumpstruct_manifest",
     "f16",
     "f32",
     "f64",
     "hexdump",
+    "manifest",
     "p8",
     "p16",
     "p32",
