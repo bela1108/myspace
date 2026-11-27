@@ -135,6 +135,45 @@ count and enumerate them. There are also some special segment classes
 that have more information about well-known segments. Take a look at
 `elftools/elf/segments.py` for more details.
 
+### ELF notes and provenance
+
+ELF note type numbers are meaningful only inside the namespace selected by the
+note owner (`n_name`). For example, code `1` means `NT_GNU_ABI_TAG` for owner
+`GNU` but `NT_VERSION` for owner `Android`. `iter_notes()` therefore keeps the
+historical `n_type` value used by existing reports, while also exposing:
+
+- `n_type_raw`: the unmodified on-disk type code;
+- `n_type_name`, `n_type_owner` and `n_type_source`: the interpretation and the
+  owner-scoped table that supplied it;
+- `n_type_vocabulary_version`: the version of that owner's note type table;
+- `n_type_disputed` / `n_type_conflicts`: only genuine conflicts where one
+  owner maps one code to multiple explanations;
+- `n_type_candidates`: possible interpretations from other owner namespaces,
+  retained for audit instead of being silently selected.
+
+For a complete read-only report, use `collect_note_evidence()` from
+`elftools/elf/note_evidence.py`. It merges duplicate section/segment views of
+the same physical note, retains raw descriptor bytes and reports its source
+manifest. A note found through both `PT_NOTE` and `SHT_NOTE` is one observation
+with two views, not two independent pieces of evidence.
+
+``` python
+from elftools.elf.note_evidence import collect_note_evidence
+
+report = collect_note_evidence('firmware.elf')
+for observation in report.observations:
+    print(observation.raw_type, observation.interpretation.source)
+```
+
+Historical outputs that recorded only a symbolic name can be audited with
+`resolve_note_type_name(owner, name)`. The owner is required to disambiguate
+abbreviations that are legitimately reused by different owners. The same
+report is available offline from the source tree with:
+
+``` text
+python scripts/note_evidence.py --json firmware.elf
+```
+
 ### Structs and headers
 
 Most objects in ELF and DWARF have \"headers\", and such objects usually

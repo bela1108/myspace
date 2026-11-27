@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 
     from ..construct import Container
     from .elffile import ELFFile
+    from .note_types import NoteTypeVocabulary
     from .sections import Section
 
 
@@ -135,9 +136,16 @@ class NoteSegment(Segment):
         super().__init__(header, stream)
         self.elffile = elffile
 
-    def iter_notes(self) -> Iterator[Container]:
+    def iter_notes(
+        self, vocabulary: NoteTypeVocabulary | str | None = None
+    ) -> Iterator[Container]:
         """ Yield all the notes in the segment.  Each result is a dictionary-
             like object with "n_name", "n_type", and "n_desc" fields, amongst
             others.
         """
-        return iter_notes(self.elffile, self['p_offset'], self['p_filesz'])
+        return iter_notes(
+            self.elffile,
+            self['p_offset'],
+            self['p_filesz'],
+            vocabulary=vocabulary,
+        )

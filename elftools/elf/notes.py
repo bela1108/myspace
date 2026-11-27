@@ -13,7 +13,28 @@ from typing import TYPE_CHECKING
 
 from ..common.utils import bytes2str, roundup, struct_parse
 from ..construct import CString
-from .enums import ENUM_ANDROID_NOTE_N_TYPE, ENUM_CORE_NOTE_N_TYPE, ENUM_NOTE_N_TYPE
+from .note_types import (
+    LEGACY_NOTE_TYPE_REGISTRY,
+    NOTE_TYPE_REGISTRY,
+    NOTE_TYPE_REGISTRIES,
+    NOTE_TYPE_MANIFEST,
+    NOTE_TYPE_NAMESPACES,
+    NOTE_TYPE_VOCABULARY_VERSION,
+    NOTE_TYPE_VOCABULARIES,
+    NoteTypeConflict,
+    NoteTypeEntry,
+    NoteTypeInterpretation,
+    NoteTypeNameLookup,
+    NoteTypeNamespace,
+    NoteTypeSymbolGroup,
+    NoteTypeVocabulary,
+    get_note_type_vocabulary,
+    iter_note_type_conflicts,
+    iter_shared_note_type_symbols,
+    legacy_note_type_name,
+    resolve_note_type,
+    resolve_note_type_name,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -22,24 +43,43 @@ if TYPE_CHECKING:
     from .elffile import ELFFile
 
 
-# Note type numbers have meaning only within their owner's namespace.
-_NOTE_TYPE_NAMES = {
-    owner: {value: name for name, value in enum.items() if name != '_default_'}
-    for owner, enum in (
-        ('GNU', ENUM_NOTE_N_TYPE),
-        ('Android', ENUM_ANDROID_NOTE_N_TYPE),
-    )
-}
-_CORE_NOTE_TYPE_NAMES = {
-    value: name for name, value in ENUM_CORE_NOTE_N_TYPE.items() if name != '_default_'
-}
+__all__ = [
+    'LEGACY_NOTE_TYPE_REGISTRY',
+    'NOTE_TYPE_REGISTRY',
+    'NOTE_TYPE_REGISTRIES',
+    'NOTE_TYPE_MANIFEST',
+    'NOTE_TYPE_NAMESPACES',
+    'NOTE_TYPE_VOCABULARY_VERSION',
+    'NOTE_TYPE_VOCABULARIES',
+    'NoteTypeConflict',
+    'NoteTypeEntry',
+    'NoteTypeInterpretation',
+    'NoteTypeNameLookup',
+    'NoteTypeNamespace',
+    'NoteTypeSymbolGroup',
+    'NoteTypeVocabulary',
+    'iter_note_type_conflicts',
+    'iter_notes',
+    'iter_shared_note_type_symbols',
+    'get_note_type_vocabulary',
+    'legacy_note_type_name',
+    'resolve_note_type',
+    'resolve_note_type_name',
+]
 
 
-def iter_notes(elffile: ELFFile, offset: int, size: int) -> Iterator[Container]:
+def iter_notes(
+    elffile: ELFFile,
+    offset: int,
+    size: int,
+    vocabulary: NoteTypeVocabulary | str | None = None,
+) -> Iterator[Container]:
     """ Yield complete notes within a section or segment.
 
-        n_type is a symbolic name for known types in the owner's namespace,
-        or the numeric type for unknown types and owners.
+        ``n_type`` keeps the historical symbolic-or-integer value. The raw
+        on-disk code is always available as ``n_type_raw``. Each interpretation
+        also carries its owner namespace, source, vocabulary version and any
+        same-owner conflict in ``n_type_interpretation``.
     """
     end = offset + size
     nhdr_size = elffile.structs.Elf_Nhdr.sizeof()
@@ -65,10 +105,36 @@ def iter_notes(elffile: ELFFile, offset: int, size: int) -> Iterator[Container]:
         else:
             note['n_name'] = None
 
-        note_types = _NOTE_TYPE_NAMES.get(note['n_name'], {})
-        if note['n_name'] == 'CORE' and elffile['e_type'] == 'ET_CORE':
-            note_types = _CORE_NOTE_TYPE_NAMES
-        note['n_type'] = note_types.get(note['n_type'], note['n_type'])
+        raw_type = note['n_type']
+        interpretation = resolve_note_type(
+            note['n_name'],
+            raw_type,
+            e_type=elffile['e_type'],
+            vocabulary=vocabulary,
+        )
+        note['n_type_raw'] = raw_type
+        note['n_type'] = interpretation.legacy
+        note['n_type_name'] = interpretation.name
+        note['n_type_description'] = interpretation.description
+        note['n_type_owner'] = interpretation.owner
+        note['n_type_source'] = interpretation.source
+        note['n_type_source_version'] = interpretation.vocabulary_version
+        note['n_type_vocabulary_version'] = interpretation.vocabulary_version
+        note['n_type_registry_version'] = interpretation.registry_version
+        note['n_type_disputed'] = interpretation.disputed
+        note['n_type_conflicts'] = (
+            interpretation.entries if interpretation.disputed else ()
+        )
+        note['n_type_candidates'] = interpretation.candidates
+        note['n_type_candidate_names'] = interpretation.candidate_names
+        note['n_type_interpretation'] = interpretation
+        note['n_type_provenance'] = interpretation.as_dict()
+        # Compatibility aliases for callers that use the vocabulary terms
+        # rather than the ELF field names.
+        note['n_type_code'] = raw_type
+        note['n_type_symbol'] = interpretation.name
+        note['n_type_namespace'] = interpretation.owner
+        note['n_type_legacy'] = interpretation.legacy
 
         desc_data = elffile.stream.read(disk_descsz)
         if len(desc_data) != disk_descsz:

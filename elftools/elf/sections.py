@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from .elffile import ELFFile
+    from .note_types import NoteTypeVocabulary
     from .structs import ELFStructs
 
 
@@ -329,12 +330,19 @@ class SUNWSyminfoTableSection(Section):
 class NoteSection(Section):
     """ ELF NOTE section. Knows how to parse notes.
     """
-    def iter_notes(self) -> Iterator[Container]:
+    def iter_notes(
+        self, vocabulary: NoteTypeVocabulary | str | None = None
+    ) -> Iterator[Container]:
         """ Yield all the notes in the section.  Each result is a dictionary-
             like object with "n_name", "n_type", and "n_desc" fields, amongst
             others.
         """
-        return iter_notes(self.elffile, self['sh_offset'], self['sh_size'])
+        return iter_notes(
+            self.elffile,
+            self['sh_offset'],
+            self['sh_size'],
+            vocabulary=vocabulary,
+        )
 
 
 class StabSection(Section):
