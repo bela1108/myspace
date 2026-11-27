@@ -42,6 +42,7 @@ import in_toto.models.link
 import in_toto.rulelib
 import in_toto.runlib
 import in_toto.settings
+import in_toto.timeliness
 from in_toto.exceptions import (
     BadReturnValueError,
     LayoutExpiredError,
@@ -1481,6 +1482,99 @@ def get_summary_link(layout, reduced_chain_link_dict, name):
     return summary_link
 
 
+def verify_step_timeliness(steps_metadata, deadline):
+    """
+    <Purpose>
+      Evaluate, for each step, whether the trusted time ranges attested in
+      the step's link metadata fall within the window defined by the passed
+      deadline.
+
+      The trusted time range of a link is read from its signed
+      ``environment`` (see in_toto.timeliness), i.e. from existing signed
+      material, attested by an independent clock. Only links whose
+      signatures have already been verified should be passed to this
+      function.
+
+      If a step has multiple links (threshold > 1), the enclosing range of
+      all links is evaluated, so that the verdict holds no matter which
+      link records the true time. A step whose links carry no trusted time
+      range is reported as ``undecidable``.
+
+      Note: the verdict is derived from the bounds of the trusted time
+      range, never from a point estimate such as its midpoint. If the
+      range crosses the deadline, the verdict is ``undecidable``.
+
+    <Arguments>
+      steps_metadata:
+              A dictionary containing verified link metadata per step,
+              e.g.:
+              {
+                <step name> : {
+                  <functionary key id> : <Metadata containing a Link
+                                          object>,
+                  ...
+                }, ...
+              }
+
+      deadline:
+              A timezone-aware datetime or ISO 8601 string. The window
+              closes at this point in time.
+
+    <Exceptions>
+      securesystemslib.exceptions.FormatError:
+              A trusted time range or the deadline is malformed.
+
+    <Returns>
+      A dictionary of timeliness reports per step, e.g.:
+      {
+        <step name> : <TimelinessReport>,
+        ...
+      }
+
+    """
+    timeliness_reports = {}
+
+    for step_name, key_link_dict in steps_metadata.items():
+        time_ranges = []
+        for metadata in key_link_dict.values():
+            payload = metadata.get_payload()
+            # Sublayouts carry a Layout payload; their links are evaluated
+            # during sublayout verification.
+            if not isinstance(payload, in_toto.models.link.Link):
+                continue
+
+            time_range = in_toto.timeliness.extract_trusted_time_range(payload)
+            if time_range is not None:
+                time_ranges.append(time_range)
+
+        if not time_ranges:
+            report = in_toto.timeliness.TimelinessReport(
+                in_toto.timeliness.UNDECIDABLE,
+                deadline,
+                None,
+                "no trusted time range found in signed link metadata,"
+                " cannot decide whether the deadline was met",
+            )
+        else:
+            report = in_toto.timeliness.evaluate_timeliness(
+                in_toto.timeliness.envelope(time_ranges), deadline
+            )
+
+        if report.verdict == in_toto.timeliness.ON_TIME:
+            LOG.info("Step '%s' is on-time: %s", step_name, report.reason)
+        else:
+            LOG.warning(
+                "Step '%s' timeliness verdict is '%s': %s",
+                step_name,
+                report.verdict,
+                report.reason,
+            )
+
+        timeliness_reports[step_name] = report
+
+    return timeliness_reports
+
+
 def in_toto_verify(  # noqa: PLR0913, PLR0917, RUF100
     metadata,
     layout_key_dict,
@@ -1489,6 +1583,7 @@ def in_toto_verify(  # noqa: PLR0913, PLR0917, RUF100
     step_name="",
     persist_inspection_links=True,
     inspect_timeout=in_toto.settings.LINK_CMD_EXEC_TIMEOUT,
+    timeliness_deadline=None,
 ):
     """Performs complete in-toto supply chain verification for a final product.
 
@@ -1547,6 +1642,14 @@ def in_toto_verify(  # noqa: PLR0913, PLR0917, RUF100
           in_toto.settings.LINK_CMD_EXEC_TIMEOUT in seconds which ends up timing
           out the run command subprocess if it runs over.
 
+      timeliness_deadline (optional): A timezone-aware datetime or ISO 8601
+          string. If passed, the trusted time ranges attested in the signed
+          link metadata of each step are evaluated against this deadline
+          (see in_toto.timeliness). The resulting per-step timeliness
+          report is attached to the returned summary link. Timeliness
+          evaluation never fails verification; a step whose trusted time
+          range crosses the deadline is reported as ``undecidable``.
+
     Raises:
       securesystemslib.exceptions.FormatError: Passed parameters are malformed.
 
@@ -1603,6 +1706,13 @@ def in_toto_verify(  # noqa: PLR0913, PLR0917, RUF100
     LOG.info("Verifying link metadata signatures...")
     steps_metadata = verify_link_signature_thresholds(layout, steps_metadata)
 
+    timeliness_reports = None
+    if timeliness_deadline is not None:
+        LOG.info("Evaluating link timeliness against deadline...")
+        timeliness_reports = verify_step_timeliness(
+            steps_metadata, timeliness_deadline
+        )
+
     LOG.info("Verifying sublayouts...")
     chain_link_dict = verify_sublayouts(
         layout, steps_metadata, link_dir_path, inspect_timeout
@@ -1639,4 +1749,14 @@ def in_toto_verify(  # noqa: PLR0913, PLR0917, RUF100
     # Return a link file which summarizes the entire software supply chain
     # This is mostly relevant if the currently verified supply chain is embedded
     # in another supply chain
-    return get_summary_link(layout, reduced_chain_link_dict, step_name)
+    summary_link = get_summary_link(layout, reduced_chain_link_dict, step_name)
+
+    if timeliness_reports is not None:
+        summary_link.environment[
+            in_toto.timeliness.TIMELINESS_REPORT_ENV_KEY
+        ] = {
+            name: report.to_dict()
+            for name, report in timeliness_reports.items()
+        }
+
+    return summary_link

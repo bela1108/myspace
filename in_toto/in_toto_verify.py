@@ -186,6 +186,21 @@ for which the public part can be found in the GPG keyring at '~/.gnupg'.
         ),
     )
 
+    parser.add_argument(
+        "--timeliness-deadline",
+        dest="timeliness_deadline",
+        type=str,
+        metavar="<ISO 8601 datetime>",
+        default=None,
+        help=(
+            "deadline used to evaluate the trusted time ranges attested in"
+            " signed link metadata. Each step is reported as 'on-time',"
+            " 'late', or 'undecidable' if clock uncertainty makes it"
+            " impossible to decide. If not passed, no timeliness"
+            " evaluation is performed."
+        ),
+    )
+
     verbosity_args = parser.add_mutually_exclusive_group(required=False)
     verbosity_args.add_argument(*VERBOSE_ARGS, **VERBOSE_KWARGS)
     verbosity_args.add_argument(*QUIET_ARGS, **QUIET_KWARGS)
@@ -238,6 +253,7 @@ def main():
             layout_key_dict,
             args.link_dir,
             inspect_timeout=args.inspect_timeout,
+            timeliness_deadline=args.timeliness_deadline,
         )
 
     except Exception as e:  # noqa: BLE001

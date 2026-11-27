@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Added
+* Timeliness evaluation of trusted time ranges attested in signed link
+  metadata: new `in_toto.timeliness` module, `timeliness_deadline`
+  argument for `verifylib.in_toto_verify`, and `--timeliness-deadline`
+  option for the `in-toto-verify` CLI. Each step is reported as
+  `on-time`, `late`, or `undecidable` when clock uncertainty makes the
+  relationship to the deadline impossible to decide.
+
 ## v3.1.0
 
 This release includes version bumpbs, as well as upgraded debian support , and
