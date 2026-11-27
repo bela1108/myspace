@@ -676,3 +676,27 @@ The mixin provides the following configuration options:
 - ``auditlog_history_template``: Template to use for rendering the history page (default: ``auditlog/object_history.html``)
 - ``auditlog_history_per_page``: Number of log entries to display per page (default: 10)
 
+The history view uses opaque cursor tokens instead of numeric offset pages. Each token is signed and
+contains the authorization scope key, scope revision, a high-water mark for the snapshot, and the
+last entry on the current page. Entries are ordered by ``(timestamp, pk)``, so entries with the same
+timestamp have a stable page boundary. New entries cannot be inserted into pages started from an older
+token. Override ``get_auditlog_scope_revision()`` when the authorized object list changes; the old token
+is then rejected.
+
+Export views can use the same frozen scope through ``AuditLogCursorPaginator`` or
+``export_audit_log_page``. The scope's queryset filter is applied to both interactive queries and
+exports, and a fingerprint of that filter is included in the signed cursor. Tightening the authorized
+list therefore invalidates old cursors even if the scope revision is not changed. This pagination uses
+the existing primary key and timestamp fields and does not require migrating existing log entries.
+
+Example::
+
+    from auditlog.pagination import AuditLogCursorPaginator, AuditLogScope
+
+    scope = AuditLogScope(
+        key="audit-export-42",
+        revision=authorization.version,
+        queryset_filter={"content_type": content_type, "object_id__in": object_ids},
+    )
+    paginator = AuditLogCursorPaginator(LogEntry.objects.all(), 100, scope)
+    page = paginator.get_page(request.GET.get("cursor"))

@@ -3,18 +3,20 @@ from urllib.parse import unquote
 from django import urls as urlresolvers
 from django.conf import settings
 from django.contrib import admin
-from django.contrib.admin.views.main import PAGE_VAR
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from django.urls.exceptions import NoReverseMatch
+from django.utils.encoding import smart_str
 from django.utils.html import format_html
 from django.utils.text import capfirst
 from django.utils.timezone import is_aware, localtime
 from django.utils.translation import gettext_lazy as _
 
 from auditlog import get_logentry_model
+from auditlog.pagination import AuditLogCursorPaginator, AuditLogScope
 from auditlog.render import get_field_verbose_name, render_logentry_changes_html
 from auditlog.signals import accessed
 
@@ -114,6 +116,7 @@ class AuditlogHistoryAdminMixin:
     auditlog_history_template = "auditlog/object_history.html"
     show_auditlog_history_link = False
     auditlog_history_per_page = 10
+    auditlog_cursor_param = "cursor"
 
     def get_list_display(self, request):
         list_display = list(super().get_list_display(request))
@@ -140,26 +143,24 @@ class AuditlogHistoryAdminMixin:
         if not self.has_view_permission(request, obj):
             raise PermissionDenied
 
-        log_entries = (
-            LogEntry.objects.get_for_object(obj)
-            .select_related("actor")
-            .order_by("-timestamp")
+        log_entry_queryset = LogEntry.objects.get_for_object(obj).select_related(
+            "actor"
         )
+        scope = self.get_auditlog_scope(request, obj)
 
-        paginator = self.get_paginator(
-            request, log_entries, self.auditlog_history_per_page
+        paginator = AuditLogCursorPaginator(
+            log_entry_queryset, self.auditlog_history_per_page, scope
         )
-        page_number = request.GET.get(PAGE_VAR, 1)
-        page_obj = paginator.get_page(page_number)
-        page_range = paginator.get_elided_page_range(page_obj.number)
+        page_obj = paginator.get_page(request.GET.get(self.auditlog_cursor_param))
 
         context = {
             **self.admin_site.each_context(request),
             "title": _("Audit log: %s") % obj,
             "module_name": str(capfirst(self.model._meta.verbose_name_plural)),
-            "page_range": page_range,
-            "page_var": PAGE_VAR,
-            "pagination_required": paginator.count > self.auditlog_history_per_page,
+            "page_var": self.auditlog_cursor_param,
+            "pagination_required": page_obj.has_next or page_obj.has_previous,
+            "next_cursor": page_obj.next_cursor,
+            "previous_cursor": page_obj.previous_cursor,
             "object": obj,
             "opts": self.model._meta,
             "log_entries": page_obj,
@@ -167,6 +168,27 @@ class AuditlogHistoryAdminMixin:
         }
 
         return TemplateResponse(request, self.auditlog_history_template, context)
+
+    def get_auditlog_scope(self, request, obj):
+        return AuditLogScope(
+            key=self.get_auditlog_scope_key(request, obj),
+            revision=self.get_auditlog_scope_revision(request, obj),
+            queryset_filter=self.get_auditlog_scope_filter(request, obj),
+        )
+
+    def get_auditlog_scope_key(self, request, obj):
+        opts = self.model._meta
+        return f"{opts.app_label}.{opts.model_name}:{obj.pk}"
+
+    def get_auditlog_scope_revision(self, request, obj):
+        return None
+
+    def get_auditlog_scope_filter(self, request, obj):
+        content_type = ContentType.objects.get_for_model(obj.__class__)
+        pk = obj._meta.pk.value_from_object(obj)
+        if isinstance(pk, int):
+            return {"content_type": content_type, "object_id": pk}
+        return {"content_type": content_type, "object_pk": smart_str(pk)}
 
     @admin.display(description=_("Audit log"))
     def auditlog_link(self, obj):

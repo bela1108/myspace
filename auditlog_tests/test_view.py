@@ -65,7 +65,14 @@ class TestAuditlogHistoryAdminMixin(TestCase):
             self.obj.text = f"Updated text {i}"
             self.obj.save()
 
-        request = RequestFactory().get("/?p=2")
+        first_request = RequestFactory().get("/")
+        first_request.user = self.user
+        first_response = self.admin.auditlog_history_view(
+            first_request, str(self.obj.pk)
+        )
+        cursor = first_response.context_data["log_entries"].next_cursor
+
+        request = RequestFactory().get(f"/?cursor={cursor}")
         request.user = self.user
 
         response = self.admin.auditlog_history_view(request, str(self.obj.pk))
@@ -83,7 +90,6 @@ class TestAuditlogHistoryAdminMixin(TestCase):
         required_keys = [
             "title",
             "module_name",
-            "page_range",
             "page_var",
             "pagination_required",
             "object",

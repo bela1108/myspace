@@ -2,6 +2,10 @@
 
 ## Next Release
 
+#### Improvements
+
+- Add cursor-based audit log pagination with a freezable authorization scope for queries and exports.
+
 ## 3.4.2 (2026-11-08)
 
 #### Improvements
