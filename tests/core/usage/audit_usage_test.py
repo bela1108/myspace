@@ -16,3 +16,8 @@ def test_normal_mode_requires_single_file(parser):
 def test_diff_mode_requires_two_files(parser):
     with pytest.raises(SystemExit):
         parser.parse_args(['audit', 'fileA', '--diff'])
+
+
+def test_patch_mode_requires_single_baseline(parser):
+    with pytest.raises(SystemExit):
+        parser.parse_args(['audit', 'fileA', 'fileB', '--patch', 'changes.diff'])

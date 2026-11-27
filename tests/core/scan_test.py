@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from detect_secrets.core import scan
+from detect_secrets.settings import get_settings
 from detect_secrets.settings import transient_settings
 from detect_secrets.util import git
 from detect_secrets.util.path import get_relative_path_if_in_cwd
@@ -107,3 +108,41 @@ def configure_plugins():
         ],
     }):
         yield
+
+
+class TestScanDiff:
+    diff = textwrap.dedent("""\
+        diff --git a/config.py b/config.py
+        index 1111111..2222222 100644
+        --- a/config.py
+        +++ b/config.py
+        @@ -1,3 +1,3 @@
+         stable = 'stable-value'
+        -removed = 'AKIAREMOVE0000000002'
+        +added = 'AKIAADDED00000000003'
+         trailing = 'another-value'
+        """)
+
+    def test_scans_added_lines_with_target_line_numbers(self):
+        with transient_settings({
+            'plugins_used': [{'name': 'AWSKeyDetector'}],
+            'filters_used': [],
+        }):
+            get_settings().disable_filters('detect_secrets.filters.common.is_invalid_file')
+            secrets = list(scan.scan_diff(self.diff))
+
+        assert len(secrets) == 1
+        assert secrets[0].line_number == 2
+        assert secrets[0].secret_value == 'AKIAADDED00000000003'
+
+    def test_scans_removed_lines_with_source_line_numbers(self):
+        with transient_settings({
+            'plugins_used': [{'name': 'AWSKeyDetector'}],
+            'filters_used': [],
+        }):
+            get_settings().disable_filters('detect_secrets.filters.common.is_invalid_file')
+            secrets = list(scan.scan_diff(self.diff, only_added=False))
+
+        assert len(secrets) == 1
+        assert secrets[0].line_number == 2
+        assert secrets[0].secret_value == 'AKIAREMOVE0000000002'

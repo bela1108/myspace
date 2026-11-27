@@ -54,6 +54,14 @@ def _add_mode_parser(parser: argparse.ArgumentParser) -> None:
             'Displays a report with the secrets detected'
         ),
     )
+    parser.add_argument(
+        '--patch',
+        metavar='PATCH_FILE',
+        help=(
+            'Audits an offline patch against the supplied baseline, distinguishing moved '
+            'occurrences from newly introduced secrets.'
+        ),
+    )
 
 
 def _add_report_module(parent: argparse.ArgumentParser) -> None:
@@ -103,11 +111,15 @@ def parse_args(args: argparse.Namespace) -> None:
     if args.action != 'audit':
         return
 
-    if args.diff and len(args.filename) != 2:
+    if getattr(args, 'patch', None) and len(args.filename) != 1:
+        raise argparse.ArgumentTypeError(
+            '--patch mode requires one baseline file.',
+        )
+    elif args.diff and len(args.filename) != 2:
         raise argparse.ArgumentTypeError(
             '--diff mode requires two files to compare with each other.',
         )
-    elif not args.diff and len(args.filename) != 1:
+    elif not args.diff and not args.patch and len(args.filename) != 1:
         raise argparse.ArgumentTypeError(
             'Can only specify one baseline at a time.',
         )

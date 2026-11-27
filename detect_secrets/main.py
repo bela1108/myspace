@@ -29,7 +29,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     if args.action == 'scan':
         handle_scan_action(args)
     elif args.action == 'audit':
-        handle_audit_action(args)
+        return handle_audit_action(args)
 
     return 0
 
@@ -117,8 +117,25 @@ def scan_adhoc_string(line: str) -> str:
     ])
 
 
-def handle_audit_action(args: argparse.Namespace) -> None:
+def handle_audit_action(args: argparse.Namespace) -> int:
     try:
+        if args.patch:
+            try:
+                patch_baseline = audit.common.get_baseline_from_file(args.filename[0])
+                report = audit.patch.audit_patch_file(
+                    args.patch,
+                    baseline=patch_baseline,
+                )
+            except (FileNotFoundError, ImportError, InvalidBaselineError, ValueError) as error:
+                print(f'ERROR: {error}')
+                return 1
+            audit.patch.print_patch_audit_report(
+                report,
+                as_json=args.json,
+                print_fn=print,
+            )
+            return 1 if report.total_new_secrets else 0
+
         if args.stats:
             stats = audit.analytics.calculate_statistics_for_baseline(args.filename[0])
             if args.diff:
@@ -151,4 +168,6 @@ def handle_audit_action(args: argparse.Namespace) -> None:
                 # Label secrets
                 audit.audit_baseline(args.filename[0])
     except InvalidBaselineError:
-        pass
+        return 1
+
+    return 0

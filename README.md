@@ -145,6 +145,16 @@ ratio.
 $ detect-secrets audit .secrets.baseline
 ```
 
+### Auditing an Offline Patch:
+
+```bash
+$ detect-secrets audit .secrets.baseline --patch changes.diff --json
+```
+
+This reports newly added secrets separately from moved, ambiguous, and removed occurrences.
+Moved and ambiguous findings do not increase the current new-secret alert count, and moved
+findings include their old location for review.
+
 ### Usage in Other Python Scripts
 
 **Basic Use:**
@@ -425,7 +435,8 @@ const secret = "hunter2";
 ```bash
 $ detect-secrets audit --help
 usage: detect-secrets audit [-h] [--diff] [--stats]
-                      [--report] [--only-real | --only-false]
+                      [--report] [--patch PATCH_FILE]
+                      [--only-real | --only-false]
                       [--json]
                       filename [filename ...]
 

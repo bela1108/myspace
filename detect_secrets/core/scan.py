@@ -166,7 +166,10 @@ def scan_file(filename: str) -> Generator[PotentialSecret, None, None]:
         return
 
 
-def scan_diff(diff: str) -> Generator[PotentialSecret, None, None]:
+def scan_diff(
+    diff: str,
+    only_added: bool = True,
+) -> Generator[PotentialSecret, None, None]:
     """
     :raises: ImportError
     """
@@ -174,7 +177,7 @@ def scan_diff(diff: str) -> Generator[PotentialSecret, None, None]:
         log.error('No plugins to scan with!')
         return
 
-    for filename, lines in _get_lines_from_diff(diff):
+    for filename, lines in _get_lines_from_diff(diff, only_added=only_added):
         yield from _process_line_based_plugins(lines, filename=filename)
 
 
@@ -280,7 +283,10 @@ def _get_lines_from_file(filename: str) -> Generator[List[str], None, None]:
         yield lines
 
 
-def _get_lines_from_diff(diff: str) -> Generator[Tuple[str, List[Tuple[int, str]]], None, None]:
+def _get_lines_from_diff(
+    diff: str,
+    only_added: bool = True,
+) -> Generator[Tuple[str, List[Tuple[int, str]]], None, None]:
     """
     :raises: ImportError
     """
@@ -294,16 +300,19 @@ def _get_lines_from_diff(diff: str) -> Generator[Tuple[str, List[Tuple[int, str]
         if _is_filtered_out(required_filter_parameters=['filename'], filename=filename):
             continue
 
-        yield (
-            filename,
-            [
-                (line.target_line_no, line.value)
-                for chunk in patch_file
-                # target_lines refers to incoming (new) changes
-                for line in chunk.target_lines()
-                if line.is_added
-            ],
-        )
+        lines = []
+        for chunk in patch_file:
+            chunk_lines = chunk.target_lines() if only_added else chunk.source_lines()
+            for line in chunk_lines:
+                if only_added and not line.is_added:
+                    continue
+                if not only_added and not line.is_removed:
+                    continue
+
+                line_number = line.target_line_no if only_added else line.source_line_no
+                lines.append((line_number, line.value))
+
+        yield filename, lines
 
 
 def _process_line_based_plugins(

@@ -76,12 +76,12 @@ class SecretsCollection:
         for secret in scan.scan_file(os.path.join(self.root, convert_local_os_path(filename))):
             self[convert_local_os_path(filename)].add(secret)
 
-    def scan_diff(self, diff: str) -> None:
+    def scan_diff(self, diff: str, only_added: bool = True) -> None:
         """
         :raises: UnidiffParseError
         """
         try:
-            for secret in scan.scan_diff(diff):
+            for secret in scan.scan_diff(diff, only_added=only_added):
                 self[secret.filename].add(secret)
         except ImportError:     # pragma: no cover
             raise NotImplementedError(

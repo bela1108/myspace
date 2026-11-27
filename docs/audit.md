@@ -65,6 +65,25 @@ special types of secrets, and will treat all secrets equally. If you are looking
 systematic method of excluding "test" secrets, try
 [writing your own filter](filters.md#Writing-Your-Own-Filter).
 
+## Auditing an Offline Patch
+
+Patch audit works without a checked-out working tree:
+
+```bash
+$ detect-secrets audit .secrets.baseline --patch changes.diff --json
+```
+
+Findings on added and removed lines are mapped to the hunk ranges that contain them. A finding is
+reported as `moved` only when its secret type and hash have exactly one matching occurrence on both
+sides of the same hunk. If the same type and hash appears more than once, each new occurrence is
+reported as `ambiguous` with all candidate old locations instead of guessing from line order or an
+equal line number. Deleted-only findings appear in `removed`, including old locations that still
+need triage.
+
+Only `new` findings contribute to `total_new_secrets`. The `moved` category includes `moved_from`
+so reviewers can see where an existing finding went, while the baseline keeps its original format
+and remains readable by older tooling.
+
 ## Comparing Baselines
 
 ```bash
