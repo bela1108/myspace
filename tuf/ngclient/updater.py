@@ -55,6 +55,7 @@ Custom ``FetcherInterface`` implementations are possible. The alternative
 from __future__ import annotations
 
 import contextlib
+import copy
 import logging
 import os
 import shutil
@@ -67,6 +68,7 @@ from tuf.api import exceptions
 from tuf.api.metadata import Root, Snapshot, TargetFile, Targets, Timestamp
 from tuf.ngclient._internal.trusted_metadata_set import TrustedMetadataSet
 from tuf.ngclient.config import EnvelopeType, UpdaterConfig
+from tuf.ngclient.observer import Observation, TrustedView
 from tuf.ngclient.urllib3_fetcher import Urllib3Fetcher
 
 if TYPE_CHECKING:
@@ -147,6 +149,8 @@ class Updater:
         self._persist_root(self._trusted_set.root.version, bootstrap)
         self._update_root_symlink()
 
+        self._observation_count = 0
+
     def refresh(self) -> None:
         """Refresh top-level metadata.
 
@@ -175,6 +179,39 @@ class Updater:
         self._load_timestamp()
         self._load_snapshot()
         self._load_targets(Targets.type, Root.type)
+
+    def observe(self) -> Observation:
+        """Start an offline observation of the current trusted view.
+
+        The returned ``Observation`` captures the observation reference
+        and the current trusted view: read-only checks done through it
+        are verified against that captured view, but loaded content is
+        never persisted to the local metadata cache and never promoted
+        into this updater's trusted set. The observation can be
+        cancelled with a cancellation location and can produce a report
+        that explains the view it is based on.
+
+        Multiple observations may be in flight at once and complete in
+        any order: each one only sees the view captured at its start.
+
+        Returns:
+            A new ``Observation`` for this updater.
+        """
+        self._observation_count += 1
+        return Observation(
+            reference=f"obs-{self._observation_count}",
+            view=self._capture_trusted_view(),
+            download_metadata=self._download_metadata,
+            config=self.config,
+        )
+
+    def _capture_trusted_view(self) -> TrustedView:
+        """Snapshot the current trusted metadata for an observation."""
+        roles = {
+            role: copy.deepcopy(signed)
+            for role, signed in self._trusted_set.trusted_items()
+        }
+        return TrustedView(roles, self._trusted_set.reference_time)
 
     def _generate_target_file_path(self, targetinfo: TargetFile) -> str:
         if self.target_dir is None:

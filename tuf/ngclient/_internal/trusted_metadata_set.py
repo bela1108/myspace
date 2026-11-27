@@ -153,6 +153,12 @@ class TrustedMetadataSet(abc.Mapping):
         """
         return iter(self._trusted_set.values())
 
+    def trusted_items(self) -> Iterator[tuple[str, Signed]]:
+        """Return iterator over (role name, ``Signed``) pairs currently
+        in ``TrustedMetadataSet``.
+        """
+        return iter(self._trusted_set.items())
+
     # Helper properties for top level metadata
     @property
     def root(self) -> Root:

@@ -6,11 +6,21 @@
 from tuf.api.metadata import TargetFile
 from tuf.ngclient.config import UpdaterConfig
 from tuf.ngclient.fetcher import FetcherInterface
+from tuf.ngclient.observer import (
+    Observation,
+    ObservationCancelledError,
+    ObservationReport,
+    TrustedView,
+)
 from tuf.ngclient.updater import Updater
 from tuf.ngclient.urllib3_fetcher import Urllib3Fetcher
 
 __all__ = [  # noqa: PLE0604
     FetcherInterface.__name__,
+    Observation.__name__,
+    ObservationCancelledError.__name__,
+    ObservationReport.__name__,
+    TrustedView.__name__,
     Urllib3Fetcher.__name__,
     TargetFile.__name__,
     Updater.__name__,
