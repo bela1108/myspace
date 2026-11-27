@@ -76,3 +76,11 @@ def OfficeFile(file):
         return Ppt97File(file)
     else:
         raise exceptions.FileFormatError("Unrecognized file format")
+
+
+from msoffcrypto.report import (  # noqa: E402
+    inspect_file as inspect_file,
+    protection_report as protection_report,
+    render_comparison as render_comparison,
+    render_report as render_report,
+)

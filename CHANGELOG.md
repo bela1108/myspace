@@ -1,4 +1,10 @@
 
+Unreleased
+==========
+
+  * Add offline protection inspection reports for legacy OLE and OOXML files
+  * Record container type, protection source, supporting materials, and minimal conclusions
+
 v6.1.0 / 2026-11-04
 ===================
 

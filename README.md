@@ -53,6 +53,28 @@ msoffcrypto-tool document.doc --test -v
 
 It returns `1` if the file is encrypted, `0` if not.
 
+To create a non-decrypting protection report, use `--inspect` (or `--report`):
+
+```
+msoffcrypto-tool --inspect tests/inputs/rc4cryptoapi_password.doc
+msoffcrypto-tool --inspect tests/outputs/example.docx --report-format markdown
+```
+
+The JSON report uses one shape for legacy OLE documents and OOXML packages. It preserves the
+original `container_type` (`ole` or `zip`), the logical `format`, the protection source, the
+supporting `materials`, and a minimal `conclusion`. A declaration is not treated as proof that
+a password works: no password is requested and no decryption is attempted. Unknown containers,
+versions, and extra report fields remain readable instead of aborting report generation.
+
+The same report is available from Python:
+
+```python
+from msoffcrypto import inspect_file, render_report
+
+report = inspect_file("tests/inputs/example_password.docx")
+print(render_report(report, format="markdown"))
+```
+
 #### Encryption (OOXML only, experimental)
 
 > [!IMPORTANT]

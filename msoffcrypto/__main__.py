@@ -52,8 +52,22 @@ parser = argparse.ArgumentParser()
 group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument("-p", "--password", nargs="?", const="", dest="password", help="password text")
 group.add_argument("-t", "--test", dest="test_encrypted", action="store_true", help="test if the file is encrypted")
+group.add_argument(
+    "-i",
+    "--inspect",
+    "--report",
+    dest="inspect",
+    action="store_true",
+    help="inspect protection evidence offline and print a report",
+)
 parser.add_argument("-e", dest="encrypt", action="store_true", help="encryption mode (default is false)")
 parser.add_argument("-v", dest="verbose", action="store_true", help="print verbose information")
+parser.add_argument(
+    "--report-format",
+    choices=("json", "text", "markdown"),
+    default="json",
+    help="report format for --inspect (default: json)",
+)
 parser.add_argument("infile", nargs="?", type=argparse.FileType("rb"), help="input file")
 parser.add_argument("outfile", nargs="?", type=argparse.FileType("wb"), help="output file (if blank, stdout is used)")
 
@@ -66,6 +80,15 @@ def main():
         logging.basicConfig(level=logging.DEBUG, format="%(message)s")
         version = _get_version()
         logger.debug("Version: {}".format(version))
+
+    if args.inspect:
+        if args.infile is None:
+            parser.error("--inspect requires an input file")
+        from msoffcrypto.report import inspect_file, render_report
+
+        report = inspect_file(args.infile, filename=args.infile.name)
+        print(render_report(report, format=args.report_format))
+        return
 
     if args.test_encrypted:
         if not is_encrypted(args.infile):
