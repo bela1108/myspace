@@ -83,6 +83,52 @@ CI checks out the corpus in the same location and runs this test module through
 tox. The corpus remains in its own repository so binary samples and expected
 dumps can be updated independently.
 
+## Symbol evidence reports
+
+`symbol_evidence` grades source-location claims against the CodeView records
+already parsed by `pefile` and an optional symbol-library sign-off sheet. It
+does not open or require the PDB file and never writes to the PE.
+
+```shell
+python -m symbol_evidence \
+  --pe release/app.exe \
+  --signoff symbol_signoff.csv \
+  --claims source_claims.json \
+  --output-dir review_out
+```
+
+The exporter keeps the old flat fields (`name`, `source`, `line`, `symbol`,
+`pdb`, `guid`, `age`, `sha256`, `verified`) on every record while also writing
+the nested `claim`/`evidence` view. A claim can reach `name_only`,
+`debug_record_match`, or `digest_verified`; `verified` is true only for a
+complete digest (SHA-256 by default) that matches a sign-off row. Two records
+may share a display name without being merged, and a partial or missing
+digest is never promoted merely because another record with the same name was
+verified.
+
+With no `--claims` file, each sign-off row becomes a claim. `--pdb` is optional
+and, when supplied, re-hashes the actual PDB with SHA-256 before comparing it
+with the sheet.
+
+`symbol_signoff.csv` accepts common English or Chinese headers; the minimal
+columns are `name`/`符号库`, `guid`, `age`, and `sha256`/`文件摘要`, with
+optional `pe_sha256`, `signer`/`签收人`, and `reference`/`签收单号`.
+`source_claims.json` is a list (or `{"claims": [...]}`) of objects such as:
+
+```json
+{
+  "name": "core.pdb",
+  "source": {"file": "src/core.c", "line": 42},
+  "symbol": "run",
+  "guid": "01234567-89ab-cdef-0123-456789abcdef",
+  "age": 7,
+  "sha256": "<64 hex characters>"
+}
+```
+
+The command writes `symbol_evidence.json`, `symbol_evidence.md`, and
+`symbol_evidence.csv` to the output directory.
+
 ## Projects and products using _pefile_
 
   * Didier Stevens' [pecheck](https://blog.didierstevens.com/2018/06/12/update-pecheck-py-version-0-7-3/), a tool for displaying PE file info, handles PEiD files better then _pefile_ does.
