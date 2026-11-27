@@ -202,6 +202,18 @@ class SigmaSecurityError(SigmaError):
     pass
 
 
+class SigmaGovernanceError(SigmaError):
+    """Evidence or sample failed a usage-governance (purpose gate) check."""
+
+    pass
+
+
+class SampleSourceError(SigmaGovernanceError):
+    """A sample record is missing provenance information or has an invalid source."""
+
+    pass
+
+
 class SigmaTransformationError(SigmaError):
     """Error while transformation. Can be raised intentionally by FailureTransformation."""
 
