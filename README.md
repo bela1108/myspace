@@ -83,6 +83,35 @@ CI checks out the corpus in the same location and runs this test module through
 tox. The corpus remains in its own repository so binary samples and expected
 dumps can be updated independently.
 
+## Evidence views for partial samples
+
+When a preserved PE is accompanied by disjoint, read-only samples, an evidence
+view keeps the disk structure, sample coverage, and per-source address mapping
+separate.  All ranges are byte-exact, half-open intervals `[start, end)`.
+
+```python
+sample_a = pefile.ReadOnlySample(
+    "sample-a", sample_a_bytes, disk_offset=0x138, address=0x7FF800000138
+)
+sample_b = pefile.ReadOnlySample(
+    "sample-b", sample_b_bytes, disk_offset=0x158, address=0x7FF900000158
+)
+view = pe.get_evidence_view(pe.sections[0], samples=[sample_a, sample_b])
+print(view.render())
+```
+
+`view.sample_coverage.gaps` reports any missing interval inside the structure.
+`view.cite("disk")` and `view.cite_samples()` return bytes only when the named
+source (or the sample set) covers the whole structure and all overlapping claims
+can be reconciled.  Disjoint samples are never silently joined across a gap;
+mismatched or unreadable overlaps remain in `view.conflicts`.
+
+Run the in-memory demonstration with:
+
+```shell
+python examples/evidence_demo.py
+```
+
 ## Projects and products using _pefile_
 
   * Didier Stevens' [pecheck](https://blog.didierstevens.com/2018/06/12/update-pecheck-py-version-0-7-3/), a tool for displaying PE file info, handles PEiD files better then _pefile_ does.

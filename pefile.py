@@ -6424,6 +6424,39 @@ class PE:
 
         return s.get_data(rva, length)
 
+    def get_evidence_view(
+        self, structure, samples=(), include_disk=True, disk_name="disk"
+    ):
+        """Build an evidence view for a parsed structure and partial samples.
+
+        ``structure`` may be any parsed structure object (for example a section
+        header) or an :class:`EvidenceStructure`.  Each sample must be an
+        :class:`EvidenceSource` (normally a :class:`ReadOnlySample`) whose spans
+        map source-local offsets to file offsets in this PE.
+
+        The disk image is included as an independent source by default.  The
+        returned view keeps sample coverage, gaps, and overlapping source
+        conflicts separate from the disk structure's boundaries.
+        """
+
+        if isinstance(structure, EvidenceStructure):
+            target = structure
+        else:
+            target = EvidenceStructure.from_object(structure, pe=self)
+
+        ordered_sources = []
+        if include_disk:
+            ordered_sources.append(
+                EvidenceSource.disk(disk_name, bytes(self.__data__))
+            )
+
+        for source in samples or ():
+            if not isinstance(source, EvidenceSource):
+                raise TypeError("samples must contain EvidenceSource instances")
+            ordered_sources.append(source)
+
+        return EvidenceView(target, ordered_sources)
+
     def get_rva_from_offset(self, offset):
         """Get the RVA corresponding to this file offset."""
         s = self.get_section_by_offset(offset)
@@ -7968,6 +8001,796 @@ class PE:
                 self.SectionAlignment_Warning = True
 
         return cache_adjust_SectionAlignment(val, section_alignment, file_alignment)
+
+
+class EvidenceError(Exception):
+    """Base class for evidence-view errors."""
+
+
+class EvidenceUnavailableError(EvidenceError):
+    """Raised when exact structure bytes cannot be cited without guessing."""
+
+    def __init__(self, value, boundaries=None):
+        super().__init__(value)
+        self.boundaries = tuple(boundaries or ())
+
+
+EvidenceUnavailable = EvidenceUnavailableError
+
+
+class EvidenceRange:
+    """A non-empty, half-open interval ``[start, end)`` in a byte space."""
+
+    __slots__ = ("end", "start")
+
+    def __init__(self, start, end):
+        if not isinstance(start, int) or isinstance(start, bool):
+            raise TypeError("range start must be an integer")
+        if not isinstance(end, int) or isinstance(end, bool):
+            raise TypeError("range end must be an integer")
+        if start < 0:
+            raise ValueError("range start must be non-negative")
+        if end <= start:
+            raise ValueError("range must be non-empty and end must exceed start")
+        self.start = start
+        self.end = end
+
+    def __len__(self):
+        return self.end - self.start
+
+    def __iter__(self):
+        return iter((self.start, self.end))
+
+    def __eq__(self, other):
+        if isinstance(other, EvidenceRange):
+            return self.start == other.start and self.end == other.end
+        return NotImplemented
+
+    def __hash__(self):
+        return hash((self.start, self.end))
+
+    def __repr__(self):
+        return f"EvidenceRange({self.start:#x}, {self.end:#x})"
+
+    def contains_range(self, other):
+        return self.start <= other.start and other.end <= self.end
+
+    def intersects(self, other):
+        return max(self.start, other.start) < min(self.end, other.end)
+
+    def intersection(self, other):
+        start = max(self.start, other.start)
+        end = min(self.end, other.end)
+        if start >= end:
+            return None
+        return EvidenceRange(start, end)
+
+    @classmethod
+    def from_offset_length(cls, offset, length) -> "EvidenceRange":
+        if not isinstance(length, int) or isinstance(length, bool):
+            raise TypeError("range length must be an integer")
+        if length <= 0:
+            raise ValueError("range length must be positive")
+        return cls(offset, offset + length)
+
+    def to_dict(self):
+        return {
+            "offset": self.start,
+            "end_offset": self.end,
+            "length": len(self),
+        }
+
+
+class EvidenceSpan:
+    """A source-local range mapped onto canonical file offsets."""
+
+    __slots__ = ("disk_range", "source_range")
+
+    def __init__(self, disk_offset, source_offset, length):
+        self.disk_range = EvidenceRange.from_offset_length(disk_offset, length)
+        self.source_range = EvidenceRange.from_offset_length(source_offset, length)
+
+    @property
+    def length(self):
+        return len(self.disk_range)
+
+    def to_dict(self):
+        return {
+            "disk": self.disk_range.to_dict(),
+            "source": self.source_range.to_dict(),
+        }
+
+
+class EvidenceSource:
+    """An immutable read-only evidence source.
+
+    ``spans`` map source-local offsets to file offsets.  A source may expose
+    bytes (the normal case) or metadata only by passing ``data=None`` and
+    explicit spans.  Metadata-only overlaps remain disputed because they cannot
+    be cross-checked against another source.
+    """
+
+    def __init__(
+        self,
+        name,
+        data=None,
+        spans=None,
+        kind="sample",
+        read_only=True,
+        address=None,
+    ):
+        if not isinstance(name, str) or not name:
+            raise ValueError("source name must be a non-empty string")
+        if kind not in ("disk", "sample"):
+            raise ValueError("source kind must be 'disk' or 'sample'")
+        if kind == "sample" and not read_only:
+            raise ValueError("samples must be read-only evidence")
+        if address is not None and (
+            not isinstance(address, int) or isinstance(address, bool)
+        ):
+            raise TypeError("source address must be an integer")
+
+        if data is not None:
+            try:
+                data = bytes(data)
+            except TypeError:
+                raise TypeError("source data must be bytes-like") from None
+
+        if spans is None:
+            if data is None:
+                raise ValueError("metadata-only sources require explicit spans")
+            spans = [EvidenceSpan(0, 0, len(data))]
+        else:
+            spans = tuple(spans)
+            if not spans:
+                raise ValueError("a source must have at least one span")
+            for span in spans:
+                if not isinstance(span, EvidenceSpan):
+                    raise TypeError("source spans must be EvidenceSpan instances")
+
+        for span in spans:
+            if data is not None and span.source_range.end > len(data):
+                raise ValueError(
+                    "source span exceeds the supplied source bytes: "
+                    f"{span.source_range!r} > 0x{len(data):x}"
+                )
+
+        self.name = name
+        self.data = data
+        self.spans = spans
+        self.kind = kind
+        self.read_only = bool(read_only)
+        self.address = address
+
+    @classmethod
+    def disk(cls, name, data) -> "EvidenceSource":
+        """Create a read-only full-file disk source."""
+
+        return cls(name, data=data, kind="disk", read_only=True)
+
+    @classmethod
+    def sample(
+        cls, name, data, disk_offset, source_offset=0, address=None
+    ) -> "EvidenceSource":
+        """Create a read-only sample mapped at ``disk_offset``."""
+
+        return cls(
+            name,
+            data=data,
+            spans=[EvidenceSpan(disk_offset, source_offset, len(data))],
+            kind="sample",
+            read_only=True,
+            address=address,
+        )
+
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "kind": self.kind,
+            "read_only": self.read_only,
+            "address": self.address,
+            "spans": [span.to_dict() for span in self.spans],
+        }
+
+
+class ReadOnlySample(EvidenceSource):
+    """A contiguous read-only sample with an explicit file-offset mapping."""
+
+    def __init__(
+        self, name, data, disk_offset, source_offset=0, address=None
+    ):
+        super().__init__(
+            name,
+            data=data,
+            spans=[EvidenceSpan(disk_offset, source_offset, len(data))],
+            kind="sample",
+            read_only=True,
+            address=address,
+        )
+
+
+class EvidenceClaim:
+    """One source's claim over an exact file-offset interval."""
+
+    __slots__ = ("disk_range", "source", "source_range")
+
+    def __init__(self, source, disk_range, source_range):
+        if len(disk_range) != len(source_range):
+            raise ValueError("disk and source claim ranges must have equal length")
+        self.source = source
+        self.disk_range = disk_range
+        self.source_range = source_range
+
+    def source_range_for(self, segment_range):
+        if not self.disk_range.contains_range(segment_range):
+            raise ValueError("segment lies outside the source claim")
+        offset = self.source_range.start + (segment_range.start - self.disk_range.start)
+        return EvidenceRange(offset, offset + len(segment_range))
+
+    def content_for(self, segment_range):
+        if self.source.data is None:
+            return None
+        source_range = self.source_range_for(segment_range)
+        return self.source.data[source_range.start : source_range.end]
+
+    def to_dict(self, segment_range=None, include_data=False):
+        segment_range = segment_range or self.disk_range
+        source_range = self.source_range_for(segment_range)
+        content = self.content_for(segment_range)
+        result = {
+            "source": self.source.name,
+            "kind": self.source.kind,
+            "read_only": self.source.read_only,
+            "disk": segment_range.to_dict(),
+            "source_range": source_range.to_dict(),
+            "sha256": None if content is None else sha256(content).hexdigest(),
+        }
+        if self.source.address is not None:
+            result["source_address"] = {
+                "offset": self.source.address + source_range.start,
+                "end_offset": self.source.address + source_range.end,
+            }
+        if include_data and content is not None:
+            result["data_hex"] = content.hex()
+        return result
+
+
+class EvidenceSegment:
+    """An atomic interval whose set of source claims is constant."""
+
+    __slots__ = ("claim_hashes", "claims", "range", "reason", "status")
+
+    def __init__(self, segment_range, claims, status, reason, claim_hashes):
+        self.range = segment_range
+        self.claims = tuple(claims)
+        self.status = status
+        self.reason = reason
+        self.claim_hashes = tuple(claim_hashes)
+
+    @property
+    def is_gap(self):
+        return self.status == "gap"
+
+    @property
+    def is_disputed(self):
+        return self.status == "disputed"
+
+    def to_dict(self):
+        return {
+            "disk": self.range.to_dict(),
+            "status": self.status,
+            "reason": self.reason,
+            "claims": [
+                claim.to_dict(self.range) for claim in self.claims
+            ],
+        }
+
+
+def _merge_evidence_ranges(ranges):
+    merged = []
+    for current in sorted(ranges, key=lambda item: (item.start, item.end)):
+        if not merged or current.start > merged[-1].end:
+            merged.append(current)
+            continue
+        previous = merged[-1]
+        merged[-1] = EvidenceRange(previous.start, max(previous.end, current.end))
+    return merged
+
+
+def _coverage_gaps(target_range, covered_ranges):
+    gaps = []
+    cursor = target_range.start
+    for covered in _merge_evidence_ranges(covered_ranges):
+        if cursor < covered.start:
+            gaps.append(EvidenceRange(cursor, covered.start))
+        cursor = max(cursor, covered.end)
+    if cursor < target_range.end:
+        gaps.append(EvidenceRange(cursor, target_range.end))
+    return gaps
+
+
+class CoverageView:
+    """Coverage and integrity for one set of evidence sources."""
+
+    def __init__(self, target_range, segments, sources):
+        self.target_range = target_range
+        self.segments = tuple(segments)
+        self.sources = tuple(sources)
+        self.ranges = _merge_evidence_ranges(
+            [segment.range for segment in segments if not segment.is_gap]
+        )
+        self.gaps = [segment.range for segment in segments if segment.is_gap]
+        self.covered_bytes = len(target_range) - sum(len(gap) for gap in self.gaps)
+        if not self.sources:
+            self.coverage_status = "absent"
+        elif self.gaps:
+            self.coverage_status = "partial"
+        else:
+            self.coverage_status = "complete"
+        disputed = [segment for segment in segments if segment.is_disputed]
+        unverified = [segment for segment in segments if segment.status == "unverified"]
+        if disputed:
+            self.integrity = "disputed"
+        elif unverified:
+            self.integrity = "unverified"
+        else:
+            self.integrity = "consistent"
+        self.conflicts = disputed
+        if self.integrity == "disputed":
+            self.status = "disputed"
+        elif self.integrity == "unverified":
+            self.status = "unverified"
+        else:
+            self.status = self.coverage_status
+
+    def to_dict(self):
+        return {
+            "status": self.status,
+            "coverage": self.coverage_status,
+            "integrity": self.integrity,
+            "covered_bytes": self.covered_bytes,
+            "total_bytes": len(self.target_range),
+            "ranges": [item.to_dict() for item in self.ranges],
+            "gaps": [item.to_dict() for item in self.gaps],
+            "sources": [source.to_dict() for source in self.sources],
+            "segments": [segment.to_dict() for segment in self.segments],
+        }
+
+
+class EvidenceStructure:
+    """Disk location and optional address mapping for a static structure."""
+
+    __slots__ = ("image_base", "name", "range", "rva", "section")
+
+    def __init__(
+        self, name, file_offset, size, rva=None, image_base=None, section=None
+    ):
+        self.range = EvidenceRange.from_offset_length(file_offset, size)
+        self.name = str(name)
+        self.rva = rva
+        self.image_base = image_base
+        self.section = section
+
+    @classmethod
+    def from_object(cls, structure, pe=None) -> "EvidenceStructure":
+        """Create a boundary from a parsed pefile structure object."""
+
+        if isinstance(structure, EvidenceStructure):
+            return structure
+
+        try:
+            file_offset = structure.get_file_offset()
+            size = structure.sizeof()
+        except (AttributeError, TypeError) as exc:
+            raise TypeError(
+                "structure must expose get_file_offset() and sizeof()"
+            ) from exc
+
+        name = getattr(structure, "name", None) or type(structure).__name__
+        section = None
+        rva = None
+        image_base = None
+        if pe is not None:
+            try:
+                section = pe.get_section_by_offset(file_offset)
+            except AttributeError:
+                section = None
+            if section is not None:
+                try:
+                    rva = pe.get_rva_from_offset(file_offset)
+                except PEFormatError:
+                    rva = None
+            try:
+                image_base = pe.OPTIONAL_HEADER.ImageBase
+            except AttributeError:
+                image_base = None
+
+        section_name = None
+        if section is not None:
+            raw_name = section.Name.split(b"\0", 1)[0]
+            section_name = raw_name.decode("utf-8", "backslashreplace")
+
+        return cls(
+            name=name,
+            file_offset=file_offset,
+            size=size,
+            rva=rva,
+            image_base=image_base,
+            section=section_name,
+        )
+
+    def to_dict(self):
+        result = {
+            "name": self.name,
+            "section": self.section,
+            "disk": self.range.to_dict(),
+            "rva": None,
+            "va": None,
+        }
+        if self.rva is not None:
+            result["rva"] = {
+                "offset": self.rva,
+                "end_offset": self.rva + len(self.range),
+                "length": len(self.range),
+            }
+        if self.rva is not None and self.image_base is not None:
+            va = self.image_base + self.rva
+            result["va"] = {
+                "offset": va,
+                "end_offset": va + len(self.range),
+                "length": len(self.range),
+            }
+        return result
+
+
+def _claim_status(claims, segment_range):
+    contents = [claim.content_for(segment_range) for claim in claims]
+    hashes = [None if content is None else sha256(content).hexdigest() for content in contents]
+
+    if not claims:
+        return "gap", "no source covers this interval", hashes
+    if len(claims) == 1:
+        if contents[0] is None:
+            return "unverified", "metadata-only source cannot provide bytes", hashes
+        return "covered", "one source", hashes
+
+    if any(content is None for content in contents):
+        return (
+            "disputed",
+            "overlapping claims cannot be cross-checked",
+            hashes,
+        )
+    if len(set(hashes)) != 1:
+        return "disputed", "overlapping claims contain different bytes", hashes
+    return "corroborated", "multiple sources agree", hashes
+
+
+def _build_segments(target_range, claims):
+    if not claims:
+        return [
+            EvidenceSegment(
+                target_range,
+                (),
+                "gap",
+                "no source covers this interval",
+                (),
+            )
+        ]
+
+    breakpoints = {target_range.start, target_range.end}
+    for claim in claims:
+        overlap = target_range.intersection(claim.disk_range)
+        if overlap is not None:
+            breakpoints.add(overlap.start)
+            breakpoints.add(overlap.end)
+
+    ordered = sorted(breakpoints)
+    segments = []
+    for index in range(len(ordered) - 1):
+        segment_range = EvidenceRange(ordered[index], ordered[index + 1])
+        covering = [
+            claim
+            for claim in claims
+            if claim.disk_range.contains_range(segment_range)
+        ]
+        status, reason, hashes = _claim_status(covering, segment_range)
+        segments.append(
+            EvidenceSegment(segment_range, covering, status, reason, hashes)
+        )
+    return segments
+
+
+class EvidenceView:
+    """A provenance-preserving view of a disk structure and partial samples.
+
+    The view never joins disjoint intervals into a synthetic complete copy.
+    ``cite(name)`` returns only an exact, conflict-free structure interval backed
+    by the named source.  ``cite_samples()`` requires sample coverage to be
+    continuous across the whole structure and all sample overlaps to agree.
+    """
+
+    def __init__(self, structure, sources):
+        self.structure = EvidenceStructure.from_object(structure)
+        self.sources = tuple(sources)
+        if not self.sources:
+            raise ValueError("an evidence view requires at least one source")
+        names = [source.name for source in self.sources]
+        if len(names) != len(set(names)):
+            raise ValueError("source names must be unique")
+
+        claims = []
+        for source in self.sources:
+            for span in source.spans:
+                overlap = self.structure.range.intersection(span.disk_range)
+                if overlap is None:
+                    continue
+                offset_delta = overlap.start - span.disk_range.start
+                claims.append(
+                    EvidenceClaim(
+                        source,
+                        overlap,
+                        EvidenceRange(
+                            span.source_range.start + offset_delta,
+                            span.source_range.start + offset_delta + len(overlap),
+                        ),
+                    )
+                )
+
+        self.segments = tuple(_build_segments(self.structure.range, claims))
+        sample_sources = [source for source in self.sources if source.kind == "sample"]
+        sample_claims = [
+            claim for claim in claims if claim.source.kind == "sample"
+        ]
+        self.sample_segments = tuple(
+            _build_segments(self.structure.range, sample_claims)
+        )
+        self.sample_coverage = CoverageView(
+            self.structure.range, self.sample_segments, sample_sources
+        )
+        self.evidence = CoverageView(
+            self.structure.range, self.segments, self.sources
+        )
+        if self.evidence.status in ("disputed", "unverified"):
+            self.status = self.evidence.status
+        elif (
+            self.sample_coverage.sources and self.sample_coverage.gaps
+        ) or self.evidence.gaps:
+            self.status = "partial"
+        else:
+            self.status = self.evidence.status
+        self.gaps = self.evidence.gaps
+        self.conflicts = self.evidence.conflicts
+
+    @property
+    def sample_ranges(self):
+        """Continuous ranges covered by samples inside the structure."""
+
+        return self.sample_coverage.ranges
+
+    @property
+    def sample_gaps(self):
+        """Exact structure intervals not covered by any sample."""
+
+        return self.sample_coverage.gaps
+
+    def _source_by_name(self, name):
+        if isinstance(name, EvidenceSource):
+            if name not in self.sources:
+                raise ValueError("source does not belong to this evidence view")
+            return name
+        for source in self.sources:
+            if source.name == name:
+                return source
+        raise ValueError(f"unknown evidence source: {name!r}")
+
+    def _source_citation_reason(self, source):
+        missing = [
+            segment.range
+            for segment in self.segments
+            if not any(claim.source is source for claim in segment.claims)
+        ]
+        if missing:
+            return "source does not cover the full structure", missing
+        unresolved = [
+            (segment.range, segment.status)
+            for segment in self.segments
+            if segment.status in ("disputed", "unverified")
+        ]
+        if unresolved:
+            return "the structure has unresolved evidence", [
+                item[0] for item in unresolved
+            ]
+        return None, ()
+
+    def cite(self, source):
+        """Return exact structure bytes from one named source, or raise."""
+
+        source = self._source_by_name(source)
+        reason, boundaries = self._source_citation_reason(source)
+        if reason is not None:
+            raise EvidenceUnavailable(reason, boundaries)
+
+        chunks = []
+        for segment in self.segments:
+            selected = [
+                claim for claim in segment.claims if claim.source is source
+            ]
+            if not selected:
+                raise EvidenceUnavailable(
+                    "source does not cover the full structure", [segment.range]
+                )
+            content = selected[0].content_for(segment.range)
+            if content is None:
+                raise EvidenceUnavailable(
+                    "source is metadata-only", [segment.range]
+                )
+            chunks.append(content)
+        return b"".join(chunks)
+
+    def _sample_citation_reason(self):
+        if not self.sample_coverage.sources:
+            return "no samples are present", []
+        if self.sample_coverage.gaps:
+            return "sample coverage has a gap", self.sample_coverage.gaps
+        if self.sample_coverage.conflicts:
+            return "sample claims conflict", [
+                segment.range for segment in self.sample_coverage.conflicts
+            ]
+        if self.sample_coverage.integrity == "unverified":
+            return "sample content cannot be verified", []
+        return None, ()
+
+    def cite_samples(self):
+        """Return bytes assembled only from continuous, agreeing samples."""
+
+        reason, boundaries = self._sample_citation_reason()
+        if reason is not None:
+            raise EvidenceUnavailable(reason, boundaries)
+
+        chunks = []
+        for segment in self.sample_segments:
+            selected = segment.claims[0]
+            content = selected.content_for(segment.range)
+            if content is None:
+                raise EvidenceUnavailable(
+                    "sample content cannot be read", [segment.range]
+                )
+            chunks.append(content)
+        return b"".join(chunks)
+
+    def to_dict(self):
+        return {
+            "structure": self.structure.to_dict(),
+            "status": self.status,
+            "sample_coverage": self.sample_coverage.to_dict(),
+            "evidence": self.evidence.to_dict(),
+            "sample_gaps": [item.to_dict() for item in self.sample_gaps],
+            "evidence_gaps": [item.to_dict() for item in self.gaps],
+            "conflicts": [segment.to_dict() for segment in self.conflicts],
+            "citation": {
+                source.name: self._source_citation_reason(source)[0] is None
+                for source in self.sources
+            },
+            "sample_citation": self._sample_citation_reason()[0] is None,
+        }
+
+    def render(self):
+        """Render a human-readable evidence view with exact boundaries."""
+
+        def fmt_range(item):
+            return f"[0x{item.start:08x}, 0x{item.end:08x})"
+
+        def fmt_ranges(items):
+            return ", ".join(fmt_range(item) for item in items) or "none"
+
+        structure = self.structure
+        lines = [
+            f"Evidence structure: {structure.name}",
+            f"  disk range : {fmt_range(structure.range)} "
+            f"({len(structure.range)} bytes)",
+        ]
+        if structure.section:
+            lines.append(f"  section    : {structure.section}")
+        if structure.rva is None:
+            lines.append("  RVA range  : unavailable")
+        else:
+            rva_range = EvidenceRange(
+                structure.rva, structure.rva + len(structure.range)
+            )
+            lines.append(f"  RVA range  : {fmt_range(rva_range)}")
+        if structure.rva is not None and structure.image_base is not None:
+            va_start = structure.image_base + structure.rva
+            va_range = EvidenceRange(va_start, va_start + len(structure.range))
+            lines.append(f"  VA range   : {fmt_range(va_range)}")
+        else:
+            lines.append("  VA range   : unavailable")
+
+        coverage = self.sample_coverage
+        lines.append(
+            f"Sample coverage: {coverage.coverage_status} "
+            f"({coverage.covered_bytes}/{coverage.covered_bytes + sum(len(gap) for gap in coverage.gaps)} bytes)"
+        )
+        for source in coverage.sources:
+            local = []
+            for span in source.spans:
+                overlap = structure.range.intersection(span.disk_range)
+                if overlap is not None:
+                    source_range = EvidenceRange(
+                        span.source_range.start
+                        + overlap.start
+                        - span.disk_range.start,
+                        span.source_range.start
+                        + overlap.end
+                        - span.disk_range.start,
+                    )
+                    local.append(
+                        f"disk {fmt_range(overlap)} "
+                        f"<- source {fmt_range(source_range)}"
+                    )
+            lines.append(
+                f"  source {source.name} (read-only): "
+                + ("; ".join(local) if local else "not in structure")
+            )
+            if source.address is not None:
+                lines.append(f"    source address base: 0x{source.address:08x}")
+        if coverage.ranges:
+            lines.append(f"  covered ranges: {fmt_ranges(coverage.ranges)}")
+        if coverage.gaps:
+            lines.append(f"  gaps          : {fmt_ranges(coverage.gaps)}")
+        lines.append(f"  integrity     : {coverage.integrity}")
+
+        lines.append("Evidence segments:")
+        for segment in self.segments:
+            if segment.claims:
+                claims = []
+                for claim in segment.claims:
+                    source_range = claim.source_range_for(segment.range)
+                    claims.append(
+                        f"{claim.source.name}"
+                        f"[{source_range.start:#x}:{source_range.end:#x}]"
+                    )
+                claim_text = ", ".join(claims)
+            else:
+                claim_text = "no claims"
+            lines.append(
+                f"  {fmt_range(segment.range)} {segment.status}: {claim_text} "
+                f"({segment.reason})"
+            )
+
+        if self.conflicts:
+            lines.append("Conflicts preserved (no merged/resolved bytes):")
+            for segment in self.conflicts:
+                hashes = [
+                    "metadata-only" if digest is None else digest
+                    for digest in segment.claim_hashes
+                ]
+                lines.append(
+                    f"  {fmt_range(segment.range)}: {segment.reason}; "
+                    + ", ".join(
+                        f"{claim.source.name}={hashes[index]}"
+                        for index, claim in enumerate(segment.claims)
+                    )
+                )
+
+        lines.append("Citations:")
+        for source in self.sources:
+            reason, boundaries = self._source_citation_reason(source)
+            if reason is None:
+                lines.append(f"  {source.name}: available")
+            else:
+                lines.append(
+                    f"  {source.name}: unavailable ({reason}; "
+                    f"{fmt_ranges(boundaries)})"
+                )
+        reason, boundaries = self._sample_citation_reason()
+        if reason is None:
+            lines.append("  sample-set: available")
+        else:
+            lines.append(
+                f"  sample-set: unavailable ({reason}; {fmt_ranges(boundaries)})"
+            )
+        lines.append(f"Result: {self.status}")
+        return "\n".join(lines)
 
 
 def main():
