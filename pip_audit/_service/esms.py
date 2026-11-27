@@ -16,6 +16,7 @@ from packaging.version import Version
 
 from pip_audit._cache import caching_session
 from pip_audit._service.interface import (
+    AdvisoryScope,
     ConnectionError,
     Dependency,
     ResolvedDependency,
@@ -34,6 +35,8 @@ class EcosystemsService(VulnerabilityService):
     package vulnerability information.
     """
 
+    source_name = "esms"
+
     def __init__(
         self,
         cache_dir: Path | None = None,
@@ -50,6 +53,24 @@ class EcosystemsService(VulnerabilityService):
         """
         self.session = caching_session(cache_dir, use_pip=False)
         self.timeout = timeout
+
+    def advisory_scope(self, spec: Dependency | None = None) -> AdvisoryScope | None:
+        """
+        Describe the Ecosyste.ms advisory endpoint and package query used.
+        """
+        if spec is not None and spec.is_skipped():
+            return None
+        base = super().advisory_scope(spec)
+        if base is None:
+            return None
+        return AdvisoryScope(
+            source=base.source,
+            ecosystem=base.ecosystem,
+            endpoint="https://advisories.ecosyste.ms/api/v1/advisories",
+            package=base.package,
+            version=base.version,
+            cache_group=base.cache_group,
+        )
 
     def query(self, spec: Dependency) -> tuple[Dependency, list[VulnerabilityResult]]:
         """

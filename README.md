@@ -402,6 +402,16 @@ Found 2 known vulnerabilities in 1 package
 ]
 ```
 
+JSON reports produced by the CLI also carry a `negative_proof` object next to the
+existing `dependencies` and `fixes` lists. The proof records the collected
+`denominator`, the dependencies the vulnerability source actually answered for,
+their advisory `scope` (including blanks for fields the source cannot establish),
+and an `unchecked` list for dependencies that were skipped, missing from a batched
+or cached response, or left unanswered by the source. A zero-finding result is
+therefore only evidence for the set and scope named in the proof, not a general
+"no risk" statement. Library callers can obtain the same report with
+`Auditor.audit_report(source)` and pass it to `JsonFormat.format`.
+
 Audit and attempt to automatically upgrade vulnerable dependencies:
 
 ```console

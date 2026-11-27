@@ -14,6 +14,7 @@ from packaging.version import Version
 
 from pip_audit._cache import caching_session
 from pip_audit._service.interface import (
+    AdvisoryScope,
     ConnectionError,
     Dependency,
     ResolvedDependency,
@@ -32,6 +33,7 @@ class OsvService(VulnerabilityService):
     """
 
     DEFAULT_OSV_URL = "https://api.osv.dev/v1/query"
+    source_name = "osv"
 
     def __init__(
         self,
@@ -51,6 +53,24 @@ class OsvService(VulnerabilityService):
         self.session = caching_session(cache_dir, use_pip=False)
         self.timeout = timeout
         self.osv_url = osv_url
+
+    def advisory_scope(self, spec: Dependency | None = None) -> AdvisoryScope | None:
+        """
+        Describe the OSV endpoint and exact package/version query used.
+        """
+        if spec is not None and spec.is_skipped():
+            return None
+        base = super().advisory_scope(spec)
+        if base is None:
+            return None
+        return AdvisoryScope(
+            source=base.source,
+            ecosystem=base.ecosystem,
+            endpoint=self.osv_url,
+            package=base.package,
+            version=base.version,
+            cache_group=base.cache_group,
+        )
 
     def query(self, spec: Dependency) -> tuple[Dependency, list[VulnerabilityResult]]:
         """

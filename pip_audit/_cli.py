@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import IO, NoReturn, cast
 
 from pip_audit import __version__
-from pip_audit._audit import AuditOptions, Auditor
+from pip_audit._audit import AuditOptions, Auditor, AuditReport
 from pip_audit._dependency_source import (
     DependencySource,
     DependencySourceError,
@@ -545,13 +545,19 @@ def audit() -> None:  # pragma: no cover
         auditor = Auditor(service, options=AuditOptions(dry_run=args.dry_run and not args.fix))
 
         result: dict[Dependency, list[VulnerabilityResult]] = {}
+        audit_iter: Iterator[tuple[Dependency, list[VulnerabilityResult]]]
+        if args.format is OutputFormatChoice.Json and hasattr(auditor, "audit_report"):
+            result = auditor.audit_report(source)
+            audit_iter = iter(result.items())
+        else:
+            audit_iter = auditor.audit(source)
         pkg_count = 0
         vuln_count = 0
         skip_count = 0
         vuln_ignore_count = 0
         vulns_to_ignore = set(args.ignore_vulns)
         try:
-            for spec, vulns in auditor.audit(source):
+            for spec, vulns in audit_iter:
                 if spec.is_skipped():
                     spec = cast(SkippedDependency, spec)
                     if args.strict:
@@ -638,6 +644,13 @@ def audit() -> None:  # pragma: no cover
             sys.exit(1)
     else:
         summary_msg = "No known vulnerabilities found"
+        if isinstance(result, AuditReport) and result.negative_proof is not None:
+            proof = result.negative_proof
+            if not proof.complete:
+                summary_msg = (
+                    "No known vulnerabilities found, but the audit is incomplete "
+                    f"({proof.unchecked_count} of {proof.denominator} dependencies unchecked)"
+                )
         if vuln_ignore_count:
             summary_msg += f", {vuln_ignore_count} ignored"
 

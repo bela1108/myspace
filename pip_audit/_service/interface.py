@@ -152,10 +152,89 @@ class VulnerabilityResult:
         return bool(ids & (self.aliases | {self.id}))
 
 
+@dataclass(frozen=True)
+class AdvisoryScope:
+    """
+    The portion of a vulnerability source's data that was actually consulted.
+
+    Fields that a source cannot establish stay `None` so that a negative result is
+    not presented as broader coverage than the source can support.
+    """
+
+    source: str
+    ecosystem: str | None = None
+    endpoint: str | None = None
+    package: str | None = None
+    version: str | None = None
+    cache_group: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Render the scope as JSON-compatible data, preserving blanks as `None`.
+        """
+        return {
+            "source": self.source,
+            "ecosystem": self.ecosystem,
+            "endpoint": self.endpoint,
+            "package": self.package,
+            "version": self.version,
+            "cache_group": self.cache_group,
+        }
+
+
+# Compatibility name for callers that describe this as the audit/query scope.
+AuditScope = AdvisoryScope
+
+
 class VulnerabilityService(ABC):
     """
     Represents an abstract provider of Python package vulnerability information.
     """
+
+    source_name: str = ""
+    """A stable, human-readable name for the source, when one is available."""
+
+    def advisory_scope(self, spec: Dependency | None = None) -> AdvisoryScope | None:
+        """
+        Describe the advisory range this source can answer for.
+
+        The default describes only what pip-audit knows generically: the Python
+        ecosystem and the exact package/version queried. Sources should override this
+        to add their endpoint or omit fields they cannot actually support. A skipped
+        dependency has no answerable scope and returns `None`.
+        """
+        if spec is not None and spec.is_skipped():
+            return None
+
+        source = self.source_name or self.__class__.__name__
+        package = spec.canonical_name if spec is not None else None
+        version = str(spec.version) if isinstance(spec, ResolvedDependency) else None
+        group_provider = getattr(self, "cache_group", None)
+        if callable(group_provider):
+            try:
+                cache_group = group_provider(spec)
+            except TypeError:
+                cache_group = group_provider()
+        else:
+            cache_group = group_provider
+        if not isinstance(cache_group, str):
+            cache_group = None
+        return AdvisoryScope(
+            source=source,
+            ecosystem="pypi",
+            package=package,
+            version=version,
+            cache_group=cache_group,
+        )
+
+    def cache_group(self, spec: Dependency | None = None) -> str | None:
+        """
+        Return the cache/query group this source associates with `spec`, if known.
+
+        A blank value means the source does not expose a group identity, not that the
+        group is safe.
+        """
+        return None
 
     @abstractmethod
     def query(

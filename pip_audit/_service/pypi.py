@@ -14,6 +14,7 @@ from packaging.version import InvalidVersion, Version
 
 from pip_audit._cache import caching_session
 from pip_audit._service.interface import (
+    AdvisoryScope,
     ConnectionError,
     Dependency,
     ResolvedDependency,
@@ -32,6 +33,8 @@ class PyPIService(VulnerabilityService):
     package vulnerability information.
     """
 
+    source_name = "pypi"
+
     def __init__(
         self, cache_dir: Path | None = None, timeout: int | None = None, **kwargs: dict
     ) -> None:
@@ -47,6 +50,27 @@ class PyPIService(VulnerabilityService):
         """
         self.session = caching_session(cache_dir)
         self.timeout = timeout
+
+    def advisory_scope(self, spec: Dependency | None = None) -> AdvisoryScope | None:
+        """
+        Describe the exact PyPI release record consulted for `spec`.
+        """
+        if spec is not None and spec.is_skipped():
+            return None
+        base = super().advisory_scope(spec)
+        if base is None:
+            return None
+        endpoint = None
+        if isinstance(spec, ResolvedDependency):
+            endpoint = f"https://pypi.org/pypi/{spec.canonical_name}/{spec.version}/json"
+        return AdvisoryScope(
+            source=base.source,
+            ecosystem=base.ecosystem,
+            endpoint=endpoint,
+            package=base.package,
+            version=base.version,
+            cache_group=base.cache_group,
+        )
 
     def query(self, spec: Dependency) -> tuple[Dependency, list[VulnerabilityResult]]:
         """

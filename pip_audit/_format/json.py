@@ -9,6 +9,7 @@ from typing import Any, cast
 
 import pip_audit._fix as fix
 import pip_audit._service as service
+from pip_audit._audit import NegativeProof
 
 from .interface import VulnerabilityFormat
 
@@ -50,10 +51,21 @@ class JsonFormat(VulnerabilityFormat):
 
         See `VulnerabilityFormat.format`.
         """
-        output_json = {
+        output_json: dict[str, Any] = {
             "dependencies": [self._format_dep(dep, vulns) for dep, vulns in result.items()],
             "fixes": [self._format_fix(f) for f in fixes],
         }
+        proof = getattr(result, "negative_proof", None)
+        if proof is None:
+            proof = getattr(result, "proof", None)
+        if callable(proof):
+            proof = proof()
+        if isinstance(proof, NegativeProof):
+            output_json["negative_proof"] = proof.to_dict()
+        elif isinstance(proof, dict):
+            output_json["negative_proof"] = proof
+        elif hasattr(proof, "to_dict"):
+            output_json["negative_proof"] = proof.to_dict()
         return json.dumps(output_json)
 
     def _format_dep(

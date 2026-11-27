@@ -8,6 +8,13 @@ All versions prior to 0.0.9 are untracked.
 
 ## [Unreleased]
 
+### Added
+
+* JSON export now includes a `negative_proof` object binding zero-finding
+  results to the collected dependency set, the advisory scope each source
+  actually answered for, and an explicit list of unchecked dependencies.
+  The existing `dependencies` and `fixes` list shapes are unchanged.
+
 ### Fixed
 
 * Editable requirements skipped with `--skip-editable` no longer require a hash
