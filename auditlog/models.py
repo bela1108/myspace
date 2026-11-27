@@ -132,6 +132,20 @@ class LogEntryManager(models.Manager):
 
         return None
 
+    def seal_segment(self, **kwargs):
+        """Seal the next committed range of entries on this manager's DB."""
+        from auditlog.sealing import seal_segment
+
+        return seal_segment(using=self.db or DEFAULT_DB_ALIAS, **kwargs)
+
+    seal = seal_segment
+
+    def unsealed(self):
+        """Return entries above the last sealed range without altering them."""
+        from auditlog.sealing import unsealed_entries
+
+        return unsealed_entries(using=self.db or DEFAULT_DB_ALIAS)
+
     def get_for_object(self, instance):
         """
         Get log entries for the specified model instance.
@@ -616,6 +630,143 @@ class AuditlogHistoryField(GenericRelation):
         # method.  However, because we don't want to delete these related
         # objects, we simply return an empty list.
         return []
+
+
+class LogEntrySegment(models.Model):
+    """A sealed, ordered batch of audit log entries.
+
+    A segment is a checkpoint over :class:`LogEntry` rows. It does not modify
+    or delete the log entries themselves, so entries that are not part of a
+    segment remain available through the normal ``LogEntry`` manager.
+
+    The manifest is the ordered checklist of entries in the segment. Every
+    manifest item carries the entry primary key and a digest of the entry's
+    persisted field values. ``digest`` covers the manifest and the preceding
+    segment digest, which makes segments a verifiable chain even when the
+    underlying log table is copied to another database.
+    """
+
+    sequence = models.PositiveIntegerField(
+        unique=True,
+        db_index=True,
+        verbose_name=_("sequence"),
+    )
+    previous_digest = models.CharField(
+        max_length=128,
+        blank=True,
+        default="",
+        verbose_name=_("previous digest"),
+    )
+    digest = models.CharField(
+        max_length=128,
+        db_index=True,
+        verbose_name=_("digest"),
+    )
+    manifest = models.JSONField(default=list, verbose_name=_("manifest"))
+    entry_count = models.PositiveIntegerField(
+        default=0,
+        verbose_name=_("entry count"),
+    )
+    first_entry_id = models.BigIntegerField(
+        blank=True,
+        null=True,
+        verbose_name=_("first entry id"),
+    )
+    last_entry_id = models.BigIntegerField(
+        blank=True,
+        null=True,
+        db_index=True,
+        verbose_name=_("last entry id"),
+    )
+    sealed_at = models.DateTimeField(
+        default=django_timezone.now,
+        db_index=True,
+        verbose_name=_("sealed at"),
+    )
+    algorithm = models.CharField(
+        max_length=32,
+        default="sha256",
+        verbose_name=_("digest algorithm"),
+    )
+    source_alias = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+        verbose_name=_("source database alias"),
+    )
+
+    class Meta:
+        ordering = ["sequence"]
+        get_latest_by = "sequence"
+        verbose_name = _("log entry segment")
+        verbose_name_plural = _("log entry segments")
+
+    def __str__(self):
+        return f"Segment {self.sequence} ({self.entry_count} entries)"
+
+    @property
+    def entry_ids(self):
+        return [
+            item.get("id")
+            for item in self.manifest or []
+            if isinstance(item, dict) and item.get("id") is not None
+        ]
+
+    @property
+    def start_id(self):
+        return self.first_entry_id
+
+    @property
+    def end_id(self):
+        return self.last_entry_id
+
+    @property
+    def count(self):
+        return self.entry_count
+
+    @property
+    def checksum(self):
+        return self.digest
+
+    @property
+    def previous_checksum(self):
+        return self.previous_digest
+
+    def summary(self):
+        """Return a reviewable, database-independent segment summary."""
+        return {
+            "sequence": self.sequence,
+            "previous_digest": self.previous_digest,
+            "digest": self.digest,
+            "entry_count": self.entry_count,
+            "first_entry_id": self.first_entry_id,
+            "last_entry_id": self.last_entry_id,
+            "sealed_at": self.sealed_at.isoformat() if self.sealed_at else None,
+            "algorithm": self.algorithm,
+            "manifest": list(self.manifest or []),
+        }
+
+    def verify_integrity(self, using=None):
+        """Return the ordered mismatches for this segment and its chain."""
+        from auditlog.sealing import verify_segments
+
+        using = using or self._state.db or DEFAULT_DB_ALIAS
+        segments = list(
+            LogEntrySegment.objects.using(using)
+            .filter(sequence__lte=self.sequence)
+            .order_by("sequence")
+        )
+        return verify_segments(using=using, segments=segments)
+
+    @property
+    def is_valid(self):
+        return not self.verify_integrity()
+
+
+# Friendly aliases for integrations that use alternative capitalisation.
+AuditLogSegment = LogEntrySegment
+AuditlogSegment = LogEntrySegment
+Segment = LogEntrySegment
 
 
 # should I add a signal receiver for setting_changed?

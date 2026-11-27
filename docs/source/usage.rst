@@ -646,6 +646,50 @@ log entries prior to a given date. This may be used to implement time based rete
 
     Using the ``auditlogflush`` command deletes log entries permanently and irreversibly from the database.
 
+Sealed audit log segments
+-------------------------
+
+Sealing gives auditors a reviewable checkpoint over an existing range of log
+entries without changing or deleting those entries. A segment stores an ordered
+manifest of entry primary keys and digests, plus a digest that includes the
+previous segment's digest. Segments therefore have a stable order and continue
+the same chain as history is appended::
+
+    from auditlog.sealing import seal_segment, verify_segments
+
+    first = seal_segment()
+    # ... more audit entries are committed ...
+    second = seal_segment()
+    assert second.previous_digest == first.digest
+    assert verify_segments() == []
+
+The manifest is ordered by log entry primary key. Only entries visible to the
+sealing connection enter a segment, so a write pending in another transaction
+is excluded. Entries that have not been sealed are left in place and remain
+available through the normal ``LogEntry.objects`` manager and
+``LogEntry.objects.unsealed()``.
+
+.. code-block:: shell
+
+    python manage.py auditlogseal --dry-run
+    python manage.py auditlogseal
+    python manage.py auditlogverify
+    python manage.py auditlogexport sealed-segments.json
+    python manage.py auditlogverify sealed-segments.json
+
+An export contains the segments and the sealed entries. ``auditlogverify`` on
+that file verifies the copy without reading the source database, which supports
+moving evidence to another database. ``auditlogexport`` refuses to write the
+document when an entry was deleted or changed after sealing, and reports the
+first mismatch in segment/manifest order. Set ``--no-verify`` to produce a
+forensic copy even when a mismatch is already known.
+
+The same operations are available from Python through
+``auditlog.sealing.export_segments``, ``auditlog.sealing.verify_export`` and
+``auditlog.sealing.import_segments``. ``import_segments`` restores a verified
+document into the database selected by ``using`` (or ``--database`` on the
+``auditlogimport`` command).
+
 Django Admin integration
 ------------------------
 
@@ -675,4 +719,3 @@ The mixin provides the following configuration options:
 - ``show_auditlog_history_link``: Set to ``True`` to display the "View" link in the admin changelist
 - ``auditlog_history_template``: Template to use for rendering the history page (default: ``auditlog/object_history.html``)
 - ``auditlog_history_per_page``: Number of log entries to display per page (default: 10)
-

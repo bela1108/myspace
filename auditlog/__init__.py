@@ -22,3 +22,25 @@ def get_logentry_model():
             "AUDITLOG_LOGENTRY_MODEL refers to model '%s' that has not been installed"
             % model_string
         )
+
+
+def get_segment_model():
+    return django_apps.get_model("auditlog", "LogEntrySegment", require_ready=False)
+
+
+def seal_segment(*args, **kwargs):
+    from auditlog.sealing import seal_segment as _seal_segment
+
+    return _seal_segment(*args, **kwargs)
+
+
+def verify_segments(*args, **kwargs):
+    from auditlog.sealing import verify_segments as _verify_segments
+
+    return _verify_segments(*args, **kwargs)
+
+
+def export_segments(*args, **kwargs):
+    from auditlog.sealing import export_segments as _export_segments
+
+    return _export_segments(*args, **kwargs)

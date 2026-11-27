@@ -2,6 +2,10 @@
 
 ## Next Release
 
+#### Improvements
+
+- Add sealed audit log segments with stable manifests, chained digests, continuation, and independent export verification (`auditlogseal`, `auditlogverify`, `auditlogexport`, `auditlogimport`).
+
 ## 3.4.2 (2026-11-08)
 
 #### Improvements

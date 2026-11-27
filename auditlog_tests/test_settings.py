@@ -81,6 +81,10 @@ elif TEST_DB_BACKEND == "sqlite3":
             ),
         }
     }
+    if os.getenv("TEST_DB_TEST_NAME"):
+        DATABASES["default"]["TEST"] = {
+            "NAME": os.environ["TEST_DB_TEST_NAME"],
+        }
 else:
     raise ValueError(f"Unsupported database backend: {TEST_DB_BACKEND}")
 
