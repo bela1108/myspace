@@ -131,10 +131,42 @@ IND8 = {
 STIX_OBJS2 = [IND6, IND7, IND8]
 STIX_OBJS1 = [IND1, IND2, IND3, IND4, IND5]
 
+# A relationship which actually occurred (start_time) before an analyst
+# registered it (created/modified); a later follow-up visit supplements
+# testimony (description) without changing the original occurrence time.
+REL_OCCURRED = "2021-03-04T08:15:00.000Z"
+REL_REGISTERED = "2021-03-10T09:00:00.000Z"
+REL_FOLLOWUP = "2021-03-18T17:30:00.000Z"
+REL_VERSIONED_ID = "relationship--00000000-0000-4000-8000-000000000001"
+
+REL_V1 = {
+    "created": REL_REGISTERED,
+    "id": REL_VERSIONED_ID,
+    "modified": REL_REGISTERED,
+    "relationship_type": "indicates",
+    "source_ref": INDICATOR_ID,
+    "spec_version": "2.1",
+    "start_time": REL_OCCURRED,
+    "target_ref": MALWARE_ID,
+    "type": "relationship",
+}
+REL_V2 = dict(
+    REL_V1,
+    modified=REL_FOLLOWUP,
+    description="Late follow-up testimony from the analyst",
+)
+
 
 @pytest.fixture
 def mem_store():
     yield MemoryStore(STIX_OBJS1)
+
+
+@pytest.fixture
+def versioned_rel_mem_store():
+    store = MemoryStore([REL_V1])
+    store.add(REL_V2)
+    yield store
 
 
 @pytest.fixture
@@ -201,6 +233,51 @@ def test_memory_store_all_versions(mem_store):
 
     resp = mem_store.all_versions("indicator--00000000-0000-4000-8000-000000000001")
     assert len(resp) == 3
+
+
+def test_memory_store_get_as_of(versioned_rel_mem_store):
+    # latest version includes the late follow-up testimony
+    latest = versioned_rel_mem_store.get(REL_VERSIONED_ID)
+    assert latest["modified"] == parse_into_datetime(REL_FOLLOWUP)
+    assert latest["description"] == "Late follow-up testimony from the analyst"
+
+    # the three times stay distinct and queryable: actual occurrence
+    # (start_time), registration (created), last update (modified)
+    assert latest["start_time"] == parse_into_datetime(REL_OCCURRED)
+    assert latest["created"] == parse_into_datetime(REL_REGISTERED)
+
+    # point-in-time read before the follow-up: the testimony was still
+    # unknown at that time, so it stays absent
+    historical = versioned_rel_mem_store.get(
+        REL_VERSIONED_ID, as_of="2021-03-12T00:00:00.000Z",
+    )
+    assert historical["modified"] == parse_into_datetime(REL_REGISTERED)
+    assert "description" not in historical
+    # the actual occurrence time keeps its original value
+    assert historical["start_time"] == parse_into_datetime(REL_OCCURRED)
+
+    # point-in-time read before registration: nothing recorded yet
+    assert versioned_rel_mem_store.get(
+        REL_VERSIONED_ID, as_of="2021-03-01T00:00:00.000Z",
+    ) is None
+
+    # as_of also accepts datetime instances, boundary is inclusive
+    followup_read = versioned_rel_mem_store.get(
+        REL_VERSIONED_ID, as_of=parse_into_datetime(REL_FOLLOWUP),
+    )
+    assert followup_read["description"] == "Late follow-up testimony from the analyst"
+
+
+def test_memory_store_get_as_of_unversioned_object(mem_store):
+    file_sco = {
+        "type": "file",
+        "id": "file--bbd59c0c-1aa4-44f1-96de-80b8325372c7",
+        "name": "cats.png",
+    }
+    mem_store.add(file_sco)
+
+    obj = mem_store.get(file_sco["id"], as_of="2021-03-12T00:00:00.000Z")
+    assert obj["id"] == file_sco["id"]
 
 
 def test_memory_store_query(mem_store):

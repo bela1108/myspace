@@ -10,6 +10,7 @@ from stix2.base import _STIXBase
 from stix2.datastore import DataSink, DataSource, DataStoreMixin
 from stix2.datastore.filters import FilterSet, apply_common_filters
 from stix2.parsing import parse
+from stix2.utils import parse_into_datetime
 
 
 def _add(store, stix_data, allow_custom=True, version=None):
@@ -80,6 +81,35 @@ class _ObjectFamily(object):
             obj["modified"] > self.latest_version["modified"]
         ):
             self.latest_version = obj
+
+    def get_version(self, as_of=None):
+        """Retrieve the version of the object that was current at a given
+        point in time.
+
+        Args:
+            as_of (datetime OR str): The point in time for which the object
+                is read.  If None, the latest version is returned.
+
+        Returns:
+            The version with the latest "modified" timestamp not after
+            "as_of", or None if no version had been recorded yet at that
+            time.
+
+        """
+        if as_of is None:
+            return self.latest_version
+
+        if isinstance(as_of, str):
+            as_of = parse_into_datetime(as_of)
+
+        versions = [
+            obj for obj in self.all_versions.values()
+            if obj["modified"] <= as_of
+        ]
+        if not versions:
+            return None
+
+        return max(versions, key=lambda obj: obj["modified"])
 
     def __str__(self):
         return "<<{}; latest={}>>".format(
@@ -257,11 +287,19 @@ class MemorySource(DataSource):
             if stix_data:
                 _add(self, stix_data, allow_custom, version)
 
-    def get(self, stix_id, _composite_filters=None):
+    def get(self, stix_id, as_of=None, _composite_filters=None):
         """Retrieve STIX object from in-memory dict via STIX ID.
 
         Args:
             stix_id (str): The STIX ID of the STIX object to be retrieved.
+            as_of (datetime OR str): Optional point in time at which to read
+                the object.  The version returned is the one with the latest
+                "modified" timestamp not after "as_of", so updates recorded
+                later (and not yet known at that time) remain invisible.
+                None is returned if no version had been recorded yet at that
+                time.  Unversioned objects (those without a "modified"
+                property) are returned as-is.  If None, the latest version
+                is returned.
             _composite_filters (FilterSet): collection of filters passed from the parent
                 CompositeDataSource, not user supplied
 
@@ -274,7 +312,7 @@ class MemorySource(DataSource):
         mapped_value = self._data.get(stix_id)
         if mapped_value:
             if isinstance(mapped_value, _ObjectFamily):
-                stix_obj = mapped_value.latest_version
+                stix_obj = mapped_value.get_version(as_of)
             else:
                 stix_obj = mapped_value
 
