@@ -51,7 +51,7 @@ from in_toto.models.layout import (
     Step,
 )
 from in_toto.models.link import FILENAME_FORMAT, Link
-from in_toto.models.metadata import Metablock
+from in_toto.models.metadata import Envelope, Metablock
 from in_toto.rulelib import unpack_rule
 from in_toto.verifylib import (
     _raise_on_bad_retval,
@@ -59,6 +59,7 @@ from in_toto.verifylib import (
     in_toto_verify,
     load_links_for_layout,
     run_all_inspections,
+    summarize_offline_links,
     verify_all_item_rules,
     verify_allow_rule,
     verify_command_alignment,
@@ -1169,6 +1170,156 @@ class TestInTotoVerifyThresholds(unittest.TestCase):
 
     - verifylib.verify_link_signature_thresholds
     - verifylib.verify_threshold_constraints"""
+
+    def test_offline_summary_distinguishes_copies_from_signatures(self):
+        """Count custodial copies and original signed testimonies separately."""
+        signer = SignerStore.ed25519
+        public_key = SignerStore.ed25519_pub
+        keyid = public_key["keyid"]
+        step_name = "custody-step"
+        link_name = FILENAME_FORMAT.format(
+            step_name=step_name, keyid=keyid
+        )
+
+        link = Metablock(signed=Link(name=step_name))
+        link.create_signature(signer)
+
+        layout = Layout(
+            keys={keyid: public_key},
+            steps=[
+                Step(
+                    name=step_name,
+                    pubkeys=[keyid],
+                    threshold=2,
+                )
+            ],
+        )
+        single_signature_layout = Layout(
+            keys={keyid: public_key},
+            steps=[Step(name=step_name, pubkeys=[keyid])],
+        )
+
+        with tempfile.TemporaryDirectory() as first_dir, \
+                tempfile.TemporaryDirectory() as second_dir:
+            link.dump(os.path.join(first_dir, link_name))
+            second_link_name = "custodian-copy.link"
+            link.dump(os.path.join(second_dir, second_link_name))
+
+            summary = summarize_offline_links(
+                layout, [first_dir, second_dir]
+            )
+
+            self.assertEqual(summary["custody_witness_count"], 2)
+            self.assertEqual(summary["signature_testimony_count"], 1)
+            self.assertEqual(
+                summary["custody_witness_counts"][step_name], 2
+            )
+            self.assertEqual(
+                summary["signature_testimony_counts"][step_name], 1
+            )
+            self.assertEqual(
+                list(summary["steps_metadata"][step_name]), [keyid]
+            )
+
+            with self.assertRaises(ThresholdVerificationError):
+                verify_link_signature_thresholds(
+                    layout, summary["steps_metadata"]
+                )
+
+            os.remove(os.path.join(second_dir, second_link_name))
+            summary = summarize_offline_links(
+                layout, [first_dir, second_dir]
+            )
+
+            self.assertEqual(summary["custody_witness_count"], 1)
+            self.assertEqual(summary["signature_testimony_count"], 1)
+            verified = verify_link_signature_thresholds(
+                single_signature_layout, summary["steps_metadata"]
+            )
+            self.assertEqual(list(verified[step_name]), [keyid])
+
+    def test_offline_summary_identifies_dsse_copies_by_payload(self):
+        """Identify DSSE copies without relying on their file names."""
+        signer = SignerStore.ed25519
+        public_key = SignerStore.ed25519_pub
+        keyid = public_key["keyid"]
+        step_name = "dsse-custody-step"
+
+        envelope = Envelope.from_signable(Link(name=step_name))
+        envelope.create_signature(signer)
+
+        layout = Layout(
+            keys={keyid: public_key},
+            steps=[Step(name=step_name, pubkeys=[keyid])],
+        )
+
+        with tempfile.TemporaryDirectory() as link_dir:
+            envelope.dump(os.path.join(link_dir, "first.link"))
+            envelope.dump(os.path.join(link_dir, "second-copy.link"))
+
+            summary = summarize_offline_links(layout, link_dir)
+
+            self.assertEqual(summary["custody_witness_count"], 2)
+            self.assertEqual(summary["signature_testimony_count"], 1)
+            self.assertEqual(
+                list(summary["steps_metadata"][step_name]), [keyid]
+            )
+
+    def test_offline_summary_counts_signatures_across_custodians(self):
+        """Preserve distinct signed testimonies alongside duplicate copies."""
+        first_signer = SignerStore.ed25519
+        first_public_key = SignerStore.ed25519_pub
+        first_keyid = first_public_key["keyid"]
+        second_signer = SignerStore.ecdsa
+        second_public_key = SignerStore.ecdsa_pub
+        second_keyid = second_public_key["keyid"]
+        step_name = "multi-custody-step"
+
+        first_link = Metablock(signed=Link(name=step_name))
+        first_link.create_signature(first_signer)
+        second_link = Metablock(signed=Link(name=step_name))
+        second_link.create_signature(second_signer)
+
+        layout = Layout(
+            keys={
+                first_keyid: first_public_key,
+                second_keyid: second_public_key,
+            },
+            steps=[
+                Step(
+                    name=step_name,
+                    pubkeys=[first_keyid, second_keyid],
+                    threshold=2,
+                )
+            ],
+        )
+
+        with tempfile.TemporaryDirectory() as first_dir, \
+                tempfile.TemporaryDirectory() as second_dir:
+            first_link.dump(os.path.join(first_dir, "first.link"))
+            first_link.dump(os.path.join(second_dir, "first-copy.link"))
+            second_link.dump(os.path.join(second_dir, "second.link"))
+            second_link.dump(os.path.join(second_dir, "second-copy.link"))
+
+            summary = summarize_offline_links(
+                layout, [first_dir, second_dir]
+            )
+
+            self.assertEqual(summary["custody_witness_count"], 4)
+            self.assertEqual(summary["signature_testimony_count"], 2)
+            self.assertEqual(
+                summary["custody_witness_counts"][step_name], 4
+            )
+            self.assertEqual(
+                summary["signature_testimony_counts"][step_name], 2
+            )
+
+            verified = verify_link_signature_thresholds(
+                layout, summary["steps_metadata"]
+            )
+            self.assertCountEqual(
+                list(verified[step_name]), [first_keyid, second_keyid]
+            )
 
     @classmethod
     def setUpClass(cls):

@@ -29,6 +29,8 @@ import datetime
 import fnmatch
 import logging
 import os
+from collections.abc import Iterable
+from pathlib import Path
 
 import iso8601
 import securesystemslib.exceptions
@@ -56,6 +58,72 @@ from in_toto.models.metadata import Metadata
 LOG = logging.getLogger(__name__)
 
 RULE_TRACE = {}
+
+
+def _get_link_signature_keyids(metadata):
+    """Return the keyids of the signatures on a link metadata object."""
+    signatures = metadata.signatures
+    if isinstance(signatures, dict):
+        return list(signatures.keys())
+
+    return [signature["keyid"] for signature in signatures]
+
+
+def summarize_offline_links(layout, link_dir_paths):
+    """Summarize signed link testimonies and custodial file copies.
+
+    The summary distinguishes link files, which may be duplicated by different
+    custodians, from the original signed materials. A copied file does not add
+    another signature testimony and therefore cannot increase a step threshold.
+
+    Arguments:
+      layout: The layout whose steps are used to identify relevant links.
+      link_dir_paths: A path or iterable of paths to directories containing
+          link metadata files. Directories are searched recursively and files
+          are identified by their payload and signatures rather than filename.
+
+    Returns:
+      A dictionary containing the distinct loaded metadata per step, the total
+      number of link file copies, the total number of distinct signed
+      testimonies, and those counts per step.
+    """
+    if not isinstance(link_dir_paths, Iterable) or isinstance(
+        link_dir_paths, (str, os.PathLike)
+    ):
+        link_dir_paths = [link_dir_paths]
+
+    steps = {step.name: step for step in layout.steps}
+    steps_metadata = {step_name: {} for step_name in steps}
+    custody_witness_counts = dict.fromkeys(steps, 0)
+    signature_testimony_counts = dict.fromkeys(steps, 0)
+
+    for link_dir_path in link_dir_paths:
+        for filepath in Path(link_dir_path).rglob("*.link"):
+            metadata = Metadata.load(filepath)
+            link = metadata.get_payload()
+
+            if link.type_ != "link" or link.name not in steps:
+                continue
+
+            custody_witness_counts[link.name] += 1
+
+            for keyid in dict.fromkeys(
+                _get_link_signature_keyids(metadata)
+            ):
+                steps_metadata[link.name].setdefault(keyid, metadata)
+
+    for step_name, metadata_by_keyid in steps_metadata.items():
+        signature_testimony_counts[step_name] = len(metadata_by_keyid)
+
+    return {
+        "steps_metadata": steps_metadata,
+        "custody_witness_count": sum(custody_witness_counts.values()),
+        "signature_testimony_count": sum(
+            signature_testimony_counts.values()
+        ),
+        "custody_witness_counts": custody_witness_counts,
+        "signature_testimony_counts": signature_testimony_counts,
+    }
 
 
 def _raise_on_bad_retval(return_value, command=None):
