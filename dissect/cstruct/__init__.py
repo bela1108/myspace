@@ -51,6 +51,14 @@ from dissect.cstruct.util import (
     u64,
     unpack,
 )
+from dissect.cstruct.verification import (
+    CollectionMethod,
+    FieldClaim,
+    Observation,
+    UnprovableField,
+    VerificationResult,
+    verify_structure,
+)
 
 __all__ = [
     "LEB128",
@@ -58,21 +66,25 @@ __all__ = [
     "BaseType",
     "BitBuffer",
     "Char",
+    "CollectionMethod",
     "CharArray",
     "Enum",
     "Error",
     "Expression",
+    "FieldClaim",
     "Field",
     "Flag",
     "Int",
     "MetaType",
     "NullPointerDereference",
+    "Observation",
     "Packed",
     "ParserError",
     "Pointer",
     "ResolveError",
     "Structure",
     "Union",
+    "UnprovableField",
     "Void",
     "Wchar",
     "WcharArray",
@@ -101,4 +113,6 @@ __all__ = [
     "u32",
     "u64",
     "unpack",
+    "verify_structure",
+    "VerificationResult",
 ]
