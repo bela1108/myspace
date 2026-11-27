@@ -143,6 +143,15 @@ TODO: Example when this feature is written up.
 
 ## Report generation
 
+## Competing explanations
+
+When a synthetic sample keeps several plausible explanations alive, the
+multi-explanation reasoning API records the explanations, their evidence, the
+exclusion relations between them, and each item's rationale. Findings are only
+registered when they hold across every self-consistent interpretation, and
+withdrawing evidence restores an unresolved case to the unknown state. See
+[reasoning.md](reasoning.md) for the full workflow.
+
 Maybe, you need to generate a full report with all the detect-secrets findings. You can generate
 one with the `--report` flag:
 
