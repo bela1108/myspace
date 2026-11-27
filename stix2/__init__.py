@@ -4,6 +4,7 @@
    :toctree: api
 
    confidence
+   custody
    datastore
    environment
    equivalence
@@ -25,6 +26,7 @@
 # flake8: noqa
 
 from .confidence import scales
+from .custody import reconcile_custody, reconcile_loans, settle_loans
 from .datastore import CompositeDataSource
 from .datastore.filesystem import (
     FileSystemSink, FileSystemSource, FileSystemStore,
