@@ -180,6 +180,14 @@ dfdatetime.time\_elements module
    :show-inheritance:
    :undoc-members:
 
+dfdatetime.time\_testimony module
+---------------------------------
+
+.. automodule:: dfdatetime.time_testimony
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 dfdatetime.uuid\_time module
 ----------------------------
 

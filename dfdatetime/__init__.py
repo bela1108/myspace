@@ -20,6 +20,7 @@ from dfdatetime import rfc2579_date_time
 from dfdatetime import semantic_time
 from dfdatetime import systemtime
 from dfdatetime import time_elements
+from dfdatetime import time_testimony
 from dfdatetime import uuid_time
 from dfdatetime import webkit_time
 
