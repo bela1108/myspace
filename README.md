@@ -123,6 +123,54 @@ file.load_key(secret_key=binascii.unhexlify("AE8C36E68B4BB9EA46E5544A5FDB6693875
 file.decrypt(open("decrypted.docx", "wb"), verify_integrity=True)
 ```
 
+#### Archive policy gate
+
+The archive policy layer keeps format identification, read permission, and transfer review
+independent. The existing `OfficeFile.load_key()` and `OfficeFile.decrypt()` calls remain
+available for legacy readers.
+
+```python
+from datetime import date
+from msoffcrypto.archive import (
+    ArchiveMaterial,
+    ArchivePolicyGate,
+    ArchiveService,
+    CurrentPolicyTransferReviewer,
+    LegacyReadPermission,
+)
+
+gate = ArchivePolicyGate(
+    LegacyReadPermission(approved_material_ids={"legacy-doc", "legacy-xls"}),
+    CurrentPolicyTransferReviewer(),
+)
+service = ArchiveService(gate)
+
+with open("rc4cryptoapi_password.doc", "rb") as stream:
+    material = ArchiveMaterial(
+        "legacy-doc",
+        stream,
+        source_date=date(2025, 12, 31),
+        source_date_trusted=True,
+    )
+    profile, permission, decrypted = service.read_for_investigation(
+        material,
+        "investigation",
+        date(2026, 6, 30),
+        lambda office_file: office_file.load_key(password="Password1234_"),
+    )
+
+    review = service.copy_for_new_archive(
+        material,
+        "new-archive",
+        date(2026, 6, 30),
+    )
+    assert not review.is_complete
+```
+
+Untrusted source dates are never used to establish historical eligibility. Callers may replace
+either policy object with a custom implementation of the read or transfer decision while reusing
+the same format profile and service orchestration.
+
 Supported key types are
 
 - Passwords
