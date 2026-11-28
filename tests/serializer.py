@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Tests for the date and time values serializer."""
 
+import json
 import unittest
 
 from dfdatetime import dotnet_datetime
@@ -424,6 +425,190 @@ class SerializerTest(unittest.TestCase):
         with self.assertRaises(KeyError):
             json_dict = {"__class_name__": "UnknownType", "__type__": "DateTimeValues"}
             serializer.Serializer.ConvertJSONToDateTimeValues(json_dict)
+
+    def testCheckRepresentationPairRoundTrip(self):
+        """Test CheckRepresentationPairRoundTrip function."""
+        first_date_time = posix_time.PosixTimeInNanoseconds(
+            timestamp=1281643591546875500
+        )
+        second_date_time = posix_time.PosixTimeInNanoseconds(
+            timestamp=1281643591546875501
+        )
+
+        receipt = serializer.Serializer.CheckRepresentationPairRoundTrip(
+            first_date_time,
+            second_date_time,
+            date_text_target_class_name="PosixTimeInMicroseconds",
+        )
+
+        self.assertIs(
+            receipt.numeric_receipts[0].source_type,
+            posix_time.PosixTimeInNanoseconds,
+        )
+        self.assertEqual(
+            receipt.numeric_receipts[0].source_class_name,
+            "PosixTimeInNanoseconds",
+        )
+        self.assertEqual(
+            receipt.numeric_receipts[0].status,
+            serializer.RoundTripStatus.IDENTICAL,
+        )
+        self.assertEqual(
+            receipt.numeric_receipts[0].payload["__class_name__"],
+            "PosixTimeInNanoseconds",
+        )
+        numeric_payload = json.loads(
+            receipt.numeric_receipts[0].serialized_payload
+        )
+        restored_numeric_values = (
+            serializer.Serializer.ConvertNumericPayloadToDateTimeValues(
+                numeric_payload
+            )
+        )
+        self.assertEqual(
+            numeric_payload["timestamp"], first_date_time.timestamp
+        )
+        self.assertIsInstance(numeric_payload["timestamp"], int)
+        self.assertEqual(
+            restored_numeric_values,
+            receipt.numeric_receipts[0].restored_date_time_values,
+        )
+        self.assertEqual(
+            receipt.numeric_receipts[1].status,
+            serializer.RoundTripStatus.IDENTICAL,
+        )
+        self.assertFalse(receipt.numeric_payloads_are_identical)
+        self.assertFalse(receipt.restored_numeric_values_are_equal)
+        self.assertEqual(
+            receipt.numeric_receipts[0].restored_date_time_values,
+            first_date_time,
+        )
+        self.assertEqual(
+            receipt.numeric_receipts[1].restored_date_time_values,
+            second_date_time,
+        )
+
+        self.assertEqual(
+            receipt.text_receipts[0].status,
+            serializer.RoundTripStatus.UNRECOVERABLE,
+        )
+        self.assertEqual(
+            receipt.text_receipts[1].status,
+            serializer.RoundTripStatus.UNRECOVERABLE,
+        )
+        self.assertTrue(receipt.text_payloads_are_identical)
+        self.assertTrue(receipt.restored_text_values_are_equal)
+        self.assertEqual(
+            receipt.text_receipts[0].payload["date_time_string"],
+            "2010-08-12 20:06:31.546875",
+        )
+        self.assertEqual(
+            receipt.text_receipts[1].payload["date_time_string"],
+            "2010-08-12 20:06:31.546875",
+        )
+        self.assertEqual(
+            receipt.text_receipts[0].source_class_name,
+            "PosixTimeInNanoseconds",
+        )
+        self.assertEqual(
+            receipt.text_receipts[0].payload["__class_name__"],
+            "PosixTimeInMicroseconds",
+        )
+        self.assertEqual(
+            receipt.text_receipts[0].restored_date_time_values,
+            receipt.text_receipts[1].restored_date_time_values,
+        )
+        self.assertNotEqual(
+            receipt.text_receipts[0].restored_date_time_values.timestamp,
+            first_date_time.timestamp,
+        )
+
+    def testCheckDateTextRoundTripEqual(self):
+        """Test CheckDateTextRoundTrip function with an equivalent value."""
+        date_time = posix_time.PosixTimeInMicroseconds(
+            timestamp=1281643591546875
+        )
+
+        receipt = serializer.Serializer.CheckDateTextRoundTrip(date_time)
+
+        self.assertEqual(receipt.status, serializer.RoundTripStatus.IDENTICAL)
+        self.assertEqual(
+            receipt.payload,
+            {
+                "__class_name__": "PosixTimeInMicroseconds",
+                "__type__": "DateTimeValues",
+                "date_time_string": "2010-08-12 20:06:31.546875",
+            },
+        )
+        self.assertEqual(receipt.restored_date_time_values, date_time)
+
+    def testCheckNumericRoundTripEqual(self):
+        """Test CheckNumericRoundTrip function with an equivalent value."""
+        date_time = posix_time.PosixTime(timestamp=1281643591)
+
+        receipt = serializer.Serializer.CheckNumericRoundTrip(
+            date_time, target_class_name="PosixTimeInNanoseconds"
+        )
+
+        self.assertEqual(receipt.status, serializer.RoundTripStatus.EQUAL)
+        self.assertEqual(receipt.restored_date_time_values, date_time)
+        self.assertEqual(
+            receipt.payload["__class_name__"], "PosixTimeInNanoseconds"
+        )
+        self.assertNotEqual(
+            type(receipt.restored_date_time_values), type(date_time)
+        )
+
+    def testCheckRepresentationPairRoundTripNumericTarget(self):
+        """Test pair round-trip with a lower-precision numeric receiver."""
+        first_date_time = posix_time.PosixTimeInNanoseconds(
+            timestamp=1281643591546875500
+        )
+        second_date_time = posix_time.PosixTimeInNanoseconds(
+            timestamp=1281643591546875501
+        )
+
+        receipt = serializer.Serializer.CheckRepresentationPairRoundTrip(
+            first_date_time,
+            second_date_time,
+            numeric_target_class_name="PosixTimeInMicroseconds",
+        )
+
+        self.assertTrue(receipt.numeric_payloads_are_identical)
+        self.assertTrue(receipt.restored_numeric_values_are_equal)
+        self.assertEqual(
+            receipt.numeric_receipts[0].status,
+            serializer.RoundTripStatus.UNRECOVERABLE,
+        )
+        self.assertEqual(
+            receipt.numeric_receipts[0].payload["timestamp"],
+            1281643591546875,
+        )
+
+    def testCheckDateTextRoundTripUnrecoverable(self):
+        """Test CheckDateTextRoundTrip function with a rounded value."""
+        date_time = posix_time.PosixTimeInNanoseconds(
+            timestamp=1281643591546875500
+        )
+
+        receipt = serializer.Serializer.CheckDateTextRoundTrip(
+            date_time, target_class_name="PosixTimeInMicroseconds"
+        )
+
+        self.assertEqual(
+            receipt.status, serializer.RoundTripStatus.UNRECOVERABLE
+        )
+        self.assertEqual(
+            receipt.payload["date_time_string"], "2010-08-12 20:06:31.546875"
+        )
+        self.assertNotEqual(
+            receipt.restored_date_time_values.timestamp,
+            date_time.timestamp,
+        )
+        self.assertEqual(
+            receipt.restored_date_time_values.timestamp,
+            1281643591546875,
+        )
 
 
 if __name__ == "__main__":
