@@ -2,6 +2,7 @@
 
 import decimal
 
+from dfdatetime import ambiguous_time
 from dfdatetime import definitions
 from dfdatetime import factory
 from dfdatetime import interface
@@ -1730,3 +1731,7 @@ factory.Factory.RegisterDateTimeValues(TimeElements)
 factory.Factory.RegisterDateTimeValues(TimeElementsInMilliseconds)
 factory.Factory.RegisterDateTimeValues(TimeElementsInMicroseconds)
 factory.Factory.RegisterDateTimeValues(TimeElementsInNanoseconds)
+
+AmbiguousDateTime = ambiguous_time.AmbiguousDateTime
+AmbiguousLocalTime = ambiguous_time.AmbiguousLocalTime
+AmbiguousTime = ambiguous_time.AmbiguousTime

@@ -1,6 +1,7 @@
 """Date and time interfaces."""
 
 import abc
+import copy
 import decimal
 import math
 
@@ -51,6 +52,9 @@ class DateTimeValues:
 
     Attributes:
       is_local_time (bool): True if the date and time value is in local time.
+      time_zone_candidates (list[DateTimeValues]): candidate date and time
+          values for an ambiguous local time, such as the two possible UTC
+          instants during a clock rollback, or None if not set.
       time_zone_hint (str): time zone hint, such as "Europe/Amsterdam", "CET" or
           "UTC+1", or None if not set.
     """
@@ -111,6 +115,11 @@ class DateTimeValues:
         self._precision = precision
         self._time_zone_offset = time_zone_offset
 
+        self._exclusion_conditions = None
+        self._had_ambiguity = False
+        self._is_excluded = False
+        self._time_zone_candidates = None
+
         self.is_local_time = False
         self.time_zone_hint = None
 
@@ -139,6 +148,156 @@ class DateTimeValues:
         """
         self._normalized_timestamp = None
         self._time_zone_offset = time_zone_offset
+
+    @property
+    def ambiguity_note(self):
+        """str: note that the date and time value was ambiguous, or None."""
+        if not self._had_ambiguity:
+            return None
+
+        return (
+            "Local time was ambiguous; two UTC instants were possible during "
+            "the clock rollback."
+        )
+
+    @property
+    def ambiguous_time_candidates(self):
+        """list[DateTimeValues]: candidate date and time values or None."""
+        return self._time_zone_candidates
+
+    @ambiguous_time_candidates.setter
+    def ambiguous_time_candidates(self, candidates):
+        """Sets the candidate date and time values.
+
+        Args:
+          candidates (Optional[list[DateTimeValues]]): candidate date and time
+              values or None if not set.
+        """
+        self._normalized_timestamp = None
+        self._time_zone_candidates = list(candidates) if candidates else None
+
+    ambiguous_candidates = ambiguous_time_candidates
+
+    @property
+    def candidates(self):
+        """list[DateTimeValues]: candidate date and time values or None."""
+        return self._time_zone_candidates
+
+    @candidates.setter
+    def candidates(self, candidates):
+        """Sets the candidate date and time values.
+
+        Args:
+          candidates (Optional[list[DateTimeValues]]): candidate date and time
+              values or None if not set.
+        """
+        self._normalized_timestamp = None
+        self._time_zone_candidates = list(candidates) if candidates else None
+
+    @property
+    def exclusion_conditions(self):
+        """list[object] | dict: optional evidence exclusion conditions or None."""
+        return self._exclusion_conditions
+
+    @exclusion_conditions.setter
+    def exclusion_conditions(self, exclusion_conditions):
+        """Sets the optional evidence exclusion conditions.
+
+        Args:
+          exclusion_conditions (Optional[list[object]]): exclusion conditions or
+              None if not set.
+        """
+        if exclusion_conditions is None:
+            self._exclusion_conditions = None
+        elif isinstance(exclusion_conditions, dict):
+            self._exclusion_conditions = dict(exclusion_conditions)
+        else:
+            self._exclusion_conditions = list(exclusion_conditions)
+
+    @property
+    def had_ambiguity(self):
+        """bool: True if the date and time value was previously ambiguous."""
+        return self._had_ambiguity
+
+    @had_ambiguity.setter
+    def had_ambiguity(self, had_ambiguity):
+        """Sets the previously ambiguous indicator.
+
+        Args:
+          had_ambiguity (bool): True if the date and time value was previously
+              ambiguous.
+        """
+        self._had_ambiguity = bool(had_ambiguity)
+
+    @property
+    def is_ambiguous(self):
+        """bool: True if more than one non-excluded candidate remains."""
+        if self._time_zone_candidates:
+            return len(self.GetRemainingTimeZoneCandidates()) > 1
+
+        return self._had_ambiguity
+
+    ambiguous = is_ambiguous
+
+    @property
+    def remaining_time_zone_candidates(self):
+        """list[DateTimeValues]: candidates that were not excluded."""
+        return self.GetRemainingTimeZoneCandidates()
+
+    @property
+    def selected_time_zone_candidate(self):
+        """DateTimeValues: first candidate that was not excluded, or None."""
+        candidates = self.GetRemainingTimeZoneCandidates()
+        if candidates:
+            return candidates[0]
+        return None
+
+    selected_candidate = selected_time_zone_candidate
+
+    @property
+    def is_excluded(self):
+        """bool: True if the candidate was excluded by evidence."""
+        return self._is_excluded
+
+    @is_excluded.setter
+    def is_excluded(self, is_excluded):
+        """Sets the excluded indicator.
+
+        Args:
+          is_excluded (bool): True if the candidate was excluded by evidence.
+        """
+        self._is_excluded = bool(is_excluded)
+
+    @property
+    def time_zone_candidates(self):
+        """list[DateTimeValues]: candidate date and time values or None."""
+        return self._time_zone_candidates
+
+    @time_zone_candidates.setter
+    def time_zone_candidates(self, candidates):
+        """Sets the candidate date and time values.
+
+        Args:
+          candidates (Optional[list[DateTimeValues]]): candidate date and time
+              values or None if not set.
+        """
+        self._normalized_timestamp = None
+        self._time_zone_candidates = list(candidates) if candidates else None
+
+    @property
+    def was_ambiguous(self):
+        """bool: True if the date and time value was previously ambiguous."""
+        return self._had_ambiguity
+
+    @was_ambiguous.setter
+    def was_ambiguous(self, was_ambiguous):
+        """Sets the previously ambiguous indicator.
+
+        Args:
+          was_ambiguous (bool): True if the date and time value was previously
+              ambiguous.
+        """
+        self._had_ambiguity = bool(was_ambiguous)
 
     def __eq__(self, other):
         """Determines if the date time values are equal to other.
@@ -520,6 +679,33 @@ class DateTimeValues:
 
         return hours, minutes, seconds, nanoseconds, time_zone_offset
 
+    @classmethod
+    def _CopyToSerializableValue(cls, value):
+        """Copies a value into a JSON serializable value.
+
+        Args:
+          value (object): value to copy, which can be a date and time values
+              object, a dictionary, a tuple, a list or a primitive type.
+
+        Returns:
+          object: JSON serializable value.
+        """
+        if isinstance(value, DateTimeValues):
+            return value.CopyToSerializableDict()
+
+        if isinstance(value, dict):
+            return {
+                key: cls._CopyToSerializableValue(item) for key, item in value.items()
+            }
+
+        if isinstance(value, tuple):
+            return tuple(cls._CopyToSerializableValue(item) for item in value)
+
+        if isinstance(value, list):
+            return [cls._CopyToSerializableValue(item) for item in value]
+
+        return copy.deepcopy(value)
+
     def _CreateSerializableDict(self):
         """Creates a serializable dictionary.
 
@@ -536,8 +722,260 @@ class DateTimeValues:
             serializable_dict["time_zone_offset"] = self._time_zone_offset
         if self.time_zone_hint:
             serializable_dict["time_zone_hint"] = self.time_zone_hint
+        if self._time_zone_candidates:
+            serializable_dict["candidates"] = [
+                self._CopyToSerializableValue(candidate)
+                for candidate in self._time_zone_candidates
+            ]
+        if self._exclusion_conditions:
+            serializable_dict["exclusion_conditions"] = self._CopyToSerializableValue(
+                self._exclusion_conditions
+            )
+        if self._had_ambiguity:
+            serializable_dict["had_ambiguity"] = True
+        if self._is_excluded:
+            serializable_dict["is_excluded"] = True
 
         return serializable_dict
+
+    def ExcludeTimeZoneCandidate(
+        self,
+        candidate,
+        evidence=None,
+        exclusion_condition=None,
+        reason=None,
+        testimony=None,
+    ):
+        """Excludes a time zone candidate using evidence.
+
+        The ambiguity indicator is intentionally not cleared: a record that was
+        ambiguous remains marked as such after one candidate is excluded.
+
+        Args:
+          candidate (int | DateTimeValues | dict): candidate index, candidate
+              object or candidate dictionary.
+          evidence (Optional[object]): independent evidence that excludes the
+              candidate.
+          exclusion_condition (Optional[object]): alias for evidence.
+          reason (Optional[object]): alias for evidence.
+          testimony (Optional[object]): alias for evidence.
+
+        Returns:
+          bool: True if the candidate was excluded.
+
+        Raises:
+          IndexError: if the candidate index is out of bounds.
+          TypeError: if the candidate cannot be identified.
+        """
+        if evidence is None:
+            evidence = exclusion_condition
+        if evidence is None:
+            evidence = reason
+        if evidence is None:
+            evidence = testimony
+
+        if not self._time_zone_candidates:
+            raise TypeError("No time zone candidates are set.")
+
+        if isinstance(candidate, int):
+            candidate_index = candidate
+            if candidate_index < 0:
+                candidate_index += len(self._time_zone_candidates)
+            if candidate_index < 0 or candidate_index >= len(
+                self._time_zone_candidates
+            ):
+                raise IndexError("Time zone candidate index out of bounds.")
+
+            candidate_object = self._time_zone_candidates[candidate_index]
+        else:
+            candidate_object = candidate
+
+        if candidate_object not in self._time_zone_candidates:
+            raise TypeError("Unknown time zone candidate.")
+
+        if isinstance(candidate_object, DateTimeValues):
+            candidate_object.is_excluded = True
+            if evidence is not None:
+                candidate_conditions = list(candidate_object.exclusion_conditions or [])
+                candidate_conditions.append(evidence)
+                candidate_object.exclusion_conditions = candidate_conditions
+        elif isinstance(candidate_object, dict):
+            candidate_object["is_excluded"] = True
+            if evidence is not None:
+                candidate_conditions = list(
+                    candidate_object.get("exclusion_conditions") or []
+                )
+                candidate_conditions.append(evidence)
+                candidate_object["exclusion_conditions"] = candidate_conditions
+        else:
+            raise TypeError("Unsupported time zone candidate type.")
+
+        if evidence is not None:
+            if isinstance(self._exclusion_conditions, dict):
+                conditions = dict(self._exclusion_conditions)
+                conditions[f"candidate_{len(conditions):d}"] = evidence
+                self._exclusion_conditions = conditions
+            else:
+                conditions = list(self._exclusion_conditions or [])
+                conditions.append(evidence)
+                self._exclusion_conditions = conditions
+
+        self._normalized_timestamp = None
+        self._had_ambiguity = True
+        return True
+
+    def ExcludeCandidate(self, candidate, evidence=None, **kwargs):
+        """Excludes a time zone candidate using evidence.
+
+        Args:
+          candidate (int | DateTimeValues | dict): candidate index, candidate
+              object or candidate dictionary.
+          evidence (Optional[object]): independent evidence that excludes the
+              candidate.
+          **kwargs (dict): optional aliases for evidence.
+
+        Returns:
+          bool: True if the candidate was excluded.
+        """
+        return self.ExcludeTimeZoneCandidate(candidate, evidence=evidence, **kwargs)
+
+    def ExcludeAmbiguousTimeCandidate(self, candidate, evidence=None, **kwargs):
+        """Excludes an ambiguous time candidate using evidence.
+
+        Args:
+          candidate (int | DateTimeValues | dict): candidate index, candidate
+              object or candidate dictionary.
+          evidence (Optional[object]): independent evidence that excludes the
+              candidate.
+          **kwargs (dict): optional aliases for evidence.
+
+        Returns:
+          bool: True if the candidate was excluded.
+        """
+        return self.ExcludeTimeZoneCandidate(candidate, evidence=evidence, **kwargs)
+
+    def AddExclusionCondition(self, exclusion_condition):
+        """Adds an optional evidence exclusion condition.
+
+        Args:
+          exclusion_condition (object): exclusion condition to add.
+        """
+        if isinstance(self._exclusion_conditions, dict):
+            conditions = dict(self._exclusion_conditions)
+            conditions[f"condition_{len(conditions):d}"] = exclusion_condition
+        else:
+            conditions = list(self._exclusion_conditions or [])
+            conditions.append(exclusion_condition)
+        self._exclusion_conditions = conditions
+
+    def AddEvidence(self, candidate, evidence):
+        """Excludes a candidate using independent evidence.
+
+        Args:
+          candidate (int | DateTimeValues | dict): candidate index, candidate
+              object or candidate dictionary.
+          evidence (object): independent evidence that excludes the candidate.
+
+        Returns:
+          bool: True if the candidate was excluded.
+        """
+        return self.ExcludeTimeZoneCandidate(candidate, evidence=evidence)
+
+    def ExcludeCandidateByEvidence(self, candidate, evidence):
+        """Excludes a candidate using independent evidence.
+
+        Args:
+          candidate (int | DateTimeValues | dict): candidate index, candidate
+              object or candidate dictionary.
+          evidence (object): independent evidence that excludes the candidate.
+
+        Returns:
+          bool: True if the candidate was excluded.
+        """
+        return self.ExcludeTimeZoneCandidate(candidate, evidence=evidence)
+
+    def Exclude(self, candidate=None, evidence=None, candidate_index=None, **kwargs):
+        """Excludes a time zone candidate using evidence.
+
+        Args:
+          candidate (Optional[int | DateTimeValues | dict]): candidate index,
+              candidate object or candidate dictionary.
+          evidence (Optional[object]): independent evidence that excludes the
+              candidate.
+          candidate_index (Optional[int]): candidate index, if not specified
+              with candidate.
+          **kwargs (dict): optional aliases for evidence.
+
+        Returns:
+          bool: True if the candidate was excluded.
+
+        Raises:
+          TypeError: if no candidate is specified.
+        """
+        if candidate is None:
+            candidate = candidate_index
+        if candidate is None:
+            raise TypeError("No time zone candidate specified.")
+
+        return self.ExcludeTimeZoneCandidate(candidate, evidence=evidence, **kwargs)
+
+    def GetRemainingTimeZoneCandidates(self):
+        """Retrieves time zone candidates that were not excluded.
+
+        Returns:
+          list[DateTimeValues]: remaining candidate date and time values.
+        """
+        if not self._time_zone_candidates:
+            return []
+
+        remaining_candidates = []
+        for candidate in self._time_zone_candidates:
+            if isinstance(candidate, DateTimeValues):
+                if not candidate.is_excluded:
+                    remaining_candidates.append(candidate)
+            elif isinstance(candidate, dict):
+                if not candidate.get("is_excluded"):
+                    remaining_candidates.append(candidate)
+            else:
+                remaining_candidates.append(candidate)
+
+        return remaining_candidates
+
+    def GetTimeZoneCandidates(self):
+        """Retrieves the candidate date and time values.
+
+        Returns:
+          list[DateTimeValues]: candidate date and time values.
+        """
+        return list(self._time_zone_candidates or [])
+
+    def SetTimeZoneCandidates(self, candidates, exclusion_conditions=None):
+        """Sets the candidate date and time values for an ambiguous local time.
+
+        Args:
+          candidates (list[DateTimeValues]): candidate date and time values.
+          exclusion_conditions (Optional[list[object]]): optional evidence
+              exclusion conditions.
+        """
+        self._normalized_timestamp = None
+        self._time_zone_candidates = list(candidates) if candidates else None
+        if exclusion_conditions is None:
+            self._exclusion_conditions = None
+        elif isinstance(exclusion_conditions, dict):
+            self._exclusion_conditions = dict(exclusion_conditions)
+        else:
+            self._exclusion_conditions = list(exclusion_conditions)
+        self._had_ambiguity = bool(self._time_zone_candidates)
+
+    def SetCandidates(self, candidates, exclusion_conditions=None):
+        """Sets the candidate date and time values for an ambiguous local time.
+
+        Args:
+          candidates (list[DateTimeValues]): candidate date and time values.
+          exclusion_conditions (Optional[list[object]]): optional evidence
+              exclusion conditions.
+        """
+        self.SetTimeZoneCandidates(candidates, exclusion_conditions)
 
     def _GetDateValues(
         self, number_of_days, epoch_year, epoch_month, epoch_day_of_month
