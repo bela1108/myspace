@@ -12,6 +12,14 @@ dfdatetime.apfs\_time module
    :show-inheritance:
    :undoc-members:
 
+dfdatetime.clock\_correction module
+-----------------------------------
+
+.. automodule:: dfdatetime.clock_correction
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 dfdatetime.cocoa\_time module
 -----------------------------
 

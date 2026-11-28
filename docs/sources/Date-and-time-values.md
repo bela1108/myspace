@@ -72,6 +72,59 @@ occurred during that specific hour.
 * [File Times](https://learn.microsoft.com/en-us/windows/win32/sysinfo/file-times)
 * [Precision and accuracy of DateTime](https://learn.microsoft.com/en-us/archive/blogs/ericlippert/precision-and-accuracy-of-datetime), by Eric Lippert, April 8, 2010
 
+## Clock correction
+
+Date and time values recovered from a device can be internally consistent but
+still use a clock that was changed while the device was in use. `dfdatetime`
+does not infer those changes. Instead, callers can provide segmented correction
+evidence and keep the correction decision auditable.
+
+`ClockCorrectionEvidence` describes one applicable range of recorded timestamps,
+the clock offset in seconds, an evidence identifier and an optional priority.
+The range is left-closed and right-open, `[start_timestamp, end_timestamp)`, so a
+timestamp exactly on a boundary belongs to only one segment. `end_timestamp` can
+be omitted for an open-ended range. A positive offset means the recorded clock
+was ahead of the reference clock and is subtracted from the recorded value.
+
+When evidence ranges overlap, the highest priority wins. If equally prioritized
+evidence has different offsets, the result is left for manual review instead of
+silently choosing one. Missing evidence also produces a manual-review result.
+By default, adjacent or prioritized-overlap correction segments have a
+60-second manual-review window between them; the window is centered on the
+transition boundary. Override `ambiguity_window_seconds` if a different window
+is justified by the case.
+
+Example:
+
+```python
+from dfdatetime import clock_correction
+
+correction = clock_correction.ClockCorrection(
+    [
+        clock_correction.ClockCorrectionEvidence(
+            evidence_id="clock-change-1",
+            start_timestamp=1700000000,
+            end_timestamp=1700003600,
+            clock_offset_seconds=120,
+        ),
+        clock_correction.ClockCorrectionEvidence(
+            evidence_id="clock-change-2",
+            start_timestamp=1700003600,
+            clock_offset_seconds=-30,
+            priority=1,
+        ),
+    ]
+)
+
+result = correction.CorrectTimestamp(1700003700)
+serializable_result = result.CopyToSerializableDict()
+```
+
+The serialized result always contains `original_timestamp` and `status`. A
+corrected result also contains `corrected_timestamp`, `clock_offset_seconds` and
+the adopted `evidence_id`. A manual-review result contains `reason` and, where
+relevant, `candidate_evidence_ids`.
+
 ## .NET DateTime
 ### Characteristics
 
