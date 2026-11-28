@@ -63,6 +63,14 @@ Finally, the cpe package contains methods to convert any CPE Name defined under 
     >>> c23_wfn.as_fs()
     'cpe:2.3:a:hp:?insight_diagnostics?:8.*:*:*:*:*:*:x32:*'
 
+Before binding a formatted string to a URI, call
+``uri_conversion_precheck()`` to inspect all eleven fields. Each field is
+marked as ``verifiable_equivalent``, ``semantic_loss`` or
+``target_inexpressible``, and ``equivalent_fields`` lists only fields that
+can be converted back to their original formatted-string value. The logical
+values remain distinct: ANY is bound to an empty URI component and NOT
+APPLICABLE is bound to a hyphen.
+
 Name matching
 -------------
 

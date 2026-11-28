@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import, unicode_literals
+
 """
 This file is part of cpe package.
 
@@ -72,6 +74,10 @@ class CPE2_3_FS(CPE2_3):
 
     #: Style of CPE Name
     STYLE = CPE2_3.STYLE_FS
+
+    URI_CHECK_EQUIVALENT = "verifiable_equivalent"
+    URI_CHECK_LOSSY = "semantic_loss"
+    URI_CHECK_INEXPRESSIBLE = "target_inexpressible"
 
     ###############
     #  VARIABLES  #
@@ -231,6 +237,166 @@ class CPE2_3_FS(CPE2_3):
 
                 lc.append(value)
         return lc
+
+    def uri_conversion_precheck(self):
+        """
+        Check field by field whether this formatted string can be bound
+        to a URI and converted back without changing the field.
+        """
+
+        from .cpe2_3_uri import CPE2_3_URI
+        from .comp.cpecomp2_3_uri import CPEComponent2_3_URI
+
+        uri = self._safe_uri_2_3()
+        conversion_error = uri is None
+        fields = []
+
+        if uri is None:
+            roundtripped_values = {}
+            uri_is_parseable = False
+        else:
+            try:
+                uri_cpe = CPE2_3_URI(uri)
+                roundtripped_fs = uri_cpe.as_fs()
+                roundtripped_cpe = CPE2_3_FS(roundtripped_fs)
+                roundtripped_values = dict(
+                    (attribute,
+                     roundtripped_cpe.get_attribute_values(attribute)[0])
+                    for attribute in CPEComponent.CPE_COMP_KEYS_EXTENDED
+                )
+                uri_is_parseable = True
+            except ValueError:
+                roundtripped_values = {}
+                uri_is_parseable = False
+
+        for attribute in CPEComponent.CPE_COMP_KEYS_EXTENDED:
+            component = self._get_attribute_components(attribute)[0]
+            source_value = self.get_attribute_values(attribute)[0]
+
+            if isinstance(component, CPEComponentAnyValue):
+                target_value = CPEComponent2_3_URI.VALUE_ANY
+                logical_value = "any"
+            elif isinstance(component, CPEComponentNotApplicable):
+                target_value = CPEComponent2_3_FS.VALUE_NA
+                logical_value = "not_applicable"
+            else:
+                logical_value = None
+                try:
+                    target_value = component.as_uri_2_3()
+                except KeyError:
+                    target_value = None
+
+            status = CPE2_3_FS.URI_CHECK_EQUIVALENT
+            reason = None
+
+            if isinstance(component, CPEComponentAnyValue):
+                reason = "any_value_is_bound_to_an_empty_uri_component"
+            elif isinstance(component, CPEComponentNotApplicable):
+                reason = "not_applicable_is_bound_to_a_hyphen"
+            elif target_value is None:
+                status = CPE2_3_FS.URI_CHECK_INEXPRESSIBLE
+                reason = "uri_conversion_does_not_support_this_value"
+            elif self._is_uri_inexpressible(component):
+                status = CPE2_3_FS.URI_CHECK_INEXPRESSIBLE
+                if component.get_value() == "\\-":
+                    reason = "literal_hyphen_collides_with_not_applicable"
+                else:
+                    reason = "wildcard_only_value_is_not_expressible_in_uri"
+            elif (uri_is_parseable and
+                  roundtripped_values.get(attribute) != source_value):
+                status = CPE2_3_FS.URI_CHECK_LOSSY
+                if "\\-" in source_value:
+                    reason = "escaped_hyphen_is_normalized_during_round_trip"
+                else:
+                    reason = (
+                        "formatted_string_escaping_is_normalized_"
+                        "during_round_trip"
+                    )
+            elif (conversion_error and target_value is not None):
+                status = CPE2_3_FS.URI_CHECK_LOSSY
+                reason = "uri_round_trip_could_not_be_verified"
+            else:
+                reason = "uri_value_round_trips_to_the_formatted_string_value"
+
+            roundtripped_value = roundtripped_values.get(attribute)
+            roundtrippable = (
+                uri_is_parseable and
+                status == CPE2_3_FS.URI_CHECK_EQUIVALENT and
+                roundtripped_value == source_value
+            )
+
+            fields.append({
+                "attribute": attribute,
+                "source": source_value,
+                "target": target_value,
+                "roundtripped": roundtripped_value,
+                "status": status,
+                "roundtrippable": roundtrippable,
+                "logical": logical_value,
+                "reason": reason,
+            })
+
+        return {
+            "source": self.as_fs(),
+            "uri": uri,
+            "parseable_uri": uri_is_parseable,
+            "conversion_error": conversion_error,
+            "roundtrippable": all(field["roundtrippable"] for field in fields),
+            "equivalent_fields": [
+                field["attribute"]
+                for field in fields
+                if field["roundtrippable"]
+            ],
+            "lossy_fields": [
+                field["attribute"]
+                for field in fields
+                if field["status"] == CPE2_3_FS.URI_CHECK_LOSSY
+            ],
+            "inexpressible_fields": [
+                field["attribute"]
+                for field in fields
+                if field["status"] == CPE2_3_FS.URI_CHECK_INEXPRESSIBLE
+            ],
+            "fields": fields,
+        }
+
+    @staticmethod
+    def _is_uri_inexpressible(component):
+        value = component.get_value()
+
+        if value == "\\-":
+            return True
+
+        if (value and "\\" not in value and
+           set(value) <= set("?*") and "?" in value):
+            return True
+
+        return False
+
+    precheck_uri_conversion = uri_conversion_precheck
+
+    def _safe_uri_2_3(self):
+        try:
+            return self.as_uri_2_3()
+        except KeyError:
+            return None
+
+
+def uri_conversion_precheck(cpe):
+    """
+    Return the URI conversion precheck of a formatted string CPE name.
+    """
+
+    return cpe.uri_conversion_precheck()
+
+
+def precheck_uri_conversion(cpe):
+    """
+    Alias of :func:`uri_conversion_precheck`.
+    """
+
+    return cpe.uri_conversion_precheck()
+
 
 if __name__ == "__main__":
     import doctest
