@@ -129,6 +129,41 @@ API documentation
 .. autoclass:: securesystemslib.signer.Key
 .. autoclass:: securesystemslib.signer.Signature
 
+Key generation rotation
+~~~~~~~~~~~~~~~~~~~~~~~
+
+A signing service may hand over from one maintenance group to another. New
+signatures must use the successor key generation while old signatures remain
+verifiable for historical review. The rotation API keeps both generations
+side by side in an injectable configuration:
+
+* :class:`~securesystemslib.signer.SigningConfig` stores all generations and
+  the currently active key id. Rotating archives the previous generation, so
+  it stays available for verification but can no longer sign.
+* :class:`~securesystemslib.signer.RotationBoundary` is a ``Signer`` that pins
+  the active generation when each signing operation starts. A rotation that
+  happens while an operation is in flight never changes the key it uses.
+* :class:`~securesystemslib.signer.LocalSigner` is a dependency-free local
+  fake signer useful for tests and prototypes.
+* :func:`~securesystemslib.signer.review_records` classifies persisted
+  records into archived valid, authorized new and unverifiable samples. A
+  persisted record only needs to retain the key id; the generation is
+  reconstructed through the config during review.
+
+.. autoclass:: securesystemslib.signer.SigningConfig
+   :members:
+.. autoclass:: securesystemslib.signer.RotationBoundary
+   :members:
+.. autoclass:: securesystemslib.signer.KeyGeneration
+   :members:
+.. autoclass:: securesystemslib.signer.LocalSigner
+   :members:
+.. autoclass:: securesystemslib.signer.SignedRecord
+   :members:
+.. autoclass:: securesystemslib.signer.ReviewReport
+   :members:
+.. autofunction:: securesystemslib.signer.review_records
+
 Key type constants
 ~~~~~~~~~~~~~~~~~~
 
@@ -213,4 +248,3 @@ each signer is documented below.
 .. autoclass:: securesystemslib.signer.SigstoreSigner
    :members: import_, import_via_auth, import_github_actions
    :exclude-members: sign, public_key, from_priv_key_uri
-

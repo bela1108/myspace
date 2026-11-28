@@ -34,6 +34,17 @@ from securesystemslib.signer._gcp_signer import GCPSigner
 from securesystemslib.signer._gpg_signer import GPGKey, GPGSigner
 from securesystemslib.signer._hsm_signer import HSMSigner
 from securesystemslib.signer._key import KEY_FOR_TYPE_AND_SCHEME, Key, SSlibKey
+from securesystemslib.signer._rotation import (
+    KeyGeneration,
+    LocalSigner,
+    ReviewedSample,
+    ReviewReport,
+    RotationBoundary,
+    SignedRecord,
+    SigningConfig,
+    UnverifiableSample,
+    review_records,
+)
 from securesystemslib.signer._signature import Signature
 from securesystemslib.signer._signer import (
     SIGNER_FOR_URI_SCHEME,
