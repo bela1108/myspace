@@ -390,13 +390,24 @@ class Reader(object):
         self.dispatch(0, callback, *args)
 
     def __iter__(self):
+        for ts, buf, _ in self.iter_with_hdr():
+            yield (ts, buf)
+
+    def iter_with_hdr(self):
+        """Like __iter__ but also yield the per-record pcap header.
+
+        Yields (timestamp, buf, hdr) tuples.  hdr carries the record's
+        claimed lengths: hdr.caplen bytes were stored in the savefile out
+        of hdr.len bytes that were on the wire, so callers can detect
+        snaplen truncation instead of mistaking it for an empty payload.
+        """
         while 1:
             buf = self.__f.read(self.__ph.__hdr_len__)
             if not buf:
                 break
             hdr = self.__ph(buf)
             buf = self.__f.read(hdr.caplen)
-            yield (hdr.tv_sec + (hdr.tv_usec / self._divisor), buf)
+            yield (hdr.tv_sec + (hdr.tv_usec / self._divisor), buf, hdr)
 
 
 class UniversalReader(object):
@@ -551,6 +562,42 @@ def test_reader_dloff():
     # confirm that if the linktype is unknown, it defaults to 0
     assert reader.dloff == 0
 
+    assert next(reader) == (3.000005, b'\x11' * 4)
+
+
+def test_reader_iter_with_hdr():
+    # the record header keeps the claimed on-wire length so snaplen
+    # truncation stays visible next to the captured bytes
+    from binascii import unhexlify
+    buf_filehdr = unhexlify(
+        'a1b2c3d4'    # TCPDUMP_MAGIC
+        '0002'        # v_major
+        '0004'        # v_minor
+        '00000000'    # thiszone
+        '00000000'    # sigfigs
+        '00000004'    # snaplen
+        '00000001'    # linktype
+    )
+    buf_pkthdr = unhexlify(
+        '00000003'  # tv_sec
+        '00000005'  # tv_usec
+        '00000004'  # caplen
+        '00000008'  # len
+    )
+
+    from .compat import BytesIO
+    fobj = BytesIO(buf_filehdr + buf_pkthdr + b'\x11' * 4)
+    reader = Reader(fobj)
+
+    (ts, buf, hdr), = reader.iter_with_hdr()
+    assert ts == 3.000005
+    assert buf == b'\x11' * 4
+    assert hdr.caplen == 4
+    assert hdr.len == 8
+
+    # plain iteration still works and drops the header
+    fobj.seek(0)
+    reader = Reader(fobj)
     assert next(reader) == (3.000005, b'\x11' * 4)
 
 
