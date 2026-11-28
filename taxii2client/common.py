@@ -204,6 +204,7 @@ class TaxiiResponse(Mapping):
     def __init__(self, resp: requests.Response):
         self.resp = resp
         self.json_dict = _to_json(self.resp)
+        self.received_at = datetime.datetime.now(tz=pytz.utc)
 
     def json(self):
         return self.json_dict

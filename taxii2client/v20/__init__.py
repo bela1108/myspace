@@ -15,6 +15,7 @@ from ..common import (
     _filter_kwargs_to_query_params, _grab_total_items_from_resource,
     _TAXIIEndpoint
 )
+from ..evidence import extract_evidence
 from ..exceptions import AccessError, InvalidJSONError, ValidationError
 
 # Module-level logger
@@ -534,6 +535,16 @@ class Collection(_TAXIIEndpoint):
             else:
                 raise e
         return response
+
+    def get_manifest_evidence(self, accept=MEDIA_TYPE_TAXII_V20, start=0,
+                              per_request=0, source_identity=None,
+                              **filter_kwargs):
+        """Extract handoff evidence from a Get Object Manifests response."""
+        response = self.get_manifest(
+            accept=accept, start=start, per_request=per_request,
+            **filter_kwargs
+        )
+        return extract_evidence(response, source_identity=source_identity)
 
 
 class ApiRoot(_TAXIIEndpoint):

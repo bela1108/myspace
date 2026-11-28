@@ -137,6 +137,26 @@ A ``Collection`` can also be instantiated directly:
     for manifest_resource in as_pages(collection.get_manifest, per_request=50):
         print(manifest_resource)
 
+Manifest evidence
+~~~~~~~~~~~~~~~~~
+
+Manifest responses can be converted into handoff records with
+``get_manifest_evidence()``. The records work with both TAXII 2.0 manifest
+fields (``versions`` and ``media_types``) and TAXII 2.1 fields
+(``version`` and ``media_type``).
+
+``source_arrival_time`` is copied from the source-provided ``date_added``
+value and is therefore source-attested. ``local_received_at`` is observed
+when the client receives the response and is not claimed to be source time.
+
+Evidence records are deduplicated by source identity, object ID, and object
+version. By default, the source identity is the manifest endpoint URL without
+query parameters; callers may also pass a business-specific source identity. A
+retry from the same source updates ``receipt_count`` and
+``local_received_ats``, but does not create another independent testimony.
+Independent sources retain separate records even when they report the same
+object version.
+
 In addition to the object-specific properties and methods, all classes have a
 ``refresh()`` method that reloads the URL corresponding to that resource, to
 ensure properties have the most up-to-date values.

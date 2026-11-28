@@ -13,6 +13,7 @@ from ..common import (
     _filter_kwargs_to_query_params, _grab_total_items_from_resource,
     _TAXIIEndpoint
 )
+from ..evidence import extract_evidence
 from ..exceptions import AccessError, ValidationError
 
 # Module-level logger
@@ -477,6 +478,12 @@ class Collection(_TAXIIEndpoint):
         self._verify_can_read()
         query_params = _filter_kwargs_to_query_params(filter_kwargs)
         return self._conn.get(self.url + "manifest/", headers={"Accept": accept}, params=query_params)
+
+    def get_manifest_evidence(self, accept=MEDIA_TYPE_TAXII_V21,
+                              source_identity=None, **filter_kwargs):
+        """Extract handoff evidence from a Get Object Manifests response."""
+        response = self.get_manifest(accept=accept, **filter_kwargs)
+        return extract_evidence(response, source_identity=source_identity)
 
 
 class ApiRoot(_TAXIIEndpoint):

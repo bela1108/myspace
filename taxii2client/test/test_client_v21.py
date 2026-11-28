@@ -658,6 +658,22 @@ def test_get_manifest(collection):
 
 
 @responses.activate
+def test_get_manifest_evidence(collection):
+    responses.add(responses.GET, MANIFEST_URL, GET_MANIFEST_RESPONSE,
+                  status=200, content_type=MEDIA_TYPE_TAXII_V21)
+
+    records = collection.get_manifest_evidence()
+
+    assert len(records) == 2
+    assert records[0]["object_id"] == (
+        "indicator--29aba82c-5393-42a8-9edb-6a2cb1df070b"
+    )
+    assert records[0]["source_arrival_time"] == "2016-11-04T03:04:051Z"
+    assert records[0]["local_received_at"].endswith("Z")
+    assert records[0]["source_url"] == MANIFEST_URL
+
+
+@responses.activate
 def test_get_status(api_root, status_dict):
     set_status_response()
 

@@ -20,5 +20,9 @@ MEDIA_TYPE_STIX_V20 = "application/vnd.oasis.stix+json; version=2.0"
 MEDIA_TYPE_TAXII_V20 = "application/vnd.oasis.taxii+json; version=2.0"
 MEDIA_TYPE_TAXII_V21 = "application/taxii+json;version=2.1"
 
+from .evidence import (  # noqa: E402
+    deduplicate_evidence_records, extract_evidence,
+    extract_manifest_evidence
+)
 from .v21 import *  # This import will always be the latest TAXII 2.X version
 from .version import __version__
