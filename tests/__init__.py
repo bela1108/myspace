@@ -167,6 +167,7 @@ def test_classes():
     from .test_crl import CRLTests
     from .test_csr import CSRTests
     from .test_init import InitTests
+    from .test_inventory import InventoryTests
     from .test_keys import KeysTests
     from .test_ocsp import OCSPTests
     from .test_pem import PEMTests
@@ -183,6 +184,7 @@ def test_classes():
         CRLTests,
         CSRTests,
         InitTests,
+        InventoryTests,
         KeysTests,
         OCSPTests,
         PEMTests,

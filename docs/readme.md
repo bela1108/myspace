@@ -7,6 +7,7 @@ links to the source for the various pre-defined type classes.
 
  - [Universal Types with BER/DER Decoder and DER Encoder](universal_types.md)
  - [PEM Decoder and Encoder](pem.md)
+ - [Read-only evidence inventory](inventory.md)
 
 ## Reference
 
@@ -21,3 +22,4 @@ links to the source for the various pre-defined type classes.
  - [Cryptographic message syntax (CMS, PKCS#7)](../asn1crypto/cms.py), `asn1crypto.cms`
  - [Time stamp protocol (TSP)](../asn1crypto/tsp.py), `asn1crypto.tsp`
  - [PDF signatures](../asn1crypto/pdf.py), `asn1crypto.pdf`
+ - [Read-only CMS/PKCS#12 evidence inventory](../asn1crypto/inventory.py), `asn1crypto.inventory`

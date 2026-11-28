@@ -42,6 +42,8 @@ def load_order():
         'asn1crypto.cms',
         'asn1crypto.pdf',
         'asn1crypto.pkcs12',
+        'asn1crypto.inventory',
+        'asn1crypto.manifest',
         'asn1crypto.tsp',
         'asn1crypto',
     ]
