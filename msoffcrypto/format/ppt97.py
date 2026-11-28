@@ -10,6 +10,7 @@ import olefile
 from msoffcrypto import exceptions
 from msoffcrypto.format import base
 from msoffcrypto.format.common import _parse_header_RC4CryptoAPI
+from msoffcrypto.input import ensure_input_contract
 from msoffcrypto.method.rc4_cryptoapi import DocumentRC4CryptoAPI
 
 logger = logging.getLogger(__name__)
@@ -524,32 +525,45 @@ class Ppt97File(base.BaseOfficeFile):
         msoffcrypto.exceptions.InvalidKeyError: ...
     """
 
-    def __init__(self, file):
-        self.file = file
-        ole = olefile.OleFileIO(file)  # do not close this, would close file
-        self.ole = ole
-        self.format = "ppt97"
-        self.keyTypes = ["password"]
-        self.key = None
-        self.salt = None
+    def __init__(self, file, copy_budget=None):
+        self.input_contract = ensure_input_contract(file, copy_budget=copy_budget)
+        self.file = self.input_contract.stream
+        self.input_stream = self.file
+        self.file.seek(0)
+        ole = None
+        try:
+            ole = olefile.OleFileIO(self.file)  # do not close this, would close file
+            self.ole = ole
+            self.format = "ppt97"
+            self.keyTypes = ["password"]
+            self.key = None
+            self.salt = None
 
-        # streams closed in destructor:
-        currentuser = ole.openstream("Current User")
-        powerpointdocument = ole.openstream("PowerPoint Document")
+            # streams closed in destructor:
+            currentuser = ole.openstream("Current User")
+            powerpointdocument = ole.openstream("PowerPoint Document")
 
-        Data = namedtuple("Data", ["currentuser", "powerpointdocument"])
-        self.data = Data(
-            currentuser=currentuser,
-            powerpointdocument=powerpointdocument,
-        )
+            Data = namedtuple("Data", ["currentuser", "powerpointdocument"])
+            self.data = Data(
+                currentuser=currentuser,
+                powerpointdocument=powerpointdocument,
+            )
+        except Exception:
+            if ole is not None:
+                ole.close()
+            self.input_contract.restore()
+            self.input_contract.close()
+            raise
+        self.input_contract.restore()
 
     def __del__(self):
         """Destructor, closes opened streams."""
-        if hasattr(self, "data") and self.data:
+        if getattr(self, "data", None):
             if self.data.currentuser:
                 self.data.currentuser.close()
             if self.data.powerpointdocument:
                 self.data.powerpointdocument.close()
+        self.close()
 
     def load_key(self, password=None):
         persistobjectdirectory = construct_persistobjectdirectory(self.data)

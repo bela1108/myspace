@@ -10,6 +10,7 @@ import olefile
 from msoffcrypto import exceptions
 from msoffcrypto.format import base
 from msoffcrypto.format.common import _parse_encryptionheader, _parse_encryptionverifier
+from msoffcrypto.input import ensure_input_contract
 from msoffcrypto.method.ecma376_agile import ECMA376Agile
 from msoffcrypto.method.ecma376_standard import ECMA376Standard
 
@@ -146,41 +147,52 @@ class OOXMLFile(base.BaseOfficeFile):
         msoffcrypto.exceptions.InvalidKeyError: ...
     """
 
-    def __init__(self, file):
+    def __init__(self, file, copy_budget=None):
         self.format = "ooxml"
-
-        file.seek(0)  # TODO: Investigate the effect (required for olefile.isOleFile)
+        self.input_contract = ensure_input_contract(file, copy_budget=copy_budget)
+        file = self.input_contract.stream
+        self.input_stream = file
+        file.seek(0)
 
         # olefile cannot process non password protected ooxml files.
         # TODO: this code is duplicate of OfficeFile(). Merge?
-        if olefile.isOleFile(file):
-            ole = olefile.OleFileIO(file)
-            self.file = ole
+        try:
+            if olefile.isOleFile(file):
+                ole = olefile.OleFileIO(file)
+                self.file = ole
 
-            try:
-                with self.file.openstream("EncryptionInfo") as stream:
-                    self.type, self.info = _parseinfo(stream)
-            except IOError:
-                raise exceptions.FileFormatError(
-                    "Supposed to be an encrypted OOXML file, but no EncryptionInfo stream found"
-                )
+                try:
+                    with self.file.openstream("EncryptionInfo") as stream:
+                        self.type, self.info = _parseinfo(stream)
+                except IOError:
+                    raise exceptions.FileFormatError(
+                        "Supposed to be an encrypted OOXML file, but no EncryptionInfo stream found"
+                    )
 
-            logger.debug("OOXMLFile.type: {}".format(self.type))
+                logger.debug("OOXMLFile.type: {}".format(self.type))
 
-            self.secret_key = None
+                self.secret_key = None
 
-            if self.type == "agile":
-                # TODO: Support aliases?
-                self.keyTypes = ("password", "private_key", "secret_key")
-            elif self.type == "standard":
-                self.keyTypes = ("password", "secret_key")
-            elif self.type == "extensible":
-                pass
-        elif _is_ooxml(file):
-            self.type = "plain"
-            self.file = file
-        else:
-            raise exceptions.FileFormatError("Unsupported file format")
+                if self.type == "agile":
+                    # TODO: Support aliases?
+                    self.keyTypes = ("password", "private_key", "secret_key")
+                elif self.type == "standard":
+                    self.keyTypes = ("password", "secret_key")
+                elif self.type == "extensible":
+                    pass
+            elif _is_ooxml(file):
+                self.type = "plain"
+                self.file = file
+            else:
+                raise exceptions.FileFormatError("Unsupported file format")
+        except Exception:
+            ole_file = getattr(self, "file", None)
+            if isinstance(ole_file, olefile.OleFileIO):
+                ole_file.close()
+            self.input_contract.restore()
+            self.input_contract.close()
+            raise
+        self.input_contract.restore()
 
     def load_key(
         self, password=None, private_key=None, secret_key=None, verify_password=False

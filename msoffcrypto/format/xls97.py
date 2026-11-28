@@ -10,6 +10,7 @@ import olefile
 from msoffcrypto import exceptions
 from msoffcrypto.format import base
 from msoffcrypto.format.common import _parse_header_RC4CryptoAPI
+from msoffcrypto.input import ensure_input_contract
 from msoffcrypto.method.rc4 import DocumentRC4
 from msoffcrypto.method.rc4_cryptoapi import DocumentRC4CryptoAPI
 from msoffcrypto.method.xor_obfuscation import DocumentXOR
@@ -455,26 +456,39 @@ class Xls97File(base.BaseOfficeFile):
         msoffcrypto.exceptions.InvalidKeyError: ...
     """
 
-    def __init__(self, file):
-        self.file = file
-        ole = olefile.OleFileIO(file)  # do not close this, would close file
-        self.ole = ole
-        self.format = "xls97"
-        self.keyTypes = ["password"]
-        self.key = None
-        self.salt = None
+    def __init__(self, file, copy_budget=None):
+        self.input_contract = ensure_input_contract(file, copy_budget=copy_budget)
+        self.file = self.input_contract.stream
+        self.input_stream = self.file
+        self.file.seek(0)
+        ole = None
+        try:
+            ole = olefile.OleFileIO(self.file)  # do not close this, would close file
+            self.ole = ole
+            self.format = "xls97"
+            self.keyTypes = ["password"]
+            self.key = None
+            self.salt = None
 
-        workbook = ole.openstream("Workbook")  # closed in destructor
+            workbook = ole.openstream("Workbook")  # closed in destructor
 
-        Data = namedtuple("Data", ["workbook"])
-        self.data = Data(
-            workbook=workbook,
-        )
+            Data = namedtuple("Data", ["workbook"])
+            self.data = Data(
+                workbook=workbook,
+            )
+        except Exception:
+            if ole is not None:
+                ole.close()
+            self.input_contract.restore()
+            self.input_contract.close()
+            raise
+        self.input_contract.restore()
 
     def __del__(self):
         """Destructor, closes opened stream."""
-        if hasattr(self, "data") and self.data and self.data.workbook:
+        if getattr(self, "data", None) and self.data.workbook:
             self.data.workbook.close()
+        self.close()
 
     def load_key(self, password=None):
         self.data.workbook.seek(0)

@@ -10,6 +10,7 @@ import olefile
 from msoffcrypto import exceptions
 from msoffcrypto.format import base
 from msoffcrypto.format.common import _parse_header_RC4CryptoAPI
+from msoffcrypto.input import ensure_input_contract
 from msoffcrypto.method.rc4 import DocumentRC4
 from msoffcrypto.method.rc4_cryptoapi import DocumentRC4CryptoAPI
 
@@ -276,27 +277,40 @@ class Doc97File(base.BaseOfficeFile):
         msoffcrypto.exceptions.InvalidKeyError: ...
     """
 
-    def __init__(self, file):
-        self.file = file
-        ole = olefile.OleFileIO(file)  # do not close this, would close file
-        self.ole = ole
-        self.format = "doc97"
-        self.keyTypes = ["password"]
-        self.key = None
-        self.salt = None
+    def __init__(self, file, copy_budget=None):
+        self.input_contract = ensure_input_contract(file, copy_budget=copy_budget)
+        self.file = self.input_contract.stream
+        self.input_stream = self.file
+        self.file.seek(0)
+        ole = None
+        try:
+            ole = olefile.OleFileIO(self.file)  # do not close this, would close file
+            self.ole = ole
+            self.format = "doc97"
+            self.keyTypes = ["password"]
+            self.key = None
+            self.salt = None
 
-        # https://msdn.microsoft.com/en-us/library/dd944620(v=office.12).aspx
-        with ole.openstream("wordDocument") as stream:
-            fib = _parseFib(stream)
+            # https://msdn.microsoft.com/en-us/library/dd944620(v=office.12).aspx
+            with ole.openstream("wordDocument") as stream:
+                fib = _parseFib(stream)
 
-        # https://msdn.microsoft.com/en-us/library/dd923367(v=office.12).aspx
-        tablename = "1Table" if fib.base.fWhichTblStm == 1 else "0Table"
+            # https://msdn.microsoft.com/en-us/library/dd923367(v=office.12).aspx
+            tablename = "1Table" if fib.base.fWhichTblStm == 1 else "0Table"
 
-        Info = namedtuple("Info", ["fib", "tablename"])
-        self.info = Info(
-            fib=fib,
-            tablename=tablename,
-        )
+            Info = namedtuple("Info", ["fib", "tablename"])
+            self.info = Info(
+                fib=fib,
+                tablename=tablename,
+            )
+        except Exception:
+            if ole is not None:
+                ole.close()
+            self.ole = None
+            self.input_contract.restore()
+            self.input_contract.close()
+            raise
+        self.input_contract.restore()
 
     def load_key(self, password=None):
         fib = self.info.fib

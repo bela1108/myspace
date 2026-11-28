@@ -9,6 +9,18 @@ class BaseOfficeFile(ABC):
     def __init__(self):
         pass
 
+    def close(self):
+        """Release resources owned by this file object."""
+        input_contract = getattr(self, "input_contract", None)
+        if input_contract is not None:
+            input_contract.close()
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
+
     @abc.abstractmethod
     def load_key(self):
         pass
