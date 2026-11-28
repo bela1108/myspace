@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+- Added a read-only multi-section PCAPNG summary that keeps each section's
+  interface table and byte order separate, records per-frame provenance, and
+  supports exporting one section with its original record/byte ranges.
+
 ## 1.9.8
 **[2022-08-17]**
 - Fixed endianness issues in PCAPNG, Loopback

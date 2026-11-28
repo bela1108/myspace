@@ -9,6 +9,8 @@ from __future__ import division  # so python 2 doesn't do integer division
 
 from struct import pack as struct_pack, unpack as struct_unpack
 from time import time
+import hashlib
+import os
 import sys
 
 from . import dpkt
@@ -409,6 +411,881 @@ class PacketBlockLE(PacketBlock):
     __byte_order__ = '<'
 
 
+_SHB_MAGIC_BYTES = b'\x0a\x0d\x0d\x0a'
+_BOM_LE_BYTES = struct_pack('<I', BYTE_ORDER_MAGIC)
+_BOM_BE_BYTES = struct_pack('>I', BYTE_ORDER_MAGIC)
+
+
+def _decode_option_text(data):
+    """Decode an option value for display without failing the whole summary."""
+    if not data:
+        return None
+    data = data.split(b'\x00', 1)[0]
+    try:
+        return data.decode('utf-8')
+    except UnicodeDecodeError:
+        return data.decode('utf-8', 'replace')
+
+
+def _get_option(opts, code):
+    for opt in opts:
+        if opt.code == code:
+            return opt.data
+    return None
+
+
+class InterfaceInfo(object):
+    """Description of one IDB, scoped to the section that contains it."""
+
+    def __init__(self, linktype, snaplen, idb=None, name=None,
+                 description=None, tsresol=6, tsoffset=0):
+        self.id = None
+        self.index = None
+        self.linktype = linktype
+        self.snaplen = snaplen
+        self.idb = idb
+        self.name = name
+        self.description = description
+        self.tsresol = tsresol
+        self.tsoffset = tsoffset
+        self.divisor = 10 ** tsresol
+        self.section = None
+        self.packet_count = 0
+
+    @property
+    def frame_count(self):
+        return self.packet_count
+
+    @property
+    def label(self):
+        return self.name or self.description or 'iface {0}'.format(self.id)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'index': self.index,
+            'linktype': self.linktype,
+            'snaplen': self.snaplen,
+            'name': self.name,
+            'description': self.description,
+            'tsresol': self.tsresol,
+            'tsoffset': self.tsoffset,
+            'packet_count': self.packet_count,
+        }
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+    def __repr__(self):
+        return 'InterfaceInfo(id={0!r}, linktype={1!r}, name={2!r})'.format(
+            self.id, self.linktype, self.name)
+
+
+class FrameInfo(object):
+    """A packet plus the provenance needed to find it in the archive."""
+
+    def __init__(self, index, iface_id, timestamp=None, data=b'',
+                 caplen=None, pkt_len=None, offset=None, length=None,
+                 data_offset=None, data_length=None, kind=None,
+                 ts_high=0, ts_low=0):
+        self.index = index
+        self.number = index + 1
+        self.section = None
+        self.section_index = None
+        self.section_frame_index = None
+        self.section_frame_number = None
+        self.iface_id = iface_id
+        self.interface = None
+        self.timestamp = timestamp
+        self.data = data
+        self.caplen = len(data) if caplen is None else caplen
+        self.pkt_len = self.caplen if pkt_len is None else pkt_len
+        self.offset = offset
+        self.length = length
+        self.data_offset = data_offset
+        self.data_length = len(data) if data_length is None else data_length
+        self.kind = kind
+        self.ts_high = ts_high
+        self.ts_low = ts_low
+        self.resolved = False
+        self.pending = True
+        self.reason = None
+
+    @property
+    def ts(self):
+        return self.timestamp
+
+    @property
+    def pkt_data(self):
+        return self.data
+
+    @property
+    def original_index(self):
+        return self.index
+
+    @property
+    def original_number(self):
+        return self.number
+
+    @property
+    def record_number(self):
+        return self.number
+
+    @property
+    def global_index(self):
+        return self.index
+
+    @property
+    def byte_range(self):
+        return (self.offset, self.offset + self.length)
+
+    @property
+    def record_range(self):
+        return self.byte_range
+
+    @property
+    def source(self):
+        return (self.section_index, self.iface_id)
+
+    @property
+    def attribution(self):
+        # Section fingerprints are content-derived, so this value is stable
+        # even when sections are read or stored in a different order.
+        return (self.section.fingerprint, self.iface_id)
+
+    @property
+    def linktype(self):
+        return None if self.interface is None else self.interface.linktype
+
+    @property
+    def iface(self):
+        return self.interface
+
+    @property
+    def src_section(self):
+        return self.section_index
+
+    @property
+    def src_iface(self):
+        return self.iface_id
+
+    @property
+    def snaplen(self):
+        return None if self.interface is None else self.interface.snaplen
+
+    def to_dict(self):
+        return {
+            'index': self.index,
+            'number': self.number,
+            'original_index': self.index,
+            'original_number': self.number,
+            'section_index': self.section_index,
+            'section_fingerprint': self.section.fingerprint,
+            'section_frame_index': self.section_frame_index,
+            'section_frame_number': self.section_frame_number,
+            'iface_id': self.iface_id,
+            'linktype': self.linktype,
+            'timestamp': self.timestamp,
+            'caplen': self.caplen,
+            'pkt_len': self.pkt_len,
+            'offset': self.offset,
+            'length': self.length,
+            'data_offset': self.data_offset,
+            'data_length': self.data_length,
+            'kind': self.kind,
+            'resolved': self.resolved,
+            'pending': self.pending,
+            'reason': self.reason,
+        }
+
+    def __iter__(self):
+        # Keep the traditional pcap-compatible (timestamp, buffer) interface.
+        return iter((self.timestamp, self.data))
+
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            return (self.timestamp, self.data)[key]
+        return getattr(self, key)
+
+    def __repr__(self):
+        return 'FrameInfo(number={0!r}, section_index={1!r}, iface_id={2!r})'.format(
+            self.number, self.section_index, self.iface_id)
+
+
+class SectionExport(object):
+    """Result of exporting one section; maps local frames back to the archive."""
+
+    def __init__(self, section):
+        self.section = section
+        self.section_index = section.index
+        self.fingerprint = section.fingerprint
+        self.offset = section.offset
+        self.end_offset = section.end_offset
+        self.length = section.end_offset - section.offset
+        self.size = self.length
+        self.byte_range = section.byte_range
+        self.first_index = section.first_index
+        self.last_index = section.last_index
+        self.record_base = section.first_index
+        self.record_offset = section.first_index
+        self.index_range = section.index_range
+        self.first_number = section.first_number
+        self.last_number = section.last_number
+        self.first_record = section.first_number
+        self.last_record = section.last_number
+        self.record_range = section.record_range
+        self.original_range = section.record_range
+        self.frame_map = [
+            (frame.section_frame_number, frame.number, frame.offset, frame.length)
+            for frame in section.frames
+        ]
+
+    def to_dict(self):
+        return {
+            'section_index': self.section_index,
+            'fingerprint': self.fingerprint,
+            'offset': self.offset,
+            'end_offset': self.end_offset,
+            'byte_range': self.byte_range,
+            'index_range': self.index_range,
+            'record_range': self.record_range,
+            'frame_map': self.frame_map,
+        }
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+
+class SectionInfo(object):
+    """A single PCAPNG section (one SHB and its blocks)."""
+
+    def __init__(self, index, offset, end_offset, byte_order, byte_order_magic,
+                 version, sec_len, raw=b''):
+        self.index = index
+        self.offset = offset
+        self.end_offset = end_offset
+        self.byte_order = byte_order
+        self.endianness = byte_order
+        self.byte_order_magic = byte_order_magic
+        self.version = version
+        self.sec_len = sec_len
+        self.raw = raw
+        self.interfaces = []
+        self.frames = []
+        self.summary = None
+        self.fingerprint = hashlib.sha256(raw).hexdigest()
+        self.packet_count = 0
+        self.frame_count = 0
+        self.first_index = None
+        self.last_index = None
+        self.index_range = (None, None)
+        self.first_number = None
+        self.last_number = None
+        self.record_range = (None, None)
+        self.first_frame = None
+        self.last_frame = None
+        self.first_record = None
+        self.last_record = None
+        self.pending = not self.interfaces
+        self.resolved = bool(self.interfaces)
+
+    @property
+    def byte_range(self):
+        return (self.offset, self.end_offset)
+
+    @property
+    def length(self):
+        return self.end_offset - self.offset
+
+    @property
+    def size(self):
+        return self.length
+
+    @property
+    def original_range(self):
+        return self.byte_range
+
+    @property
+    def frame_range(self):
+        return self.record_range
+
+    @property
+    def original_record_range(self):
+        return self.record_range
+
+    @property
+    def packets(self):
+        return self.frames
+
+    def interface(self, iface_id):
+        if 0 <= iface_id < len(self.interfaces):
+            return self.interfaces[iface_id]
+        return None
+
+    def add_interface(self, interface):
+        interface.id = len(self.interfaces)
+        interface.index = interface.id
+        interface.section = self
+        self.interfaces.append(interface)
+
+    def add_frame(self, frame):
+        frame.section = self
+        frame.section_index = self.index
+        frame.section_frame_index = len(self.frames)
+        frame.section_frame_number = len(self.frames) + 1
+        self.frames.append(frame)
+
+    def finalize(self):
+        for interface in self.interfaces:
+            interface.packet_count = 0
+
+        for frame in self.frames:
+            interface = self.interface(frame.iface_id)
+            frame.interface = interface
+            if interface is None:
+                frame.resolved = False
+                frame.pending = True
+                frame.reason = ('missing_idb' if not self.interfaces
+                                else 'unknown_interface')
+                divisor = 1000000
+                tsoffset = 0
+            else:
+                frame.resolved = True
+                frame.pending = False
+                frame.reason = None
+                interface.packet_count += 1
+                divisor = interface.divisor
+                tsoffset = interface.tsoffset
+
+            if frame.kind in ('EPB', 'PB'):
+                ticks = (frame.ts_high << 32) | frame.ts_low
+                frame.timestamp = tsoffset + (ticks / divisor)
+
+        self.packet_count = len(self.frames)
+        self.frame_count = self.packet_count
+        if self.frames:
+            self.first_index = self.frames[0].index
+            self.last_index = self.frames[-1].index
+            self.index_range = (self.first_index, self.last_index + 1)
+            self.first_number = self.frames[0].number
+            self.last_number = self.frames[-1].number
+            self.record_range = (self.first_number, self.last_number)
+            self.first_frame = self.first_number
+            self.last_frame = self.last_number
+            self.first_record = self.first_number
+            self.last_record = self.last_number
+        else:
+            self.first_index = None
+            self.last_index = None
+            self.index_range = (None, None)
+            self.first_number = None
+            self.last_number = None
+            self.record_range = (None, None)
+            self.first_frame = None
+            self.last_frame = None
+            self.first_record = None
+            self.last_record = None
+        self.pending = not self.interfaces
+        self.resolved = bool(self.interfaces)
+        return self
+
+    @property
+    def bytes(self):
+        return self.raw
+
+    @property
+    def data(self):
+        return self.raw
+
+    @property
+    def idbs(self):
+        return self.interfaces
+
+    def to_bytes(self):
+        return self.raw
+
+    def export(self, target=None):
+        if target is None:
+            return self.raw
+        if hasattr(target, 'write'):
+            target.write(self.raw)
+        else:
+            with open(target, 'wb') as fp:
+                fp.write(self.raw)
+        return SectionExport(self)
+
+    def write(self, target=None):
+        return self.export(target)
+
+    def reopened_summary(self):
+        """Summarize this section alone, keeping archive-wide coordinates."""
+        return summarize(self.raw, base_offset=self.offset,
+                         record_base=self.first_index or 0)
+
+    def to_dict(self):
+        frames = [frame.to_dict() for frame in self.frames]
+        return {
+            'index': self.index,
+            'offset': self.offset,
+            'end_offset': self.end_offset,
+            'byte_range': self.byte_range,
+            'length': self.end_offset - self.offset,
+            'byte_order': self.byte_order,
+            'endianness': self.endianness,
+            'version': self.version,
+            'sec_len': self.sec_len,
+            'fingerprint': self.fingerprint,
+            'interfaces': [interface.to_dict() for interface in self.interfaces],
+            'ifaces': [interface.to_dict() for interface in self.interfaces],
+            'frames': frames,
+            'packets': frames,
+            'packet_count': self.packet_count,
+            'index_range': self.index_range,
+            'record_range': self.record_range,
+            'pending': self.pending,
+            'resolved': self.resolved,
+        }
+
+    def __iter__(self):
+        return iter(self.frames)
+
+    def __len__(self):
+        return len(self.frames)
+
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            return self.frames[key]
+        return getattr(self, key)
+
+    def __eq__(self, other):
+        if isinstance(other, int):
+            return self.index == other
+        return self is other
+
+    def __hash__(self):
+        return id(self)
+
+    def __repr__(self):
+        return 'SectionInfo(index={0!r}, offset={1!r}, interfaces={2!r}, frames={3!r})'.format(
+            self.index, self.offset, len(self.interfaces), len(self.frames))
+
+
+def _read_source(source):
+    if isinstance(source, SectionInfo):
+        return source.raw, '<section {0}>'.format(source.index)
+    if isinstance(source, (bytes, bytearray, memoryview)):
+        return bytes(source), '<bytes>'
+    if hasattr(source, 'read'):
+        name = getattr(source, 'name', '<{0}>'.format(source.__class__.__name__))
+        data = source.read()
+        if not isinstance(data, (bytes, bytearray, memoryview)):
+            raise TypeError('PCAPNG source must return bytes')
+        return bytes(data), name
+    path = source if isinstance(source, str) else os.fspath(source)
+    with open(path, 'rb') as fp:
+        return fp.read(), path
+
+
+def _is_source_collection(source):
+    return isinstance(source, (list, tuple))
+
+
+def _section_from_blocks(data, pos, base_offset, index, le,
+                         byte_order, bom, version, sec_len, shb_len):
+    section = SectionInfo(
+        index=index,
+        offset=base_offset + pos,
+        end_offset=None,
+        byte_order=byte_order,
+        byte_order_magic=bom,
+        version=version,
+        sec_len=sec_len,
+    )
+    fmt = '<II' if le else '>II'
+    hdr_fmt = '<I' if le else '>I'
+    block_pos = pos + shb_len
+    frame_index = 0
+
+    while block_pos < len(data):
+        remaining = len(data) - block_pos
+        if remaining < 8:
+            block_pos = len(data)
+            break
+        if data[block_pos:block_pos + 4] == _SHB_MAGIC_BYTES:
+            break
+
+        blk_type, blk_len = struct_unpack(fmt, data[block_pos:block_pos + 8])
+        if blk_len < 12 or blk_len % 4 or block_pos + blk_len > len(data):
+            raise ValueError('invalid pcapng block length')
+
+        block = data[block_pos:block_pos + blk_len]
+        if blk_type == PCAPNG_BT_IDB:
+            idb = (InterfaceDescriptionBlockLE(block) if le
+                   else InterfaceDescriptionBlock(block))
+            tsresol = 6
+            tsoffset = 0
+            tsresol_data = _get_option(idb.opts, PCAPNG_OPT_IF_TSRESOL)
+            if tsresol_data:
+                value = struct_unpack('B', tsresol_data[:1])[0]
+                base = 2 if value & 0x80 else 10
+                tsresol = value & 0x7f
+                divisor = base ** tsresol
+            else:
+                divisor = 1000000
+            tsoffset_data = _get_option(idb.opts, PCAPNG_OPT_IF_TSOFFSET)
+            if tsoffset_data and len(tsoffset_data) >= 8:
+                tsoffset = struct_unpack(
+                    '<q' if le else '>q', tsoffset_data[:8])[0]
+            interface = InterfaceInfo(
+                linktype=idb.linktype,
+                snaplen=idb.snaplen,
+                idb=idb,
+                name=_decode_option_text(
+                    _get_option(idb.opts, PCAPNG_OPT_IF_NAME)),
+                description=_decode_option_text(
+                    _get_option(idb.opts, PCAPNG_OPT_IF_DESCRIPTION)),
+                tsresol=tsresol,
+                tsoffset=tsoffset,
+            )
+            interface.divisor = divisor
+            section.add_interface(interface)
+
+        elif blk_type == PCAPNG_BT_EPB:
+            epb = (EnhancedPacketBlockLE(block) if le
+                   else EnhancedPacketBlock(block))
+            frame = FrameInfo(
+                index=frame_index,
+                iface_id=epb.iface_id,
+                data=epb.pkt_data,
+                caplen=epb.caplen,
+                pkt_len=epb.pkt_len,
+                offset=base_offset + block_pos,
+                length=blk_len,
+                data_offset=base_offset + block_pos + 28,
+                data_length=len(epb.pkt_data),
+                kind='EPB',
+                ts_high=epb.ts_high,
+                ts_low=epb.ts_low,
+            )
+            section.add_frame(frame)
+            frame_index += 1
+
+        elif blk_type == PCAPNG_BT_PB:
+            pb = (PacketBlockLE(block) if le else PacketBlock(block))
+            frame = FrameInfo(
+                index=frame_index,
+                iface_id=pb.iface_id,
+                data=pb.pkt_data,
+                caplen=pb.caplen,
+                pkt_len=pb.pkt_len,
+                offset=base_offset + block_pos,
+                length=blk_len,
+                data_offset=base_offset + block_pos + 28,
+                data_length=len(pb.pkt_data),
+                kind='PB',
+                ts_high=pb.ts_high,
+                ts_low=pb.ts_low,
+            )
+            section.add_frame(frame)
+            frame_index += 1
+
+        elif blk_type == PCAPNG_BT_SPB:
+            pkt_len = struct_unpack(
+                hdr_fmt, data[block_pos + 8:block_pos + 12])[0]
+            payload_len = max(0, blk_len - 16)
+            caplen = min(pkt_len, payload_len)
+            frame = FrameInfo(
+                index=frame_index,
+                iface_id=0,
+                data=block[12:12 + caplen],
+                caplen=caplen,
+                pkt_len=pkt_len,
+                offset=base_offset + block_pos,
+                length=blk_len,
+                data_offset=base_offset + block_pos + 12,
+                data_length=caplen,
+                kind='SPB',
+            )
+            section.add_frame(frame)
+            frame_index += 1
+
+        block_pos += blk_len
+
+    section.end_offset = base_offset + block_pos
+    section.raw = data[pos:block_pos]
+    section.fingerprint = hashlib.sha256(section.raw).hexdigest()
+    section.finalize()
+    return section, block_pos
+
+
+def _parse_sections(data, base_offset=0, record_base=0):
+    sections = []
+    pos = 0
+    frame_index = record_base
+
+    while pos < len(data):
+        remaining = len(data) - pos
+        if remaining < 12:
+            if not sections:
+                raise ValueError('invalid pcapng header')
+            break
+
+        if data[pos:pos + 4] != _SHB_MAGIC_BYTES:
+            if not sections:
+                raise ValueError('invalid pcapng header: not a SHB')
+            break
+
+        bom = data[pos + 8:pos + 12]
+        if bom == _BOM_LE_BYTES:
+            le = True
+            byte_order = 'little'
+        elif bom == _BOM_BE_BYTES:
+            le = False
+            byte_order = 'big'
+        else:
+            raise ValueError('unknown endianness')
+
+        fmt = '<II' if le else '>II'
+        shb_len = struct_unpack(
+            '<I' if le else '>I', data[pos + 4:pos + 8])[0]
+        if shb_len < 28 or shb_len % 4 or pos + shb_len > len(data):
+            if not sections:
+                raise ValueError('invalid pcapng header')
+            raise ValueError('truncated pcapng section header')
+
+        v_major, v_minor = struct_unpack(
+            '<HH' if le else '>HH', data[pos + 12:pos + 16])
+        if v_major != PCAPNG_VERSION_MAJOR:
+            raise ValueError(
+                'unknown pcapng version {0}.{1}'.format(v_major, v_minor))
+
+        tail_len = struct_unpack(
+            '<I' if le else '>I', data[pos + shb_len - 4:pos + shb_len])[0]
+        if tail_len != shb_len:
+            raise ValueError('length fields do not match')
+
+        sec_len = struct_unpack(
+            '<q' if le else '>q', data[pos + 16:pos + 24])[0]
+        section, pos = _section_from_blocks(
+            data, pos, base_offset, len(sections), le, byte_order, bom,
+            (v_major, v_minor), sec_len, shb_len)
+
+        # Section-local frame indices were provisional; attach the archive-wide
+        # frame number without changing section/interface ownership.
+        for frame in section.frames:
+            frame.index = frame_index
+            frame.number = frame_index + 1
+            frame_index += 1
+        section.finalize()
+        sections.append(section)
+
+    if not sections:
+        raise ValueError('invalid pcapng header')
+    return sections
+
+
+class SectionSummary(object):
+    """Read-only summary of every section in one PCAPNG archive."""
+
+    def __init__(self, source=None, name=None, sections=None,
+                 base_offset=0, record_base=None):
+        if sections is None and record_base is None:
+            record_base = 0
+        if sections is None:
+            if source is None:
+                sections = []
+            elif _is_source_collection(source):
+                chunks = []
+                names = []
+                for item in source:
+                    chunk, item_name = _read_source(item)
+                    chunks.append(chunk)
+                    names.append(item_name)
+                if name is None:
+                    name = '+'.join(names)
+                sections = _parse_sections(
+                    b''.join(chunks), base_offset=base_offset,
+                    record_base=record_base)
+            else:
+                data, source_name = _read_source(source)
+                if name is None:
+                    name = source_name
+                sections = _parse_sections(
+                    data, base_offset=base_offset, record_base=record_base)
+        self.name = name
+        self.sections = list(sections)
+        for index, section in enumerate(self.sections):
+            section.index = index
+            section.summary = self
+            for frame in section.frames:
+                frame.section_index = index
+        self.frames = [
+            frame for section in self.sections for frame in section.frames]
+        if record_base is None:
+            record_base = self.frames[0].index if self.frames else 0
+        for index, frame in enumerate(self.frames, start=record_base):
+            frame.index = index
+            frame.number = index + 1
+        for section in self.sections:
+            section.finalize()
+        self.pending_frames = [frame for frame in self.frames if frame.pending]
+        self.pending_sections = [
+            section for section in self.sections if not section.interfaces]
+        self.sections_with_unresolved = [
+            section for section in self.sections
+            if section.frames and any(frame.pending for frame in section.frames)]
+
+    @classmethod
+    def from_file(cls, path, name=None):
+        return cls(path, name=name)
+
+    @classmethod
+    def from_bytes(cls, data, name=None):
+        return cls(data, name=name)
+
+    def __call__(self):
+        return self
+
+    @property
+    def frame_count(self):
+        return len(self.frames)
+
+    @property
+    def section_count(self):
+        return len(self.sections)
+
+    @property
+    def interface_count(self):
+        return len(self.interfaces)
+
+    @property
+    def packet_count(self):
+        return self.frame_count
+
+    @property
+    def pending(self):
+        return self.pending_frames
+
+    @property
+    def unresolved(self):
+        return self.pending_frames
+
+    @property
+    def unresolved_sections(self):
+        return self.pending_sections
+
+    @property
+    def by_section(self):
+        return {section.index: section for section in self.sections}
+
+    @property
+    def interfaces(self):
+        return [interface for section in self.sections
+                for interface in section.interfaces]
+
+    @property
+    def pending_section_indices(self):
+        return [section.index for section in self.pending_sections]
+
+    def frame(self, index):
+        return self.frames[index]
+
+    def section(self, index):
+        return self.sections[index]
+
+    def export_section(self, index, target=None):
+        return self.sections[index].export(target)
+
+    def to_dict(self):
+        pending_frames = [frame.to_dict() for frame in self.pending_frames]
+        return {
+            'name': self.name,
+            'sections': [section.to_dict() for section in self.sections],
+            'pending_sections': [
+                section.to_dict() for section in self.pending_sections],
+            'pending_section_indices': self.pending_section_indices,
+            'pending_frames': [
+                frame for frame in pending_frames],
+            'pending': pending_frames,
+            'unresolved': pending_frames,
+            'frame_count': self.frame_count,
+        }
+
+    def describe(self):
+        lines = []
+        for section in self.sections:
+            lines.append(
+                'section {0}: {1}-endian, bytes {2}:{3}, '
+                '{4} interface(s), {5} frame(s), record range {6}'.format(
+                    section.index, section.byte_order, section.offset,
+                    section.end_offset, len(section.interfaces),
+                    len(section.frames), section.record_range))
+            for interface in section.interfaces:
+                frame_numbers = [
+                    frame.number for frame in section.frames
+                    if frame.interface is interface]
+                lines.append(
+                    '  iface {0}: linktype={1}, snaplen={2}, name={3!r}, '
+                    'frames={4}'.format(
+                        interface.id, interface.linktype, interface.snaplen,
+                        interface.name, frame_numbers))
+            if not section.interfaces:
+                lines.append('  iface definitions missing (pending)')
+            pending_numbers = [
+                frame.number for frame in section.frames if frame.pending]
+            if pending_numbers:
+                lines.append(
+                    '  unverified frame(s): {0}'.format(pending_numbers))
+        return '\n'.join(lines)
+
+    def __str__(self):
+        return self.describe()
+
+    def __iter__(self):
+        return iter(self.sections)
+
+    def __len__(self):
+        return len(self.sections)
+
+    def __getitem__(self, key):
+        if isinstance(key, (int, slice)):
+            return self.sections[key]
+        return getattr(self, key)
+
+    def __repr__(self):
+        return 'SectionSummary(sections={0!r}, frames={1!r})'.format(
+            len(self.sections), len(self.frames))
+
+
+def summarize(source, name=None, base_offset=0, record_base=0):
+    """Return a read-only SectionSummary for a PCAPNG archive."""
+    if isinstance(source, SectionSummary):
+        return source
+    return SectionSummary(source, name=name, base_offset=base_offset,
+                          record_base=record_base)
+
+
+summarize_sections = summarize
+section_summary = summarize
+multi_section_summary = summarize
+
+
+def summarize_file(path, name=None):
+    """Convenience wrapper for summarizing a path without opening it first."""
+    return summarize(path, name=name)
+
+
+def read_sections(source, name=None):
+    """Return only the per-section metadata list."""
+    return summarize(source, name=name).sections
+
+
+Section = SectionInfo
+PacketInfo = FrameInfo
+Interface = InterfaceInfo
+PcapngSummary = SectionSummary
+
+
 class Writer(object):
     """Simple pcapng dumpfile writer."""
 
@@ -557,81 +1434,49 @@ class Writer(object):
 
 
 class Reader(object):
-    """Simple pypcap-compatible pcapng file reader."""
+    """Read every section of a PCAPNG archive.
 
-    def __init__(self, fileobj):
-        self.name = getattr(fileobj, 'name', '<{0}>'.format(fileobj.__class__.__name__))
+    Interface identifiers restart at zero in each section; this reader keeps
+    the interface map of every section separate and exposes the provenance of
+    each frame through sections and summary.
+    """
+
+    def __init__(self, fileobj, base_offset=None, record_base=0,
+                 require_idb=True):
+        self.name = getattr(
+            fileobj, 'name', '<{0}>'.format(fileobj.__class__.__name__))
         self.__f = fileobj
+        if base_offset is None:
+            try:
+                base_offset = fileobj.tell()
+            except (AttributeError, IOError, OSError):
+                base_offset = 0
 
-        shb = SectionHeaderBlock()
-        buf = self.__f.read(shb.__hdr_len__)
-        if len(buf) < shb.__hdr_len__:
-            raise ValueError('invalid pcapng header')
+        data = fileobj.read()
+        if not isinstance(data, (bytes, bytearray, memoryview)):
+            raise TypeError('PCAPNG source must return bytes')
+        sections = _parse_sections(
+            bytes(data), base_offset=base_offset, record_base=record_base)
 
-        # unpack just the header since endianness is not known
-        shb.unpack_hdr(buf)
-        if shb.type != PCAPNG_BT_SHB:
-            raise ValueError('invalid pcapng header: not a SHB')
-
-        # determine the correct byte order and reload full SHB
-        if shb.bom == BYTE_ORDER_MAGIC_LE:
-            self.__le = True
-            buf += self.__f.read(_swap32b(shb.len) - shb.__hdr_len__)
-            shb = SectionHeaderBlockLE(buf)
-        elif shb.bom == BYTE_ORDER_MAGIC:
-            self.__le = False
-            buf += self.__f.read(shb.len - shb.__hdr_len__)
-            shb = SectionHeaderBlock(buf)
-        else:
-            raise ValueError('unknown endianness')
-
-        # check if this version is supported
-        if shb.v_major != PCAPNG_VERSION_MAJOR:
-            raise ValueError('unknown pcapng version {0}.{1}'.format(shb.v_major, shb.v_minor,))
-
-        # look for a mandatory IDB
-        idb = None
-        while 1:
-            buf = self.__f.read(8)
-            if len(buf) < 8:
-                break
-
-            blk_type, blk_len = struct_unpack('<II' if self.__le else '>II', buf)
-            buf += self.__f.read(blk_len - 8)
-
-            if blk_type == PCAPNG_BT_IDB:
-                idb = (InterfaceDescriptionBlockLE(buf) if self.__le
-                       else InterfaceDescriptionBlock(buf))
-                break
-            # just skip other blocks
-
-        if idb is None:
+        interfaces = [
+            interface for section in sections for interface in section.interfaces]
+        if not interfaces and require_idb:
             raise ValueError('IDB not found')
 
-        # set timestamp resolution and offset
-        self._divisor = 1000000  # defaults
-        self._tsoffset = 0
-        for opt in idb.opts:
-            if opt.code == PCAPNG_OPT_IF_TSRESOL:
-                # if MSB=0, the remaining bits is a neg power of 10 (e.g. 6 means microsecs)
-                # if MSB=1, the remaining bits is a neg power of 2 (e.g. 10 means 1/1024 of second)
-                opt_val = struct_unpack('b', opt.data)[0]
-                pow_num = 2 if opt_val & 0b10000000 else 10
-                self._divisor = pow_num ** (opt_val & 0b01111111)
-
-            elif opt.code == PCAPNG_OPT_IF_TSOFFSET:
-                # 64-bit int that specifies an offset (in seconds) that must be added to the
-                # timestamp of each packet
-                self._tsoffset = struct_unpack('<q' if self.__le else '>q', opt.data)[0]
-
-        if idb.linktype in dltoff:
-            self.dloff = dltoff[idb.linktype]
-        else:
-            self.dloff = 0
-
-        self.idb = idb
-        self.snaplen = idb.snaplen
+        first = interfaces[0] if interfaces else None
+        self.idb = first.idb if first else None
+        self.snaplen = first.snaplen if first else None
+        self.dloff = dltoff.get(first.linktype, 0) if first else 0
+        self._divisor = first.divisor if first else 1000000
+        self._tsoffset = first.tsoffset if first else 0
+        self.__le = sections[0].byte_order == 'little'
         self.filter = ''
+
+        self.sections = sections
+        self._summary = SectionSummary(
+            sections=sections, name=self.name, record_base=record_base)
+        self._frames = self._summary.frames
+        self._frame_pos = 0
         self.__iter = iter(self)
 
     @property
@@ -642,10 +1487,31 @@ class Reader(object):
         return self.fd
 
     def datalink(self):
-        return self.idb.linktype
+        return None if self.idb is None else self.idb.linktype
 
     def setfilter(self, value, optimize=1):
         raise NotImplementedError
+
+    @property
+    def summary(self):
+        return self._summary
+
+    @property
+    def frames(self):
+        return self._frames
+
+    def summarize(self):
+        return self._summary
+
+    def iter_frames(self):
+        for frame in self._frames:
+            yield frame
+
+    def read_frames(self):
+        return list(self._frames)
+
+    def export_section(self, index, target=None):
+        return self.sections[index].export(target)
 
     def readpkts(self):
         return list(self)
@@ -655,17 +1521,7 @@ class Reader(object):
     next = __next__  # Python 2 compat
 
     def dispatch(self, cnt, callback, *args):
-        """Collect and process packets with a user callback.
-
-        Return the number of packets processed, or 0 for a savefile.
-
-        Arguments:
-
-        cnt      -- number of packets to process;
-                    or 0 to process all packets until EOF
-        callback -- function with (timestamp, pkt, *args) prototype
-        *args    -- optional arguments passed to callback on execution
-        """
+        """Collect and process packets with a user callback."""
         processed = 0
         if cnt > 0:
             for _ in range(cnt):
@@ -685,24 +1541,21 @@ class Reader(object):
         self.dispatch(0, callback, *args)
 
     def __iter__(self):
-        while 1:
-            buf = self.__f.read(8)
-            if len(buf) < 8:
-                break
+        while self._frame_pos < len(self._frames):
+            frame = self._frames[self._frame_pos]
+            self._frame_pos += 1
+            yield (frame.timestamp, frame.data)
 
-            blk_type, blk_len = struct_unpack('<II' if self.__le else '>II', buf)
-            buf += self.__f.read(blk_len - 8)
 
-            if blk_type == PCAPNG_BT_EPB:
-                epb = EnhancedPacketBlockLE(buf) if self.__le else EnhancedPacketBlock(buf)
-                ts = self._tsoffset + (((epb.ts_high << 32) | epb.ts_low) / self._divisor)
-                yield (ts, epb.pkt_data)
-            elif blk_type == PCAPNG_BT_PB:
-                pb = PacketBlockLE(buf) if self.__le else PacketBlock(buf)
-                ts = self._tsoffset + (((pb.ts_high << 32) | pb.ts_low) / self._divisor)
-                yield (ts, pb.pkt_data)
+class MultiSectionReader(Reader):
+    """Explicitly named alias for the multi-section PCAPNG reader."""
 
-            # just ignore other blocks
+    def __init__(self, fileobj, base_offset=None, record_base=0):
+        Reader.__init__(self, fileobj, base_offset=base_offset,
+                        record_base=record_base, require_idb=False)
+
+
+SectionReader = MultiSectionReader
 
 
 #########
@@ -1521,3 +2374,159 @@ def test_posttest():
         fun()
     except Exception as e:
         assert str(e) == 'No test type specified'
+
+
+def _make_test_section(le, interfaces, frames):
+    """Build a small, valid section for multi-section tests."""
+    out = bytes(SectionHeaderBlockLE() if le else SectionHeaderBlock())
+    opt_cls = PcapngOptionLE if le else PcapngOption
+    idb_cls = InterfaceDescriptionBlockLE if le else InterfaceDescriptionBlock
+    epb_cls = EnhancedPacketBlockLE if le else EnhancedPacketBlock
+
+    for linktype, snaplen, name in interfaces:
+        opts = [opt_cls(code=PCAPNG_OPT_IF_NAME, data=name.encode('ascii')),
+                opt_cls()]
+        out += bytes(idb_cls(linktype=linktype, snaplen=snaplen, opts=opts))
+
+    for iface_id, data, ts_low in frames:
+        epb = epb_cls(
+            iface_id=iface_id, ts_high=0, ts_low=ts_low, pkt_data=data)
+        out += bytes(epb)
+    return out
+
+
+def test_multi_section_summary_mixed_endianness():
+    """Interfaces restart per section and the endianness may change."""
+    first = _make_test_section(
+        True,
+        [(DLT_EN10MB, 65535, 'eth0'), (DLT_RAW, 2048, 'raw0')],
+        [(0, b'\x00' * 14 + b'one', 1500000),
+         (1, b'\x00' * 20 + b'two', 2500000)])
+    second = _make_test_section(
+        False,
+        [(DLT_LINUX_SLL, 4096, 'sll0')],
+        [(0, b'\x00' * 16 + b'three', 3500000)])
+
+    summary = summarize(first + second)
+    assert len(summary.sections) == 2
+    assert summary.sections[0].byte_order == 'little'
+    assert summary.sections[1].byte_order == 'big'
+    assert summary.sections[0].record_range == (1, 2)
+    assert summary.sections[1].record_range == (3, 3)
+
+    assert [frame.source for frame in summary.frames] == [(0, 0), (0, 1), (1, 0)]
+    assert [frame.linktype for frame in summary.frames] == [
+        DLT_EN10MB, DLT_RAW, DLT_LINUX_SLL]
+    assert [frame.section_frame_number for frame in summary.frames] == [1, 2, 1]
+    assert summary.frames[1].interface.name == 'raw0'
+    assert summary.frames[2].timestamp == 3.5
+
+    reader = Reader(BytesIO(first + second))
+    assert list(reader) == [
+        (1.5, b'\x00' * 14 + b'one'),
+        (2.5, b'\x00' * 20 + b'two'),
+        (3.5, b'\x00' * 16 + b'three'),
+    ]
+    assert len(reader.sections) == 2
+    assert reader.summary().frames[2].iface_id == 0
+
+
+def test_multi_section_attribution_is_order_independent():
+    """Reading the same sections in another order keeps every attribution."""
+    first = _make_test_section(
+        True,
+        [(DLT_EN10MB, 65535, 'eth0'), (DLT_RAW, 2048, 'raw0')],
+        [(0, b'first-a', 1000000), (1, b'first-b', 2000000)])
+    second = _make_test_section(
+        False,
+        [(DLT_LINUX_SLL, 4096, 'sll0')],
+        [(0, b'second-a', 3000000)])
+
+    forward = summarize([first, second])
+    reverse = summarize([second, first])
+
+    def attribution(summary):
+        return {
+            (frame.section.fingerprint, frame.section_frame_index):
+                (frame.iface_id, frame.linktype, frame.snaplen,
+                 frame.interface.name)
+            for frame in summary.frames
+        }
+
+    assert attribution(forward) == attribution(reverse)
+
+
+def test_section_export_keeps_original_record_range():
+    """A section exported alone can be mapped back to the archive range."""
+    first = _make_test_section(
+        True, [(DLT_EN10MB, 65535, 'eth0')],
+        [(0, b'first', 1000000)])
+    second = _make_test_section(
+        False, [(DLT_LINUX_SLL, 4096, 'sll0')],
+        [(0, b'second-1', 2000000), (0, b'second-2', 3000000)])
+
+    archive = first + second
+    summary = summarize(archive)
+    section = summary.sections[1]
+    out = BytesIO()
+    exported = section.export(out)
+
+    assert out.getvalue() == archive[section.offset:section.end_offset]
+    assert exported.record_range == (2, 3)
+    assert exported.original_range == (2, 3)
+    assert exported.frame_map[0][:2] == (1, 2)
+
+    reopened = section.reopened_summary()
+    assert reopened.sections[0].byte_range == section.byte_range
+    assert reopened.sections[0].record_range == (2, 3)
+    assert reopened.frames[1].number == 3
+
+
+def test_section_without_idb_is_reported_separately():
+    """A section without IDBs is pending, never attributed to an earlier IDB."""
+    good = _make_test_section(
+        True, [(DLT_EN10MB, 65535, 'eth0')],
+        [(0, b'good', 1000000)])
+    pending = _make_test_section(
+        False, [], [(0, b'pending', 2000000)])
+
+    archive = good + pending
+    summary = summarize(archive)
+    assert [section.index for section in summary.pending_sections] == [1]
+    assert summary.pending_sections[0].pending
+    assert summary.frames[1].pending
+    assert summary.frames[1].interface is None
+    assert summary.frames[1].reason == 'missing_idb'
+    assert summary.frames[1].linktype is None
+
+    reader = Reader(BytesIO(archive))
+    assert len(reader.summary.pending_sections) == 1
+    assert reader.summary.pending_sections[0].index == 1
+
+    try:
+        Reader(BytesIO(pending))
+    except ValueError as e:
+        assert str(e) == 'IDB not found'
+    else:
+        raise AssertionError('a packet-only section must not be silently resolved')
+
+
+def test_interface_ids_do_not_leak_between_sections():
+    """iface_id 1 in a one-interface section must not reuse section 0's IDB."""
+    first = _make_test_section(
+        True,
+        [(DLT_EN10MB, 65535, 'eth0'), (DLT_RAW, 2048, 'raw0')],
+        [(1, b'from-raw0', 1000000)])
+    second = _make_test_section(
+        False,
+        [(DLT_LINUX_SLL, 4096, 'sll0')],
+        [(1, b'no-such-interface', 2000000)])
+
+    summary = summarize(first + second)
+    frame = summary.frames[1]
+    assert frame.section_index == 1
+    assert frame.iface_id == 1
+    assert frame.interface is None
+    assert frame.linktype is None
+    assert frame.reason == 'unknown_interface'
+    assert frame.pending

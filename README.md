@@ -15,5 +15,14 @@ pip install dpkt
 ### Examples and Documentation
 - [Main Docs for DPKT](https://kbandla.github.io/dpkt)
 
+Multi-section PCAPNG files can be inspected without changing the archive:
+```
+>>> import dpkt.pcapng
+>>> summary = dpkt.pcapng.summarize('combined.pcapng')
+>>> summary.describe()
+>>> section = summary.sections[1]
+>>> exported = section.export('section-1.pcapng')
+>>> exported.record_range
+```
 
 
