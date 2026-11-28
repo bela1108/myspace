@@ -54,6 +54,7 @@ a bunch of ASN.1 structures for use with various common cryptography standards:
 | PKCS#3 v1.4            | [`asn1crypto.algos`](asn1crypto/algos.py)   | [PKCS#3 v1.4](ftp://ftp.rsasecurity.com/pub/pkcs/ascii/pkcs-3.asc)                                                        |
 | PKCS#5 v2.1            | [`asn1crypto.algos`](asn1crypto/algos.py)   | [PKCS#5 v2.1](http://www.emc.com/collateral/white-papers/h11302-pkcs5v2-1-password-based-cryptography-standard-wp.pdf) |
 | CMS (and PKCS#7)       | [`asn1crypto.cms`](asn1crypto/cms.py)       | [RFC 5652](https://tools.ietf.org/html/rfc5652), [RFC 2315](https://tools.ietf.org/html/rfc2315)                       |
+| CMS attribute evidence | [`asn1crypto.evidence`](asn1crypto/evidence.py) | Read-only provenance view linking signed attributes to their original bytes |
 | TSP                    | [`asn1crypto.tsp`](asn1crypto/tsp.py)       | [RFC 3161](https://tools.ietf.org/html/rfc3161)                                                                        |
 | PDF signatures         | [`asn1crypto.pdf`](asn1crypto/pdf.py)       | [PDF 1.7](http://wwwimages.adobe.com/content/dam/Adobe/en/devnet/pdf/pdfs/PDF32000_2008.pdf)                           |
 

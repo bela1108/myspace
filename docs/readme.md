@@ -7,6 +7,7 @@ links to the source for the various pre-defined type classes.
 
  - [Universal Types with BER/DER Decoder and DER Encoder](universal_types.md)
  - [PEM Decoder and Encoder](pem.md)
+ - [CMS Attribute Evidence View](evidence.md)
 
 ## Reference
 
@@ -19,5 +20,6 @@ links to the source for the various pre-defined type classes.
  - [Certificate signing requests (CSRs)](../asn1crypto/csr.py), `asn1crypto.csr`
  - [Private key/certificate containers (PKCS#12)](../asn1crypto/pkcs12.py), `asn1crypto.pkcs12`
  - [Cryptographic message syntax (CMS, PKCS#7)](../asn1crypto/cms.py), `asn1crypto.cms`
+ - [CMS attribute evidence view](../asn1crypto/evidence.py), `asn1crypto.evidence`
  - [Time stamp protocol (TSP)](../asn1crypto/tsp.py), `asn1crypto.tsp`
  - [PDF signatures](../asn1crypto/pdf.py), `asn1crypto.pdf`

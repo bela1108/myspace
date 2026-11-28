@@ -166,6 +166,12 @@ def test_classes():
     from .test_cms import CMSTests
     from .test_crl import CRLTests
     from .test_csr import CSRTests
+    from .test_evidence import (
+        AttributeEvidenceViewTests,
+        EvidenceEntryPointTests,
+        ExplanationEvidenceViewTests,
+        PacketBoundsTests,
+    )
     from .test_init import InitTests
     from .test_keys import KeysTests
     from .test_ocsp import OCSPTests
@@ -182,6 +188,10 @@ def test_classes():
         CMSTests,
         CRLTests,
         CSRTests,
+        PacketBoundsTests,
+        AttributeEvidenceViewTests,
+        ExplanationEvidenceViewTests,
+        EvidenceEntryPointTests,
         InitTests,
         KeysTests,
         OCSPTests,
