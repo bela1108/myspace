@@ -44,6 +44,15 @@ CBOR = bytes
 
 class CoseRecipient(CoseMessage, metaclass=abc.ABCMeta):
     _RCPT_CLASSES = {}
+    _raw_recipients = []
+
+    @classmethod
+    def from_cose_obj(cls, cose_obj: list, allow_unknown_attributes: bool, *args, **kwargs) -> 'CoseRecipient':
+        msg = super().from_cose_obj(cose_obj, allow_unknown_attributes)
+        if cose_obj:
+            msg._raw_recipients = cose_obj.pop(0)
+            msg._recipients = []
+        return msg
 
     @classmethod
     def record_rc(cls, supported_algorithms: List[Type['CoseAlgorithm']]):
@@ -203,6 +212,9 @@ class DirectEncryption(CoseRecipient):
             raise CoseMalformedMessage(
                 f"Recipient class DIRECT_ENCRYPTION with alg {alg} must have a zero-length protected header")
 
+        if getattr(msg, '_raw_recipients', []):
+            raise CoseMalformedMessage("Recipient class DIRECT_ENCRYPTION cannot carry other recipients.")
+
         return msg
 
     @property
@@ -261,8 +273,12 @@ class KeyWrap(CoseRecipient):
         if msg.payload == b'':
             raise CoseMalformedMessage(f'Recipient class KEY_WRAP must carry the encrypted CEK in its payload')
 
-        msg.recipients = [CoseRecipient.create_recipient(r, allow_unknown_attributes, context='Rec_Recipient') for r in
-                          msg.recipients]
+        nested_recipients = getattr(msg, '_raw_recipients', [])
+        msg._recipients = []
+        msg.recipients = [
+            CoseRecipient.create_recipient(r, allow_unknown_attributes, context='Rec_Recipient')
+            for r in nested_recipients
+        ]
 
         return msg
 
@@ -385,6 +401,9 @@ class DirectKeyAgreement(CoseRecipient):
         if len(msg.recipients):
             raise CoseMalformedMessage(f'Recipient class {cls.__name__} cannot carry more recipients')
 
+        if getattr(msg, '_raw_recipients', []):
+            raise CoseMalformedMessage(f'Recipient class {cls.__name__} cannot carry more recipients')
+
         return msg
 
     @property
@@ -481,8 +500,12 @@ class KeyAgreementWithKeyWrap(CoseRecipient):
             raise CoseMalformedMessage(
                 f'Recipient class KEY_AGREEMENT_WITH_KEY_WRAP must carry the encrypted CEK in its payload')
 
-        msg.recipients = [CoseRecipient.create_recipient(r, allow_unknown_attributes, context='Rec_Recipient') for r in
-                          msg.recipients]
+        nested_recipients = getattr(msg, '_raw_recipients', [])
+        msg._recipients = []
+        msg.recipients = [
+            CoseRecipient.create_recipient(r, allow_unknown_attributes, context='Rec_Recipient')
+            for r in nested_recipients
+        ]
 
         return msg
 
