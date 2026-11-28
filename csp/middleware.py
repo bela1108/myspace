@@ -6,7 +6,7 @@ import os
 import warnings
 from dataclasses import asdict, dataclass
 from functools import partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
 from django.utils.deprecation import MiddlewareMixin
@@ -18,6 +18,8 @@ from csp.utils import DIRECTIVES_T, build_policy
 
 if TYPE_CHECKING:
     from django.http import HttpRequest, HttpResponseBase
+
+    from csp.inventory import InventoryReport
 
 
 @dataclass
@@ -139,3 +141,22 @@ class CSPMiddleware(MiddlewareMixin):
         nonce = getattr(request, "_csp_nonce", None)
 
         return PolicyParts(config, update, replace, nonce)
+
+    def audit_template(
+        self,
+        response: HttpResponseBase,
+        template: str | None = None,
+        **kwargs: Any,
+    ) -> InventoryReport:
+        """Build an offline resource inventory for a rendered response."""
+        from csp.inventory import audit_response
+
+        return audit_response(response, template, **kwargs)
+
+    def inventory_response(
+        self,
+        response: HttpResponseBase,
+        template: str | None = None,
+        **kwargs: Any,
+    ) -> InventoryReport:
+        return self.audit_template(response, template, **kwargs)

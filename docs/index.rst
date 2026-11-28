@@ -22,6 +22,7 @@ Contents:
    migration-guide
    decorators
    nonce
+   inventory
    trusted_types
    reports
    contributing
