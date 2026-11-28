@@ -116,6 +116,36 @@ class Index:
 
         return entry
 
+    def search_all(self, value: Any, cmp: Callable[[IndexEntry, Any], Match] | None = None) -> Iterator[IndexEntry]:
+        """Yield every entry whose key matches ``value``.
+
+        An NTFS index can contain more than one entry with the same name, for
+        example when a stale entry was not removed. Callers that need to verify
+        the file reference should inspect all matches instead of only the first
+        one returned by :meth:`search`.
+
+        Args:
+            value: The key to search for.
+            cmp: Optional custom comparator function.
+
+        Raises:
+            NotImplementedError: If there is no collation (comparator) function for the collation rule of this index.
+        """
+        cmp_functions = {
+            COLLATION.FILE_NAME: _cmp_filename,
+            COLLATION.NTOFS_ULONG: _cmp_ulong,
+        }
+
+        cmp = cmp or cmp_functions.get(self.root.collation_rule)
+        if not cmp:
+            raise NotImplementedError(f"No collation function for collation rule: {self.root.collation_rule}")
+
+        search_value = value.upper() if cmp == _cmp_filename else value
+
+        for entry in self.entries():
+            if not entry.is_end and cmp(entry, search_value) == Match.Equal:
+                yield entry
+
     def entries(self) -> Iterator[IndexEntry]:
         """Yield all :class:`IndexEntry`'s in this :class:`Index`."""
         for entry in self.root.entries():
@@ -246,20 +276,36 @@ class IndexEntry:
         self.header = c_ntfs._INDEX_ENTRY(fh)
         self.buf = fh.read(self.header.Length - len(c_ntfs._INDEX_ENTRY))
 
-    def dereference(self) -> MftRecord:
+    def dereference(self, verify_sequence: bool = True) -> MftRecord:
         """Dereference this :class:`IndexEntry` to the MFT record it points to.
 
         Note that the file reference is a union with the data part so only access this if you know the entry has
         a file reference and not a data part.
 
+        Args:
+            verify_sequence: Verify that the sequence number in the file reference matches the MFT record.
+
         Raises:
             MftNotAvailableError: If no MFT is available.
+            FileNotFoundError: If the file reference points to a different (reused) MFT record.
         """
         record = self.index.record
         if not record or not record.ntfs or not record.ntfs.mft:
             raise MftNotAvailableError
 
-        return record.ntfs.mft.get(segment_reference(self.header.FileReference))
+        reference = self.header.FileReference
+        result = record.ntfs.mft.get(segment_reference(reference))
+
+        if verify_sequence:
+            expected = getattr(reference, "SequenceNumber", None)
+            actual = getattr(getattr(result, "header", None), "SequenceNumber", None)
+            if isinstance(expected, int) and isinstance(actual, int) and expected != actual:
+                raise FileNotFoundError(
+                    "MFT reference sequence mismatch for segment "
+                    f"{segment_reference(reference)}: expected {expected}, found {actual}"
+                )
+
+        return result
 
     @cached_property
     def key(self) -> bytes:

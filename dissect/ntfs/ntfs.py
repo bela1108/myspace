@@ -13,8 +13,8 @@ from dissect.ntfs.c_ntfs import (
     NTFS_SIGNATURE,
     c_ntfs,
 )
-from dissect.ntfs.exceptions import Error, FileNotFoundError, VolumeNotAvailableError
-from dissect.ntfs.mft import Mft, MftRecord
+from dissect.ntfs.exceptions import Error, FileNotFoundError, MftNotAvailableError, VolumeNotAvailableError
+from dissect.ntfs.mft import Mft, MftRecord, ReparsePointReference  # noqa: TC001
 from dissect.ntfs.secure import Secure
 from dissect.ntfs.usnjrnl import UsnJrnl
 from dissect.ntfs.util import bsf
@@ -149,6 +149,14 @@ class NTFS:
             return volume_name.decode("utf-16-le")
         except (AttributeError, FileNotFoundError):
             return None
+
+    def resolve_reference(self, ref: object, proof: object | None = None, **kwargs: object) -> ReparsePointReference:
+        """Explain an evidence reference without following an external link."""
+        if not self.mft:
+            raise MftNotAvailableError
+        return self.mft.resolve_reparse_point(ref, proof, **kwargs)
+
+    explain_reference = resolve_reference
 
 
 def _get_dataruns_from_attribute_list(record: MftRecord) -> Iterator[list[tuple[int, int]]]:

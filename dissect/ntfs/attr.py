@@ -570,6 +570,11 @@ class ReparsePoint(AttributeRecord):
         return self.buffer[offset : offset + length].decode("utf-16-le")
 
     @property
+    def target(self) -> str | None:
+        """Return the printable target, falling back to the substitute name."""
+        return self.print_name or self.substitute_name
+
+    @property
     def print_name(self) -> str | None:
         if not self.tag_header:
             return None
